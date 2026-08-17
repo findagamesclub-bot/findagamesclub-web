@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useDebouncedField } from "@/hooks/useDebouncedCallback";
 import Badge from "@mui/material/Badge";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -61,6 +62,12 @@ export default function ClubFilters({
   filters, options, resultCount, page, pageCount, onChange, onClear,
 }: Props) {
   const [showFilters, setShowFilters] = useState(false);
+
+  // Typing a place should not fire a request per keystroke.
+  const [locationDraft, setLocationDraft] = useDebouncedField(
+    filters.location ?? "",
+    (location) => onChange({ location }),
+  );
 
   const applied: ActiveFilter[] = [
     ...(filters.q ?? "").split(",").map((t) => t.trim()).filter(Boolean)
@@ -149,8 +156,8 @@ export default function ClubFilters({
               <Field label="Location or postcode" basis={200}>
                 <TextField
                   placeholder="Try E14, M1, or London"
-                  value={filters.location ?? ""}
-                  onChange={(e) => onChange({ location: e.target.value })}
+                  value={locationDraft}
+                  onChange={(e) => setLocationDraft(e.target.value)}
                   fullWidth
                 />
               </Field>

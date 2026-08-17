@@ -2,6 +2,9 @@
 
 import { useCallback, useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import Box from "@mui/material/Box";
+import CircularProgress from "@mui/material/CircularProgress";
+import Fade from "@mui/material/Fade";
 import Pagination from "@mui/material/Pagination";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -11,6 +14,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import { useClubs, type ClubListResponse } from "@/hooks/useClubs";
 import type { ClubListFilters } from "@/lib/query/keys";
+import { tokens } from "@/lib/tokens";
 
 type Props = {
   initialFilters: ClubListFilters;
@@ -92,11 +96,62 @@ export default function ClubDirectory({ initialFilters, initialData, options }: 
       ) : clubs.length === 0 ? (
         <EmptyState
           title="No clubs match those filters"
-          description="Try a different town, or clear the filters to see everywhere."
+          description={
+            filters.q
+              ? "That search covers the games and facilities a club lists, not club names. Try a game like Warhammer 40,000, or a facility like parking."
+              : "Try widening the distance, or clear the filters to see everywhere."
+          }
           action={{ label: "Clear filters", href: pathname }}
         />
       ) : (
-        <ClubGrid clubs={clubs} />
+        // Results stay on screen while refetching rather than flashing empty,
+        // but dim and stop responding so it is obvious they are out of date.
+        <Box sx={{ position: "relative" }}>
+          <Box
+            sx={{
+              opacity: isFetching ? 0.4 : 1,
+              pointerEvents: isFetching ? "none" : "auto",
+              transition: "opacity 150ms ease",
+            }}
+            aria-busy={isFetching}
+          >
+            <ClubGrid clubs={clubs} />
+          </Box>
+
+          <Fade in={isFetching} unmountOnExit>
+            <Box
+              sx={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "center",
+                pt: 8,
+              }}
+            >
+              <Stack
+                direction="row"
+                spacing={1.5}
+                sx={{
+                  alignItems: "center",
+                  position: "sticky",
+                  top: 100,
+                  px: 2.5,
+                  py: 1.25,
+                  borderRadius: 999,
+                  backgroundColor: tokens.paper,
+                  border: `1px solid ${tokens.rule}`,
+                  boxShadow: "0 2px 10px rgba(16,27,45,0.08)",
+                }}
+              >
+                <CircularProgress size={16} thickness={5} aria-hidden />
+                <Typography variant="body2" sx={{ fontFamily: "var(--font-display)", fontWeight: 600 }}>
+                  Updating results
+                </Typography>
+              </Stack>
+            </Box>
+          </Fade>
+        </Box>
       )}
 
       {pageCount > 1 ? (

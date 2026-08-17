@@ -78,17 +78,25 @@ export async function listClubs(filters: ClubFilters = {}): Promise<ClubListResu
 
   let matched = rows;
 
-  // Search matches a club's games and facilities only — not its name, town or
-  // summary. Terms are comma-separated, so "warhammer terrain" is one phrase
-  // while "warhammer, terrain" is two that must both match. Runs against the
-  // club's original spellings, so "warhammer 40k" and "aos" still work.
+  // Search covers games, facilities, club name and town. The legacy app matched
+  // games and facilities only, which meant typing a club's name returned
+  // nothing — a deliberate departure, since people do search by name.
+  //
+  // Terms are comma-separated: "warhammer terrain" is one phrase, while
+  // "warhammer, terrain" is two that must both match. Matching runs against the
+  // club's own spellings, so "warhammer 40k" and "aos" still find results.
   const terms = (filters.q ?? "")
     .toLowerCase()
     .split(",")
     .map((t) => t.trim())
     .filter(Boolean);
   if (terms.length) {
-    matched = matched.filter((c) => terms.every((t) => c.search_haystack.includes(t)));
+    matched = matched.filter((club) => {
+      const haystack = [club.search_haystack, club.name, club.city]
+        .join(" ")
+        .toLowerCase();
+      return terms.every((term) => haystack.includes(term));
+    });
   }
 
   if (filters.reviewRating) {
