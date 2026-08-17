@@ -45,3 +45,6 @@ next-env.d.ts
 
 # Markdown docs — kept local, not pushed
 *.md
+
+# MCP server config — local tooling, not pushed
+.mcp.json

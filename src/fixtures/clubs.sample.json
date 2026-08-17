@@ -1,0 +1,431 @@
+[
+  {
+    "slug": "mana-wharf-social-club",
+    "name": "Mana Wharf Social Club",
+    "city": "London",
+    "neighbourhood": "Canary Wharf",
+    "postcodeArea": "E14",
+    "summary": "After-work board game club",
+    "schedule": [
+      {
+        "day": "Tuesday",
+        "time": "18:30 - 22:00",
+        "label": "Hosted teach-and-play"
+      },
+      {
+        "day": "Thursday",
+        "time": "18:30 - 22:30",
+        "label": "Strategy tables"
+      }
+    ],
+    "tablesAvailable": null,
+    "memberCount": 148,
+    "fromPrice": "\u00a38",
+    "formats": [
+      "Board Games",
+      "Social Deduction"
+    ],
+    "featuredGames": [
+      "Heat"
+    ],
+    "facilities": [
+      "Cafe counter",
+      "Hosted tables",
+      "Quiet corner seating",
+      "Step-free access"
+    ]
+  },
+  {
+    "slug": "critical-stack-manchester",
+    "name": "Critical Stack Manchester",
+    "city": "Manchester",
+    "neighbourhood": "Northern Quarter",
+    "postcodeArea": "M1",
+    "summary": "Commander pods, sealed nights, and campaign RPG tables in one late-running city club.",
+    "schedule": [
+      {
+        "day": "Wednesday",
+        "time": "18:00 - 22:30",
+        "label": "Commander social"
+      },
+      {
+        "day": "Friday",
+        "time": "18:00 - 23:00",
+        "label": "Weekly main event"
+      }
+    ],
+    "tablesAvailable": null,
+    "memberCount": 212,
+    "fromPrice": "\u00a310",
+    "formats": [
+      "TCG",
+      "RPG"
+    ],
+    "featuredGames": [
+      "Magic: The Gathering",
+      "Dungeons & Dragons",
+      "Flesh and Blood"
+    ],
+    "facilities": [
+      "Streaming station",
+      "Trade binder tables",
+      "Late-night sessions",
+      "Lift access"
+    ]
+  },
+  {
+    "slug": "questhouse-bristol",
+    "name": "Questhouse Bristol",
+    "city": "Bristol",
+    "neighbourhood": "Stokes Croft",
+    "postcodeArea": "BS2",
+    "summary": "Narrative-first tabletop roleplaying with rotating indie systems and one-shot tasters.",
+    "schedule": [
+      {
+        "day": "Monday",
+        "time": "19:00 - 22:00",
+        "label": "Indie spotlight night"
+      },
+      {
+        "day": "Saturday",
+        "time": "13:00 - 18:00",
+        "label": "Campaign blocks"
+      }
+    ],
+    "tablesAvailable": null,
+    "memberCount": 96,
+    "fromPrice": "Pay what you can",
+    "formats": [
+      "RPG",
+      "Indie Games"
+    ],
+    "featuredGames": [
+      "Blades in the Dark",
+      "Mausritter",
+      "Dungeons & Dragons"
+    ],
+    "facilities": [
+      "Workshop room",
+      "Low-sensory room",
+      "Session zero kits",
+      "Step-free access"
+    ]
+  },
+  {
+    "slug": "respawn-lounge-leeds",
+    "name": "Respawn Lounge Leeds",
+    "city": "Leeds",
+    "neighbourhood": "Headrow",
+    "postcodeArea": "LS1",
+    "summary": "A hybrid club for console brackets, co-op nights, and retro setup swaps.",
+    "schedule": [
+      {
+        "day": "Thursday",
+        "time": "18:30 - 22:30",
+        "label": "FGC locals"
+      },
+      {
+        "day": "Sunday",
+        "time": "14:00 - 19:00",
+        "label": "Retro and co-op session"
+      }
+    ],
+    "tablesAvailable": null,
+    "memberCount": 184,
+    "fromPrice": "\u00a37",
+    "formats": [
+      "Video Games",
+      "Fighting Games",
+      "Retro Gaming"
+    ],
+    "featuredGames": [
+      "Street Fighter 6",
+      "Mario Kart 8 Deluxe",
+      "Marvel vs. Capcom 2"
+    ],
+    "facilities": [
+      "Streaming booth",
+      "Console lounge",
+      "Tournament brackets",
+      "Ground-floor access"
+    ]
+  },
+  {
+    "slug": "iron-dice-collective-glasgow",
+    "name": "Iron Dice Collective",
+    "city": "Glasgow",
+    "neighbourhood": "Merchant City",
+    "postcodeArea": "G1",
+    "summary": "Miniatures, painting benches, and welcoming escalation leagues for skirmish and wargames.",
+    "schedule": [
+      {
+        "day": "Tuesday",
+        "time": "18:00 - 22:00",
+        "label": "Skirmish league"
+      },
+      {
+        "day": "Saturday",
+        "time": "11:00 - 17:00",
+        "label": "Open battle tables"
+      }
+    ],
+    "tablesAvailable": null,
+    "memberCount": 134,
+    "fromPrice": "\u00a39",
+    "formats": [
+      "Miniatures",
+      "Wargaming"
+    ],
+    "featuredGames": [
+      "Warhammer 40,000",
+      "Kill Team",
+      "Star Wars: Shatterpoint"
+    ],
+    "facilities": [
+      "Painting benches",
+      "Terrain library",
+      "Storage shelves",
+      "Accessible toilets"
+    ]
+  },
+  {
+    "slug": "meeple-junction-birmingham",
+    "name": "Meeple Junction",
+    "city": "Birmingham",
+    "neighbourhood": "Digbeth",
+    "postcodeArea": "B5",
+    "summary": "Community-first board gaming with family slots by day and heavier strategy by night.",
+    "schedule": [
+      {
+        "day": "Wednesday",
+        "time": "18:30 - 22:00",
+        "label": "Modern board games"
+      },
+      {
+        "day": "Saturday",
+        "time": "12:00 - 16:00",
+        "label": "Family and gateway games"
+      }
+    ],
+    "tablesAvailable": null,
+    "memberCount": 173,
+    "fromPrice": "\u00a36",
+    "formats": [
+      "Board Games",
+      "Family Games"
+    ],
+    "featuredGames": [
+      "Ticket to Ride",
+      "Azul",
+      "Ark Nova"
+    ],
+    "facilities": [
+      "Cafe bar",
+      "Family seating",
+      "Hosted tables",
+      "Step-free access"
+    ]
+  },
+  {
+    "slug": "pixel-card-brighton",
+    "name": "Pixel & Card Brighton",
+    "city": "Brighton",
+    "neighbourhood": "North Laine",
+    "postcodeArea": "BN1",
+    "summary": "A playful mix of retro hardware, Pok\u00e9mon meetups, and casual community tournaments.",
+    "schedule": [
+      {
+        "day": "Friday",
+        "time": "18:30 - 22:30",
+        "label": "Community tournament night"
+      },
+      {
+        "day": "Sunday",
+        "time": "11:00 - 15:00",
+        "label": "Collector and swap club"
+      }
+    ],
+    "tablesAvailable": 8,
+    "memberCount": 119,
+    "fromPrice": "\u00a38",
+    "formats": [
+      "TCG",
+      "Retro Gaming",
+      "Video Games"
+    ],
+    "featuredGames": [
+      "Pokemon TCG",
+      "Tetris The Grand Master",
+      "Super Smash Bros. Ultimate"
+    ],
+    "facilities": [
+      "Swap tables",
+      "Tournament station",
+      "Quiet first hour",
+      "Ground-floor access"
+    ]
+  },
+  {
+    "slug": "lantern-guild-liverpool",
+    "name": "Lantern Guild Liverpool",
+    "city": "Liverpool",
+    "neighbourhood": "Baltic Triangle",
+    "postcodeArea": "L1",
+    "summary": "An evening club for social board games, co-operative campaigns, and community-led special events.",
+    "schedule": [
+      {
+        "day": "Monday",
+        "time": "18:30 - 21:30",
+        "label": "Co-op and social tables"
+      },
+      {
+        "day": "Thursday",
+        "time": "18:30 - 22:00",
+        "label": "Campaign night"
+      }
+    ],
+    "tablesAvailable": null,
+    "memberCount": 88,
+    "fromPrice": "\u00a35",
+    "formats": [
+      "Board Games",
+      "RPG",
+      "Co-Op Games"
+    ],
+    "featuredGames": [
+      "Spirit Island",
+      "The Crew",
+      "Daggerheart"
+    ],
+    "facilities": [
+      "Volunteer hosts",
+      "Campaign tables",
+      "Accessible toilets",
+      "Lift access"
+    ]
+  },
+  {
+    "slug": "didcot-wargames-didcot",
+    "name": "Didcot Wargames",
+    "city": "Didcot",
+    "neighbourhood": null,
+    "postcodeArea": "OX11",
+    "summary": "Tabletop and board games in the Didcot area. We meet every Thursday (7-11 pm) at North Moreton Village Hall, OX11 9AS.",
+    "schedule": [
+      {
+        "day": "Thursday",
+        "time": "19:00 - 22:30",
+        "label": "Club session"
+      }
+    ],
+    "tablesAvailable": 10,
+    "memberCount": 40,
+    "fromPrice": null,
+    "formats": [
+      "Wargaming",
+      "Miniatures",
+      "Co-Op Games"
+    ],
+    "featuredGames": [
+      "wargaming",
+      "warhammer",
+      "aos",
+      "horus heresy",
+      "warhammer 40k",
+      "star wars legion",
+      "Star Wars: Shatterpoint"
+    ],
+    "facilities": [
+      "wifi",
+      "aircon",
+      "parking",
+      "terrain and tables",
+      "Accessible toilets",
+      "Terrain library"
+    ]
+  },
+  {
+    "slug": "abingdon-games-club-abingdon",
+    "name": "Abingdon Games Club",
+    "city": "Abingdon",
+    "neighbourhood": null,
+    "postcodeArea": "OX14",
+    "summary": "AWC is a friendly tabletop wargames club in Abingdon, Oxfordshire and was established in the \"Reading room\" in 1993 by a small number of like minded gamers. Shortly after the club expanded and moved to the \"Neave Room\" at the local Conservative Club where we are attended by individuals who are fun loving and passionate about wargaming.",
+    "schedule": [
+      {
+        "day": "Friday",
+        "time": "18:00 - 22:30",
+        "label": "Friday Club"
+      }
+    ],
+    "tablesAvailable": 8,
+    "memberCount": 31,
+    "fromPrice": null,
+    "formats": [
+      "Wargaming",
+      "Miniatures"
+    ],
+    "featuredGames": [
+      "warhammer 40k",
+      "aos",
+      "bolt action",
+      "horus heresy",
+      "star wars legion"
+    ],
+    "facilities": [
+      "wifi",
+      "bar",
+      "parking",
+      "memberships",
+      "website"
+    ]
+  },
+  {
+    "slug": "g-matthews-games-club-wantage",
+    "name": "G Matthews Games Club",
+    "city": "Wantage",
+    "neighbourhood": null,
+    "postcodeArea": "OX12",
+    "summary": "G Matthews Games Club is a friendly games club offering a community of local games players across wargaming, video and card games",
+    "schedule": [
+      {
+        "day": "Monday",
+        "time": "18:00 - 22:30",
+        "label": "Monday"
+      },
+      {
+        "day": "Friday",
+        "time": "18:00 - 23:00",
+        "label": "Friday"
+      }
+    ],
+    "tablesAvailable": 1,
+    "memberCount": 20,
+    "fromPrice": null,
+    "formats": [
+      "Family Games",
+      "Fighting Games",
+      "Miniatures",
+      "Retro Gaming",
+      "Wargaming",
+      "Video Games"
+    ],
+    "featuredGames": [
+      "Super Smash Bros. Ultimate",
+      "warhammer 40k",
+      "aos",
+      "Pokemon TCG",
+      "Mario Kart 8 Deluxe"
+    ],
+    "facilities": [
+      "memberships",
+      "bar",
+      "parking",
+      "Campaign tables",
+      "Cafe bar",
+      "terrain and tables",
+      "wifi",
+      "website"
+    ]
+  }
+]

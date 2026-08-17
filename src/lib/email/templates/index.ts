@@ -1,0 +1,69 @@
+import { renderEmail, renderText, type LayoutOptions } from "./layout";
+
+/**
+ * Transactional email copy.
+ *
+ * Written in the interface's voice: say what happened, say what to do, no
+ * apologies and no marketing. Subject lines describe the action, because that
+ * is what people scan for in a crowded inbox.
+ */
+
+export type Email = { subject: string; html: string; text: string };
+
+function build(subject: string, options: LayoutOptions): Email {
+  return { subject, html: renderEmail(options), text: renderText(options) };
+}
+
+export function verifyEmail(params: { name?: string; url: string }): Email {
+  const greeting = params.name ? `Hello ${params.name},` : "Hello,";
+  return build("Confirm your email address", {
+    previewText: "One click to finish setting up your FindAGamesClub account.",
+    eyebrow: "Confirm your email",
+    heading: "Finish setting up your account",
+    body: [
+      greeting,
+      "Confirm this address and you can sign in, join clubs and book a table.",
+    ],
+    action: { label: "Confirm email address", url: params.url },
+    footnote: "This link expires in 24 hours. If you did not create an account, you can ignore this email.",
+  });
+}
+
+export function resetPassword(params: { name?: string; url: string }): Email {
+  const greeting = params.name ? `Hello ${params.name},` : "Hello,";
+  return build("Reset your password", {
+    previewText: "Choose a new password for your FindAGamesClub account.",
+    eyebrow: "Password reset",
+    heading: "Choose a new password",
+    body: [greeting, "Use the link below to set a new password."],
+    action: { label: "Set a new password", url: params.url },
+    footnote:
+      "This link expires in one hour and can be used once. If you did not ask for it, your password has not changed and no action is needed.",
+  });
+}
+
+export function welcome(params: { name?: string; url: string }): Email {
+  const greeting = params.name ? `Welcome, ${params.name}.` : "Welcome.";
+  return build("Welcome to FindAGamesClub", {
+    previewText: "Your account is ready. Find a club near you.",
+    eyebrow: "Account created",
+    heading: "You're in",
+    body: [
+      greeting,
+      "Search by town, by what a club plays, or by how far you'll travel. Club pages show when they meet, whether tables can be booked, and what it costs.",
+    ],
+    action: { label: "Find a club", url: params.url },
+  });
+}
+
+export function emailChanged(params: { name?: string; url: string; newEmail: string }): Email {
+  const greeting = params.name ? `Hello ${params.name},` : "Hello,";
+  return build("Confirm your new email address", {
+    previewText: "Confirm the new address on your FindAGamesClub account.",
+    eyebrow: "Email change",
+    heading: "Confirm your new address",
+    body: [greeting, `Confirm ${params.newEmail} to finish moving your account to it.`],
+    action: { label: "Confirm new address", url: params.url },
+    footnote: "Until you confirm, your account keeps using the old address.",
+  });
+}

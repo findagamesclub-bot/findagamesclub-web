@@ -1,0 +1,4158 @@
+{
+  "exported_from": "/Users/sunrise/Downloads/club-app-live-package-2026-08-07/app",
+  "clubs": [
+    {
+      "id": 1,
+      "slug": "mana-wharf-social-club",
+      "name": "Mana Wharf Social Club",
+      "status": "active",
+      "owner_legacy_id": null,
+      "city": "London",
+      "neighbourhood": "Canary Wharf",
+      "country": "United Kingdom",
+      "venue_name": "Dockside Hub",
+      "venue_address": "14 Millharbour",
+      "venue_postcode": "E14 9TP",
+      "venue_postcode_district": "E14",
+      "venue_postcode_area": "E",
+      "latitude": 51.4999,
+      "longitude": -0.0192,
+      "coordinates_label": null,
+      "summary": "After-work board game club",
+      "description": "Weekly social gaming tables",
+      "logo_url": null,
+      "tables_available": null,
+      "member_count": 148,
+      "price_drop_in": "£8",
+      "price_membership": "GBP 22 / month",
+      "ages": "18+",
+      "accessibility": [
+        "Step-free entrance",
+        "Quiet corner seating"
+      ],
+      "tags": [
+        "Beginner friendly",
+        "After work",
+        "Snacks available"
+      ],
+      "spotlight": true,
+      "announcement": "Notice two",
+      "contact_email": "hello@example.com",
+      "website_url": "https://example.com",
+      "created_at": null,
+      "search_haystack": "heat cafe counter hosted tables quiet corner seating step-free access",
+      "format_slugs": [
+        "board-games",
+        "social-deduction"
+      ],
+      "game_slugs": [
+        "heat"
+      ],
+      "facility_slugs": [
+        "cafe-counter",
+        "hosted-tables",
+        "quiet-corner-seating",
+        "step-free-access"
+      ],
+      "payment_slugs": [
+        "cash",
+        "debit-card",
+        "credit-card",
+        "apple-pay"
+      ],
+      "discussion_categories": [],
+      "sessions": [
+        {
+          "day": "Tuesday",
+          "time": "18:30 - 22:00",
+          "label": "Hosted teach-and-play"
+        },
+        {
+          "day": "Thursday",
+          "time": "18:30 - 22:30",
+          "label": "Strategy tables"
+        }
+      ],
+      "images": [
+        {
+          "src": "/clubs/assets/mana-wharf.svg",
+          "alt": "Mana Wharf tables set for a board game night overlooking dockside lights."
+        },
+        {
+          "src": "/clubs/assets/meeple-junction.svg",
+          "alt": "A bright table layout with modern board games and hosted teach-and-play cards."
+        }
+      ],
+      "social_links": [
+        {
+          "label": "Instagram",
+          "url": "https://instagram.com/manawharfclub"
+        },
+        {
+          "label": "Discord",
+          "url": "https://discord.gg/manawharf"
+        }
+      ],
+      "pricing_models": [
+        {
+          "label": "dropIn",
+          "price": "GBP 8",
+          "notes": ""
+        },
+        {
+          "label": "membership",
+          "price": "GBP 22 / month",
+          "notes": ""
+        }
+      ],
+      "announcements": [
+        {
+          "id": 2,
+          "message": "Notice two",
+          "created_at": "2026-04-12T11:00:00Z"
+        },
+        {
+          "id": 1,
+          "message": "Notice one",
+          "created_at": "2026-04-12T10:00:00Z"
+        }
+      ],
+      "members": [
+        {
+          "legacy_member_id": 1,
+          "name": "Ava Lewis",
+          "initials": "AL"
+        },
+        {
+          "legacy_member_id": 2,
+          "name": "Mason Grant",
+          "initials": "MG"
+        },
+        {
+          "legacy_member_id": 3,
+          "name": "Ivy Shah",
+          "initials": "IS"
+        },
+        {
+          "legacy_member_id": 4,
+          "name": "Noah Carter",
+          "initials": "NC"
+        },
+        {
+          "legacy_member_id": 5,
+          "name": "Ella Singh",
+          "initials": "ES"
+        },
+        {
+          "legacy_member_id": 6,
+          "name": "Theo Morgan",
+          "initials": "TM"
+        },
+        {
+          "legacy_member_id": 7,
+          "name": "Lena Brooks",
+          "initials": "LB"
+        },
+        {
+          "legacy_member_id": 8,
+          "name": "Oscar Patel",
+          "initials": "OP"
+        }
+      ],
+      "membership_tiers": [
+        {
+          "tier_key": "basic",
+          "label": "Basic Member",
+          "price": "",
+          "price_duration": "",
+          "description": "Default membership for approved club members.",
+          "tone": "navy",
+          "profile_flair": null,
+          "premium_badge_label": null,
+          "is_basic": true,
+          "benefits": {
+            "bookingDiscountPercent": 0,
+            "eventDiscountPercent": 0,
+            "merchandiseDiscountPercent": 0,
+            "coachingDiscountPercent": 0,
+            "extraAdvanceBookingDates": 0,
+            "maxUpcomingBookings": 0,
+            "priorityEventAdvanceDays": 0,
+            "lookingForGameFutureDates": 0,
+            "lookingForGamePostLimit": 0,
+            "loyaltyRedemptionCapPercent": 0,
+            "bonusMembershipApprovalPoints": 0,
+            "bonusGameBookingPoints": 0,
+            "bonusEventBookingPoints": 0,
+            "bonusAnniversaryPoints": 0,
+            "loyaltyEarnMultiplier": 1.0,
+            "waiveGameBookingFee": false,
+            "priorityOpponentFinderPlacement": false,
+            "detailedAnalytics": false,
+            "priorityLeagueAccess": false,
+            "premiumTicketAccess": false,
+            "merchandiseAccess": false,
+            "armyBuilderAccess": false,
+            "seasonCoachAccess": false,
+            "listCoachingAccess": false,
+            "matchupAnalysisAccess": false,
+            "opponentScoutingAccess": false,
+            "coachingBookingAccess": false,
+            "rivalryToolsAccess": true,
+            "privateDiscussionCategories": []
+          },
+          "billing_options": []
+        }
+      ],
+      "membership_settings": {
+        "basic_label": "Basic Member",
+        "advance_booking_dates": 4,
+        "upcoming_booking_limit": 0,
+        "event_advance_days": 365,
+        "looking_for_game_future_dates": 2,
+        "looking_for_game_post_limit": 1,
+        "loyalty_redemption_cap_percent": 100
+      },
+      "events": [
+        {
+          "legacy_id": "2026-04-16-dockside-strategy-social",
+          "title": "Dockside Strategy Social",
+          "summary": "A hosted night of midweight strategy games with table teaching for newcomers.",
+          "start_date": "2026-04-16",
+          "start_time": null,
+          "end_date": null,
+          "end_time": null,
+          "event_type": null,
+          "event_types": [],
+          "formats": [],
+          "featured_games": [],
+          "facilities": [],
+          "round_count": 0,
+          "price": "£8",
+          "tickets_available": 0,
+          "logo_src": null,
+          "logo_alt": null,
+          "venue_name": null,
+          "venue_address": null,
+          "venue_postcode": null,
+          "info_board": null,
+          "bestcoast_link": null,
+          "social_links": [],
+          "ticket_types": [],
+          "notices": [],
+          "results": [],
+          "pairings": []
+        },
+        {
+          "legacy_id": "2026-04-23-wingspan-league-opener",
+          "title": "Wingspan League Opener",
+          "summary": "The first round of the spring mini-league with casual and ranked tables.",
+          "start_date": "2026-04-23",
+          "start_time": null,
+          "end_date": null,
+          "end_time": null,
+          "event_type": null,
+          "event_types": [],
+          "formats": [],
+          "featured_games": [],
+          "facilities": [],
+          "round_count": 0,
+          "price": "Included with drop-in",
+          "tickets_available": 0,
+          "logo_src": null,
+          "logo_alt": null,
+          "venue_name": null,
+          "venue_address": null,
+          "venue_postcode": null,
+          "info_board": null,
+          "bestcoast_link": null,
+          "social_links": [],
+          "ticket_types": [],
+          "notices": [],
+          "results": [],
+          "pairings": []
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "slug": "critical-stack-manchester",
+      "name": "Critical Stack Manchester",
+      "status": "active",
+      "owner_legacy_id": null,
+      "city": "Manchester",
+      "neighbourhood": "Northern Quarter",
+      "country": "United Kingdom",
+      "venue_name": "Cotton Exchange Rooms",
+      "venue_address": "3 Dale Street, Manchester M1",
+      "venue_postcode": "M1 2HF",
+      "venue_postcode_district": "M1",
+      "venue_postcode_area": "M",
+      "latitude": 53.4812,
+      "longitude": -2.2364,
+      "coordinates_label": null,
+      "summary": "Commander pods, sealed nights, and campaign RPG tables in one late-running city club.",
+      "description": "Critical Stack leans into crossover hobby energy: trading card players, dungeon masters, and regulars who stay after rounds to trade deck ideas and plan the next campaign arc.",
+      "logo_url": null,
+      "tables_available": null,
+      "member_count": 212,
+      "price_drop_in": "£10",
+      "price_membership": "GBP 28 / month",
+      "ages": "16+",
+      "accessibility": [
+        "Lift access",
+        "Gender-neutral toilets"
+      ],
+      "tags": [
+        "Competitive nights",
+        "Campaign tables",
+        "Late finish"
+      ],
+      "spotlight": true,
+      "announcement": null,
+      "contact_email": "team@criticalstack.example",
+      "website_url": "https://criticalstack.example",
+      "created_at": null,
+      "search_haystack": "magic: the gathering dungeons & dragons flesh and blood streaming station trade binder tables late-night sessions lift access",
+      "format_slugs": [
+        "tcg",
+        "rpg"
+      ],
+      "game_slugs": [
+        "magic-the-gathering",
+        "dungeons-and-dragons",
+        "flesh-and-blood"
+      ],
+      "facility_slugs": [
+        "streaming-station",
+        "trade-binder-tables",
+        "late-night-sessions",
+        "lift-access"
+      ],
+      "payment_slugs": [
+        "cash",
+        "debit-card",
+        "credit-card",
+        "paypal"
+      ],
+      "discussion_categories": [],
+      "sessions": [
+        {
+          "day": "Wednesday",
+          "time": "18:00 - 22:30",
+          "label": "Commander social"
+        },
+        {
+          "day": "Friday",
+          "time": "18:00 - 23:00",
+          "label": "Weekly main event"
+        }
+      ],
+      "images": [
+        {
+          "src": "/clubs/assets/critical-stack.svg",
+          "alt": "A card gaming venue with deck boxes, playmats, and lit feature tables."
+        },
+        {
+          "src": "/clubs/assets/questhouse.svg",
+          "alt": "An RPG table set with books, maps, and campaign notes."
+        }
+      ],
+      "social_links": [
+        {
+          "label": "X",
+          "url": "https://x.com/criticalstackmcr"
+        },
+        {
+          "label": "Discord",
+          "url": "https://discord.gg/criticalstack"
+        }
+      ],
+      "pricing_models": [
+        {
+          "label": "dropIn",
+          "price": "GBP 10",
+          "notes": ""
+        },
+        {
+          "label": "membership",
+          "price": "GBP 28 / month",
+          "notes": ""
+        }
+      ],
+      "announcements": [],
+      "members": [
+        {
+          "legacy_member_id": 1,
+          "name": "Rory Evans",
+          "initials": "RE"
+        },
+        {
+          "legacy_member_id": 2,
+          "name": "Zara Khan",
+          "initials": "ZK"
+        },
+        {
+          "legacy_member_id": 3,
+          "name": "Ben Walsh",
+          "initials": "BW"
+        },
+        {
+          "legacy_member_id": 4,
+          "name": "Mia Foster",
+          "initials": "MF"
+        },
+        {
+          "legacy_member_id": 5,
+          "name": "Leo Ahmed",
+          "initials": "LA"
+        },
+        {
+          "legacy_member_id": 6,
+          "name": "Poppy Dunn",
+          "initials": "PD"
+        },
+        {
+          "legacy_member_id": 7,
+          "name": "Max Turner",
+          "initials": "MT"
+        },
+        {
+          "legacy_member_id": 8,
+          "name": "Freya Green",
+          "initials": "FG"
+        }
+      ],
+      "membership_tiers": [
+        {
+          "tier_key": "basic",
+          "label": "Basic Member",
+          "price": "",
+          "price_duration": "",
+          "description": "Default membership for approved club members.",
+          "tone": "navy",
+          "profile_flair": null,
+          "premium_badge_label": null,
+          "is_basic": true,
+          "benefits": {
+            "bookingDiscountPercent": 0,
+            "eventDiscountPercent": 0,
+            "merchandiseDiscountPercent": 0,
+            "coachingDiscountPercent": 0,
+            "extraAdvanceBookingDates": 0,
+            "maxUpcomingBookings": 0,
+            "priorityEventAdvanceDays": 0,
+            "lookingForGameFutureDates": 0,
+            "lookingForGamePostLimit": 0,
+            "loyaltyRedemptionCapPercent": 0,
+            "bonusMembershipApprovalPoints": 0,
+            "bonusGameBookingPoints": 0,
+            "bonusEventBookingPoints": 0,
+            "bonusAnniversaryPoints": 0,
+            "loyaltyEarnMultiplier": 1.0,
+            "waiveGameBookingFee": false,
+            "priorityOpponentFinderPlacement": false,
+            "detailedAnalytics": false,
+            "priorityLeagueAccess": false,
+            "premiumTicketAccess": false,
+            "merchandiseAccess": false,
+            "armyBuilderAccess": false,
+            "seasonCoachAccess": false,
+            "listCoachingAccess": false,
+            "matchupAnalysisAccess": false,
+            "opponentScoutingAccess": false,
+            "coachingBookingAccess": false,
+            "rivalryToolsAccess": true,
+            "privateDiscussionCategories": []
+          },
+          "billing_options": []
+        }
+      ],
+      "membership_settings": {
+        "basic_label": "Basic Member",
+        "advance_booking_dates": 4,
+        "upcoming_booking_limit": 0,
+        "event_advance_days": 365,
+        "looking_for_game_future_dates": 2,
+        "looking_for_game_post_limit": 1,
+        "loyalty_redemption_cap_percent": 100
+      },
+      "events": [
+        {
+          "legacy_id": "2026-04-18-commander-saturday-major",
+          "title": "Commander Saturday Major",
+          "summary": "Three rounds of Commander pods with a best-theme deck prize.",
+          "start_date": "2026-04-18",
+          "start_time": null,
+          "end_date": null,
+          "end_time": null,
+          "event_type": null,
+          "event_types": [],
+          "formats": [],
+          "featured_games": [],
+          "facilities": [],
+          "round_count": 0,
+          "price": "£12",
+          "tickets_available": 0,
+          "logo_src": null,
+          "logo_alt": null,
+          "venue_name": null,
+          "venue_address": null,
+          "venue_postcode": null,
+          "info_board": null,
+          "bestcoast_link": null,
+          "social_links": [],
+          "ticket_types": [],
+          "notices": [],
+          "results": [],
+          "pairings": []
+        },
+        {
+          "legacy_id": "2026-04-25-indie-rpg-one-shot-night",
+          "title": "Indie RPG One-Shot Night",
+          "summary": "Short sessions across three systems with hosted seating.",
+          "start_date": "2026-04-25",
+          "start_time": null,
+          "end_date": null,
+          "end_time": null,
+          "event_type": null,
+          "event_types": [],
+          "formats": [],
+          "featured_games": [],
+          "facilities": [],
+          "round_count": 0,
+          "price": "£6",
+          "tickets_available": 0,
+          "logo_src": null,
+          "logo_alt": null,
+          "venue_name": null,
+          "venue_address": null,
+          "venue_postcode": null,
+          "info_board": null,
+          "bestcoast_link": null,
+          "social_links": [],
+          "ticket_types": [],
+          "notices": [],
+          "results": [],
+          "pairings": []
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "slug": "questhouse-bristol",
+      "name": "Questhouse Bristol",
+      "status": "active",
+      "owner_legacy_id": null,
+      "city": "Bristol",
+      "neighbourhood": "Stokes Croft",
+      "country": "United Kingdom",
+      "venue_name": "The Lantern Rooms",
+      "venue_address": "88 Jamaica Street, Bristol BS2",
+      "venue_postcode": "BS2 8JP",
+      "venue_postcode_district": "BS2",
+      "venue_postcode_area": "BS",
+      "latitude": 51.4623,
+      "longitude": -2.5855,
+      "coordinates_label": null,
+      "summary": "Narrative-first tabletop roleplaying with rotating indie systems and one-shot tasters.",
+      "description": "Questhouse keeps the barrier low for new storytellers. Every month includes at least one learn-to-GM workshop and a slate of indie RPG one-shots alongside longer campaigns.",
+      "logo_url": null,
+      "tables_available": null,
+      "member_count": 96,
+      "price_drop_in": "Pay what you can",
+      "price_membership": "GBP 18 / month",
+      "ages": "18+",
+      "accessibility": [
+        "Step-free entrance",
+        "Low-sensory room"
+      ],
+      "tags": [
+        "Story-led",
+        "New GMs welcome",
+        "Workshops"
+      ],
+      "spotlight": false,
+      "announcement": null,
+      "contact_email": "hello@questhouse.example",
+      "website_url": "https://questhouse.example",
+      "created_at": null,
+      "search_haystack": "blades in the dark mausritter dungeons & dragons workshop room low-sensory room session zero kits step-free access",
+      "format_slugs": [
+        "rpg",
+        "indie-games"
+      ],
+      "game_slugs": [
+        "blades-in-the-dark",
+        "mausritter",
+        "dungeons-and-dragons"
+      ],
+      "facility_slugs": [
+        "workshop-room",
+        "low-sensory-room",
+        "session-zero-kits",
+        "step-free-access"
+      ],
+      "payment_slugs": [
+        "cash",
+        "debit-card",
+        "bank-transfer",
+        "paypal"
+      ],
+      "discussion_categories": [],
+      "sessions": [
+        {
+          "day": "Monday",
+          "time": "19:00 - 22:00",
+          "label": "Indie spotlight night"
+        },
+        {
+          "day": "Saturday",
+          "time": "13:00 - 18:00",
+          "label": "Campaign blocks"
+        }
+      ],
+      "images": [
+        {
+          "src": "/clubs/assets/questhouse.svg",
+          "alt": "A storytelling-focused RPG venue with maps, candles, and session props."
+        },
+        {
+          "src": "/clubs/assets/lantern-guild.svg",
+          "alt": "A warm collaborative table setup ready for a roleplaying session."
+        }
+      ],
+      "social_links": [
+        {
+          "label": "Instagram",
+          "url": "https://instagram.com/questhousebristol"
+        },
+        {
+          "label": "Meetup",
+          "url": "https://meetup.com/questhouse-bristol"
+        }
+      ],
+      "pricing_models": [
+        {
+          "label": "dropIn",
+          "price": "Pay what you can",
+          "notes": ""
+        },
+        {
+          "label": "membership",
+          "price": "GBP 18 / month",
+          "notes": ""
+        }
+      ],
+      "announcements": [],
+      "members": [
+        {
+          "legacy_member_id": 1,
+          "name": "Nina Price",
+          "initials": "NP"
+        },
+        {
+          "legacy_member_id": 2,
+          "name": "Hugo Clarke",
+          "initials": "HC"
+        },
+        {
+          "legacy_member_id": 3,
+          "name": "Esme Reed",
+          "initials": "ER"
+        },
+        {
+          "legacy_member_id": 4,
+          "name": "Arlo Bennett",
+          "initials": "AB"
+        },
+        {
+          "legacy_member_id": 5,
+          "name": "Chloe James",
+          "initials": "CJ"
+        },
+        {
+          "legacy_member_id": 6,
+          "name": "Isaac Ford",
+          "initials": "IF"
+        },
+        {
+          "legacy_member_id": 7,
+          "name": "Ruby Wells",
+          "initials": "RW"
+        },
+        {
+          "legacy_member_id": 8,
+          "name": "Jonah Miles",
+          "initials": "JM"
+        },
+        {
+          "legacy_member_id": 9,
+          "name": "Pete Tom",
+          "initials": "PT"
+        },
+        {
+          "legacy_member_id": 10,
+          "name": "Member 10",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 11,
+          "name": "Member 11",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 12,
+          "name": "Member 12",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 13,
+          "name": "Member 13",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 14,
+          "name": "Member 14",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 15,
+          "name": "Member 15",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 16,
+          "name": "Member 16",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 17,
+          "name": "Member 17",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 18,
+          "name": "Member 18",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 19,
+          "name": "Member 19",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 20,
+          "name": "Member 20",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 21,
+          "name": "Member 21",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 22,
+          "name": "Member 22",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 23,
+          "name": "Member 23",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 24,
+          "name": "Member 24",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 25,
+          "name": "Member 25",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 26,
+          "name": "Member 26",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 27,
+          "name": "Member 27",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 28,
+          "name": "Member 28",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 29,
+          "name": "Member 29",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 30,
+          "name": "Member 30",
+          "initials": "M3"
+        }
+      ],
+      "membership_tiers": [
+        {
+          "tier_key": "basic",
+          "label": "Basic Member",
+          "price": "",
+          "price_duration": "",
+          "description": "Default membership for approved club members.",
+          "tone": "navy",
+          "profile_flair": null,
+          "premium_badge_label": null,
+          "is_basic": true,
+          "benefits": {
+            "bookingDiscountPercent": 0,
+            "eventDiscountPercent": 0,
+            "merchandiseDiscountPercent": 0,
+            "coachingDiscountPercent": 0,
+            "extraAdvanceBookingDates": 0,
+            "maxUpcomingBookings": 0,
+            "priorityEventAdvanceDays": 0,
+            "lookingForGameFutureDates": 0,
+            "lookingForGamePostLimit": 0,
+            "loyaltyRedemptionCapPercent": 0,
+            "bonusMembershipApprovalPoints": 0,
+            "bonusGameBookingPoints": 0,
+            "bonusEventBookingPoints": 0,
+            "bonusAnniversaryPoints": 0,
+            "loyaltyEarnMultiplier": 1.0,
+            "waiveGameBookingFee": false,
+            "priorityOpponentFinderPlacement": false,
+            "detailedAnalytics": false,
+            "priorityLeagueAccess": false,
+            "premiumTicketAccess": false,
+            "merchandiseAccess": false,
+            "armyBuilderAccess": false,
+            "seasonCoachAccess": false,
+            "listCoachingAccess": false,
+            "matchupAnalysisAccess": false,
+            "opponentScoutingAccess": false,
+            "coachingBookingAccess": false,
+            "rivalryToolsAccess": true,
+            "privateDiscussionCategories": []
+          },
+          "billing_options": []
+        }
+      ],
+      "membership_settings": {
+        "basic_label": "Basic Member",
+        "advance_booking_dates": 4,
+        "upcoming_booking_limit": 0,
+        "event_advance_days": 365,
+        "looking_for_game_future_dates": 2,
+        "looking_for_game_post_limit": 1,
+        "loyalty_redemption_cap_percent": 100
+      },
+      "events": [
+        {
+          "legacy_id": "2026-06-17-blades-in-the-dark-open-crew",
+          "title": "Blades in the Dark Open Crew",
+          "summary": "A drop-in heist session for experienced players and curious first-timers.",
+          "start_date": "2026-06-17",
+          "start_time": null,
+          "end_date": null,
+          "end_time": null,
+          "event_type": null,
+          "event_types": [],
+          "formats": [],
+          "featured_games": [],
+          "facilities": [],
+          "round_count": 0,
+          "price": "Pay what you can",
+          "tickets_available": 0,
+          "logo_src": null,
+          "logo_alt": null,
+          "venue_name": null,
+          "venue_address": null,
+          "venue_postcode": null,
+          "info_board": null,
+          "bestcoast_link": null,
+          "social_links": [],
+          "ticket_types": [],
+          "notices": [],
+          "results": [],
+          "pairings": []
+        },
+        {
+          "legacy_id": "2026-08-27-learn-to-gm-workshop",
+          "title": "Learn to GM Workshop",
+          "summary": "A practical workshop on pacing scenes, prep, and group facilitation.",
+          "start_date": "2026-08-27",
+          "start_time": null,
+          "end_date": null,
+          "end_time": null,
+          "event_type": null,
+          "event_types": [],
+          "formats": [],
+          "featured_games": [],
+          "facilities": [],
+          "round_count": 0,
+          "price": "£5",
+          "tickets_available": 0,
+          "logo_src": null,
+          "logo_alt": null,
+          "venue_name": null,
+          "venue_address": null,
+          "venue_postcode": null,
+          "info_board": null,
+          "bestcoast_link": null,
+          "social_links": [],
+          "ticket_types": [],
+          "notices": [],
+          "results": [],
+          "pairings": []
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "slug": "respawn-lounge-leeds",
+      "name": "Respawn Lounge Leeds",
+      "status": "active",
+      "owner_legacy_id": null,
+      "city": "Leeds",
+      "neighbourhood": "Headrow",
+      "country": "United Kingdom",
+      "venue_name": "Arcade Assembly",
+      "venue_address": "44 The Headrow, Leeds LS1",
+      "venue_postcode": "LS1 8TL",
+      "venue_postcode_district": "LS1",
+      "venue_postcode_area": "LS",
+      "latitude": 53.7997,
+      "longitude": -1.5492,
+      "coordinates_label": null,
+      "summary": "A hybrid club for console brackets, co-op nights, and retro setup swaps.",
+      "description": "Respawn Lounge blends local fighting game energy with a relaxed social floor. It is a strong starter venue if you want a listing directory to include both tabletop and digital club formats.",
+      "logo_url": null,
+      "tables_available": null,
+      "member_count": 184,
+      "price_drop_in": "£7",
+      "price_membership": "GBP 20 / month",
+      "ages": "13+",
+      "accessibility": [
+        "Ground-floor venue"
+      ],
+      "tags": [
+        "Tournament friendly",
+        "Streaming setup",
+        "Casual drop-ins"
+      ],
+      "spotlight": false,
+      "announcement": null,
+      "contact_email": "play@respawnlounge.example",
+      "website_url": "https://respawnlounge.example",
+      "created_at": null,
+      "search_haystack": "street fighter 6 mario kart 8 deluxe marvel vs. capcom 2 streaming booth console lounge tournament brackets ground-floor access",
+      "format_slugs": [
+        "video-games",
+        "fighting-games",
+        "retro-gaming"
+      ],
+      "game_slugs": [
+        "street-fighter-6",
+        "mario-kart-8-deluxe",
+        "marvel-vs-capcom-2"
+      ],
+      "facility_slugs": [
+        "streaming-booth",
+        "console-lounge",
+        "tournament-brackets",
+        "ground-floor-access"
+      ],
+      "payment_slugs": [
+        "cash",
+        "debit-card",
+        "credit-card",
+        "apple-pay",
+        "google-pay"
+      ],
+      "discussion_categories": [],
+      "sessions": [
+        {
+          "day": "Thursday",
+          "time": "18:30 - 22:30",
+          "label": "FGC locals"
+        },
+        {
+          "day": "Sunday",
+          "time": "14:00 - 19:00",
+          "label": "Retro and co-op session"
+        }
+      ],
+      "images": [
+        {
+          "src": "/clubs/assets/respawn-lounge.svg",
+          "alt": "An arcade-style club with versus setups, neon lighting, and a crowd around screens."
+        },
+        {
+          "src": "/clubs/assets/pixel-card.svg",
+          "alt": "A gaming lounge with tournament stations and collectors browsing tables."
+        }
+      ],
+      "social_links": [
+        {
+          "label": "Twitch",
+          "url": "https://twitch.tv/respawnloungeleeds"
+        },
+        {
+          "label": "Instagram",
+          "url": "https://instagram.com/respawnloungeleeds"
+        }
+      ],
+      "pricing_models": [
+        {
+          "label": "dropIn",
+          "price": "GBP 7",
+          "notes": ""
+        },
+        {
+          "label": "membership",
+          "price": "GBP 20 / month",
+          "notes": ""
+        }
+      ],
+      "announcements": [],
+      "members": [
+        {
+          "legacy_member_id": 1,
+          "name": "Toby Cook",
+          "initials": "TC"
+        },
+        {
+          "legacy_member_id": 2,
+          "name": "Harper Bell",
+          "initials": "HB"
+        },
+        {
+          "legacy_member_id": 3,
+          "name": "Evan Scott",
+          "initials": "ES"
+        },
+        {
+          "legacy_member_id": 4,
+          "name": "Layla Adams",
+          "initials": "LA"
+        },
+        {
+          "legacy_member_id": 5,
+          "name": "Finn Bailey",
+          "initials": "FB"
+        },
+        {
+          "legacy_member_id": 6,
+          "name": "Mila Cooper",
+          "initials": "MC"
+        },
+        {
+          "legacy_member_id": 7,
+          "name": "Jake Perry",
+          "initials": "JP"
+        },
+        {
+          "legacy_member_id": 8,
+          "name": "Sofia Ward",
+          "initials": "SW"
+        }
+      ],
+      "membership_tiers": [
+        {
+          "tier_key": "basic",
+          "label": "Basic Member",
+          "price": "",
+          "price_duration": "",
+          "description": "Default membership for approved club members.",
+          "tone": "navy",
+          "profile_flair": null,
+          "premium_badge_label": null,
+          "is_basic": true,
+          "benefits": {
+            "bookingDiscountPercent": 0,
+            "eventDiscountPercent": 0,
+            "merchandiseDiscountPercent": 0,
+            "coachingDiscountPercent": 0,
+            "extraAdvanceBookingDates": 0,
+            "maxUpcomingBookings": 0,
+            "priorityEventAdvanceDays": 0,
+            "lookingForGameFutureDates": 0,
+            "lookingForGamePostLimit": 0,
+            "loyaltyRedemptionCapPercent": 0,
+            "bonusMembershipApprovalPoints": 0,
+            "bonusGameBookingPoints": 0,
+            "bonusEventBookingPoints": 0,
+            "bonusAnniversaryPoints": 0,
+            "loyaltyEarnMultiplier": 1.0,
+            "waiveGameBookingFee": false,
+            "priorityOpponentFinderPlacement": false,
+            "detailedAnalytics": false,
+            "priorityLeagueAccess": false,
+            "premiumTicketAccess": false,
+            "merchandiseAccess": false,
+            "armyBuilderAccess": false,
+            "seasonCoachAccess": false,
+            "listCoachingAccess": false,
+            "matchupAnalysisAccess": false,
+            "opponentScoutingAccess": false,
+            "coachingBookingAccess": false,
+            "rivalryToolsAccess": true,
+            "privateDiscussionCategories": []
+          },
+          "billing_options": []
+        }
+      ],
+      "membership_settings": {
+        "basic_label": "Basic Member",
+        "advance_booking_dates": 4,
+        "upcoming_booking_limit": 0,
+        "event_advance_days": 365,
+        "looking_for_game_future_dates": 2,
+        "looking_for_game_post_limit": 1,
+        "loyalty_redemption_cap_percent": 100
+      },
+      "events": [
+        {
+          "legacy_id": "2026-04-19-street-fighter-6-local",
+          "title": "Street Fighter 6 Local",
+          "summary": "Weekly bracket night with beginner pools and streamed finals.",
+          "start_date": "2026-04-19",
+          "start_time": null,
+          "end_date": null,
+          "end_time": null,
+          "event_type": null,
+          "event_types": [],
+          "formats": [],
+          "featured_games": [],
+          "facilities": [],
+          "round_count": 0,
+          "price": "£7",
+          "tickets_available": 0,
+          "logo_src": null,
+          "logo_alt": null,
+          "venue_name": null,
+          "venue_address": null,
+          "venue_postcode": null,
+          "info_board": null,
+          "bestcoast_link": null,
+          "social_links": [],
+          "ticket_types": [],
+          "notices": [],
+          "results": [],
+          "pairings": []
+        },
+        {
+          "legacy_id": "2026-04-26-retro-relay-sunday",
+          "title": "Retro Relay Sunday",
+          "summary": "A casual afternoon of retro stations, score chases, and team relays.",
+          "start_date": "2026-04-26",
+          "start_time": null,
+          "end_date": null,
+          "end_time": null,
+          "event_type": null,
+          "event_types": [],
+          "formats": [],
+          "featured_games": [],
+          "facilities": [],
+          "round_count": 0,
+          "price": "£5",
+          "tickets_available": 0,
+          "logo_src": null,
+          "logo_alt": null,
+          "venue_name": null,
+          "venue_address": null,
+          "venue_postcode": null,
+          "info_board": null,
+          "bestcoast_link": null,
+          "social_links": [],
+          "ticket_types": [],
+          "notices": [],
+          "results": [],
+          "pairings": []
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "slug": "iron-dice-collective-glasgow",
+      "name": "Iron Dice Collective",
+      "status": "active",
+      "owner_legacy_id": null,
+      "city": "Glasgow",
+      "neighbourhood": "Merchant City",
+      "country": "United Kingdom",
+      "venue_name": "Foundry Hall",
+      "venue_address": "19 Wilson Street, Glasgow G1",
+      "venue_postcode": "G1 1HD",
+      "venue_postcode_district": "G1",
+      "venue_postcode_area": "G",
+      "latitude": 55.8584,
+      "longitude": -4.2465,
+      "coordinates_label": null,
+      "summary": "Miniatures, painting benches, and welcoming escalation leagues for skirmish and wargames.",
+      "description": "Iron Dice is built around repeat attendance: terrain nights, coaching for first lists, and table standards that make it easy to showcase painted armies in the directory.",
+      "logo_url": null,
+      "tables_available": null,
+      "member_count": 134,
+      "price_drop_in": "£9",
+      "price_membership": "GBP 26 / month",
+      "ages": "16+",
+      "accessibility": [
+        "Accessible toilets",
+        "Wide table spacing"
+      ],
+      "tags": [
+        "Painting space",
+        "Escalation league",
+        "Terrain library"
+      ],
+      "spotlight": true,
+      "announcement": null,
+      "contact_email": "marshal@irondice.example",
+      "website_url": "https://irondice.example",
+      "created_at": null,
+      "search_haystack": "warhammer 40,000 kill team star wars: shatterpoint painting benches terrain library storage shelves accessible toilets",
+      "format_slugs": [
+        "miniatures",
+        "wargaming"
+      ],
+      "game_slugs": [
+        "warhammer-40-000",
+        "kill-team",
+        "star-wars-shatterpoint"
+      ],
+      "facility_slugs": [
+        "painting-benches",
+        "terrain-library",
+        "storage-shelves",
+        "accessible-toilets"
+      ],
+      "payment_slugs": [
+        "cash",
+        "debit-card",
+        "credit-card"
+      ],
+      "discussion_categories": [],
+      "sessions": [
+        {
+          "day": "Tuesday",
+          "time": "18:00 - 22:00",
+          "label": "Skirmish league"
+        },
+        {
+          "day": "Saturday",
+          "time": "11:00 - 17:00",
+          "label": "Open battle tables"
+        }
+      ],
+      "images": [
+        {
+          "src": "/clubs/assets/iron-dice.svg",
+          "alt": "Miniatures tables with painted terrain, armies, and hobby lighting."
+        },
+        {
+          "src": "/clubs/assets/mana-wharf.svg",
+          "alt": "A close-up of a painted gaming table arranged for a community session."
+        }
+      ],
+      "social_links": [
+        {
+          "label": "Instagram",
+          "url": "https://instagram.com/irondicecollective"
+        },
+        {
+          "label": "Facebook",
+          "url": "https://facebook.com/irondicecollective"
+        }
+      ],
+      "pricing_models": [
+        {
+          "label": "dropIn",
+          "price": "GBP 9",
+          "notes": ""
+        },
+        {
+          "label": "membership",
+          "price": "GBP 26 / month",
+          "notes": ""
+        }
+      ],
+      "announcements": [],
+      "members": [
+        {
+          "legacy_member_id": 1,
+          "name": "Callum Ross",
+          "initials": "CR"
+        },
+        {
+          "legacy_member_id": 2,
+          "name": "Skye Fraser",
+          "initials": "SF"
+        },
+        {
+          "legacy_member_id": 3,
+          "name": "Murray Reid",
+          "initials": "MR"
+        },
+        {
+          "legacy_member_id": 4,
+          "name": "Erin Boyd",
+          "initials": "EB"
+        },
+        {
+          "legacy_member_id": 5,
+          "name": "Lewis Kerr",
+          "initials": "LK"
+        },
+        {
+          "legacy_member_id": 6,
+          "name": "Abbie McLean",
+          "initials": "AM"
+        },
+        {
+          "legacy_member_id": 7,
+          "name": "Harris Grant",
+          "initials": "HG"
+        },
+        {
+          "legacy_member_id": 8,
+          "name": "Iona Stewart",
+          "initials": "IS"
+        }
+      ],
+      "membership_tiers": [
+        {
+          "tier_key": "basic",
+          "label": "Basic Member",
+          "price": "",
+          "price_duration": "",
+          "description": "Default membership for approved club members.",
+          "tone": "navy",
+          "profile_flair": null,
+          "premium_badge_label": null,
+          "is_basic": true,
+          "benefits": {
+            "bookingDiscountPercent": 0,
+            "eventDiscountPercent": 0,
+            "merchandiseDiscountPercent": 0,
+            "coachingDiscountPercent": 0,
+            "extraAdvanceBookingDates": 0,
+            "maxUpcomingBookings": 0,
+            "priorityEventAdvanceDays": 0,
+            "lookingForGameFutureDates": 0,
+            "lookingForGamePostLimit": 0,
+            "loyaltyRedemptionCapPercent": 0,
+            "bonusMembershipApprovalPoints": 0,
+            "bonusGameBookingPoints": 0,
+            "bonusEventBookingPoints": 0,
+            "bonusAnniversaryPoints": 0,
+            "loyaltyEarnMultiplier": 1.0,
+            "waiveGameBookingFee": false,
+            "priorityOpponentFinderPlacement": false,
+            "detailedAnalytics": false,
+            "priorityLeagueAccess": false,
+            "premiumTicketAccess": false,
+            "merchandiseAccess": false,
+            "armyBuilderAccess": false,
+            "seasonCoachAccess": false,
+            "listCoachingAccess": false,
+            "matchupAnalysisAccess": false,
+            "opponentScoutingAccess": false,
+            "coachingBookingAccess": false,
+            "rivalryToolsAccess": true,
+            "privateDiscussionCategories": []
+          },
+          "billing_options": []
+        }
+      ],
+      "membership_settings": {
+        "basic_label": "Basic Member",
+        "advance_booking_dates": 4,
+        "upcoming_booking_limit": 0,
+        "event_advance_days": 365,
+        "looking_for_game_future_dates": 2,
+        "looking_for_game_post_limit": 1,
+        "loyalty_redemption_cap_percent": 100
+      },
+      "events": [
+        {
+          "legacy_id": "2026-04-20-kill-team-escalation-league",
+          "title": "Kill Team Escalation League",
+          "summary": "Round two of the beginner-friendly escalation season with paired coaching.",
+          "start_date": "2026-04-20",
+          "start_time": null,
+          "end_date": null,
+          "end_time": null,
+          "event_type": null,
+          "event_types": [],
+          "formats": [],
+          "featured_games": [],
+          "facilities": [],
+          "round_count": 0,
+          "price": "£9",
+          "tickets_available": 0,
+          "logo_src": null,
+          "logo_alt": null,
+          "venue_name": null,
+          "venue_address": null,
+          "venue_postcode": null,
+          "info_board": null,
+          "bestcoast_link": null,
+          "social_links": [],
+          "ticket_types": [],
+          "notices": [],
+          "results": [],
+          "pairings": []
+        },
+        {
+          "legacy_id": "2026-05-02-open-paint-clinic",
+          "title": "Open Paint Clinic",
+          "summary": "Bring a model and get help with edge highlights, washes, and basing.",
+          "start_date": "2026-05-02",
+          "start_time": null,
+          "end_date": null,
+          "end_time": null,
+          "event_type": null,
+          "event_types": [],
+          "formats": [],
+          "featured_games": [],
+          "facilities": [],
+          "round_count": 0,
+          "price": "Included with membership",
+          "tickets_available": 0,
+          "logo_src": null,
+          "logo_alt": null,
+          "venue_name": null,
+          "venue_address": null,
+          "venue_postcode": null,
+          "info_board": null,
+          "bestcoast_link": null,
+          "social_links": [],
+          "ticket_types": [],
+          "notices": [],
+          "results": [],
+          "pairings": []
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "slug": "meeple-junction-birmingham",
+      "name": "Meeple Junction",
+      "status": "active",
+      "owner_legacy_id": null,
+      "city": "Birmingham",
+      "neighbourhood": "Digbeth",
+      "country": "United Kingdom",
+      "venue_name": "The Junction Yard",
+      "venue_address": "61 Floodgate Street, Birmingham B5",
+      "venue_postcode": "B5 5SR",
+      "venue_postcode_district": "B5",
+      "venue_postcode_area": "B",
+      "latitude": 52.4751,
+      "longitude": -1.8849,
+      "coordinates_label": null,
+      "summary": "Community-first board gaming with family slots by day and heavier strategy by night.",
+      "description": "Meeple Junction is the sort of broad, dependable listing anchor every city page needs. The club regularly mixes open tables with hosted intro sessions for modern hobby games.",
+      "logo_url": null,
+      "tables_available": null,
+      "member_count": 173,
+      "price_drop_in": "£6",
+      "price_membership": "GBP 16 / month",
+      "ages": "All ages",
+      "accessibility": [
+        "Step-free entrance",
+        "Family restroom"
+      ],
+      "tags": [
+        "Family sessions",
+        "Hosted tables",
+        "Cafe venue"
+      ],
+      "spotlight": false,
+      "announcement": null,
+      "contact_email": "hello@meeplejunction.example",
+      "website_url": "https://meeplejunction.example",
+      "created_at": null,
+      "search_haystack": "ticket to ride azul ark nova cafe bar family seating hosted tables step-free access",
+      "format_slugs": [
+        "board-games",
+        "family-games"
+      ],
+      "game_slugs": [
+        "ticket-to-ride",
+        "azul",
+        "ark-nova"
+      ],
+      "facility_slugs": [
+        "cafe-bar",
+        "family-seating",
+        "hosted-tables",
+        "step-free-access"
+      ],
+      "payment_slugs": [
+        "cash",
+        "debit-card",
+        "credit-card",
+        "apple-pay"
+      ],
+      "discussion_categories": [],
+      "sessions": [
+        {
+          "day": "Wednesday",
+          "time": "18:30 - 22:00",
+          "label": "Modern board games"
+        },
+        {
+          "day": "Saturday",
+          "time": "12:00 - 16:00",
+          "label": "Family and gateway games"
+        }
+      ],
+      "images": [
+        {
+          "src": "/clubs/assets/meeple-junction.svg",
+          "alt": "A bright community board game cafe with family tables and modern hobby games."
+        },
+        {
+          "src": "/clubs/assets/mana-wharf.svg",
+          "alt": "A welcoming club table with colourful pieces and organized game teach cards."
+        }
+      ],
+      "social_links": [
+        {
+          "label": "Instagram",
+          "url": "https://instagram.com/meeplejunction"
+        },
+        {
+          "label": "TikTok",
+          "url": "https://tiktok.com/@meeplejunction"
+        }
+      ],
+      "pricing_models": [
+        {
+          "label": "dropIn",
+          "price": "GBP 6",
+          "notes": ""
+        },
+        {
+          "label": "membership",
+          "price": "GBP 16 / month",
+          "notes": ""
+        }
+      ],
+      "announcements": [],
+      "members": [
+        {
+          "legacy_member_id": 1,
+          "name": "Amelia Cox",
+          "initials": "AC"
+        },
+        {
+          "legacy_member_id": 2,
+          "name": "George Hall",
+          "initials": "GH"
+        },
+        {
+          "legacy_member_id": 3,
+          "name": "Grace Allen",
+          "initials": "GA"
+        },
+        {
+          "legacy_member_id": 4,
+          "name": "Henry Murphy",
+          "initials": "HM"
+        },
+        {
+          "legacy_member_id": 5,
+          "name": "Lucy Barnes",
+          "initials": "LB"
+        },
+        {
+          "legacy_member_id": 6,
+          "name": "Archie Price",
+          "initials": "AP"
+        },
+        {
+          "legacy_member_id": 7,
+          "name": "Holly Bennett",
+          "initials": "HB"
+        },
+        {
+          "legacy_member_id": 8,
+          "name": "Adam Cole",
+          "initials": "AC"
+        }
+      ],
+      "membership_tiers": [
+        {
+          "tier_key": "basic",
+          "label": "Basic Member",
+          "price": "",
+          "price_duration": "",
+          "description": "Default membership for approved club members.",
+          "tone": "navy",
+          "profile_flair": null,
+          "premium_badge_label": null,
+          "is_basic": true,
+          "benefits": {
+            "bookingDiscountPercent": 0,
+            "eventDiscountPercent": 0,
+            "merchandiseDiscountPercent": 0,
+            "coachingDiscountPercent": 0,
+            "extraAdvanceBookingDates": 0,
+            "maxUpcomingBookings": 0,
+            "priorityEventAdvanceDays": 0,
+            "lookingForGameFutureDates": 0,
+            "lookingForGamePostLimit": 0,
+            "loyaltyRedemptionCapPercent": 0,
+            "bonusMembershipApprovalPoints": 0,
+            "bonusGameBookingPoints": 0,
+            "bonusEventBookingPoints": 0,
+            "bonusAnniversaryPoints": 0,
+            "loyaltyEarnMultiplier": 1.0,
+            "waiveGameBookingFee": false,
+            "priorityOpponentFinderPlacement": false,
+            "detailedAnalytics": false,
+            "priorityLeagueAccess": false,
+            "premiumTicketAccess": false,
+            "merchandiseAccess": false,
+            "armyBuilderAccess": false,
+            "seasonCoachAccess": false,
+            "listCoachingAccess": false,
+            "matchupAnalysisAccess": false,
+            "opponentScoutingAccess": false,
+            "coachingBookingAccess": false,
+            "rivalryToolsAccess": true,
+            "privateDiscussionCategories": []
+          },
+          "billing_options": []
+        }
+      ],
+      "membership_settings": {
+        "basic_label": "Basic Member",
+        "advance_booking_dates": 4,
+        "upcoming_booking_limit": 0,
+        "event_advance_days": 365,
+        "looking_for_game_future_dates": 2,
+        "looking_for_game_post_limit": 1,
+        "loyalty_redemption_cap_percent": 100
+      },
+      "events": [
+        {
+          "legacy_id": "2026-04-21-family-gateway-games-afternoon",
+          "title": "Family Gateway Games Afternoon",
+          "summary": "A hosted session built around approachable titles for mixed-age groups.",
+          "start_date": "2026-04-21",
+          "start_time": null,
+          "end_date": null,
+          "end_time": null,
+          "event_type": null,
+          "event_types": [],
+          "formats": [],
+          "featured_games": [],
+          "facilities": [],
+          "round_count": 0,
+          "price": "£6",
+          "tickets_available": 0,
+          "logo_src": null,
+          "logo_alt": null,
+          "venue_name": null,
+          "venue_address": null,
+          "venue_postcode": null,
+          "info_board": null,
+          "bestcoast_link": null,
+          "social_links": [],
+          "ticket_types": [],
+          "notices": [],
+          "results": [],
+          "pairings": []
+        },
+        {
+          "legacy_id": "2026-04-30-ark-nova-strategy-night",
+          "title": "Ark Nova Strategy Night",
+          "summary": "An evening focused on heavier strategy tables with a pre-book option.",
+          "start_date": "2026-04-30",
+          "start_time": null,
+          "end_date": null,
+          "end_time": null,
+          "event_type": null,
+          "event_types": [],
+          "formats": [],
+          "featured_games": [],
+          "facilities": [],
+          "round_count": 0,
+          "price": "£8",
+          "tickets_available": 0,
+          "logo_src": null,
+          "logo_alt": null,
+          "venue_name": null,
+          "venue_address": null,
+          "venue_postcode": null,
+          "info_board": null,
+          "bestcoast_link": null,
+          "social_links": [],
+          "ticket_types": [],
+          "notices": [],
+          "results": [],
+          "pairings": []
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "slug": "pixel-card-brighton",
+      "name": "Pixel & Card Brighton",
+      "status": "active",
+      "owner_legacy_id": null,
+      "city": "Brighton",
+      "neighbourhood": "North Laine",
+      "country": "United Kingdom",
+      "venue_name": "Glass Lantern Cafe",
+      "venue_address": "11 Kensington Gardens, Brighton BN1",
+      "venue_postcode": "BN1 4AL",
+      "venue_postcode_district": "BN1",
+      "venue_postcode_area": "BN",
+      "latitude": 50.8273,
+      "longitude": -0.1393,
+      "coordinates_label": null,
+      "summary": "A playful mix of retro hardware, Pokémon meetups, and casual community tournaments.",
+      "description": "Pixel & Card gives the directory a more colourful coastal profile with collector-friendly swap mornings and approachable evening sessions across card and digital formats.",
+      "logo_url": null,
+      "tables_available": 8,
+      "member_count": 119,
+      "price_drop_in": "£8",
+      "price_membership": "GBP 24 / month",
+      "ages": "13+",
+      "accessibility": [
+        "Ground-floor venue",
+        "Quiet first hour"
+      ],
+      "tags": [
+        "Collector tables",
+        "Swap meets",
+        "Inclusive hosting"
+      ],
+      "spotlight": false,
+      "announcement": null,
+      "contact_email": "club@pixelandcard.example",
+      "website_url": "https://pixelandcard.example",
+      "created_at": null,
+      "search_haystack": "pokemon tcg tetris the grand master super smash bros. ultimate swap tables tournament station quiet first hour ground-floor access",
+      "format_slugs": [
+        "tcg",
+        "retro-gaming",
+        "video-games"
+      ],
+      "game_slugs": [
+        "pok-mon-tcg",
+        "tetris-the-grand-master",
+        "super-smash-bros-ultimate"
+      ],
+      "facility_slugs": [
+        "swap-tables",
+        "tournament-station",
+        "quiet-first-hour",
+        "ground-floor-access"
+      ],
+      "payment_slugs": [
+        "cash",
+        "debit-card",
+        "credit-card",
+        "apple-pay",
+        "paypal"
+      ],
+      "discussion_categories": [],
+      "sessions": [
+        {
+          "day": "Friday",
+          "time": "18:30 - 22:30",
+          "label": "Community tournament night"
+        },
+        {
+          "day": "Sunday",
+          "time": "11:00 - 15:00",
+          "label": "Collector and swap club"
+        }
+      ],
+      "images": [
+        {
+          "src": "/clubs/assets/pixel-card.svg",
+          "alt": "A coastal gaming club blending retro cabinets, card tables, and tournament screens."
+        },
+        {
+          "src": "/clubs/assets/respawn-lounge.svg",
+          "alt": "A high-energy social game night with players rotating between stations."
+        },
+        {
+          "src": "/clubs/assets/uploads/screenshot-2026-04-10-at-16-35-07-47fc1c3486bb.png",
+          "alt": "Screenshot 2026 04 10 at 16.35.07"
+        }
+      ],
+      "social_links": [
+        {
+          "label": "Instagram",
+          "url": "https://instagram.com/pixelandcard"
+        },
+        {
+          "label": "Discord",
+          "url": "https://discord.gg/pixelandcard"
+        }
+      ],
+      "pricing_models": [
+        {
+          "label": "dropIn",
+          "price": "GBP 8",
+          "notes": ""
+        },
+        {
+          "label": "membership",
+          "price": "GBP 24 / month",
+          "notes": ""
+        }
+      ],
+      "announcements": [],
+      "members": [
+        {
+          "legacy_member_id": 1,
+          "name": "Isla Webb",
+          "initials": "IW"
+        },
+        {
+          "legacy_member_id": 2,
+          "name": "Reuben Fox",
+          "initials": "RF"
+        },
+        {
+          "legacy_member_id": 3,
+          "name": "Lily Gray",
+          "initials": "LG"
+        },
+        {
+          "legacy_member_id": 4,
+          "name": "Dexter Mills",
+          "initials": "DM"
+        },
+        {
+          "legacy_member_id": 5,
+          "name": "Evie Hunt",
+          "initials": "EH"
+        },
+        {
+          "legacy_member_id": 6,
+          "name": "Seb Turner",
+          "initials": "ST"
+        },
+        {
+          "legacy_member_id": 7,
+          "name": "Alice Dean",
+          "initials": "AD"
+        },
+        {
+          "legacy_member_id": 8,
+          "name": "Kai Holmes",
+          "initials": "KH"
+        }
+      ],
+      "membership_tiers": [
+        {
+          "tier_key": "basic",
+          "label": "Basic Member",
+          "price": "",
+          "price_duration": "",
+          "description": "Default membership for approved club members.",
+          "tone": "navy",
+          "profile_flair": null,
+          "premium_badge_label": null,
+          "is_basic": true,
+          "benefits": {
+            "bookingDiscountPercent": 0,
+            "eventDiscountPercent": 0,
+            "merchandiseDiscountPercent": 0,
+            "coachingDiscountPercent": 0,
+            "extraAdvanceBookingDates": 0,
+            "maxUpcomingBookings": 0,
+            "priorityEventAdvanceDays": 0,
+            "lookingForGameFutureDates": 0,
+            "lookingForGamePostLimit": 0,
+            "loyaltyRedemptionCapPercent": 0,
+            "bonusMembershipApprovalPoints": 0,
+            "bonusGameBookingPoints": 0,
+            "bonusEventBookingPoints": 0,
+            "bonusAnniversaryPoints": 0,
+            "loyaltyEarnMultiplier": 1.0,
+            "waiveGameBookingFee": false,
+            "priorityOpponentFinderPlacement": false,
+            "detailedAnalytics": false,
+            "priorityLeagueAccess": false,
+            "premiumTicketAccess": false,
+            "merchandiseAccess": false,
+            "armyBuilderAccess": false,
+            "seasonCoachAccess": false,
+            "listCoachingAccess": false,
+            "matchupAnalysisAccess": false,
+            "opponentScoutingAccess": false,
+            "coachingBookingAccess": false,
+            "rivalryToolsAccess": true,
+            "privateDiscussionCategories": []
+          },
+          "billing_options": []
+        }
+      ],
+      "membership_settings": {
+        "basic_label": "Basic Member",
+        "advance_booking_dates": 4,
+        "upcoming_booking_limit": 0,
+        "event_advance_days": 365,
+        "looking_for_game_future_dates": 2,
+        "looking_for_game_post_limit": 1,
+        "loyalty_redemption_cap_percent": 100
+      },
+      "events": [
+        {
+          "legacy_id": "2026-04-18-pokemon-trade-play-morning",
+          "title": "Pokemon Trade & Play Morning",
+          "summary": "Collectors and casual players gather for trades, deck help, and short matches.",
+          "start_date": "2026-04-18",
+          "start_time": null,
+          "end_date": null,
+          "end_time": null,
+          "event_type": null,
+          "event_types": [],
+          "formats": [],
+          "featured_games": [],
+          "facilities": [],
+          "round_count": 0,
+          "price": "£4",
+          "tickets_available": 0,
+          "logo_src": null,
+          "logo_alt": null,
+          "venue_name": null,
+          "venue_address": null,
+          "venue_postcode": null,
+          "info_board": null,
+          "bestcoast_link": null,
+          "social_links": [],
+          "ticket_types": [],
+          "notices": [],
+          "results": [],
+          "pairings": []
+        },
+        {
+          "legacy_id": "2026-04-24-smash-community-cup",
+          "title": "Smash Community Cup",
+          "summary": "A community bracket with beginner-friendly seeding and side stations.",
+          "start_date": "2026-04-24",
+          "start_time": null,
+          "end_date": null,
+          "end_time": null,
+          "event_type": null,
+          "event_types": [],
+          "formats": [],
+          "featured_games": [],
+          "facilities": [],
+          "round_count": 0,
+          "price": "£8",
+          "tickets_available": 0,
+          "logo_src": null,
+          "logo_alt": null,
+          "venue_name": null,
+          "venue_address": null,
+          "venue_postcode": null,
+          "info_board": null,
+          "bestcoast_link": null,
+          "social_links": [],
+          "ticket_types": [],
+          "notices": [],
+          "results": [],
+          "pairings": []
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "slug": "lantern-guild-liverpool",
+      "name": "Lantern Guild Liverpool",
+      "status": "active",
+      "owner_legacy_id": null,
+      "city": "Liverpool",
+      "neighbourhood": "Baltic Triangle",
+      "country": "United Kingdom",
+      "venue_name": "North Docks Workshop",
+      "venue_address": "7 Jordan Street, Liverpool L1",
+      "venue_postcode": "L1 0BP",
+      "venue_postcode_district": "L1",
+      "venue_postcode_area": "L",
+      "latitude": 53.3958,
+      "longitude": -2.9781,
+      "coordinates_label": null,
+      "summary": "An evening club for social board games, co-operative campaigns, and community-led special events.",
+      "description": "Lantern Guild rounds out the sample dataset with a club that feels grassroots and volunteer-powered, which is useful if you want to model organiser stories and community notes later on.",
+      "logo_url": null,
+      "tables_available": null,
+      "member_count": 88,
+      "price_drop_in": "£5",
+      "price_membership": "GBP 14 / month",
+      "ages": "18+",
+      "accessibility": [
+        "Lift access",
+        "Accessible toilets"
+      ],
+      "tags": [
+        "Volunteer led",
+        "Community events",
+        "New member buddy system"
+      ],
+      "spotlight": false,
+      "announcement": null,
+      "contact_email": "hello@lanternguild.example",
+      "website_url": "https://lanternguild.example",
+      "created_at": null,
+      "search_haystack": "spirit island the crew daggerheart volunteer hosts campaign tables accessible toilets lift access",
+      "format_slugs": [
+        "board-games",
+        "rpg",
+        "co-op-games"
+      ],
+      "game_slugs": [
+        "spirit-island",
+        "the-crew",
+        "daggerheart"
+      ],
+      "facility_slugs": [
+        "volunteer-hosts",
+        "campaign-tables",
+        "accessible-toilets",
+        "lift-access"
+      ],
+      "payment_slugs": [
+        "cash",
+        "debit-card",
+        "bank-transfer"
+      ],
+      "discussion_categories": [],
+      "sessions": [
+        {
+          "day": "Monday",
+          "time": "18:30 - 21:30",
+          "label": "Co-op and social tables"
+        },
+        {
+          "day": "Thursday",
+          "time": "18:30 - 22:00",
+          "label": "Campaign night"
+        }
+      ],
+      "images": [
+        {
+          "src": "/clubs/assets/lantern-guild.svg",
+          "alt": "A community-led club setting with cooperative games laid out under warm lighting."
+        },
+        {
+          "src": "/clubs/assets/questhouse.svg",
+          "alt": "A cozy table setup for campaign play and collaborative strategy games."
+        }
+      ],
+      "social_links": [
+        {
+          "label": "Facebook",
+          "url": "https://facebook.com/lanternguildliverpool"
+        }
+      ],
+      "pricing_models": [
+        {
+          "label": "dropIn",
+          "price": "GBP 5",
+          "notes": ""
+        },
+        {
+          "label": "membership",
+          "price": "GBP 14 / month",
+          "notes": ""
+        }
+      ],
+      "announcements": [],
+      "members": [
+        {
+          "legacy_member_id": 1,
+          "name": "Martha Doyle",
+          "initials": "MD"
+        },
+        {
+          "legacy_member_id": 2,
+          "name": "Ethan Flynn",
+          "initials": "EF"
+        },
+        {
+          "legacy_member_id": 3,
+          "name": "Maisie Quinn",
+          "initials": "MQ"
+        },
+        {
+          "legacy_member_id": 4,
+          "name": "Daniel Owen",
+          "initials": "DO"
+        },
+        {
+          "legacy_member_id": 5,
+          "name": "Rosie Hughes",
+          "initials": "RH"
+        },
+        {
+          "legacy_member_id": 6,
+          "name": "Tommy Kelly",
+          "initials": "TK"
+        },
+        {
+          "legacy_member_id": 7,
+          "name": "Evie Morris",
+          "initials": "EM"
+        },
+        {
+          "legacy_member_id": 8,
+          "name": "Harry Nolan",
+          "initials": "HN"
+        }
+      ],
+      "membership_tiers": [
+        {
+          "tier_key": "basic",
+          "label": "Basic Member",
+          "price": "",
+          "price_duration": "",
+          "description": "Default membership for approved club members.",
+          "tone": "navy",
+          "profile_flair": null,
+          "premium_badge_label": null,
+          "is_basic": true,
+          "benefits": {
+            "bookingDiscountPercent": 0,
+            "eventDiscountPercent": 0,
+            "merchandiseDiscountPercent": 0,
+            "coachingDiscountPercent": 0,
+            "extraAdvanceBookingDates": 0,
+            "maxUpcomingBookings": 0,
+            "priorityEventAdvanceDays": 0,
+            "lookingForGameFutureDates": 0,
+            "lookingForGamePostLimit": 0,
+            "loyaltyRedemptionCapPercent": 0,
+            "bonusMembershipApprovalPoints": 0,
+            "bonusGameBookingPoints": 0,
+            "bonusEventBookingPoints": 0,
+            "bonusAnniversaryPoints": 0,
+            "loyaltyEarnMultiplier": 1.0,
+            "waiveGameBookingFee": false,
+            "priorityOpponentFinderPlacement": false,
+            "detailedAnalytics": false,
+            "priorityLeagueAccess": false,
+            "premiumTicketAccess": false,
+            "merchandiseAccess": false,
+            "armyBuilderAccess": false,
+            "seasonCoachAccess": false,
+            "listCoachingAccess": false,
+            "matchupAnalysisAccess": false,
+            "opponentScoutingAccess": false,
+            "coachingBookingAccess": false,
+            "rivalryToolsAccess": true,
+            "privateDiscussionCategories": []
+          },
+          "billing_options": []
+        }
+      ],
+      "membership_settings": {
+        "basic_label": "Basic Member",
+        "advance_booking_dates": 4,
+        "upcoming_booking_limit": 0,
+        "event_advance_days": 365,
+        "looking_for_game_future_dates": 2,
+        "looking_for_game_post_limit": 1,
+        "loyalty_redemption_cap_percent": 100
+      },
+      "events": [
+        {
+          "legacy_id": "2026-04-22-co-op-discovery-evening",
+          "title": "Co-op Discovery Evening",
+          "summary": "A social night for collaborative games with buddy hosts for new members.",
+          "start_date": "2026-04-22",
+          "start_time": null,
+          "end_date": null,
+          "end_time": null,
+          "event_type": null,
+          "event_types": [],
+          "formats": [],
+          "featured_games": [],
+          "facilities": [],
+          "round_count": 0,
+          "price": "£5",
+          "tickets_available": 0,
+          "logo_src": null,
+          "logo_alt": null,
+          "venue_name": null,
+          "venue_address": null,
+          "venue_postcode": null,
+          "info_board": null,
+          "bestcoast_link": null,
+          "social_links": [],
+          "ticket_types": [],
+          "notices": [],
+          "results": [],
+          "pairings": []
+        },
+        {
+          "legacy_id": "2026-04-29-daggerheart-campaign-launch",
+          "title": "Daggerheart Campaign Launch",
+          "summary": "The opening session for a new narrative campaign with limited seats.",
+          "start_date": "2026-04-29",
+          "start_time": null,
+          "end_date": null,
+          "end_time": null,
+          "event_type": null,
+          "event_types": [],
+          "formats": [],
+          "featured_games": [],
+          "facilities": [],
+          "round_count": 0,
+          "price": "£5",
+          "tickets_available": 0,
+          "logo_src": null,
+          "logo_alt": null,
+          "venue_name": null,
+          "venue_address": null,
+          "venue_postcode": null,
+          "info_board": null,
+          "bestcoast_link": null,
+          "social_links": [],
+          "ticket_types": [],
+          "notices": [],
+          "results": [],
+          "pairings": []
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "slug": "didcot-wargames-didcot",
+      "name": "Didcot Wargames",
+      "status": "active",
+      "owner_legacy_id": 3,
+      "city": "Didcot",
+      "neighbourhood": null,
+      "country": "United Kingdom",
+      "venue_name": "North Moreton Village Hall",
+      "venue_address": "North Moreton Village Hall, Didcot",
+      "venue_postcode": "OX11 9AT",
+      "venue_postcode_district": "OX11",
+      "venue_postcode_area": "OX",
+      "latitude": 51.600763,
+      "longitude": -1.190849,
+      "coordinates_label": "OX11 9AT",
+      "summary": "Tabletop and board games in the Didcot area. We meet every Thursday (7-11 pm) at North Moreton Village Hall, OX11 9AS.",
+      "description": "Tabletop and board games in the Didcot area. We meet every Thursday (7-11 pm) at North Moreton Village Hall, OX11 9AS.  Didcot Wargames Club is a group for playing a variety of tabletop games and board games. We play Warhammer 40k, Age of Sigmar and many popular board games. We have plenty of space for games, and have spare gaming mats and terrain, if you want to come along and don't have supplies (just let us know in advance so we can bring them along).  We have a range of abilities and levels at the club, so beginners are welcome. We offer free coaching to players to help improve their skills. Your first night is free!  Any questions, send us a message.",
+      "logo_url": "/clubs/assets/uploads/366329279-9933334990071190-176527734692344387-n-25f34bfd631d-ca9c673300af.jpg",
+      "tables_available": 10,
+      "member_count": 40,
+      "price_drop_in": null,
+      "price_membership": null,
+      "ages": "18+",
+      "accessibility": [],
+      "tags": [],
+      "spotlight": false,
+      "announcement": "Please make payments before attending if you pay weekly",
+      "contact_email": "joematthews958@googlemail.com",
+      "website_url": "https://google.co.uk",
+      "created_at": "2026-04-10T16:04:24.755322Z",
+      "search_haystack": "wargaming warhammer aos horus heresy warhammer 40k star wars legion star wars: shatterpoint wifi aircon parking terrain and tables accessible toilets terrain library",
+      "format_slugs": [
+        "wargaming",
+        "miniatures",
+        "co-op-games"
+      ],
+      "game_slugs": [
+        "wargaming",
+        "warhammer",
+        "age-of-sigmar",
+        "horus-heresy",
+        "warhammer-40-000",
+        "star-wars-legion",
+        "star-wars-shatterpoint"
+      ],
+      "facility_slugs": [
+        "wi-fi",
+        "air-conditioning",
+        "parking",
+        "terrain-and-tables",
+        "accessible-toilets",
+        "terrain-library"
+      ],
+      "payment_slugs": [
+        "cash",
+        "paypal",
+        "bank-transfer"
+      ],
+      "discussion_categories": [
+        "Warhammer 40k",
+        "Tournaments",
+        "Selling",
+        "Rumours",
+        "Painting",
+        "Looking for a game",
+        "Horus Heresy"
+      ],
+      "sessions": [
+        {
+          "day": "Thursday",
+          "time": "19:00 - 22:30",
+          "label": "Club session"
+        }
+      ],
+      "images": [
+        {
+          "src": "/clubs/assets/uploads/704914385-35941534958824504-1223879978702868148-n-be0bc1485841.jpg",
+          "alt": "704914385 35941534958824504 1223879978702868148 n"
+        },
+        {
+          "src": "/clubs/assets/uploads/366329279-9933334990071190-176527734692344387-n-25f34bfd631d-ee7fa650b22f.jpg",
+          "alt": "366329279 9933334990071190 176527734692344387 n 25f34bfd631d"
+        }
+      ],
+      "social_links": [
+        {
+          "label": "Instagram",
+          "url": "https://facebook.com"
+        },
+        {
+          "label": "Facebook",
+          "url": "https://facebook.com"
+        },
+        {
+          "label": "Discord",
+          "url": "https://facebook.com"
+        },
+        {
+          "label": "X",
+          "url": "https://facebook.com"
+        },
+        {
+          "label": "TikTok",
+          "url": "https://facebook.com"
+        },
+        {
+          "label": "YouTube",
+          "url": "https://facebook.com"
+        },
+        {
+          "label": "Twitch",
+          "url": "https://facebook.com"
+        }
+      ],
+      "pricing_models": [
+        {
+          "label": "Pay per play",
+          "price": "£5",
+          "notes": "Per game (no membership)"
+        }
+      ],
+      "announcements": [
+        {
+          "id": 3,
+          "message": "Please make payments before attending if you pay weekly",
+          "created_at": "2026-04-12T09:19:17.654Z"
+        },
+        {
+          "id": 2,
+          "message": "Please remember - No club this Thursday",
+          "created_at": "2026-04-12T09:10:56.840Z"
+        },
+        {
+          "id": 1,
+          "message": "Club will start hosting Saturday games days once a month, stay tuned to find out more soon....",
+          "created_at": "2026-04-12T09:10:39.823Z"
+        }
+      ],
+      "members": [
+        {
+          "legacy_member_id": 1,
+          "name": "Joe",
+          "initials": "J"
+        },
+        {
+          "legacy_member_id": 2,
+          "name": "Bob",
+          "initials": "B"
+        },
+        {
+          "legacy_member_id": 3,
+          "name": "Tom",
+          "initials": "T"
+        },
+        {
+          "legacy_member_id": 4,
+          "name": "Joe Matthews",
+          "initials": "JM"
+        },
+        {
+          "legacy_member_id": 5,
+          "name": "Tom Allen",
+          "initials": "TA"
+        },
+        {
+          "legacy_member_id": 6,
+          "name": "Joe Gary",
+          "initials": "JG"
+        },
+        {
+          "legacy_member_id": 7,
+          "name": "Member 4",
+          "initials": "M4"
+        },
+        {
+          "legacy_member_id": 8,
+          "name": "Member 5",
+          "initials": "M5"
+        },
+        {
+          "legacy_member_id": 9,
+          "name": "Member 6",
+          "initials": "M6"
+        },
+        {
+          "legacy_member_id": 10,
+          "name": "Member 7",
+          "initials": "M7"
+        },
+        {
+          "legacy_member_id": 11,
+          "name": "Member 8",
+          "initials": "M8"
+        },
+        {
+          "legacy_member_id": 12,
+          "name": "Member 9",
+          "initials": "M9"
+        },
+        {
+          "legacy_member_id": 13,
+          "name": "Member 10",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 14,
+          "name": "Member 11",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 15,
+          "name": "Member 12",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 16,
+          "name": "Member 13",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 17,
+          "name": "Member 14",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 18,
+          "name": "Member 15",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 19,
+          "name": "Member 16",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 20,
+          "name": "Member 17",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 21,
+          "name": "Member 18",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 22,
+          "name": "Member 19",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 23,
+          "name": "Member 20",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 24,
+          "name": "Member 21",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 25,
+          "name": "Member 22",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 26,
+          "name": "Member 23",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 27,
+          "name": "Member 24",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 28,
+          "name": "Member 25",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 29,
+          "name": "Member 26",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 30,
+          "name": "Member 27",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 31,
+          "name": "Member 28",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 32,
+          "name": "Member 29",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 33,
+          "name": "Member 30",
+          "initials": "M3"
+        },
+        {
+          "legacy_member_id": 34,
+          "name": "Member 31",
+          "initials": "M3"
+        },
+        {
+          "legacy_member_id": 35,
+          "name": "Member 32",
+          "initials": "M3"
+        },
+        {
+          "legacy_member_id": 36,
+          "name": "Member 33",
+          "initials": "M3"
+        },
+        {
+          "legacy_member_id": 37,
+          "name": "Member 34",
+          "initials": "M3"
+        },
+        {
+          "legacy_member_id": 38,
+          "name": "Member 35",
+          "initials": "M3"
+        },
+        {
+          "legacy_member_id": 39,
+          "name": "Member 36",
+          "initials": "M3"
+        },
+        {
+          "legacy_member_id": 40,
+          "name": "Member 37",
+          "initials": "M3"
+        }
+      ],
+      "membership_tiers": [
+        {
+          "tier_key": "basic",
+          "label": "Basic Membership",
+          "price": "£10",
+          "price_duration": "month",
+          "description": "Default membership for approved club members.",
+          "tone": "navy",
+          "profile_flair": null,
+          "premium_badge_label": null,
+          "is_basic": true,
+          "benefits": {
+            "bookingDiscountPercent": 0,
+            "eventDiscountPercent": 0,
+            "merchandiseDiscountPercent": 0,
+            "coachingDiscountPercent": 0,
+            "extraAdvanceBookingDates": 0,
+            "maxUpcomingBookings": 0,
+            "priorityEventAdvanceDays": 0,
+            "lookingForGameFutureDates": 0,
+            "lookingForGamePostLimit": 0,
+            "loyaltyRedemptionCapPercent": 0,
+            "bonusMembershipApprovalPoints": 0,
+            "bonusGameBookingPoints": 0,
+            "bonusEventBookingPoints": 0,
+            "bonusAnniversaryPoints": 0,
+            "loyaltyEarnMultiplier": 1.0,
+            "waiveGameBookingFee": false,
+            "priorityOpponentFinderPlacement": false,
+            "detailedAnalytics": false,
+            "priorityLeagueAccess": false,
+            "premiumTicketAccess": false,
+            "merchandiseAccess": false,
+            "armyBuilderAccess": false,
+            "seasonCoachAccess": false,
+            "listCoachingAccess": false,
+            "matchupAnalysisAccess": false,
+            "opponentScoutingAccess": false,
+            "coachingBookingAccess": false,
+            "rivalryToolsAccess": true,
+            "privateDiscussionCategories": []
+          },
+          "billing_options": [
+            {
+              "id": "basic-month",
+              "label": "Monthly",
+              "price": "£10",
+              "priceDuration": "month",
+              "cadence": "month",
+              "position": 1
+            },
+            {
+              "id": "basic-year",
+              "label": "Yearly",
+              "price": "£100",
+              "priceDuration": "year",
+              "cadence": "year",
+              "position": 2
+            },
+            {
+              "id": "basic-one-off",
+              "label": "One-off",
+              "price": "£300",
+              "priceDuration": "one-off",
+              "cadence": "one-off",
+              "position": 3
+            }
+          ]
+        },
+        {
+          "tier_key": "premium-membership",
+          "label": "Premium Membership",
+          "price": "£15",
+          "price_duration": "month",
+          "description": "Premium Membership",
+          "tone": "gold",
+          "profile_flair": "Premium Membership",
+          "premium_badge_label": "Premium Membership",
+          "is_basic": false,
+          "benefits": {
+            "bookingDiscountPercent": 10,
+            "eventDiscountPercent": 5,
+            "merchandiseDiscountPercent": 10,
+            "coachingDiscountPercent": 10,
+            "extraAdvanceBookingDates": 2,
+            "maxUpcomingBookings": 4,
+            "priorityEventAdvanceDays": 30,
+            "lookingForGameFutureDates": 2,
+            "lookingForGamePostLimit": 2,
+            "loyaltyRedemptionCapPercent": 0,
+            "bonusMembershipApprovalPoints": 20,
+            "bonusGameBookingPoints": 5,
+            "bonusEventBookingPoints": 50,
+            "bonusAnniversaryPoints": 50,
+            "loyaltyEarnMultiplier": 2.0,
+            "waiveGameBookingFee": false,
+            "priorityOpponentFinderPlacement": true,
+            "detailedAnalytics": true,
+            "priorityLeagueAccess": true,
+            "premiumTicketAccess": true,
+            "merchandiseAccess": true,
+            "armyBuilderAccess": true,
+            "seasonCoachAccess": true,
+            "listCoachingAccess": true,
+            "matchupAnalysisAccess": true,
+            "opponentScoutingAccess": true,
+            "coachingBookingAccess": true,
+            "rivalryToolsAccess": true,
+            "privateDiscussionCategories": [
+              "Premium Membership"
+            ]
+          },
+          "billing_options": [
+            {
+              "id": "premium-membership-month",
+              "label": "Monthly",
+              "price": "£15",
+              "priceDuration": "month",
+              "cadence": "month",
+              "position": 1
+            },
+            {
+              "id": "premium-membership-year",
+              "label": "Yearly",
+              "price": "£150",
+              "priceDuration": "year",
+              "cadence": "year",
+              "position": 2
+            },
+            {
+              "id": "premium-membership-one-off",
+              "label": "One-off",
+              "price": "£500",
+              "priceDuration": "one-off",
+              "cadence": "one-off",
+              "position": 3
+            }
+          ]
+        }
+      ],
+      "membership_settings": {
+        "basic_label": "Basic Membership",
+        "advance_booking_dates": 4,
+        "upcoming_booking_limit": 2,
+        "event_advance_days": 90,
+        "looking_for_game_future_dates": 2,
+        "looking_for_game_post_limit": 1,
+        "loyalty_redemption_cap_percent": 100
+      },
+      "events": [
+        {
+          "legacy_id": "2026-06-13-warhammer-40k-fun-tournament",
+          "title": "Warhammer 40k Fun Tournament",
+          "summary": "Warhammer 40k Fun Tournament, narrative based, fun lists",
+          "start_date": "2026-06-13",
+          "start_time": "09:00",
+          "end_date": "2026-06-13",
+          "end_time": "19:30",
+          "event_type": "tournament",
+          "event_types": [
+            "tournament",
+            "social"
+          ],
+          "formats": [
+            "Wargaming"
+          ],
+          "featured_games": [
+            "warhammer 40k"
+          ],
+          "facilities": [
+            "bar",
+            "parking",
+            "wifi",
+            "wheelchair access"
+          ],
+          "round_count": 3,
+          "price": "£15",
+          "tickets_available": 20,
+          "logo_src": null,
+          "logo_alt": null,
+          "venue_name": "Steventon Village Hall",
+          "venue_address": "The Green, Steventon, Abingdon",
+          "venue_postcode": "OX13 6RR",
+          "info_board": null,
+          "bestcoast_link": null,
+          "social_links": [],
+          "ticket_types": [
+            {
+              "label": "Standard",
+              "price": "£15",
+              "audience": "all",
+              "audience_label": "Members and non-members",
+              "minimum_tier_key": null,
+              "quantity_available": 20
+            }
+          ],
+          "notices": [],
+          "results": [],
+          "pairings": [
+            {
+              "round": 1,
+              "label": "Round 1",
+              "matches": [
+                {
+                  "table": "",
+                  "playerOneName": "Tom Allen",
+                  "playerOneUserId": 4,
+                  "playerOneIsMember": true,
+                  "playerOneScore": null,
+                  "playerOneArmy": {},
+                  "playerTwoName": "Peter K",
+                  "playerTwoUserId": null,
+                  "playerTwoIsMember": false,
+                  "playerTwoScore": null,
+                  "playerTwoArmy": {},
+                  "resultMeta": {}
+                },
+                {
+                  "table": "",
+                  "playerOneName": "Joe Gary",
+                  "playerOneUserId": 1,
+                  "playerOneIsMember": true,
+                  "playerOneScore": null,
+                  "playerOneArmy": {},
+                  "playerTwoName": "Hugo S",
+                  "playerTwoUserId": null,
+                  "playerTwoIsMember": false,
+                  "playerTwoScore": null,
+                  "playerTwoArmy": {},
+                  "resultMeta": {}
+                },
+                {
+                  "table": "",
+                  "playerOneName": "Joe Matthews",
+                  "playerOneUserId": 2,
+                  "playerOneIsMember": true,
+                  "playerOneScore": null,
+                  "playerOneArmy": {},
+                  "playerTwoName": "David M",
+                  "playerTwoUserId": null,
+                  "playerTwoIsMember": false,
+                  "playerTwoScore": null,
+                  "playerTwoArmy": {},
+                  "resultMeta": {}
+                }
+              ]
+            },
+            {
+              "round": 2,
+              "label": "Round 2",
+              "matches": [
+                {
+                  "table": "",
+                  "playerOneName": "Tom Allen",
+                  "playerOneUserId": 4,
+                  "playerOneIsMember": true,
+                  "playerOneScore": null,
+                  "playerOneArmy": {},
+                  "playerTwoName": "Joe Gary",
+                  "playerTwoUserId": 1,
+                  "playerTwoIsMember": true,
+                  "playerTwoScore": null,
+                  "playerTwoArmy": {},
+                  "resultMeta": {}
+                },
+                {
+                  "table": "",
+                  "playerOneName": "Joe Matthews",
+                  "playerOneUserId": 2,
+                  "playerOneIsMember": true,
+                  "playerOneScore": null,
+                  "playerOneArmy": {},
+                  "playerTwoName": "Hugo S",
+                  "playerTwoUserId": null,
+                  "playerTwoIsMember": false,
+                  "playerTwoScore": null,
+                  "playerTwoArmy": {},
+                  "resultMeta": {}
+                },
+                {
+                  "table": "",
+                  "playerOneName": "David M",
+                  "playerOneUserId": null,
+                  "playerOneIsMember": false,
+                  "playerOneScore": null,
+                  "playerOneArmy": {},
+                  "playerTwoName": "Peter K",
+                  "playerTwoUserId": null,
+                  "playerTwoIsMember": false,
+                  "playerTwoScore": null,
+                  "playerTwoArmy": {},
+                  "resultMeta": {}
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "legacy_id": "2026-04-04-warhammer-40k-rtt",
+          "title": "Warhammer 40k RTT",
+          "summary": "Warhammer 40k RTT over 2 days, 50 players, 5 rounds",
+          "start_date": "2026-04-04",
+          "start_time": "09:00",
+          "end_date": "2026-04-05",
+          "end_time": "16:00",
+          "event_type": null,
+          "event_types": [],
+          "formats": [],
+          "featured_games": [],
+          "facilities": [],
+          "round_count": 0,
+          "price": "£30",
+          "tickets_available": 50,
+          "logo_src": null,
+          "logo_alt": null,
+          "venue_name": "North Moreton Village Hall",
+          "venue_address": "North Moreton, Didcot",
+          "venue_postcode": "OX11 9AT",
+          "info_board": "Tournament pack will be issued out to everyone at least 2 weeks before the event. List submission is due by 18:00 on 01/04/2026",
+          "bestcoast_link": null,
+          "social_links": [
+            {
+              "label": "Facebook",
+              "url": "https://facebook.com"
+            },
+            {
+              "label": "Instagram",
+              "url": "https://facebook.com"
+            }
+          ],
+          "ticket_types": [
+            {
+              "label": "Standard",
+              "price": "£30",
+              "audience": "all",
+              "audience_label": "Members and non-members",
+              "minimum_tier_key": null,
+              "quantity_available": 40
+            },
+            {
+              "label": "VIP",
+              "price": "£50",
+              "audience": "members",
+              "audience_label": "Members only",
+              "minimum_tier_key": null,
+              "quantity_available": 10
+            }
+          ],
+          "notices": [],
+          "results": [
+            {
+              "rank": 1,
+              "placement": "1st place",
+              "member_name": "Joe Gary",
+              "member_legacy_id": 1,
+              "is_member": true,
+              "army": {
+                "editionId": "warhammer-40k-11th",
+                "catalogueVersion": "11th-test-2026-07-27",
+                "userId": 1,
+                "armyListVersionNumber": 0,
+                "factionId": "chaos-knights",
+                "factionLabel": "Chaos Knights",
+                "detachment": "Traitoris Lance",
+                "detachmentSelections": [
+                  {
+                    "detachment": "Traitoris Lance",
+                    "disposition": ""
+                  }
+                ],
+                "mvpUnits": [
+                  "Knight Ruinator",
+                  "Knight Tyrant"
+                ]
+              }
+            },
+            {
+              "rank": 2,
+              "placement": "2nd place",
+              "member_name": "Tom Allen",
+              "member_legacy_id": 4,
+              "is_member": true,
+              "army": {
+                "editionId": "warhammer-40k-11th",
+                "catalogueVersion": "11th-test-2026-07-27",
+                "userId": 4,
+                "armyListId": 1777071784864485,
+                "armyListVersionId": "1777071784864485",
+                "armyListVersionNumber": 1,
+                "armyListVersionLabel": "v1",
+                "armyListName": "Custodes League List",
+                "factionId": "adeptus-custodes",
+                "factionLabel": "Adeptus Custodes",
+                "detachment": "Shield Host",
+                "detachmentSelections": [
+                  {
+                    "detachment": "Shield Host",
+                    "disposition": ""
+                  }
+                ],
+                "mvpUnits": [
+                  "Caladius Grav-tank"
+                ],
+                "armyListVersionSnapshot": {
+                  "editionId": "warhammer-40k-11th",
+                  "catalogueVersion": "11th-test-2026-07-27",
+                  "armyListId": 1777071784864485,
+                  "armyListVersionId": "1777071784864485",
+                  "armyListVersionNumber": 1,
+                  "armyListVersionLabel": "v1",
+                  "armyListName": "Custodes League List",
+                  "factionId": "adeptus-custodes",
+                  "factionLabel": "Adeptus Custodes",
+                  "detachment": "Shield Host",
+                  "disposition": "",
+                  "detachmentSelections": [
+                    {
+                      "detachment": "Shield Host",
+                      "disposition": ""
+                    }
+                  ],
+                  "pointsLimit": "2000",
+                  "totalPoints": 2000,
+                  "changeSummary": "Initial version",
+                  "versionSignature": "2b66644c511124204657658b25c759fcc3c329f0018e457aa08bd57dc5c67543",
+                  "units": [
+                    {
+                      "unitName": "Agamatus Custodians",
+                      "optionLabel": "3 models",
+                      "optionModelCount": 3,
+                      "quantity": 2,
+                      "unitPoints": 225,
+                      "linePoints": 450
+                    },
+                    {
+                      "unitName": "Allarus Custodians",
+                      "optionLabel": "5 models",
+                      "optionModelCount": 5,
+                      "quantity": 1,
+                      "unitPoints": 275,
+                      "linePoints": 275
+                    },
+                    {
+                      "unitName": "Ares Gunship",
+                      "optionLabel": "1 model",
+                      "optionModelCount": 1,
+                      "quantity": 1,
+                      "unitPoints": 580,
+                      "linePoints": 580
+                    },
+                    {
+                      "unitName": "Blade Champion",
+                      "optionLabel": "1 model",
+                      "optionModelCount": 1,
+                      "quantity": 2,
+                      "unitPoints": 120,
+                      "linePoints": 240
+                    },
+                    {
+                      "unitName": "Caladius Grav-tank",
+                      "optionLabel": "1 model",
+                      "optionModelCount": 1,
+                      "quantity": 1,
+                      "unitPoints": 215,
+                      "linePoints": 215
+                    },
+                    {
+                      "unitName": "Custodian Guard",
+                      "optionLabel": "4 models",
+                      "optionModelCount": 4,
+                      "quantity": 1,
+                      "unitPoints": 160,
+                      "linePoints": 160
+                    },
+                    {
+                      "unitName": "Prosecutors",
+                      "optionLabel": "4 models",
+                      "optionModelCount": 4,
+                      "quantity": 2,
+                      "unitPoints": 40,
+                      "linePoints": 80
+                    }
+                  ],
+                  "unitNames": [
+                    "Agamatus Custodians",
+                    "Allarus Custodians",
+                    "Ares Gunship",
+                    "Blade Champion",
+                    "Caladius Grav-tank",
+                    "Custodian Guard",
+                    "Prosecutors"
+                  ]
+                }
+              }
+            },
+            {
+              "rank": 3,
+              "placement": "3rd place",
+              "member_name": "Pete H",
+              "member_legacy_id": null,
+              "is_member": false,
+              "army": {
+                "editionId": "warhammer-40k-11th",
+                "catalogueVersion": "11th-test-2026-07-27",
+                "armyListVersionNumber": 0,
+                "factionId": "adeptus-mechanicus",
+                "factionLabel": "Adeptus Mechanicus",
+                "detachment": "Skitarii Hunter Cohort",
+                "detachmentSelections": [
+                  {
+                    "detachment": "Skitarii Hunter Cohort",
+                    "disposition": ""
+                  }
+                ],
+                "mvpUnits": [
+                  "Pteraxii Sterylizors",
+                  "Belisarius Cawl",
+                  "Sicarian Infiltrators"
+                ]
+              }
+            }
+          ],
+          "pairings": []
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "slug": "abingdon-games-club-abingdon",
+      "name": "Abingdon Games Club",
+      "status": "active",
+      "owner_legacy_id": 2,
+      "city": "Abingdon",
+      "neighbourhood": null,
+      "country": "United Kingdom",
+      "venue_name": "Abingdon Conservative Club",
+      "venue_address": "59 Ock St, Abingdon",
+      "venue_postcode": "OX14 5AG",
+      "venue_postcode_district": "OX14",
+      "venue_postcode_area": "OX",
+      "latitude": 51.67001,
+      "longitude": -1.287081,
+      "coordinates_label": "OX14 5AG",
+      "summary": "AWC is a friendly tabletop wargames club in Abingdon, Oxfordshire and was established in the \"Reading room\" in 1993 by a small number of like minded gamers. Shortly after the club expanded and moved to the \"Neave Room\" at the local Conservative Club where we are attended by individuals who are fun loving and passionate about wargaming.",
+      "description": "AWC is a friendly tabletop wargames club in Abingdon, Oxfordshire and was established in the \"Reading room\" in 1993 by a small number of like minded gamers. Shortly after the club expanded and moved to the \"Neave Room\" at the local Conservative Club where we are attended by individuals who are fun loving and passionate about wargaming.",
+      "logo_url": null,
+      "tables_available": 8,
+      "member_count": 31,
+      "price_drop_in": null,
+      "price_membership": null,
+      "ages": "16+",
+      "accessibility": [],
+      "tags": [],
+      "spotlight": false,
+      "announcement": null,
+      "contact_email": "joematthews958@googlemail.com",
+      "website_url": null,
+      "created_at": "2026-04-10T17:30:10.082286Z",
+      "search_haystack": "warhammer 40k aos bolt action horus heresy star wars legion wifi bar parking memberships website",
+      "format_slugs": [
+        "wargaming",
+        "miniatures"
+      ],
+      "game_slugs": [
+        "warhammer-40-000",
+        "age-of-sigmar",
+        "bolt-action",
+        "horus-heresy",
+        "star-wars-legion"
+      ],
+      "facility_slugs": [
+        "wi-fi",
+        "bar",
+        "parking",
+        "memberships",
+        "website"
+      ],
+      "payment_slugs": [
+        "paypal",
+        "bank-transfer",
+        "cash"
+      ],
+      "discussion_categories": [
+        "Painting",
+        "Warhammer 40k",
+        "Selling",
+        "Rumours",
+        "Horus Heresy",
+        "Tournaments",
+        "Looking for a game"
+      ],
+      "sessions": [
+        {
+          "day": "Friday",
+          "time": "18:00 - 22:30",
+          "label": "Friday Club"
+        }
+      ],
+      "images": [],
+      "social_links": [
+        {
+          "label": "Instagram",
+          "url": "https://instagram.com"
+        }
+      ],
+      "pricing_models": [
+        {
+          "label": "Pay as you go",
+          "price": "£5",
+          "notes": ""
+        },
+        {
+          "label": "Monthly Membership",
+          "price": "£20",
+          "notes": ""
+        }
+      ],
+      "announcements": [],
+      "members": [
+        {
+          "legacy_member_id": 1,
+          "name": "Member 1",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 2,
+          "name": "Member 2",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 3,
+          "name": "Member 3",
+          "initials": "M3"
+        },
+        {
+          "legacy_member_id": 4,
+          "name": "Member 4",
+          "initials": "M4"
+        },
+        {
+          "legacy_member_id": 5,
+          "name": "Member 5",
+          "initials": "M5"
+        },
+        {
+          "legacy_member_id": 6,
+          "name": "Member 6",
+          "initials": "M6"
+        },
+        {
+          "legacy_member_id": 7,
+          "name": "Member 7",
+          "initials": "M7"
+        },
+        {
+          "legacy_member_id": 8,
+          "name": "Member 8",
+          "initials": "M8"
+        },
+        {
+          "legacy_member_id": 9,
+          "name": "Member 9",
+          "initials": "M9"
+        },
+        {
+          "legacy_member_id": 10,
+          "name": "Member 10",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 11,
+          "name": "Member 11",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 12,
+          "name": "Member 12",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 13,
+          "name": "Member 13",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 14,
+          "name": "Member 14",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 15,
+          "name": "Member 15",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 16,
+          "name": "Member 16",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 17,
+          "name": "Member 17",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 18,
+          "name": "Member 18",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 19,
+          "name": "Member 19",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 20,
+          "name": "Member 20",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 21,
+          "name": "Member 21",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 22,
+          "name": "Member 22",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 23,
+          "name": "Member 23",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 24,
+          "name": "Member 24",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 25,
+          "name": "Member 25",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 26,
+          "name": "Member 26",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 27,
+          "name": "Member 27",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 28,
+          "name": "Member 28",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 29,
+          "name": "Member 29",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 30,
+          "name": "Member 30",
+          "initials": "M3"
+        },
+        {
+          "legacy_member_id": 31,
+          "name": "Joe Matthews",
+          "initials": "JM"
+        }
+      ],
+      "membership_tiers": [
+        {
+          "tier_key": "basic",
+          "label": "Basic Member",
+          "price": "",
+          "price_duration": "",
+          "description": "Default membership for approved club members.",
+          "tone": "navy",
+          "profile_flair": null,
+          "premium_badge_label": null,
+          "is_basic": true,
+          "benefits": {
+            "bookingDiscountPercent": 0,
+            "eventDiscountPercent": 0,
+            "merchandiseDiscountPercent": 0,
+            "coachingDiscountPercent": 0,
+            "extraAdvanceBookingDates": 0,
+            "maxUpcomingBookings": 0,
+            "priorityEventAdvanceDays": 0,
+            "lookingForGameFutureDates": 0,
+            "lookingForGamePostLimit": 0,
+            "loyaltyRedemptionCapPercent": 0,
+            "bonusMembershipApprovalPoints": 0,
+            "bonusGameBookingPoints": 0,
+            "bonusEventBookingPoints": 0,
+            "bonusAnniversaryPoints": 0,
+            "loyaltyEarnMultiplier": 1.0,
+            "waiveGameBookingFee": false,
+            "priorityOpponentFinderPlacement": false,
+            "detailedAnalytics": false,
+            "priorityLeagueAccess": false,
+            "premiumTicketAccess": false,
+            "merchandiseAccess": false,
+            "armyBuilderAccess": false,
+            "seasonCoachAccess": false,
+            "listCoachingAccess": false,
+            "matchupAnalysisAccess": false,
+            "opponentScoutingAccess": false,
+            "coachingBookingAccess": false,
+            "rivalryToolsAccess": true,
+            "privateDiscussionCategories": []
+          },
+          "billing_options": []
+        }
+      ],
+      "membership_settings": {
+        "basic_label": "Basic Member",
+        "advance_booking_dates": 4,
+        "upcoming_booking_limit": 0,
+        "event_advance_days": 365,
+        "looking_for_game_future_dates": 2,
+        "looking_for_game_post_limit": 1,
+        "loyalty_redemption_cap_percent": 100
+      },
+      "events": [
+        {
+          "legacy_id": "2026-05-30-warhammer-40-beginners-tournament",
+          "title": "Warhammer 40 Beginners Tournament",
+          "summary": "Warhammer 40 Beginners Tournament for new players to the game",
+          "start_date": "2026-05-30",
+          "start_time": "09:30",
+          "end_date": "2026-05-30",
+          "end_time": "18:00",
+          "event_type": null,
+          "event_types": [],
+          "formats": [],
+          "featured_games": [],
+          "facilities": [],
+          "round_count": 0,
+          "price": "£10",
+          "tickets_available": 3,
+          "logo_src": null,
+          "logo_alt": null,
+          "venue_name": "Abingdon Conservative Club",
+          "venue_address": "59 Ock St, Abingdon",
+          "venue_postcode": "OX14 5AG",
+          "info_board": null,
+          "bestcoast_link": "https://instagram.com",
+          "social_links": [
+            {
+              "label": "Facebook",
+              "url": "https://instagram.com"
+            },
+            {
+              "label": "Instagram",
+              "url": "https://instagram.com"
+            }
+          ],
+          "ticket_types": [
+            {
+              "label": "Standard",
+              "price": "£10",
+              "audience": "all",
+              "audience_label": "Members and non-members",
+              "minimum_tier_key": null,
+              "quantity_available": 3
+            }
+          ],
+          "notices": [],
+          "results": [],
+          "pairings": []
+        }
+      ]
+    },
+    {
+      "id": 1776431909306755,
+      "slug": "g-matthews-games-club-wantage",
+      "name": "G Matthews Games Club",
+      "status": "active",
+      "owner_legacy_id": 5,
+      "city": "Wantage",
+      "neighbourhood": null,
+      "country": "United Kingdom",
+      "venue_name": "The Gaming Hut",
+      "venue_address": "62 Appletons",
+      "venue_postcode": "OX12 7GG",
+      "venue_postcode_district": "OX12",
+      "venue_postcode_area": "OX",
+      "latitude": 51.594061,
+      "longitude": -1.400482,
+      "coordinates_label": "OX12 7GG",
+      "summary": "G Matthews Games Club is a friendly games club offering a community of local games players across wargaming, video and card games",
+      "description": "G Matthews Games Club is a friendly games club offering a community of local games players across wargaming, video and card games.",
+      "logo_url": null,
+      "tables_available": 1,
+      "member_count": 20,
+      "price_drop_in": null,
+      "price_membership": null,
+      "ages": "16+",
+      "accessibility": [],
+      "tags": [],
+      "spotlight": false,
+      "announcement": null,
+      "contact_email": "joematthews958@googlemail.com",
+      "website_url": "https://google.co.uk",
+      "created_at": "2026-04-17T13:15:43.959396Z",
+      "search_haystack": "super smash bros. ultimate warhammer 40k aos pokemon tcg mario kart 8 deluxe memberships bar parking campaign tables cafe bar terrain and tables wifi website",
+      "format_slugs": [
+        "family-games",
+        "fighting-games",
+        "miniatures",
+        "retro-gaming",
+        "wargaming",
+        "video-games"
+      ],
+      "game_slugs": [
+        "super-smash-bros-ultimate",
+        "warhammer-40-000",
+        "age-of-sigmar",
+        "pok-mon-tcg",
+        "mario-kart-8-deluxe"
+      ],
+      "facility_slugs": [
+        "memberships",
+        "bar",
+        "parking",
+        "campaign-tables",
+        "cafe-bar",
+        "terrain-and-tables",
+        "wi-fi",
+        "website"
+      ],
+      "payment_slugs": [
+        "bank-transfer",
+        "paypal"
+      ],
+      "discussion_categories": [
+        "Looking for a game",
+        "Painting",
+        "Rumours",
+        "Selling",
+        "Tournaments"
+      ],
+      "sessions": [
+        {
+          "day": "Monday",
+          "time": "18:00 - 22:30",
+          "label": "Monday"
+        },
+        {
+          "day": "Friday",
+          "time": "18:00 - 23:00",
+          "label": "Friday"
+        }
+      ],
+      "images": [],
+      "social_links": [
+        {
+          "label": "Instagram",
+          "url": "https://google.com"
+        },
+        {
+          "label": "Facebook",
+          "url": "https://google.com"
+        },
+        {
+          "label": "Discord",
+          "url": "https://google.com"
+        },
+        {
+          "label": "X",
+          "url": "https://google.com"
+        },
+        {
+          "label": "TikTok",
+          "url": "https://google.com"
+        },
+        {
+          "label": "YouTube",
+          "url": "https://google.com"
+        },
+        {
+          "label": "Twitch",
+          "url": "https://google.com"
+        }
+      ],
+      "pricing_models": [
+        {
+          "label": "Standard Membership",
+          "price": "20",
+          "notes": "Monthly Membership"
+        },
+        {
+          "label": "Pay as you play",
+          "price": "6",
+          "notes": "Pay as you play"
+        },
+        {
+          "label": "Premium Membership",
+          "price": "30",
+          "notes": "Monthly Membership"
+        }
+      ],
+      "announcements": [],
+      "members": [
+        {
+          "legacy_member_id": 1,
+          "name": "Joe Matthews",
+          "initials": "JM"
+        },
+        {
+          "legacy_member_id": 2,
+          "name": "Member 1",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 3,
+          "name": "Member 2",
+          "initials": "M2"
+        },
+        {
+          "legacy_member_id": 4,
+          "name": "Member 3",
+          "initials": "M3"
+        },
+        {
+          "legacy_member_id": 5,
+          "name": "Member 4",
+          "initials": "M4"
+        },
+        {
+          "legacy_member_id": 6,
+          "name": "Member 5",
+          "initials": "M5"
+        },
+        {
+          "legacy_member_id": 7,
+          "name": "Member 6",
+          "initials": "M6"
+        },
+        {
+          "legacy_member_id": 8,
+          "name": "Member 7",
+          "initials": "M7"
+        },
+        {
+          "legacy_member_id": 9,
+          "name": "Member 8",
+          "initials": "M8"
+        },
+        {
+          "legacy_member_id": 10,
+          "name": "Member 9",
+          "initials": "M9"
+        },
+        {
+          "legacy_member_id": 11,
+          "name": "Member 10",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 12,
+          "name": "Member 11",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 13,
+          "name": "Member 12",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 14,
+          "name": "Member 13",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 15,
+          "name": "Member 14",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 16,
+          "name": "Member 15",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 17,
+          "name": "Member 16",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 18,
+          "name": "Member 17",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 19,
+          "name": "Member 18",
+          "initials": "M1"
+        },
+        {
+          "legacy_member_id": 20,
+          "name": "Member 19",
+          "initials": "M1"
+        }
+      ],
+      "membership_tiers": [
+        {
+          "tier_key": "basic",
+          "label": "Standard Membership",
+          "price": "",
+          "price_duration": "",
+          "description": "Default membership for approved club members.",
+          "tone": "navy",
+          "profile_flair": null,
+          "premium_badge_label": null,
+          "is_basic": true,
+          "benefits": {
+            "bookingDiscountPercent": 0,
+            "eventDiscountPercent": 0,
+            "merchandiseDiscountPercent": 0,
+            "coachingDiscountPercent": 0,
+            "extraAdvanceBookingDates": 0,
+            "maxUpcomingBookings": 0,
+            "priorityEventAdvanceDays": 0,
+            "lookingForGameFutureDates": 0,
+            "lookingForGamePostLimit": 0,
+            "loyaltyRedemptionCapPercent": 0,
+            "bonusMembershipApprovalPoints": 0,
+            "bonusGameBookingPoints": 0,
+            "bonusEventBookingPoints": 0,
+            "bonusAnniversaryPoints": 0,
+            "loyaltyEarnMultiplier": 1.0,
+            "waiveGameBookingFee": false,
+            "priorityOpponentFinderPlacement": false,
+            "detailedAnalytics": false,
+            "priorityLeagueAccess": false,
+            "premiumTicketAccess": false,
+            "merchandiseAccess": false,
+            "armyBuilderAccess": false,
+            "seasonCoachAccess": false,
+            "listCoachingAccess": false,
+            "matchupAnalysisAccess": false,
+            "opponentScoutingAccess": false,
+            "coachingBookingAccess": false,
+            "rivalryToolsAccess": true,
+            "privateDiscussionCategories": []
+          },
+          "billing_options": []
+        },
+        {
+          "tier_key": "premium-membership",
+          "label": "Premium Membership",
+          "price": "GBP 30",
+          "price_duration": "month",
+          "description": "Premium Membership",
+          "tone": "gold",
+          "profile_flair": "gold",
+          "premium_badge_label": "Premium Membership",
+          "is_basic": false,
+          "benefits": {
+            "bookingDiscountPercent": 5,
+            "eventDiscountPercent": 5,
+            "merchandiseDiscountPercent": 5,
+            "coachingDiscountPercent": 0,
+            "extraAdvanceBookingDates": 2,
+            "maxUpcomingBookings": 6,
+            "priorityEventAdvanceDays": 30,
+            "lookingForGameFutureDates": 2,
+            "lookingForGamePostLimit": 2,
+            "loyaltyRedemptionCapPercent": 100,
+            "bonusMembershipApprovalPoints": 10,
+            "bonusGameBookingPoints": 5,
+            "bonusEventBookingPoints": 10,
+            "bonusAnniversaryPoints": 10,
+            "loyaltyEarnMultiplier": 1.0,
+            "waiveGameBookingFee": false,
+            "priorityOpponentFinderPlacement": true,
+            "detailedAnalytics": true,
+            "priorityLeagueAccess": true,
+            "premiumTicketAccess": true,
+            "merchandiseAccess": true,
+            "armyBuilderAccess": true,
+            "seasonCoachAccess": true,
+            "listCoachingAccess": true,
+            "matchupAnalysisAccess": true,
+            "opponentScoutingAccess": true,
+            "coachingBookingAccess": true,
+            "rivalryToolsAccess": true,
+            "privateDiscussionCategories": [
+              "Premium Membership"
+            ]
+          },
+          "billing_options": [
+            {
+              "id": "premium-membership-month",
+              "label": "Monthly",
+              "price": "GBP 30",
+              "priceDuration": "month",
+              "cadence": "month",
+              "position": 1
+            },
+            {
+              "id": "premium-membership-year",
+              "label": "Yearly",
+              "price": "GBP 150",
+              "priceDuration": "year",
+              "cadence": "year",
+              "position": 2
+            },
+            {
+              "id": "premium-membership-one-off",
+              "label": "One-off",
+              "price": "GBP 300",
+              "priceDuration": "one-off",
+              "cadence": "one-off",
+              "position": 3
+            }
+          ]
+        }
+      ],
+      "membership_settings": {
+        "basic_label": "Standard Membership",
+        "advance_booking_dates": 4,
+        "upcoming_booking_limit": 4,
+        "event_advance_days": 365,
+        "looking_for_game_future_dates": 2,
+        "looking_for_game_post_limit": 1,
+        "loyalty_redemption_cap_percent": 50
+      },
+      "events": []
+    }
+  ],
+  "reviews": [
+    {
+      "id": 1,
+      "club_id": 9,
+      "author_legacy_id": 2,
+      "author_name": "Joe Matthews",
+      "rating": 5,
+      "comment": "Fantastic friendly club, very competitive but also some casual players so you get a good balance",
+      "flagged_at": null,
+      "flagged_by_name": null,
+      "removed_at": null,
+      "removed_by_name": null,
+      "created_at": "2026-04-11T19:29:23.603964Z"
+    }
+  ],
+  "vocab": {
+    "formats": [
+      {
+        "slug": "board-games",
+        "label": "Board Games"
+      },
+      {
+        "slug": "co-op-games",
+        "label": "Co-Op Games"
+      },
+      {
+        "slug": "family-games",
+        "label": "Family Games"
+      },
+      {
+        "slug": "fighting-games",
+        "label": "Fighting Games"
+      },
+      {
+        "slug": "indie-games",
+        "label": "Indie Games"
+      },
+      {
+        "slug": "miniatures",
+        "label": "Miniatures"
+      },
+      {
+        "slug": "retro-gaming",
+        "label": "Retro Gaming"
+      },
+      {
+        "slug": "rpg",
+        "label": "RPG"
+      },
+      {
+        "slug": "social-deduction",
+        "label": "Social Deduction"
+      },
+      {
+        "slug": "tcg",
+        "label": "TCG"
+      },
+      {
+        "slug": "video-games",
+        "label": "Video Games"
+      },
+      {
+        "slug": "wargaming",
+        "label": "Wargaming"
+      }
+    ],
+    "games": [
+      {
+        "slug": "age-of-sigmar",
+        "label": "Age of Sigmar"
+      },
+      {
+        "slug": "ark-nova",
+        "label": "Ark Nova"
+      },
+      {
+        "slug": "azul",
+        "label": "Azul"
+      },
+      {
+        "slug": "blades-in-the-dark",
+        "label": "Blades in the Dark"
+      },
+      {
+        "slug": "bolt-action",
+        "label": "Bolt Action"
+      },
+      {
+        "slug": "daggerheart",
+        "label": "Daggerheart"
+      },
+      {
+        "slug": "dungeons-and-dragons",
+        "label": "Dungeons & Dragons"
+      },
+      {
+        "slug": "flesh-and-blood",
+        "label": "Flesh and Blood"
+      },
+      {
+        "slug": "heat",
+        "label": "Heat"
+      },
+      {
+        "slug": "horus-heresy",
+        "label": "Horus Heresy"
+      },
+      {
+        "slug": "kill-team",
+        "label": "Kill Team"
+      },
+      {
+        "slug": "magic-the-gathering",
+        "label": "Magic: The Gathering"
+      },
+      {
+        "slug": "mario-kart-8-deluxe",
+        "label": "Mario Kart 8 Deluxe"
+      },
+      {
+        "slug": "marvel-vs-capcom-2",
+        "label": "Marvel vs. Capcom 2"
+      },
+      {
+        "slug": "mausritter",
+        "label": "Mausritter"
+      },
+      {
+        "slug": "pok-mon-tcg",
+        "label": "Pokémon TCG"
+      },
+      {
+        "slug": "spirit-island",
+        "label": "Spirit Island"
+      },
+      {
+        "slug": "star-wars-legion",
+        "label": "Star Wars: Legion"
+      },
+      {
+        "slug": "star-wars-shatterpoint",
+        "label": "Star Wars: Shatterpoint"
+      },
+      {
+        "slug": "street-fighter-6",
+        "label": "Street Fighter 6"
+      },
+      {
+        "slug": "super-smash-bros-ultimate",
+        "label": "Super Smash Bros. Ultimate"
+      },
+      {
+        "slug": "tetris-the-grand-master",
+        "label": "Tetris The Grand Master"
+      },
+      {
+        "slug": "the-crew",
+        "label": "The Crew"
+      },
+      {
+        "slug": "ticket-to-ride",
+        "label": "Ticket to Ride"
+      },
+      {
+        "slug": "wargaming",
+        "label": "Wargaming"
+      },
+      {
+        "slug": "warhammer",
+        "label": "Warhammer"
+      },
+      {
+        "slug": "warhammer-40-000",
+        "label": "Warhammer 40,000"
+      }
+    ],
+    "facilities": [
+      {
+        "slug": "accessible-toilets",
+        "label": "Accessible toilets"
+      },
+      {
+        "slug": "air-conditioning",
+        "label": "Air conditioning"
+      },
+      {
+        "slug": "bar",
+        "label": "Bar"
+      },
+      {
+        "slug": "cafe-bar",
+        "label": "Cafe bar"
+      },
+      {
+        "slug": "cafe-counter",
+        "label": "Cafe counter"
+      },
+      {
+        "slug": "campaign-tables",
+        "label": "Campaign tables"
+      },
+      {
+        "slug": "console-lounge",
+        "label": "Console lounge"
+      },
+      {
+        "slug": "family-seating",
+        "label": "Family seating"
+      },
+      {
+        "slug": "ground-floor-access",
+        "label": "Ground-floor access"
+      },
+      {
+        "slug": "hosted-tables",
+        "label": "Hosted tables"
+      },
+      {
+        "slug": "late-night-sessions",
+        "label": "Late-night sessions"
+      },
+      {
+        "slug": "lift-access",
+        "label": "Lift access"
+      },
+      {
+        "slug": "low-sensory-room",
+        "label": "Low-sensory room"
+      },
+      {
+        "slug": "memberships",
+        "label": "Memberships"
+      },
+      {
+        "slug": "painting-benches",
+        "label": "Painting benches"
+      },
+      {
+        "slug": "parking",
+        "label": "Parking"
+      },
+      {
+        "slug": "quiet-corner-seating",
+        "label": "Quiet corner seating"
+      },
+      {
+        "slug": "quiet-first-hour",
+        "label": "Quiet first hour"
+      },
+      {
+        "slug": "session-zero-kits",
+        "label": "Session zero kits"
+      },
+      {
+        "slug": "step-free-access",
+        "label": "Step-free access"
+      },
+      {
+        "slug": "storage-shelves",
+        "label": "Storage shelves"
+      },
+      {
+        "slug": "streaming-booth",
+        "label": "Streaming booth"
+      },
+      {
+        "slug": "streaming-station",
+        "label": "Streaming station"
+      },
+      {
+        "slug": "swap-tables",
+        "label": "Swap tables"
+      },
+      {
+        "slug": "terrain-and-tables",
+        "label": "Terrain and tables"
+      },
+      {
+        "slug": "terrain-library",
+        "label": "Terrain library"
+      },
+      {
+        "slug": "tournament-brackets",
+        "label": "Tournament brackets"
+      },
+      {
+        "slug": "tournament-station",
+        "label": "Tournament station"
+      },
+      {
+        "slug": "trade-binder-tables",
+        "label": "Trade binder tables"
+      },
+      {
+        "slug": "volunteer-hosts",
+        "label": "Volunteer hosts"
+      },
+      {
+        "slug": "website",
+        "label": "Website"
+      },
+      {
+        "slug": "wi-fi",
+        "label": "Wi-Fi"
+      },
+      {
+        "slug": "workshop-room",
+        "label": "Workshop room"
+      }
+    ],
+    "payment_methods": [
+      {
+        "slug": "apple-pay",
+        "label": "Apple Pay"
+      },
+      {
+        "slug": "bank-transfer",
+        "label": "Bank transfer"
+      },
+      {
+        "slug": "cash",
+        "label": "Cash"
+      },
+      {
+        "slug": "credit-card",
+        "label": "Credit card"
+      },
+      {
+        "slug": "debit-card",
+        "label": "Debit card"
+      },
+      {
+        "slug": "google-pay",
+        "label": "Google Pay"
+      },
+      {
+        "slug": "paypal",
+        "label": "PayPal"
+      }
+    ]
+  }
+}

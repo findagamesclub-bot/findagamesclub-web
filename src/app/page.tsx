@@ -1,88 +1,48 @@
 import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import Chip from "@mui/material/Chip";
 import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import ClubGrid from "@/components/clubs/ClubGrid";
+import LinkButton from "@/components/ui/LinkButton";
+import { listClubs } from "@/services/clubs.service";
+import { tokens } from "@/lib/tokens";
 
-const stack = [
-  { label: "Next.js 16", detail: "App Router, React 19, Turbopack" },
-  { label: "Material UI 9", detail: "Themed, light and dark" },
-  { label: "Supabase", detail: "Postgres, Auth, Storage" },
-  { label: "Resend", detail: "Transactional email" },
-  { label: "Vercel", detail: "Hosting" },
-];
+export default async function HomePage() {
+  const { clubs, total } = await listClubs({ sort: "relevance" });
 
-export default function Home() {
   return (
-    <Container maxWidth="md" component="main" sx={{ py: { xs: 6, md: 10 } }}>
-      <Stack spacing={4}>
-        <Stack spacing={1.5}>
-          <Typography variant="subtitle2" color="primary">
-            Milestone 1 · Foundation
+    <Box component="main">
+      <Container maxWidth="lg" sx={{ py: { xs: 6, md: 10 } }}>
+        <Stack spacing={2.5} sx={{ maxWidth: 720 }}>
+          <Typography variant="overline" sx={{ color: tokens.brass }}>
+            {total} clubs across the UK
           </Typography>
-          <Typography variant="h1">FindAGamesClub</Typography>
-          <Typography variant="h5" color="text.secondary" sx={{ fontWeight: 400 }}>
-            Rebuild in progress. This page confirms the project scaffolding is
-            wired up correctly.
+          <Typography variant="h1">Find a club you will actually turn up to</Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 620 }}>
+            Every listing shows the same four things up front: the night they meet,
+            whether you can book a table, how big the club is, and what it costs.
+            No ringing round, no out-of-date Facebook groups.
           </Typography>
+          <Stack direction="row" spacing={1.5} sx={{ pt: 1 }}>
+            <LinkButton href="/clubs" variant="contained" size="large">
+              Browse the directory
+            </LinkButton>
+            <LinkButton href="/auth/sign-up" variant="outlined" size="large">
+              Create an account
+            </LinkButton>
+          </Stack>
         </Stack>
+      </Container>
 
-        <Card>
-          <CardContent>
-            <Stack spacing={2}>
-              <Typography variant="h4">Stack</Typography>
-              <Stack
-                direction="row"
-                spacing={1}
-                useFlexGap
-                sx={{ flexWrap: "wrap" }}
-              >
-                {stack.map((item) => (
-                  <Chip
-                    key={item.label}
-                    label={item.label}
-                    title={item.detail}
-                    variant="outlined"
-                  />
-                ))}
-              </Stack>
-            </Stack>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent>
-            <Stack spacing={2}>
-              <Typography variant="h4">Theme check</Typography>
-              <Typography color="text.secondary">
-                Buttons, colours and typography below are driven by the shared
-                theme in <code>src/theme.ts</code>.
-              </Typography>
-              <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: "wrap" }}>
-                <Button variant="contained">Primary</Button>
-                <Button variant="outlined">Outlined</Button>
-                <Button variant="text">Text</Button>
-                <Button variant="contained" color="secondary">
-                  Secondary
-                </Button>
-              </Stack>
-              <Box
-                sx={{
-                  p: 2,
-                  borderRadius: 1,
-                  bgcolor: "primary.main",
-                  color: "primary.contrastText",
-                }}
-              >
-                Brand colour, carried across from the existing site.
-              </Box>
-            </Stack>
-          </CardContent>
-        </Card>
-      </Stack>
-    </Container>
+      <Box sx={{ borderTop: `1px solid ${tokens.rule}`, background: tokens.paper }}>
+        <Container maxWidth="lg" sx={{ py: { xs: 5, md: 7 } }}>
+          <Stack direction="row" spacing={2} sx={{ justifyContent: "space-between", alignItems: "baseline", mb: 3 }}>
+            <Typography variant="h2" sx={{ fontSize: "1.75rem" }}>Featured clubs</Typography>
+            <LinkButton href="/clubs" variant="text">See all {total}</LinkButton>
+          </Stack>
+          <ClubGrid clubs={clubs.slice(0, 6)} />
+        </Container>
+      </Box>
+    </Box>
   );
 }

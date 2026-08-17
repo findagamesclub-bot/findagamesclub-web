@@ -1,0 +1,35 @@
+{
+  "_note": "Merges synonyms and fixes casing from the legacy data. Keys are matched case-insensitively against the raw label. Edit this rather than the export script.",
+
+  "games": {
+    "warhammer 40k": "Warhammer 40,000",
+    "warhammer 40,000": "Warhammer 40,000",
+    "aos": "Age of Sigmar",
+    "age of sigmar": "Age of Sigmar",
+    "horus heresy": "Horus Heresy",
+    "star wars legion": "Star Wars: Legion",
+    "bolt action": "Bolt Action",
+    "kill team": "Kill Team",
+    "wargaming": "Wargaming",
+    "warhammer": "Warhammer",
+    "pokemon tcg": "Pokémon TCG"
+  },
+
+  "facilities": {
+    "wifi": "Wi-Fi",
+    "aircon": "Air conditioning",
+    "parking": "Parking",
+    "bar": "Bar",
+    "terrain and tables": "Terrain and tables",
+    "memberships": "Memberships",
+    "website": "Website"
+  },
+
+  "payment_methods": {
+    "bacs": "Bank transfer",
+    "bank transfer": "Bank transfer",
+    "paypal": "PayPal"
+  },
+
+  "formats": {}
+}

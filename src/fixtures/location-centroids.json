@@ -1,0 +1,101 @@
+{
+  "postcodes": {
+    "OX127GG": {
+      "latitude": 51.594061,
+      "longitude": -1.400482,
+      "label": "OX12 7GG"
+    },
+    "OX119AT": {
+      "latitude": 51.600763,
+      "longitude": -1.190849,
+      "label": "OX11 9AT"
+    },
+    "OX119AS": {
+      "latitude": 51.599071,
+      "longitude": -1.189407,
+      "label": "OX11 9AS"
+    },
+    "OX136RR": {
+      "latitude": 51.625586,
+      "longitude": -1.321061,
+      "label": "OX13 6RR"
+    },
+    "OX145AG": {
+      "latitude": 51.67001,
+      "longitude": -1.287081,
+      "label": "OX14 5AG"
+    },
+    "OX11": {
+      "latitude": 51.606,
+      "longitude": -1.242,
+      "label": "OX11"
+    },
+    "OX14": {
+      "latitude": 51.671,
+      "longitude": -1.283,
+      "label": "OX14"
+    },
+    "OX12": {
+      "latitude": 51.5946,
+      "longitude": -1.4257,
+      "label": "OX12"
+    },
+    "OX": {
+      "latitude": 51.752,
+      "longitude": -1.2577,
+      "label": "Oxford"
+    }
+  },
+  "places": {
+    "reading": {
+      "latitude": 51.4543,
+      "longitude": -0.9781,
+      "label": "Reading"
+    },
+    "newbury": {
+      "latitude": 51.4009,
+      "longitude": -1.3236,
+      "label": "Newbury"
+    },
+    "swindon": {
+      "latitude": 51.5558,
+      "longitude": -1.7797,
+      "label": "Swindon"
+    },
+    "wallingford": {
+      "latitude": 51.5998,
+      "longitude": -1.1248,
+      "label": "Wallingford"
+    },
+    "witney": {
+      "latitude": 51.7836,
+      "longitude": -1.4854,
+      "label": "Witney"
+    },
+    "banbury": {
+      "latitude": 52.0629,
+      "longitude": -1.3398,
+      "label": "Banbury"
+    },
+    "maidenhead": {
+      "latitude": 51.5228,
+      "longitude": -0.7199,
+      "label": "Maidenhead"
+    },
+    "bracknell": {
+      "latitude": 51.416,
+      "longitude": -0.752,
+      "label": "Bracknell"
+    },
+    "slough": {
+      "latitude": 51.5105,
+      "longitude": -0.595,
+      "label": "Slough"
+    },
+    "high wycombe": {
+      "latitude": 51.6287,
+      "longitude": -0.7482,
+      "label": "High Wycombe"
+    }
+  }
+}

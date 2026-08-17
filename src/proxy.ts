@@ -2,15 +2,10 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Refreshes the Supabase auth session on every request and writes any rotated
- * tokens back to the response.
+ * Refreshes the Supabase session and writes rotated tokens back.
  *
- * Next.js 16 renamed `middleware` to `proxy`. Supabase's own documentation
- * still refers to `middleware.ts`; this file is the equivalent. The proxy
- * runtime is always Node.js and cannot be configured to `edge`.
- *
- * Server Components cannot write cookies, so without this the session would
- * silently expire and users would be logged out at random.
+ * This is Next 16's rename of middleware.ts. Server Components can't write
+ * cookies, so without this users get logged out at random.
  */
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -36,8 +31,7 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  // Touch the session so expired access tokens get refreshed. Do not remove:
-  // without a call here the refresh never happens.
+  // Required: without this call the token never refreshes.
   await supabase.auth.getUser();
 
   return response;
@@ -45,10 +39,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Run on everything except static assets and image files, which never
-     * need a session.
-     */
+    // Everything except static assets, which never need a session.
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico)$).*)",
   ],
 };
