@@ -1,7 +1,7 @@
 import "server-only";
 
 import { parseLocation } from "@/utils/geo";
-import centroids from "@/fixtures/location-centroids.json";
+import centroids from "@/data/location-centroids.json";
 
 /**
  * Turns "OX11", "OX11 9AT" or "Didcot" into coordinates.

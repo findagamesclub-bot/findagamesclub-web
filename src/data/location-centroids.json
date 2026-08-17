@@ -1,4 +1,10 @@
 {
+  "_meta": {
+    "purpose": "Runtime reference data. Required for distance search \u2014 not a test fixture.",
+    "source": "POSTCODE_CENTROIDS and PLACE_NAME_CENTROIDS in ../app/club_store.py",
+    "usedBy": "src/services/location.service.ts",
+    "note": "Fallback when a typed place cannot be resolved from club postcodes. Deleting this silently breaks 'within N miles' for places no club sits in."
+  },
   "postcodes": {
     "OX127GG": {
       "latitude": 51.594061,
