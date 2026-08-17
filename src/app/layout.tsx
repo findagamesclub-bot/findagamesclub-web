@@ -31,7 +31,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             <QueryProvider>
               <SiteHeader viewer={viewer} />
               <Box sx={{ flex: 1 }}>{children}</Box>
-              <SiteFooter />
+              <SiteFooter signedIn={Boolean(viewer)} />
             </QueryProvider>
           </ThemeProvider>
         </AppRouterCacheProvider>

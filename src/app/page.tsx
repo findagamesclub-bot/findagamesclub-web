@@ -5,17 +5,22 @@ import Typography from "@mui/material/Typography";
 import ClubGrid from "@/components/clubs/ClubGrid";
 import LinkButton from "@/components/ui/LinkButton";
 import { listClubs } from "@/services/clubs.service";
+import { getCurrentProfile } from "@/services/auth.service";
 import { tokens } from "@/lib/tokens";
 
 export default async function HomePage() {
-  const { clubs, total } = await listClubs({ sort: "relevance" });
+  const [{ clubs, total }, profile] = await Promise.all([
+    listClubs({ sort: "relevance" }),
+    getCurrentProfile(),
+  ]);
+  const firstName = profile?.full_name?.split(" ")[0];
 
   return (
     <Box component="main">
       <Container maxWidth="lg" sx={{ py: { xs: 6, md: 10 } }}>
         <Stack spacing={2.5} sx={{ maxWidth: 720 }}>
           <Typography variant="overline" sx={{ color: tokens.brass }}>
-            {total} clubs across the UK
+            {firstName ? `Welcome back, ${firstName}` : `${total} clubs across the UK`}
           </Typography>
           <Typography variant="h1">Find a club you will actually turn up to</Typography>
           <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 620 }}>
@@ -27,9 +32,12 @@ export default async function HomePage() {
             <LinkButton href="/clubs" variant="contained" size="large">
               Browse the directory
             </LinkButton>
-            <LinkButton href="/auth/sign-up" variant="outlined" size="large">
-              Create an account
-            </LinkButton>
+            {/* Offering "Create an account" to someone already signed in is noise. */}
+            {profile ? null : (
+              <LinkButton href="/auth/sign-up" variant="outlined" size="large">
+                Create an account
+              </LinkButton>
+            )}
           </Stack>
         </Stack>
       </Container>

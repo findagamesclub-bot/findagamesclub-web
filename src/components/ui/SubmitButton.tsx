@@ -15,8 +15,11 @@ type Props = Omit<ButtonProps, "type" | "disabled"> & {
  * Submit button that shows its own progress.
  *
  * useFormStatus reads the enclosing form, so the button tracks pending state
- * itself instead of having it threaded down. The wider of the two labels is
- * rendered invisibly to hold the width, otherwise the button resizes mid-click.
+ * itself rather than having it threaded down.
+ *
+ * Both labels are stacked in a single grid cell: the hidden one holds the
+ * width so the button never resizes mid-click, and because they overlap rather
+ * than sit side by side, the visible label stays centred.
  */
 export default function SubmitButton({ label, pendingLabel, ...props }: Props) {
   const { pending } = useFormStatus();
@@ -30,15 +33,26 @@ export default function SubmitButton({ label, pendingLabel, ...props }: Props) {
       disabled={pending}
       aria-busy={pending}
       {...props}
-      sx={{ position: "relative", "&.Mui-disabled": { color: "#FFFFFF", opacity: 0.9 }, ...props.sx }}
+      sx={{ "&.Mui-disabled": { color: "#FFFFFF", opacity: 0.9 }, ...props.sx }}
     >
-      <Box component="span" sx={{ visibility: "hidden", display: "block", height: 0, overflow: "hidden" }}>
-        {label.length >= busyText.length ? label : busyText}
-      </Box>
+      <Box
+        sx={{
+          display: "grid",
+          placeItems: "center",
+          "& > *": { gridArea: "1 / 1" },
+        }}
+      >
+        <Box component="span" aria-hidden sx={{ visibility: "hidden", whiteSpace: "nowrap" }}>
+          {label.length >= busyText.length ? label : busyText}
+        </Box>
 
-      <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}>
-        {pending ? <CircularProgress size={16} thickness={5} sx={{ color: "inherit" }} aria-hidden /> : null}
-        {pending ? busyText : label}
+        <Box
+          component="span"
+          sx={{ display: "inline-flex", alignItems: "center", gap: 1, whiteSpace: "nowrap" }}
+        >
+          {pending ? <CircularProgress size={16} thickness={5} sx={{ color: "inherit" }} aria-hidden /> : null}
+          {pending ? busyText : label}
+        </Box>
       </Box>
     </Button>
   );

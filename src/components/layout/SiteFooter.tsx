@@ -30,7 +30,7 @@ function Column({ title, children }: { title: string; children: React.ReactNode 
   );
 }
 
-export default function SiteFooter() {
+export default function SiteFooter({ signedIn = false }: { signedIn?: boolean }) {
   return (
     <Box
       component="footer"
@@ -73,8 +73,18 @@ export default function SiteFooter() {
               <Link href="/clubs" style={LINK}>Club directory</Link>
             </Column>
             <Column title="Account">
-              <Link href="/auth/sign-in" style={LINK}>Sign in</Link>
-              <Link href="/auth/sign-up" style={LINK}>Create an account</Link>
+              {signedIn ? (
+                <Box component="form" action="/auth/sign-out" method="post">
+                  <Box component="button" type="submit" sx={{ ...LINK, background: "none", border: 0, p: 0, cursor: "pointer", font: "inherit" }}>
+                    Sign out
+                  </Box>
+                </Box>
+              ) : (
+                <>
+                  <Link href="/auth/sign-in" style={LINK}>Sign in</Link>
+                  <Link href="/auth/sign-up" style={LINK}>Create an account</Link>
+                </>
+              )}
             </Column>
             <Column title="About">
               <Link href="/contact" style={LINK}>Contact</Link>
