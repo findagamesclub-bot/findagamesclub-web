@@ -237,15 +237,19 @@ function sortClubs(
 }
 
 export async function getFilterOptions() {
-  const [formats, cities, days] = await Promise.all([
+  const [formats, cities, days, games, facilities] = await Promise.all([
     taxonomy.findFormats(),
     taxonomy.findCities(),
     taxonomy.findMeetingDays(),
+    taxonomy.findGames(),
+    taxonomy.findFacilities(),
   ]);
   return {
     formats,
     cities,
     days,
+    // Both the type-ahead and the smart-search parser match against these.
+    facets: [...games.map((g) => g.label), ...facilities.map((f) => f.label)].sort((a, b) => a.localeCompare(b)),
     sorts: SORT_OPTIONS.map((s) => ({ ...s })),
     withinMiles: [...WITHIN_MILES_OPTIONS],
     reviewRatings: [...REVIEW_RATING_OPTIONS],
@@ -349,6 +353,12 @@ function groupBy<T extends { club_id: number }>(items: T[]): Map<number, T[]> {
   return map;
 }
 
+/** Lowest `position` wins, since the export preserved the club's own ordering. */
+function firstImage(row: repo.ClubRow) {
+  const images = [...(row.club_images ?? [])].sort((a, b) => a.position - b.position);
+  return images[0] ? { src: images[0].src, alt: images[0].alt } : null;
+}
+
 function toSummary(
   row: repo.ClubRow,
   sessions: SessionRow[],
@@ -374,5 +384,6 @@ function toSummary(
     facilities: [],
     distanceMiles: distanceMiles ?? null,
     isFeatured: row.spotlight,
+    image: firstImage(row),
   };
 }

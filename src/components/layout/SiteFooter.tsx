@@ -14,7 +14,7 @@ import { tokens } from "@/lib/tokens";
  * from the client rather than be invented here.
  */
 
-const LINK = { color: "#C2D9F2", textDecoration: "none", fontSize: "0.9rem" };
+const LINK = { color: "#C2D9F2", textDecoration: "none", fontSize: "1rem" };
 
 function Column({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -53,10 +53,9 @@ export default function SiteFooter({ signedIn = false }: { signedIn?: boolean })
             <Typography
               sx={{
                 fontFamily: "var(--font-display)",
-                fontSize: "0.95rem",
+                fontSize: "1.32rem",
                 fontWeight: 700,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
+                letterSpacing: "-0.018em",
                 color: "#FFFFFF",
               }}
             >
@@ -100,7 +99,7 @@ export default function SiteFooter({ signedIn = false }: { signedIn?: boolean })
             mt: { xs: 4, md: 6 },
             pt: 3,
             borderTop: "1px solid rgba(255,255,255,0.12)",
-            fontSize: "0.8rem",
+            fontSize: "0.875rem",
             color: "#7C8DA6",
           }}
         >

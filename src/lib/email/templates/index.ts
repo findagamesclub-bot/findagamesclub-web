@@ -56,6 +56,24 @@ export function welcome(params: { name?: string; url: string }): Email {
   });
 }
 
+export function passwordChanged(params: { name?: string; url: string }): Email {
+  const greeting = params.name ? `Hello ${params.name},` : "Hello,";
+  return build("Your password was changed", {
+    previewText: "The password on your FindAGamesClub account has been changed.",
+    eyebrow: "Password changed",
+    heading: "Your password was changed",
+    body: [
+      greeting,
+      "The password on your FindAGamesClub account has just been changed. You can sign in with it now.",
+    ],
+    action: { label: "Sign in", url: params.url },
+    // The point of this email is the warning. Someone who did change their own
+    // password can ignore it; someone who didn't needs to act.
+    footnote:
+      "If this wasn't you, reset your password immediately and contact us at hello@findagamesclub.co.uk.",
+  });
+}
+
 export function emailChanged(params: { name?: string; url: string; newEmail: string }): Email {
   const greeting = params.name ? `Hello ${params.name},` : "Hello,";
   return build("Confirm your new email address", {

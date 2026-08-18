@@ -2,13 +2,15 @@ import type { ClubSession } from "./club";
 
 export type ClubImage = { src: string; alt: string };
 export type ClubLink = { label: string; url: string };
-export type PricingModel = { label: string; price: string; notes: string };
+/** `price` is null when the club left it blank or wrote "TBC". */
+export type PricingModel = { label: string; price: string | null; notes: string };
 export type Announcement = { message: string; createdAt: string };
 
 export type MembershipTier = {
   key: string;
   label: string;
-  price: string;
+  /** Null when the club left it blank — the card hides the line rather than showing "£". */
+  price: string | null;
   priceDuration: string;
   description: string | null;
   isBasic: boolean;

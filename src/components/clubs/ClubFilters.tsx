@@ -13,6 +13,7 @@ import Typography from "@mui/material/Typography";
 import TuneIcon from "@mui/icons-material/Tune";
 import ActiveFilters, { type ActiveFilter } from "./ActiveFilters";
 import FacetSearchInput from "./FacetSearchInput";
+import SmartSearchBar from "./SmartSearchBar";
 import { tokens } from "@/lib/tokens";
 import type { ClubListFilters } from "@/lib/query/keys";
 
@@ -23,6 +24,8 @@ export type FilterOptions = {
   sorts: { value: string; label: string }[];
   withinMiles: string[];
   reviewRatings: string[];
+  /** Games and facilities, for the type-ahead and the smart-search parser. */
+  facets: string[];
 };
 
 type Props = {
@@ -124,8 +127,9 @@ export default function ClubFilters({
     >
       <Stack spacing={2.5}>
         <Stack spacing={0.5}>
-          <Typography variant="h3" sx={{ fontSize: "1.35rem" }}>Search and filter the directory</Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="h3" sx={{ fontSize: "1.5rem" }}>Search and filter the directory</Typography>
+          {/* A status readout rather than prose, so it takes the UI face. */}
+          <Typography variant="body2" color="text.secondary" sx={{ fontFamily: "var(--font-display)" }}>
             {resultCount} {resultCount === 1 ? "club matches" : "clubs match"} these filters
             {pageCount > 1 ? `. Page ${page} of ${pageCount}` : ""}.
           </Typography>
@@ -133,10 +137,13 @@ export default function ClubFilters({
 
         {/* Always visible, whatever the toggle does. */}
         <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: "wrap", alignItems: "flex-start" }}>
-          <Field label="Featured games or facilities" hint="Press enter after each one" grow={3} basis={320}>
-            <FacetSearchInput value={filters.q ?? ""} onChange={(q) => onChange({ q })} />
-          </Field>
-          <Box sx={{ pt: 3.5, flexShrink: 0 }}>
+          <Box sx={{ flex: "3 1 340px", minWidth: 240 }}>
+            <SmartSearchBar
+              options={{ cities: options.cities, formats: options.formats, days: options.days, facets: options.facets }}
+              onApply={onChange}
+            />
+          </Box>
+          <Box sx={{ flexShrink: 0 }}>
             <Badge badgeContent={hiddenActive} color="secondary">
               <Button
                 onClick={() => setShowFilters((v) => !v)}
@@ -153,6 +160,14 @@ export default function ClubFilters({
         <Collapse in={showFilters}>
           <Box sx={{ border: `1px solid ${tokens.rule}`, borderRadius: 1.5, p: { xs: 1.75, sm: 2.25 } }}>
             <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: "wrap", alignItems: "flex-start" }}>
+              <Field label="Featured games or facilities" hint="Press enter after each one" grow={2} basis={280}>
+                <FacetSearchInput
+                  value={filters.q ?? ""}
+                  options={options.facets}
+                  onChange={(q) => onChange({ q })}
+                />
+              </Field>
+
               <Field label="Location or postcode" basis={200}>
                 <TextField
                   placeholder="Try E14, M1, or London"

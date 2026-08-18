@@ -3,6 +3,7 @@ import Container from "@mui/material/Container";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import AuthForm from "@/components/auth/AuthForm";
+import PasswordFields from "@/components/auth/PasswordFields";
 import { signUpAction } from "../actions";
 
 export const metadata = { title: "Create an account" };
@@ -25,10 +26,7 @@ export default function SignUpPage() {
       >
         <TextField name="fullName" label="Your name" required autoComplete="name" fullWidth />
         <TextField name="email" type="email" label="Email" required autoComplete="email" fullWidth />
-        <TextField
-          name="password" type="password" label="Password" required
-          autoComplete="new-password" fullWidth
-        />
+        <PasswordFields />
       </AuthForm>
     </Container>
   );

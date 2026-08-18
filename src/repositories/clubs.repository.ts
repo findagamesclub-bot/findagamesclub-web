@@ -5,13 +5,16 @@ import type { Tables } from "@/types/database";
 
 /** The only place that queries the clubs tables. Returns rows; the service maps them. */
 
-export type ClubRow = Tables<"clubs">;
+/** Cards show the club's first image, so the list carries it too. */
+export type ClubRow = Tables<"clubs"> & {
+  club_images?: { src: string; alt: string; position: number }[];
+};
 
 const LIST_COLUMNS =
   "id, slug, name, city, neighbourhood, summary, spotlight, status, " +
   "tables_available, member_count, price_drop_in, legacy_created_at, search_haystack, " +
   "venue_postcode, venue_postcode_district, venue_postcode_area, " +
-  "latitude, longitude";
+  "latitude, longitude, club_images(src, alt, position)";
 
 export type ClubSort = "relevance" | "name" | "members" | "city";
 

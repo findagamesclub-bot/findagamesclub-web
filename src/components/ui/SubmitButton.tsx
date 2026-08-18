@@ -9,6 +9,8 @@ type Props = Omit<ButtonProps, "type" | "disabled"> & {
   label: string;
   /** Present tense, e.g. "Signing in". An ellipsis is appended. */
   pendingLabel: string;
+  /** Set when the form knows it isn't ready — e.g. two passwords disagree. */
+  blocked?: boolean;
 };
 
 /**
@@ -21,7 +23,7 @@ type Props = Omit<ButtonProps, "type" | "disabled"> & {
  * width so the button never resizes mid-click, and because they overlap rather
  * than sit side by side, the visible label stays centred.
  */
-export default function SubmitButton({ label, pendingLabel, ...props }: Props) {
+export default function SubmitButton({ label, pendingLabel, blocked = false, ...props }: Props) {
   const { pending } = useFormStatus();
   const busyText = `${pendingLabel}…`;
 
@@ -30,7 +32,7 @@ export default function SubmitButton({ label, pendingLabel, ...props }: Props) {
       type="submit"
       variant="contained"
       size="large"
-      disabled={pending}
+      disabled={pending || blocked}
       aria-busy={pending}
       {...props}
       sx={{ "&.Mui-disabled": { color: "#FFFFFF", opacity: 0.9 }, ...props.sx }}

@@ -8,6 +8,8 @@
  * actually present everywhere.
  */
 
+import { LOGO_CID, LOGO_HEIGHT, LOGO_WIDTH } from "../logo-data";
+
 export const brand = {
   ink: "#101B2D",
   inkMuted: "#4E5F79",
@@ -63,9 +65,14 @@ export function renderEmail(options: LayoutOptions): string {
 
           <tr>
             <td style="padding:0 0 20px 4px;">
-              <span style="font-family:${DISPLAY};font-size:13px;font-weight:bold;letter-spacing:0.14em;text-transform:uppercase;color:${brand.blue};">
-                FindAGamesClub
-              </span>
+              <!-- Attached inline rather than linked: a hosted URL has to be
+                   publicly reachable, and Gmail proxies images through its own
+                   servers, so anything on localhost renders broken.
+                   Most clients block images until the reader allows them, so
+                   the alt text is the wordmark, not a description of it. -->
+              <img src="cid:${LOGO_CID}" alt="FindAGamesClub"
+                   width="${LOGO_WIDTH}" height="${LOGO_HEIGHT}"
+                   style="display:block;border:0;outline:none;text-decoration:none;font-family:${DISPLAY};font-size:15px;font-weight:bold;color:${brand.blueDeep};">
             </td>
           </tr>
 

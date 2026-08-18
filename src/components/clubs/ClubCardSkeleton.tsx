@@ -8,14 +8,15 @@ import { tokens } from "@/lib/tokens";
 /** Mirrors ClubCard's shape so the layout doesn't jump when data arrives. */
 export default function ClubCardSkeleton() {
   return (
-    <Card sx={{ height: "100%" }}>
+    <Card sx={{ height: "100%", overflow: "hidden" }}>
+      <Skeleton variant="rectangular" sx={{ width: "100%", aspectRatio: "16 / 9", height: "auto" }} />
       <CardContent sx={{ p: 2.5 }}>
         <Skeleton variant="text" width="65%" height={30} />
-        <Skeleton variant="text" width="35%" height={16} sx={{ mb: 1.5 }} />
+        <Skeleton variant="text" width="45%" height={16} sx={{ mb: 1.5 }} />
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
+            gridTemplateColumns: "repeat(2, 1fr)",
             gap: 2,
             borderTop: `1px solid ${tokens.rule}`,
             borderBottom: `1px solid ${tokens.rule}`,
@@ -24,8 +25,8 @@ export default function ClubCardSkeleton() {
         >
           {Array.from({ length: 4 }).map((_, i) => (
             <Box key={i}>
-              <Skeleton variant="text" width="70%" height={12} />
-              <Skeleton variant="text" width="55%" height={20} />
+              <Skeleton variant="text" width="60%" height={12} />
+              <Skeleton variant="text" width="75%" height={20} />
             </Box>
           ))}
         </Box>

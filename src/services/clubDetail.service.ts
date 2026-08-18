@@ -1,7 +1,7 @@
 import "server-only";
 
 import * as repo from "@/repositories/clubs.repository";
-import { formatMeeting } from "@/utils/format";
+import { formatMeeting, formatPrice, formatPricingLabel } from "@/utils/format";
 import type { ClubDetail, ClubEventSummary } from "@/types/clubDetail";
 
 type Row = Awaited<ReturnType<typeof repo.findClubDetail>>;
@@ -99,8 +99,8 @@ function toDetail(row: NonNullable<Row>): ClubDetail {
     images: byPosition(row.club_images ?? []).map((i) => ({ src: i.src, alt: i.alt })),
     socialLinks: byPosition(row.club_social_links ?? []).map((l) => ({ label: l.label, url: l.url })),
     pricingModels: byPosition(row.club_pricing_models ?? []).map((p) => ({
-      label: p.label,
-      price: p.price,
+      label: formatPricingLabel(p.label),
+      price: formatPrice(p.price),
       notes: p.notes,
     })),
     announcements: (row.club_announcements ?? [])
@@ -109,7 +109,7 @@ function toDetail(row: NonNullable<Row>): ClubDetail {
     membershipTiers: byPosition(row.club_membership_tiers ?? []).map((t) => ({
       key: t.tier_key,
       label: t.label,
-      price: t.price,
+      price: formatPrice(t.price),
       priceDuration: t.price_duration,
       description: t.description,
       isBasic: t.is_basic,

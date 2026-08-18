@@ -1,10 +1,19 @@
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
-import Chip from "@mui/material/Chip";
 import Link from "@mui/material/Link";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import { mono, tokens } from "@/lib/tokens";
+import type { SvgIconComponent } from "@mui/icons-material";
+import PlaceIcon from "@mui/icons-material/Place";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import AccessibleIcon from "@mui/icons-material/Accessible";
+import PaymentsIcon from "@mui/icons-material/Payments";
+import CakeIcon from "@mui/icons-material/Cake";
+import MailIcon from "@mui/icons-material/Mail";
+import FacilityChips from "./FacilityChips";
+import ScheduleList from "./ScheduleList";
+import { tokens } from "@/lib/tokens";
 import type { ClubDetail } from "@/types/clubDetail";
 
 /**
@@ -14,12 +23,12 @@ import type { ClubDetail } from "@/types/clubDetail";
  */
 export default function ClubSidebar({ club }: { club: ClubDetail }) {
   const address = [club.venue.name, club.venue.address, club.venue.postcode].filter(Boolean);
-
-  const sections: { title: string; body: React.ReactNode }[] = [];
+  const sections: { title: string; icon: SvgIconComponent; body: React.ReactNode }[] = [];
 
   if (address.length) {
     sections.push({
       title: "Venue",
+      icon: PlaceIcon,
       body: (
         <Stack spacing={0.25}>
           {address.map((line) => (
@@ -33,39 +42,22 @@ export default function ClubSidebar({ club }: { club: ClubDetail }) {
   if (club.schedule.length) {
     sections.push({
       title: "Schedule",
-      body: (
-        <Stack spacing={0.5}>
-          {club.schedule.map((s, i) => (
-            <Typography key={i} sx={{ fontFamily: mono, fontSize: "0.85rem" }}>
-              {s.day} {s.time}
-              {s.label ? (
-                <Typography component="span" variant="body2" color="text.secondary"> · {s.label}</Typography>
-              ) : null}
-            </Typography>
-          ))}
-        </Stack>
-      ),
+      icon: CalendarMonthIcon,
+      body: <ScheduleList schedule={club.schedule} slug={club.slug} name={club.name} />,
     });
   }
 
-  const chipList = (values: string[]) => (
-    <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: "wrap" }}>
-      {values.map((v) => <Chip key={v} size="small" variant="outlined" label={v} />)}
-    </Stack>
-  );
-
-  if (club.facilities.length) sections.push({ title: "Facilities", body: chipList(club.facilities) });
-  if (club.accessibility.length) sections.push({ title: "Accessibility", body: chipList(club.accessibility) });
-
+  if (club.facilities.length) {
+    sections.push({ title: "Facilities", icon: CheckCircleIcon, body: <FacilityChips values={club.facilities} /> });
+  }
+  if (club.accessibility.length) {
+    sections.push({ title: "Accessibility", icon: AccessibleIcon, body: <FacilityChips values={club.accessibility} /> });
+  }
   if (club.paymentMethods.length) {
-    sections.push({
-      title: "Payment",
-      body: <Typography variant="body2" color="text.secondary">{club.paymentMethods.join(" · ")}</Typography>,
-    });
+    sections.push({ title: "Payment", icon: PaymentsIcon, body: <FacilityChips values={club.paymentMethods} /> });
   }
-
   if (club.ages) {
-    sections.push({ title: "Ages", body: <Typography variant="body2">{club.ages}</Typography> });
+    sections.push({ title: "Ages", icon: CakeIcon, body: <Typography variant="body2">{club.ages}</Typography> });
   }
 
   const links = [
@@ -77,11 +69,14 @@ export default function ClubSidebar({ club }: { club: ClubDetail }) {
   if (links.length) {
     sections.push({
       title: "Contact",
+      icon: MailIcon,
       body: (
         <Stack spacing={0.5}>
+          {/* Keyed by label: several clubs point every social link at the same
+              placeholder URL, so hrefs are not unique. */}
           {links.map((l) => (
             <Link
-              key={l.href}
+              key={l.label}
               href={l.href}
               variant="body2"
               {...(l.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
@@ -101,10 +96,13 @@ export default function ClubSidebar({ club }: { club: ClubDetail }) {
           {sections.map((section, i) => (
             <Stack
               key={section.title}
-              spacing={1}
+              spacing={1.25}
               sx={i > 0 ? { pt: 2.5, borderTop: `1px solid ${tokens.rule}` } : undefined}
             >
-              <Typography variant="overline" color="text.secondary">{section.title}</Typography>
+              <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
+                <section.icon aria-hidden sx={{ fontSize: 17, color: tokens.brass }} />
+                <Typography variant="overline" color="text.secondary">{section.title}</Typography>
+              </Stack>
               {section.body}
             </Stack>
           ))}

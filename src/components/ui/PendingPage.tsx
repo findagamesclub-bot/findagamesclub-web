@@ -15,7 +15,7 @@ export default function PendingPage({
     <Container maxWidth="sm" component="main" sx={{ py: { xs: 8, md: 12 } }}>
       <Stack spacing={2}>
         <Typography variant="overline" sx={{ color: tokens.brass }}>{eyebrow}</Typography>
-        <Typography variant="h1" sx={{ fontSize: "2.25rem" }}>{title}</Typography>
+        <Typography variant="h1" sx={{ fontSize: "2.45rem" }}>{title}</Typography>
         <Typography variant="body1" color="text.secondary">{description}</Typography>
         <Typography variant="body2" color="text.secondary">
           In the meantime, email{" "}

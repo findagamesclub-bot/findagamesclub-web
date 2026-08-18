@@ -1,6 +1,7 @@
 import "server-only";
 
 import { Resend } from "resend";
+import { LOGO_CID, LOGO_PNG_BASE64 } from "./logo-data";
 
 /**
  * Transactional email. Server-only so the API key can't reach the browser.
@@ -22,6 +23,17 @@ export type SendEmailResult =
   | { ok: false; error: string };
 
 const FROM = process.env.EMAIL_FROM ?? "FindAGamesClub <onboarding@resend.dev>";
+
+/**
+ * The header logo, attached inline. Built once per process — the base64 is
+ * ~21KB and every template uses the same shell.
+ */
+const LOGO_ATTACHMENT = {
+  filename: "logo.png",
+  content: LOGO_PNG_BASE64,
+  contentType: "image/png",
+  contentId: LOGO_CID,
+} as const;
 
 let client: Resend | null = null;
 
@@ -59,6 +71,9 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
     html: input.html,
     text: input.text ?? stripHtml(input.html),
     replyTo: input.replyTo,
+    // Only when the template actually shows it, so a plain message isn't
+    // carrying 21KB it never renders.
+    attachments: input.html.includes(`cid:${LOGO_CID}`) ? [LOGO_ATTACHMENT] : undefined,
   });
 
   if (error) {

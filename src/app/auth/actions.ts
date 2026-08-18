@@ -13,6 +13,7 @@ const password = (data: FormData) => String(data.get("password") ?? "");
 export async function signUpAction(_prev: FormState, data: FormData): Promise<FormState> {
   const fullName = String(data.get("fullName") ?? "").trim();
   if (!fullName) return { error: "Enter your name." };
+  if (password(data) !== String(data.get("confirm") ?? "")) return { error: "Those passwords do not match." };
 
   const result = await auth.signUp({ email: email(data), password: password(data), fullName });
   if (!result.ok) return { error: result.error };
@@ -37,5 +38,7 @@ export async function resetPasswordAction(_prev: FormState, data: FormData): Pro
 
   const result = await auth.updatePassword(password(data));
   if (!result.ok) return { error: result.error };
-  redirect("/clubs");
+  // Same reason as the confirmation link: landing on the directory with no word
+  // about what happened reads as though the form did nothing.
+  redirect("/auth/confirmed?done=password");
 }

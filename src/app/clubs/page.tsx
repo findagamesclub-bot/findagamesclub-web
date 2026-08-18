@@ -1,7 +1,7 @@
+import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
-import Stack from "@mui/material/Stack";
-import Typography from "@mui/material/Typography";
 import ClubDirectory from "@/components/clubs/ClubDirectory";
+import DirectoryHero from "@/components/clubs/DirectoryHero";
 import { getFilterOptions, listClubs } from "@/services/clubs.service";
 import type { ClubListFilters } from "@/lib/query/keys";
 
@@ -26,20 +26,25 @@ export default async function ClubsPage({ searchParams }: PageProps<"/clubs">) {
     page: Number(first(params.page) ?? 1),
   };
 
-  const [initialData, options] = await Promise.all([listClubs(filters), getFilterOptions()]);
+  // The hero describes the whole directory, so it needs the unfiltered set —
+  // otherwise searching for one club would shrink it to "1 club · 1 town".
+  const [initialData, options, everything] = await Promise.all([
+    listClubs(filters),
+    getFilterOptions(),
+    listClubs({}),
+  ]);
 
   return (
-    <Container maxWidth="lg" component="main" sx={{ py: { xs: 4, md: 6 } }}>
-      <Stack spacing={1} sx={{ maxWidth: 640, mb: 4 }}>
-        <Typography variant="overline" color="text.secondary">Directory</Typography>
-        <Typography variant="h1">Find a club you will actually turn up to</Typography>
-        <Typography variant="body1" color="text.secondary">
-          Tabletop and wargaming clubs across the UK. Filter by town, what they
-          play, the night they meet, or how far you will travel.
-        </Typography>
-      </Stack>
+    <Box component="main">
+      <DirectoryHero
+        clubs={everything.clubs}
+        total={everything.total}
+        towns={options.cities.length}
+      />
 
-      <ClubDirectory initialFilters={filters} initialData={initialData} options={options} />
-    </Container>
+      <Container maxWidth="lg" sx={{ py: { xs: 4, md: 5 } }}>
+        <ClubDirectory initialFilters={filters} initialData={initialData} options={options} />
+      </Container>
+    </Box>
   );
 }

@@ -16,7 +16,8 @@ import Typography from "@mui/material/Typography";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
 import AccountMenu from "./AccountMenu";
-import { tokens } from "@/lib/theme";
+import BrandMark from "./BrandMark";
+import { headerHeight, tokens } from "@/lib/tokens";
 
 export type Viewer = { fullName: string; email: string; role: string } | null;
 
@@ -37,8 +38,9 @@ const NAV: NavItem[] = [
 
 const linkSx = (active: boolean) => ({
   fontFamily: "var(--font-display)",
-  fontSize: "0.95rem",
+  fontSize: "1rem",
   fontWeight: 600,
+  whiteSpace: "nowrap",
   textDecoration: "none",
   color: active ? tokens.ink : tokens.inkMuted,
   py: 0.5,
@@ -47,6 +49,11 @@ const linkSx = (active: boolean) => ({
   "&:hover": { color: tokens.ink },
 });
 
+/**
+ * A section that exists in the plan but isn't built yet. The muted colour and
+ * the tooltip carry that on their own — the "Soon" badge beside every one of
+ * them made the header look like a construction site.
+ */
 function ComingSoon({ label, milestone }: { label: string; milestone: number }) {
   return (
     <Tooltip title={`Arriving in milestone ${milestone}`} placement="bottom">
@@ -55,31 +62,16 @@ function ComingSoon({ label, milestone }: { label: string; milestone: number }) 
         sx={{
           display: "inline-flex",
           alignItems: "center",
-          gap: 0.75,
           fontFamily: "var(--font-display)",
-          fontSize: "0.95rem",
+          fontSize: "1rem",
           fontWeight: 600,
+          whiteSpace: "nowrap",
           color: "#9AA8BC",
           py: 0.5,
           cursor: "default",
         }}
       >
         {label}
-        <Box
-          component="span"
-          sx={{
-            fontSize: "0.6rem",
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            border: `1px solid ${tokens.rule}`,
-            borderRadius: "3px",
-            px: 0.5,
-            py: "1px",
-            color: "#9AA8BC",
-          }}
-        >
-          Soon
-        </Box>
       </Box>
     </Tooltip>
   );
@@ -111,25 +103,34 @@ export default function SiteHeader({ viewer }: { viewer: Viewer }) {
   return (
     <AppBar>
       <Container maxWidth="lg">
-        <Toolbar disableGutters sx={{ gap: 2, minHeight: { xs: 60, md: 68 } }}>
+        <Toolbar disableGutters sx={{ gap: 2, minHeight: headerHeight }}>
           <Box
             component={Link}
             href="/"
-            sx={{
-              fontFamily: "var(--font-display)",
-              fontSize: "1rem",
-              fontWeight: 700,
-              letterSpacing: "0.13em",
-              textTransform: "uppercase",
-              color: tokens.brand,
-              textDecoration: "none",
-              whiteSpace: "nowrap",
-            }}
+            aria-label="FindAGamesClub, home"
+            sx={{ display: "inline-flex", alignItems: "center", gap: 1.25, textDecoration: "none" }}
           >
-            FindAGamesClub
+            <BrandMark size={{ xs: 40, md: 56 }} />
+            {/* Mixed case with tight tracking, so it reads as a wordmark rather
+                than the tracked caps used for labels elsewhere. */}
+            <Box
+              component="span"
+              sx={{
+                display: { xs: "none", sm: "block" },
+                fontFamily: "var(--font-display)",
+                fontSize: "1.32rem",
+                fontWeight: 700,
+                letterSpacing: "-0.018em",
+                color: tokens.brandDeep,
+                lineHeight: 1,
+                whiteSpace: "nowrap",
+              }}
+            >
+              FindAGamesClub
+            </Box>
           </Box>
 
-          <Stack direction="row" spacing={2.5} sx={{ ml: 3, display: { xs: "none", lg: "flex" } }}>
+          <Stack direction="row" spacing={5} sx={{ ml: 4.5, display: { xs: "none", lg: "flex" } }}>
             {renderNav()}
           </Stack>
 

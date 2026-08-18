@@ -49,7 +49,7 @@ export async function signUp(params: {
 
   const email = templates.verifyEmail({
     name: params.fullName,
-    url: confirmUrl(data.properties.hashed_token, "signup"),
+    url: confirmUrl(data.properties.hashed_token, "signup", "/auth/confirmed"),
   });
   const sent = await sendEmail({ to: params.email, ...email });
   if (!sent.ok) return { ok: false, error: "Account created, but the email failed to send." };
@@ -95,8 +95,23 @@ export async function signOut(): Promise<void> {
 
 export async function updatePassword(password: string): Promise<AuthResult> {
   const supabase = await createClient();
-  const { error } = await supabase.auth.updateUser({ password });
-  return error ? { ok: false, error: error.message } : { ok: true };
+  const { data, error } = await supabase.auth.updateUser({ password });
+  if (error) return { ok: false, error: error.message };
+
+  // Tell the account holder their password moved. If this reaches someone who
+  // didn't do it, that's the only warning they get. A failure to send must not
+  // fail the reset itself — the password has already changed by this point.
+  const user = data.user;
+  if (user?.email) {
+    const message = templates.passwordChanged({
+      name: (user.user_metadata?.full_name as string) || undefined,
+      url: `${siteUrl()}/auth/sign-in`,
+    });
+    const sent = await sendEmail({ to: user.email, ...message });
+    if (!sent.ok) console.error("password-changed notice failed to send", { userId: user.id });
+  }
+
+  return { ok: true };
 }
 
 /** The signed-in user's profile, or null. Safe to call anywhere on the server. */

@@ -1,0 +1,22 @@
+<!-- Text removed for the Next.js build: the card and page already print the
+     club name, and several files carried placeholder titles (mana-wharf.svg
+     said "Club Atlas"). Originals are untouched in ../app/clubs/assets. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Critical Stack Manchester</title>
+  <desc id="desc">Abstract card gaming venue with lit feature tables.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#111d37"/>
+      <stop offset="55%" stop-color="#224f88"/>
+      <stop offset="100%" stop-color="#62adff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="720" fill="url(#bg)"/>
+  <rect x="112" y="142" width="976" height="438" rx="38" fill="#10233f" opacity=".65"/>
+  <rect x="176" y="212" width="262" height="286" rx="24" fill="#f8fbff"/>
+  <rect x="470" y="212" width="262" height="286" rx="24" fill="#dcecff"/>
+  <rect x="764" y="212" width="262" height="286" rx="24" fill="#f8fbff"/>
+  <rect x="232" y="260" width="148" height="188" rx="18" fill="#1d5f9f"/>
+  <rect x="524" y="252" width="154" height="196" rx="18" fill="#174b8a"/>
+  <rect x="820" y="260" width="148" height="188" rx="18" fill="#1d5f9f"/>
+</svg>

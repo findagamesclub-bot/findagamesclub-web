@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import * as templates from "@/lib/email/templates";
+import { LOGO_CID, LOGO_PNG_BASE64 } from "@/lib/email/logo-data";
 
 /** Local-only gallery for checking email templates. Hidden in production. */
 export default async function EmailPreviewPage({ searchParams }: PageProps<"/dev/email-preview">) {
@@ -12,18 +13,26 @@ export default async function EmailPreviewPage({ searchParams }: PageProps<"/dev
   const email =
     which === "reset" ? templates.resetPassword({ name: "Gulnabi", url })
     : which === "welcome" ? templates.welcome({ name: "Gulnabi", url })
+    : which === "passwordChanged" ? templates.passwordChanged({ name: "Gulnabi", url })
     : which === "changed" ? templates.emailChanged({ name: "Gulnabi", url, newEmail: "new@example.com" })
     : templates.verifyEmail({ name: "Gulnabi", url });
+
+  // The real message carries the logo as an inline attachment, which a browser
+  // can't resolve. Swap in the same bytes as a data URI so the preview matches.
+  const html = email.html.replace(
+    `cid:${LOGO_CID}`,
+    `data:image/png;base64,${LOGO_PNG_BASE64}`,
+  );
 
   return (
     <div style={{ padding: 16, fontFamily: "system-ui" }}>
       <p style={{ margin: "0 0 12px" }}>
-        {["verify", "reset", "welcome", "changed"].map((t) => (
+        {["verify", "reset", "welcome", "passwordChanged", "changed"].map((t) => (
           <a key={t} href={`?t=${t}`} style={{ marginRight: 12 }}>{t}</a>
         ))}
         <strong style={{ marginLeft: 12 }}>{email.subject}</strong>
       </p>
-      <iframe title="preview" srcDoc={email.html} style={{ width: "100%", height: "80vh", border: "1px solid #ccc" }} />
+      <iframe title="preview" srcDoc={html} style={{ width: "100%", height: "80vh", border: "1px solid #ccc" }} />
     </div>
   );
 }

@@ -25,4 +25,6 @@ export type ClubSummary = {
   facilities: string[];
   distanceMiles?: number | null;
   isFeatured?: boolean;
+  /** Card artwork. Null for clubs that haven't uploaded any — the card draws a plate instead. */
+  image?: { src: string; alt: string } | null;
 };

@@ -1,0 +1,20 @@
+<!-- Text removed for the Next.js build: the card and page already print the
+     club name, and several files carried placeholder titles (mana-wharf.svg
+     said "Club Atlas"). Originals are untouched in ../app/clubs/assets. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Meeple Junction</title>
+  <desc id="desc">Abstract board game cafe with family tables and hosted sessions.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#17315a"/>
+      <stop offset="58%" stop-color="#2b6cb1"/>
+      <stop offset="100%" stop-color="#a9dbff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="720" fill="url(#bg)"/>
+  <rect x="110" y="152" width="980" height="416" rx="36" fill="#f8fbff" opacity=".95"/>
+  <circle cx="310" cy="358" r="102" fill="#dcecff"/>
+  <circle cx="600" cy="358" r="102" fill="#174b8a"/>
+  <circle cx="890" cy="358" r="102" fill="#dcecff"/>
+  <circle cx="600" cy="358" r="40" fill="#f8fbff"/>
+</svg>

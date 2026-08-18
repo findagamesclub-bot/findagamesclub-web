@@ -1,6 +1,6 @@
 import Container from "@mui/material/Container";
-import TextField from "@mui/material/TextField";
 import AuthForm from "@/components/auth/AuthForm";
+import PasswordFields from "@/components/auth/PasswordFields";
 import { resetPasswordAction } from "../actions";
 
 export const metadata = { title: "Choose a new password" };
@@ -15,10 +15,7 @@ export default function ResetPasswordPage() {
         pendingLabel="Saving"
         action={resetPasswordAction}
       >
-        <TextField name="password" type="password" label="New password" required
-          autoComplete="new-password" fullWidth />
-        <TextField name="confirm" type="password" label="Confirm password" required
-          autoComplete="new-password" fullWidth />
+        <PasswordFields label="New password" />
       </AuthForm>
     </Container>
   );

@@ -21,7 +21,7 @@ export function MembershipTiers({ tiers }: { tiers: MembershipTier[] }) {
               </Stack>
 
               {tier.price ? (
-                <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "1.35rem", fontWeight: 600 }}>
+                <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "1.5rem", fontWeight: 600 }}>
                   {tier.price}
                   {tier.priceDuration ? (
                     <Typography component="span" variant="body2" color="text.secondary"> / {tier.priceDuration}</Typography>

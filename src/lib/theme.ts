@@ -32,41 +32,42 @@ const theme = createTheme({
 
     h1: {
       fontFamily: display,
-      fontSize: "clamp(2.4rem, 6vw, 3.75rem)",
+      fontSize: "clamp(2.6rem, 6vw, 4rem)",
       fontWeight: 700,
       lineHeight: 1.04,
       letterSpacing: "-0.025em",
     },
     h2: {
       fontFamily: display,
-      fontSize: "clamp(1.8rem, 4vw, 2.5rem)",
+      fontSize: "clamp(1.95rem, 4vw, 2.7rem)",
       fontWeight: 700,
       lineHeight: 1.12,
       letterSpacing: "-0.02em",
     },
-    h3: { fontFamily: display, fontSize: "1.5rem", fontWeight: 600, lineHeight: 1.2, letterSpacing: "-0.015em" },
-    h4: { fontFamily: display, fontSize: "1.2rem", fontWeight: 600, lineHeight: 1.25 },
-    h5: { fontFamily: display, fontSize: "1.05rem", fontWeight: 600 },
-    h6: { fontFamily: display, fontSize: "0.95rem", fontWeight: 600 },
+    h3: { fontFamily: display, fontSize: "1.625rem", fontWeight: 600, lineHeight: 1.2, letterSpacing: "-0.015em" },
+    h4: { fontFamily: display, fontSize: "1.35rem", fontWeight: 600, lineHeight: 1.25 },
+    h5: { fontFamily: display, fontSize: "1.15rem", fontWeight: 600 },
+    h6: { fontFamily: display, fontSize: "1.05rem", fontWeight: 600 },
 
-    // Larger than MUI's default; it's a reading face.
-    body1: { fontFamily: body, fontSize: "1.0625rem", lineHeight: 1.6 },
-    body2: { fontFamily: body, fontSize: "0.9375rem", lineHeight: 1.55 },
+    // Well above MUI's default. It's a serif reading face, and the client
+    // found the first pass too small to scan comfortably.
+    body1: { fontFamily: body, fontSize: "1.1875rem", lineHeight: 1.6 },
+    body2: { fontFamily: body, fontSize: "1.0625rem", lineHeight: 1.55 },
 
     // Eyebrow and stat labels.
     overline: {
       fontFamily: display,
-      fontSize: "0.6875rem",
+      fontSize: "0.78rem",
       fontWeight: 600,
-      letterSpacing: "0.14em",
+      letterSpacing: "0.13em",
       textTransform: "uppercase",
       lineHeight: 1.4,
       fontStretch: "87.5%",
     },
-    subtitle1: { fontFamily: display, fontSize: "1rem", fontWeight: 500 },
-    subtitle2: { fontFamily: display, fontSize: "0.875rem", fontWeight: 600 },
-    caption: { fontFamily: display, fontSize: "0.8125rem", lineHeight: 1.45 },
-    button: { fontFamily: display, fontWeight: 600, textTransform: "none", letterSpacing: 0 },
+    subtitle1: { fontFamily: display, fontSize: "1.125rem", fontWeight: 500 },
+    subtitle2: { fontFamily: display, fontSize: "0.975rem", fontWeight: 600 },
+    caption: { fontFamily: display, fontSize: "0.9rem", lineHeight: 1.45 },
+    button: { fontFamily: display, fontSize: "1rem", fontWeight: 600, textTransform: "none", letterSpacing: 0 },
   },
 
   components: {
@@ -75,6 +76,14 @@ const theme = createTheme({
         // Tabular figures so stat columns line up.
         "code, kbd, samp, .mono": { fontFamily: mono, fontVariantNumeric: "tabular-nums" },
         "::selection": { background: tokens.brandSoft, color: tokens.ink },
+        // next/link renders a bare <a>, which otherwise picks up the browser's
+        // default blue and full underline and reads as an unstyled page.
+        "a": {
+          color: tokens.brand,
+          textDecorationColor: "rgba(23,75,138,0.35)",
+          textUnderlineOffset: "3px",
+        },
+        "a:hover": { textDecorationColor: tokens.brand },
         "*:focus-visible": { outline: `2px solid ${tokens.brand}`, outlineOffset: "2px" },
       },
     },
@@ -85,6 +94,9 @@ const theme = createTheme({
         root: {
           borderRadius: 4,
           paddingInline: "1.1rem",
+          // A button is as wide as its label. Wrapping "Create account" onto two
+          // lines to fit a tight header is never the right trade.
+          whiteSpace: "nowrap",
           "&.MuiButton-containedPrimary:hover": { backgroundColor: tokens.brandDeep },
         },
         sizeLarge: { paddingBlock: "0.65rem", paddingInline: "1.5rem", fontSize: "1rem" },
@@ -114,14 +126,20 @@ const theme = createTheme({
 
     MuiTextField: { defaultProps: { variant: "outlined", size: "small" } },
 
+    // Controls take the display face, not the serif. The serif is a reading
+    // face for prose — on a select it reads like body copy that has wandered
+    // into the form, and it made the filter panel look unfinished.
     MuiOutlinedInput: {
       styleOverrides: {
-        root: { borderRadius: 4, background: tokens.paper },
+        root: { borderRadius: 4, background: tokens.paper, fontFamily: display, fontSize: "1rem" },
         notchedOutline: { borderColor: tokens.rule },
       },
     },
 
     MuiInputLabel: { styleOverrides: { root: { fontFamily: display } } },
+    MuiMenuItem: { styleOverrides: { root: { fontFamily: display, fontSize: "1rem" } } },
+    MuiFormHelperText: { styleOverrides: { root: { fontFamily: display } } },
+    MuiFormControlLabel: { styleOverrides: { label: { fontFamily: display } } },
 
     MuiAppBar: {
       defaultProps: { elevation: 0, color: "inherit", position: "sticky" },

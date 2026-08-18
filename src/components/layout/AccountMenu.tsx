@@ -24,7 +24,7 @@ export default function AccountMenu({ viewer }: { viewer: NonNullable<Viewer> })
         aria-expanded={Boolean(anchor)}
         sx={{ gap: 1, color: tokens.ink }}
       >
-        <Avatar sx={{ width: 28, height: 28, fontSize: "0.75rem", bgcolor: tokens.brand }}>
+        <Avatar sx={{ width: 30, height: 30, fontSize: "0.82rem", bgcolor: tokens.brand }}>
           {initialsOf(viewer.fullName || viewer.email)}
         </Avatar>
         Account
@@ -38,13 +38,13 @@ export default function AccountMenu({ viewer }: { viewer: NonNullable<Viewer> })
       >
         <Stack sx={{ px: 2, py: 1 }}>
           <Typography variant="subtitle2">{viewer.fullName || "Your account"}</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.8rem" }}>
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.9rem" }}>
             {viewer.email}
           </Typography>
         </Stack>
         <Divider />
         {viewer.role === "admin" ? (
-          <MenuItem disabled sx={{ fontSize: "0.85rem" }}>Admin tools · milestone 3</MenuItem>
+          <MenuItem disabled sx={{ fontSize: "0.95rem" }}>Admin tools · milestone 3</MenuItem>
         ) : null}
         {/* MenuItem's own `action` prop is a ref, so the form wraps it instead. */}
         <Box component="form" action="/auth/sign-out" method="post">

@@ -1,0 +1,23 @@
+<!-- Text removed for the Next.js build: the card and page already print the
+     club name, and several files carried placeholder titles (mana-wharf.svg
+     said "Club Atlas"). Originals are untouched in ../app/clubs/assets. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Mana Wharf Social Club</title>
+  <desc id="desc">Abstract board game tables by a dockside evening skyline.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f3159"/>
+      <stop offset="55%" stop-color="#1d5f9f"/>
+      <stop offset="100%" stop-color="#78c2ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="720" fill="url(#bg)"/>
+  <circle cx="972" cy="126" r="74" fill="#f2fbff" opacity=".78"/>
+  <rect x="0" y="440" width="1200" height="280" fill="#12345e" opacity=".66"/>
+  <rect x="146" y="362" width="916" height="226" rx="28" fill="#f8fbff"/>
+  <rect x="206" y="414" width="220" height="120" rx="20" fill="#dcecff"/>
+  <rect x="480" y="396" width="246" height="144" rx="22" fill="#184a87"/>
+  <rect x="774" y="414" width="216" height="120" rx="20" fill="#dcecff"/>
+  <circle cx="602" cy="468" r="52" fill="#78c2ff"/>
+  <circle cx="602" cy="468" r="28" fill="#f8fbff"/>
+</svg>
