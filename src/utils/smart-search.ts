@@ -240,7 +240,15 @@ export function parseSmartSearch(rawQuery: string, options: SmartSearchOptions):
     .replace(/\b[1-5]\s*\+?\s*stars?\b/gi, " ")
     .replace(/\b\d{1,3}\s*miles?\b/gi, " ");
 
-  const facetHits = matchFacets(withoutNumbers, options.facets);
+  /**
+   * A word that is both a game and a format belongs to the format. "Wargaming"
+   * is a game one club lists and also a format four clubs are tagged with, so
+   * reading "wargaming clubs" as the game found one of them and missed three.
+   */
+  const formatLabels = new Set(options.formats.map((f) => fold(f.label)));
+  const facetHits = matchFacets(withoutNumbers, options.facets).filter(
+    (h) => !formatLabels.has(fold(h.value)),
+  );
 
   /**
    * A game the user spelled out in full wins over a format that happens to

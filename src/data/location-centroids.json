@@ -4,7 +4,8 @@
     "source": "POSTCODE_CENTROIDS and PLACE_NAME_CENTROIDS in ../app/club_store.py",
     "usedBy": "src/services/location.service.ts",
     "note": "Fallback when a typed place cannot be resolved from club postcodes. Deleting this silently breaks 'within N miles' for places no club sits in.",
-    "placesSource": "postcodes.io /outcodes, via scripts/build-place-centroids.mjs"
+    "placesSource": "postcodes.io /outcodes, via scripts/build-place-centroids.mjs",
+    "countiesSource": "mean of outcode centroids, via scripts/build-county-centroids.mjs"
   },
   "postcodes": {
     "OX127GG": {
@@ -578,6 +579,390 @@
       "latitude": 51.509127867132854,
       "longitude": -0.12489062237762238,
       "label": "London"
+    },
+    "yorkshire": {
+      "latitude": 53.77927319044485,
+      "longitude": -1.288674746552183,
+      "label": "Yorkshire",
+      "area": true
+    },
+    "west yorkshire": {
+      "latitude": 53.7320951306874,
+      "longitude": -1.646987179855265,
+      "label": "West Yorkshire",
+      "area": true
+    },
+    "south yorkshire": {
+      "latitude": 53.48085192955264,
+      "longitude": -1.3588735392370488,
+      "label": "South Yorkshire",
+      "area": true
+    },
+    "north yorkshire": {
+      "latitude": 54.16297381970805,
+      "longitude": -1.385359718596061,
+      "label": "North Yorkshire",
+      "area": true
+    },
+    "east yorkshire": {
+      "latitude": 53.87373844635361,
+      "longitude": -0.37730503254896597,
+      "label": "East Yorkshire",
+      "area": true
+    },
+    "lancashire": {
+      "latitude": 53.84400200752108,
+      "longitude": -2.75272135586437,
+      "label": "Lancashire",
+      "area": true
+    },
+    "greater manchester": {
+      "latitude": 53.51581123419821,
+      "longitude": -2.3135373827271914,
+      "label": "Greater Manchester",
+      "area": true
+    },
+    "merseyside": {
+      "latitude": 53.41690506900022,
+      "longitude": -2.9233055917447786,
+      "label": "Merseyside",
+      "area": true
+    },
+    "cheshire": {
+      "latitude": 53.183896469219434,
+      "longitude": -2.4973322290007323,
+      "label": "Cheshire",
+      "area": true
+    },
+    "cumbria": {
+      "latitude": 54.605494934562174,
+      "longitude": -2.827614126697094,
+      "label": "Cumbria",
+      "area": true
+    },
+    "northumberland": {
+      "latitude": 55.07881502136283,
+      "longitude": -1.8967607830770215,
+      "label": "Northumberland",
+      "area": true
+    },
+    "tyne and wear": {
+      "latitude": 54.93932519241421,
+      "longitude": -1.494764031402267,
+      "label": "Tyne and Wear",
+      "area": true
+    },
+    "county durham": {
+      "latitude": 54.65604504954125,
+      "longitude": -1.5521579833909713,
+      "label": "County Durham",
+      "area": true
+    },
+    "derbyshire": {
+      "latitude": 53.13353070508732,
+      "longitude": -1.6018349330594175,
+      "label": "Derbyshire",
+      "area": true
+    },
+    "nottinghamshire": {
+      "latitude": 53.04645913242359,
+      "longitude": -1.1662700177446477,
+      "label": "Nottinghamshire",
+      "area": true
+    },
+    "lincolnshire": {
+      "latitude": 53.05015686556021,
+      "longitude": -0.42010206038614467,
+      "label": "Lincolnshire",
+      "area": true
+    },
+    "leicestershire": {
+      "latitude": 52.70098987204301,
+      "longitude": -1.1759843420716138,
+      "label": "Leicestershire",
+      "area": true
+    },
+    "rutland": {
+      "latitude": 52.65646215784753,
+      "longitude": -0.7025104950672637,
+      "label": "Rutland",
+      "area": true
+    },
+    "northamptonshire": {
+      "latitude": 52.31202604984678,
+      "longitude": -0.7950652091263831,
+      "label": "Northamptonshire",
+      "area": true
+    },
+    "staffordshire": {
+      "latitude": 52.8069704783798,
+      "longitude": -2.090785550541677,
+      "label": "Staffordshire",
+      "area": true
+    },
+    "shropshire": {
+      "latitude": 52.713048160889144,
+      "longitude": -2.621833100554907,
+      "label": "Shropshire",
+      "area": true
+    },
+    "herefordshire": {
+      "latitude": 52.0605802506691,
+      "longitude": -2.6767185227475494,
+      "label": "Herefordshire",
+      "area": true
+    },
+    "worcestershire": {
+      "latitude": 52.29125353707309,
+      "longitude": -2.2228798785785795,
+      "label": "Worcestershire",
+      "area": true
+    },
+    "warwickshire": {
+      "latitude": 52.4005120891415,
+      "longitude": -1.5145627773700223,
+      "label": "Warwickshire",
+      "area": true
+    },
+    "west midlands": {
+      "latitude": 52.498030155301365,
+      "longitude": -1.9070888431429678,
+      "label": "West Midlands",
+      "area": true
+    },
+    "norfolk": {
+      "latitude": 52.693177595514506,
+      "longitude": 0.8616759681002653,
+      "label": "Norfolk",
+      "area": true
+    },
+    "suffolk": {
+      "latitude": 52.06310056455005,
+      "longitude": 0.9303993983520491,
+      "label": "Suffolk",
+      "area": true
+    },
+    "cambridgeshire": {
+      "latitude": 52.39066069950928,
+      "longitude": -0.04778143319442882,
+      "label": "Cambridgeshire",
+      "area": true
+    },
+    "essex": {
+      "latitude": 51.723074963987756,
+      "longitude": 0.6955070059794969,
+      "label": "Essex",
+      "area": true
+    },
+    "hertfordshire": {
+      "latitude": 51.775403686422344,
+      "longitude": -0.3082838095990712,
+      "label": "Hertfordshire",
+      "area": true
+    },
+    "bedfordshire": {
+      "latitude": 52.00614277801635,
+      "longitude": -0.4523346538837219,
+      "label": "Bedfordshire",
+      "area": true
+    },
+    "buckinghamshire": {
+      "latitude": 51.800761243180006,
+      "longitude": -0.8572222395869455,
+      "label": "Buckinghamshire",
+      "area": true
+    },
+    "oxfordshire": {
+      "latitude": 51.80273821046854,
+      "longitude": -1.2853486733094985,
+      "label": "Oxfordshire",
+      "area": true
+    },
+    "berkshire": {
+      "latitude": 51.41143178885503,
+      "longitude": -0.8934567828930717,
+      "label": "Berkshire",
+      "area": true
+    },
+    "greater london": {
+      "latitude": 51.48048611573412,
+      "longitude": -0.09121327166060533,
+      "label": "Greater London",
+      "area": true
+    },
+    "surrey": {
+      "latitude": 51.296053412017706,
+      "longitude": -0.34013499017275134,
+      "label": "Surrey",
+      "area": true
+    },
+    "kent": {
+      "latitude": 51.230359265813405,
+      "longitude": 0.631929277814223,
+      "label": "Kent",
+      "area": true
+    },
+    "east sussex": {
+      "latitude": 50.81889989798291,
+      "longitude": 0.4293663795686674,
+      "label": "East Sussex",
+      "area": true
+    },
+    "west sussex": {
+      "latitude": 50.92372188495879,
+      "longitude": -0.4365030487312381,
+      "label": "West Sussex",
+      "area": true
+    },
+    "sussex": {
+      "latitude": 50.933412544003346,
+      "longitude": -0.3572824722732328,
+      "label": "Sussex",
+      "area": true
+    },
+    "hampshire": {
+      "latitude": 50.99048957791296,
+      "longitude": -1.1918310340116245,
+      "label": "Hampshire",
+      "area": true
+    },
+    "isle of wight": {
+      "latitude": 50.69081095295205,
+      "longitude": -1.313924253690035,
+      "label": "Isle of Wight",
+      "area": true
+    },
+    "dorset": {
+      "latitude": 50.71834033991914,
+      "longitude": -2.153015689597657,
+      "label": "Dorset",
+      "area": true
+    },
+    "wiltshire": {
+      "latitude": 51.31560272517439,
+      "longitude": -1.7867490379982538,
+      "label": "Wiltshire",
+      "area": true
+    },
+    "somerset": {
+      "latitude": 51.203220832737586,
+      "longitude": -2.732095960555413,
+      "label": "Somerset",
+      "area": true
+    },
+    "devon": {
+      "latitude": 50.52413410741267,
+      "longitude": -3.724896866752497,
+      "label": "Devon",
+      "area": true
+    },
+    "cornwall": {
+      "latitude": 50.30189005216923,
+      "longitude": -4.917203649251794,
+      "label": "Cornwall",
+      "area": true
+    },
+    "gloucestershire": {
+      "latitude": 51.87998068838138,
+      "longitude": -2.1628195070778182,
+      "label": "Gloucestershire",
+      "area": true
+    },
+    "scotland": {
+      "latitude": 56.607262525546744,
+      "longitude": -3.449377131109872,
+      "label": "Scotland",
+      "area": true
+    },
+    "highlands": {
+      "latitude": 56.953324222671974,
+      "longitude": -3.857668690191386,
+      "label": "Highlands",
+      "area": true
+    },
+    "fife": {
+      "latitude": 56.12945616129029,
+      "longitude": -3.136696538461541,
+      "label": "Fife",
+      "area": true
+    },
+    "aberdeenshire": {
+      "latitude": 57.2116738483576,
+      "longitude": -2.2622164982569846,
+      "label": "Aberdeenshire",
+      "area": true
+    },
+    "wales": {
+      "latitude": 51.97460451714251,
+      "longitude": -3.5580173985955454,
+      "label": "Wales",
+      "area": true
+    },
+    "south wales": {
+      "latitude": 51.563891415187065,
+      "longitude": -3.373370192227688,
+      "label": "South Wales",
+      "area": true
+    },
+    "north wales": {
+      "latitude": 53.13516532592228,
+      "longitude": -3.5741911040692944,
+      "label": "North Wales",
+      "area": true
+    },
+    "northern ireland": {
+      "latitude": 54.80510661532667,
+      "longitude": -6.628184275719281,
+      "label": "Northern Ireland",
+      "area": true
+    },
+    "midlands": {
+      "latitude": 52.74758756458453,
+      "longitude": -1.4170163009658885,
+      "label": "Midlands",
+      "area": true
+    },
+    "east midlands": {
+      "latitude": 52.8368814089967,
+      "longitude": -1.2528600784038384,
+      "label": "East Midlands",
+      "area": true
+    },
+    "west country": {
+      "latitude": 51.06509685199407,
+      "longitude": -3.06449430855783,
+      "label": "West Country",
+      "area": true
+    },
+    "north east": {
+      "latitude": 54.886888727875686,
+      "longitude": -1.5183398380019097,
+      "label": "North East",
+      "area": true
+    },
+    "north west": {
+      "latitude": 53.54563012027605,
+      "longitude": -2.6394312249962515,
+      "label": "North West",
+      "area": true
+    },
+    "south east": {
+      "latitude": 51.20410184585543,
+      "longitude": -0.28259670000086234,
+      "label": "South East",
+      "area": true
+    },
+    "south west": {
+      "latitude": 50.85089006329241,
+      "longitude": -3.4150973022473674,
+      "label": "South West",
+      "area": true
+    },
+    "east anglia": {
+      "latitude": 52.296436928075344,
+      "longitude": 0.8625508509503,
+      "label": "East Anglia",
+      "area": true
     }
   }
 }

@@ -98,7 +98,7 @@ export default function ClubDirectory({ initialFilters, initialData, options }: 
         // after a search that looked like it worked.
         <EmptyState
           title={`We could not find "${filters.location}"`}
-          description="Try a town or a postcode, like Didcot or OX11. County-wide searches such as Yorkshire are not supported yet."
+          description="Try a town, county or postcode, like Didcot, Oxfordshire or OX11."
           // Clearing only the place. Sending them to the bare path would throw
           // away the game and day they had already chosen.
           onAction={{ label: "Clear the location", onClick: () => update({ location: "", withinMiles: "" }) }}
