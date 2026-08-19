@@ -10,6 +10,8 @@ export type ClubListResponse = {
   page: number;
   pageSize: number;
   origin: { label: string } | null;
+  /** Set when a place was searched for but could not be found. */
+  locationUnresolved?: boolean;
 };
 
 function toSearchParams(filters: ClubListFilters): string {

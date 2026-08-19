@@ -1,9 +1,10 @@
 {
   "_meta": {
-    "purpose": "Runtime reference data. Required for distance search \u2014 not a test fixture.",
+    "purpose": "Runtime reference data. Required for distance search — not a test fixture.",
     "source": "POSTCODE_CENTROIDS and PLACE_NAME_CENTROIDS in ../app/club_store.py",
     "usedBy": "src/services/location.service.ts",
-    "note": "Fallback when a typed place cannot be resolved from club postcodes. Deleting this silently breaks 'within N miles' for places no club sits in."
+    "note": "Fallback when a typed place cannot be resolved from club postcodes. Deleting this silently breaks 'within N miles' for places no club sits in.",
+    "placesSource": "postcodes.io /outcodes, via scripts/build-place-centroids.mjs"
   },
   "postcodes": {
     "OX127GG": {
@@ -102,6 +103,481 @@
       "latitude": 51.6287,
       "longitude": -0.7482,
       "label": "High Wycombe"
+    },
+    "manchester": {
+      "latitude": 53.47754279927005,
+      "longitude": -2.236148905109487,
+      "label": "Manchester"
+    },
+    "birmingham": {
+      "latitude": 52.47970603134798,
+      "longitude": -1.9094849686520388,
+      "label": "Birmingham"
+    },
+    "leeds": {
+      "latitude": 53.79766601338445,
+      "longitude": -1.5511766520076506,
+      "label": "Leeds"
+    },
+    "glasgow": {
+      "latitude": 55.858846739473705,
+      "longitude": -4.248812731578948,
+      "label": "Glasgow"
+    },
+    "liverpool": {
+      "latitude": 53.40202620217386,
+      "longitude": -2.980557282608693,
+      "label": "Liverpool"
+    },
+    "bristol": {
+      "latitude": 51.453226997509354,
+      "longitude": -2.5938588941469525,
+      "label": "Bristol"
+    },
+    "sheffield": {
+      "latitude": 53.37999746332045,
+      "longitude": -1.4713355868725897,
+      "label": "Sheffield"
+    },
+    "edinburgh": {
+      "latitude": 55.95078974303399,
+      "longitude": -3.192790975232198,
+      "label": "Edinburgh"
+    },
+    "cardiff": {
+      "latitude": 51.47472581458,
+      "longitude": -3.1731399112519796,
+      "label": "Cardiff"
+    },
+    "newcastle upon tyne": {
+      "latitude": 54.972421477611924,
+      "longitude": -1.6115526641791045,
+      "label": "Newcastle upon Tyne"
+    },
+    "newcastle": {
+      "latitude": 54.972421477611924,
+      "longitude": -1.6115526641791045,
+      "label": "Newcastle"
+    },
+    "nottingham": {
+      "latitude": 52.95478264984716,
+      "longitude": -1.1484459204892967,
+      "label": "Nottingham"
+    },
+    "leicester": {
+      "latitude": 52.63392140000001,
+      "longitude": -1.1329053847222224,
+      "label": "Leicester"
+    },
+    "coventry": {
+      "latitude": 52.40941927201064,
+      "longitude": -1.5064049566360045,
+      "label": "Coventry"
+    },
+    "bradford": {
+      "latitude": 53.796284010548504,
+      "longitude": -1.7543336139240517,
+      "label": "Bradford"
+    },
+    "brighton": {
+      "latitude": 50.8426372216592,
+      "longitude": -0.13937748321722634,
+      "label": "Brighton"
+    },
+    "southampton": {
+      "latitude": 50.907224420306925,
+      "longitude": -1.3973606233766254,
+      "label": "Southampton"
+    },
+    "portsmouth": {
+      "latitude": 50.79946113005463,
+      "longitude": -1.0896570393442635,
+      "label": "Portsmouth"
+    },
+    "plymouth": {
+      "latitude": 50.37056719124434,
+      "longitude": -4.154742782258076,
+      "label": "Plymouth"
+    },
+    "oxford": {
+      "latitude": 51.744978179456915,
+      "longitude": -1.2613172184179418,
+      "label": "Oxford"
+    },
+    "cambridge": {
+      "latitude": 52.195212696890934,
+      "longitude": 0.14145723488773806,
+      "label": "Cambridge"
+    },
+    "york": {
+      "latitude": 53.95862216628717,
+      "longitude": -1.0826162870159457,
+      "label": "York"
+    },
+    "norwich": {
+      "latitude": 52.62655572819933,
+      "longitude": 1.306820242355606,
+      "label": "Norwich"
+    },
+    "exeter": {
+      "latitude": 50.72887600112354,
+      "longitude": -3.496690230337073,
+      "label": "Exeter"
+    },
+    "bath": {
+      "latitude": 51.39325410812585,
+      "longitude": -2.361258119921362,
+      "label": "Bath"
+    },
+    "derby": {
+      "latitude": 52.92194017714295,
+      "longitude": -1.4772289299999963,
+      "label": "Derby"
+    },
+    "stoke-on-trent": {
+      "latitude": 53.02739362341775,
+      "longitude": -2.1729246761603376,
+      "label": "Stoke-on-Trent"
+    },
+    "wolverhampton": {
+      "latitude": 52.58649125887569,
+      "longitude": -2.115757698224854,
+      "label": "Wolverhampton"
+    },
+    "milton keynes": {
+      "latitude": 52.04065432824426,
+      "longitude": -0.7557276641221371,
+      "label": "Milton Keynes"
+    },
+    "croydon": {
+      "latitude": 51.37324839512378,
+      "longitude": -0.07795302940121902,
+      "label": "Croydon"
+    },
+    "kingston upon thames": {
+      "latitude": 51.4076271539589,
+      "longitude": -0.29828044574780005,
+      "label": "Kingston upon Thames"
+    },
+    "luton": {
+      "latitude": 51.874317902310956,
+      "longitude": -0.4272767079831942,
+      "label": "Luton"
+    },
+    "northampton": {
+      "latitude": 52.24151397956713,
+      "longitude": -0.8882041189903854,
+      "label": "Northampton"
+    },
+    "aberdeen": {
+      "latitude": 57.13535140639265,
+      "longitude": -2.1208205449010666,
+      "label": "Aberdeen"
+    },
+    "dundee": {
+      "latitude": 56.461000465776216,
+      "longitude": -2.9765927212019987,
+      "label": "Dundee"
+    },
+    "inverness": {
+      "latitude": 57.484062213286606,
+      "longitude": -4.235084272727276,
+      "label": "Inverness"
+    },
+    "swansea": {
+      "latitude": 51.62669835257886,
+      "longitude": -3.9403735219399576,
+      "label": "Swansea"
+    },
+    "newport": {
+      "latitude": 51.59025007840233,
+      "longitude": -3.0065971434911267,
+      "label": "Newport"
+    },
+    "hull": {
+      "latitude": 53.74284449657532,
+      "longitude": -0.33794798630136996,
+      "label": "Hull"
+    },
+    "preston": {
+      "latitude": 53.757321359384235,
+      "longitude": -2.7015874872705754,
+      "label": "Preston"
+    },
+    "blackpool": {
+      "latitude": 53.815183661764685,
+      "longitude": -3.0468972058823502,
+      "label": "Blackpool"
+    },
+    "middlesbrough": {
+      "latitude": 54.571902738486784,
+      "longitude": -1.2393195838815785,
+      "label": "Middlesbrough"
+    },
+    "sunderland": {
+      "latitude": 54.906228907216494,
+      "longitude": -1.3779753986254293,
+      "label": "Sunderland"
+    },
+    "bournemouth": {
+      "latitude": 50.724709926050394,
+      "longitude": -1.8600307579831932,
+      "label": "Bournemouth"
+    },
+    "ipswich": {
+      "latitude": 52.06754235913579,
+      "longitude": 1.1393750756075558,
+      "label": "Ipswich"
+    },
+    "peterborough": {
+      "latitude": 52.586108702127625,
+      "longitude": -0.2370201012765957,
+      "label": "Peterborough"
+    },
+    "gloucester": {
+      "latitude": 51.859332672779935,
+      "longitude": -2.2438110733590726,
+      "label": "Gloucester"
+    },
+    "chester": {
+      "latitude": 53.2026931695237,
+      "longitude": -2.9100488485714204,
+      "label": "Chester"
+    },
+    "lincoln": {
+      "latitude": 53.26160008737862,
+      "longitude": -0.594136408845739,
+      "label": "Lincoln"
+    },
+    "canterbury": {
+      "latitude": 51.27742722566829,
+      "longitude": 1.0856764727272739,
+      "label": "Canterbury"
+    },
+    "winchester": {
+      "latitude": 51.06879765308643,
+      "longitude": -1.3087829209876518,
+      "label": "Winchester"
+    },
+    "salisbury": {
+      "latitude": 51.0752465886736,
+      "longitude": -1.78867162295082,
+      "label": "Salisbury"
+    },
+    "worcester": {
+      "latitude": 52.19561813720922,
+      "longitude": -2.222040600000002,
+      "label": "Worcester"
+    },
+    "carlisle": {
+      "latitude": 54.885762178041475,
+      "longitude": -2.911749939169134,
+      "label": "Carlisle"
+    },
+    "lancaster": {
+      "latitude": 54.04658037445258,
+      "longitude": -2.7995185992700766,
+      "label": "Lancaster"
+    },
+    "durham": {
+      "latitude": 54.782015798798646,
+      "longitude": -1.565491451201195,
+      "label": "Durham"
+    },
+    "wakefield": {
+      "latitude": 53.68757468312104,
+      "longitude": -1.4933917412420348,
+      "label": "Wakefield"
+    },
+    "huddersfield": {
+      "latitude": 53.64685581569557,
+      "longitude": -1.789046712247323,
+      "label": "Huddersfield"
+    },
+    "bolton": {
+      "latitude": 53.59050754182399,
+      "longitude": -2.444996772261197,
+      "label": "Bolton"
+    },
+    "stockport": {
+      "latitude": 53.40762534194828,
+      "longitude": -2.151625520874755,
+      "label": "Stockport"
+    },
+    "oldham": {
+      "latitude": 53.54988370089844,
+      "longitude": -2.1069620333761234,
+      "label": "Oldham"
+    },
+    "doncaster": {
+      "latitude": 53.52153381837158,
+      "longitude": -1.130571966597074,
+      "label": "Doncaster"
+    },
+    "barnsley": {
+      "latitude": 53.5410245069659,
+      "longitude": -1.4747130642414823,
+      "label": "Barnsley"
+    },
+    "warrington": {
+      "latitude": 53.393707087741895,
+      "longitude": -2.5723694374193458,
+      "label": "Warrington"
+    },
+    "southend-on-sea": {
+      "latitude": 51.53743544057967,
+      "longitude": 0.7313866681159419,
+      "label": "Southend-on-Sea"
+    },
+    "colchester": {
+      "latitude": 51.88431580504207,
+      "longitude": 0.8969019294117658,
+      "label": "Colchester"
+    },
+    "chelmsford": {
+      "latitude": 51.747473646341504,
+      "longitude": 0.45823242041078266,
+      "label": "Chelmsford"
+    },
+    "watford": {
+      "latitude": 51.66394539929949,
+      "longitude": -0.4055810175131353,
+      "label": "Watford"
+    },
+    "st albans": {
+      "latitude": 51.74892177604591,
+      "longitude": -0.32376157834290176,
+      "label": "St Albans"
+    },
+    "guildford": {
+      "latitude": 51.24309701628367,
+      "longitude": -0.5647696082375487,
+      "label": "Guildford"
+    },
+    "woking": {
+      "latitude": 51.32116335497834,
+      "longitude": -0.5797821774891778,
+      "label": "Woking"
+    },
+    "basingstoke": {
+      "latitude": 51.264783183377325,
+      "longitude": -1.088475439313985,
+      "label": "Basingstoke"
+    },
+    "maidstone": {
+      "latitude": 51.27897273718547,
+      "longitude": 0.5435708369058716,
+      "label": "Maidstone"
+    },
+    "crawley": {
+      "latitude": 51.118802598849356,
+      "longitude": -0.15388488807531361,
+      "label": "Crawley"
+    },
+    "eastbourne": {
+      "latitude": 50.772789477467775,
+      "longitude": 0.2764826909871248,
+      "label": "Eastbourne"
+    },
+    "hastings": {
+      "latitude": 50.865010318498044,
+      "longitude": 0.5822500681502101,
+      "label": "Hastings"
+    },
+    "cheltenham": {
+      "latitude": 51.900628703982825,
+      "longitude": -2.081827940796564,
+      "label": "Cheltenham"
+    },
+    "taunton": {
+      "latitude": 51.01318755734932,
+      "longitude": -3.102933801189464,
+      "label": "Taunton"
+    },
+    "torquay": {
+      "latitude": 50.472959129870134,
+      "longitude": -3.523257587662342,
+      "label": "Torquay"
+    },
+    "truro": {
+      "latitude": 50.26254998489763,
+      "longitude": -5.054399029126207,
+      "label": "Truro"
+    },
+    "shrewsbury": {
+      "latitude": 52.72274829565217,
+      "longitude": -2.7403972164251242,
+      "label": "Shrewsbury"
+    },
+    "telford": {
+      "latitude": 52.703348026126115,
+      "longitude": -2.50326898468469,
+      "label": "Telford"
+    },
+    "stafford": {
+      "latitude": 52.81419358181815,
+      "longitude": -2.121019195721927,
+      "label": "Stafford"
+    },
+    "blackburn": {
+      "latitude": 53.75692263448279,
+      "longitude": -2.4628821310344784,
+      "label": "Blackburn"
+    },
+    "wigan": {
+      "latitude": 53.553496787050314,
+      "longitude": -2.6279536820143936,
+      "label": "Wigan"
+    },
+    "salford": {
+      "latitude": 53.48378190031151,
+      "longitude": -2.2528928940809965,
+      "label": "Salford"
+    },
+    "bury": {
+      "latitude": 53.59221267167546,
+      "longitude": -2.287071032306539,
+      "label": "Bury"
+    },
+    "rochdale": {
+      "latitude": 53.61239306400004,
+      "longitude": -2.1312449715555597,
+      "label": "Rochdale"
+    },
+    "thame": {
+      "latitude": 51.737895413854375,
+      "longitude": -0.9838992202486676,
+      "label": "Thame"
+    },
+    "abingdon": {
+      "latitude": 51.668481305161,
+      "longitude": -1.2764441540762876,
+      "label": "Abingdon"
+    },
+    "didcot": {
+      "latitude": 51.6008587862595,
+      "longitude": -1.2513500932994064,
+      "label": "Didcot"
+    },
+    "wantage": {
+      "latitude": 51.59726522882182,
+      "longitude": -1.4249607721518998,
+      "label": "Wantage"
+    },
+    "bicester": {
+      "latitude": 51.90103896051228,
+      "longitude": -1.1553344140875161,
+      "label": "Bicester"
+    },
+    "henley-on-thames": {
+      "latitude": 51.54488755506607,
+      "longitude": -0.926026116299559,
+      "label": "Henley-on-Thames"
+    },
+    "london": {
+      "latitude": 51.509127867132854,
+      "longitude": -0.12489062237762238,
+      "label": "London"
     }
   }
 }

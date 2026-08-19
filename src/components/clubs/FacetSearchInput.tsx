@@ -5,6 +5,7 @@ import Autocomplete from "@mui/material/Autocomplete";
 import Chip from "@mui/material/Chip";
 import TextField from "@mui/material/TextField";
 import { createFilterOptions } from "@mui/material/Autocomplete";
+import { joinFacets, splitFacets } from "@/utils/facets";
 
 /**
  * Type-ahead for the games-and-facilities search.
@@ -30,19 +31,23 @@ export default function FacetSearchInput({
   onChange: (next: string) => void;
 }) {
   const [draft, setDraft] = useState("");
-  const facets = value.split(",").map((v) => v.trim()).filter(Boolean);
+  const facets = splitFacets(value);
 
   const commit = (terms: string[]) => {
     const seen = new Set<string>();
     const kept: string[] = [];
-    for (const term of terms) {
-      const clean = term.trim().replace(/,+$/, "");
+    // One entry is one term, commas and all. Splitting on commas is what broke
+    // "Warhammer 40,000", and matching it against the catalogue first only
+    // protected the names we happen to know: any other game with a comma, or a
+    // half-typed one, still came apart. Two terms means pressing enter twice,
+    // which is what the hint under the field says.
+    for (const term of terms.map((t) => t.trim()).filter(Boolean)) {
       // Case-insensitive dedupe: "Parking" and "parking" are the same filter.
-      if (!clean || seen.has(clean.toLowerCase())) continue;
-      seen.add(clean.toLowerCase());
-      kept.push(clean);
+      if (seen.has(term.toLowerCase())) continue;
+      seen.add(term.toLowerCase());
+      kept.push(term);
     }
-    onChange(kept.join(", "));
+    onChange(joinFacets(kept));
     setDraft("");
   };
 
@@ -59,9 +64,9 @@ export default function FacetSearchInput({
         filter(opts.filter((o) => !facets.some((f) => f.toLowerCase() === o.toLowerCase())), state)
       }
       onInputChange={(_, next, reason) => {
-        // A pasted or typed comma commits, same as picking a suggestion.
-        if (reason === "input" && next.includes(",")) commit([...facets, next]);
-        else if (reason !== "reset") setDraft(next);
+        // Deliberately not committing on comma: typing "Warhammer 40,000" would
+        // break at the comma. Enter, blur or picking a suggestion commits.
+        if (reason !== "reset") setDraft(next);
       }}
       onChange={(_, next) => commit(next as string[])}
       onBlur={() => draft.trim() && commit([...facets, draft])}

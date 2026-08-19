@@ -44,7 +44,6 @@ export function resolveOrigin(input: string, clubs: ClubPoint[]): Origin | null 
 
   const exact = located.filter((c) => parts.clean && compact(c.venue_postcode) === parts.clean);
   const district = located.filter((c) => parts.district && compact(c.venue_postcode_district) === parts.district);
-  const area = located.filter((c) => parts.area && compact(c.venue_postcode_area) === parts.area);
   const town = located.filter((c) => c.city && c.city.toLowerCase() === lower);
 
   // A known district centroid beats averaging clubs that merely share an area.
@@ -52,12 +51,20 @@ export function resolveOrigin(input: string, clubs: ClubPoint[]): Origin | null 
     return { ...POSTCODES[parts.district], label: parts.label || POSTCODES[parts.district].label };
   }
 
-  const matches = exact.length ? exact : district.length ? district : area.length ? area : town;
+  /**
+   * Deliberately no fallback to the postcode area. A two-letter area spans
+   * fifty miles (OX runs from Banbury to Henley), so averaging the clubs inside
+   * it answered every OX postcode with the same point: OX9 claimed Abingdon was
+   * 3 miles away when Thame, which is OX9, is really 14. Worse, returning here
+   * meant the real outcode lookup was never reached. Unknown outcodes now fall
+   * through to the geocoder, which knows where they actually are.
+   */
+  const matches = exact.length ? exact : district.length ? district : town;
   if (matches.length) {
     return { label: parts.label || parts.raw, ...averageOf(matches) };
   }
 
-  const byPostcode = POSTCODES[parts.clean] ?? POSTCODES[parts.district] ?? POSTCODES[parts.area];
+  const byPostcode = POSTCODES[parts.clean] ?? POSTCODES[parts.district];
   if (byPostcode) return { ...byPostcode, label: parts.label || byPostcode.label };
 
   const place = PLACES[lower];

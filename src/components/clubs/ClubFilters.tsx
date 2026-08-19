@@ -15,6 +15,7 @@ import ActiveFilters, { type ActiveFilter } from "./ActiveFilters";
 import FacetSearchInput from "./FacetSearchInput";
 import SmartSearchBar from "./SmartSearchBar";
 import { tokens } from "@/lib/tokens";
+import { joinFacets, splitFacets } from "@/utils/facets";
 import type { ClubListFilters } from "@/lib/query/keys";
 
 export type FilterOptions = {
@@ -73,15 +74,18 @@ export default function ClubFilters({
   );
 
   const applied: ActiveFilter[] = [
-    ...(filters.q ?? "").split(",").map((t) => t.trim()).filter(Boolean)
-      .map((term) => ({ key: "q" as const, label: term, value: term })),
+    ...splitFacets(filters.q).map((term) => ({ key: "q" as const, label: term, value: term })),
     ...(filters.city ? [{ key: "city" as const, label: filters.city }] : []),
     ...(filters.format
       ? [{ key: "format" as const, label: options.formats.find((f) => f.slug === filters.format)?.label ?? filters.format }]
       : []),
     ...(filters.day ? [{ key: "day" as const, label: filters.day }] : []),
     ...(filters.location ? [{ key: "location" as const, label: `Near ${filters.location}` }] : []),
-    ...(filters.withinMiles ? [{ key: "withinMiles" as const, label: `Within ${filters.withinMiles} miles` }] : []),
+    // Only a real radius. Without a place the service ignores it, so showing the
+    // chip would claim a filter that never ran.
+    ...(filters.withinMiles && filters.location
+      ? [{ key: "withinMiles" as const, label: `Within ${filters.withinMiles} miles` }]
+      : []),
     ...(filters.reviewRating ? [{ key: "reviewRating" as const, label: `${filters.reviewRating}+ stars` }] : []),
   ];
 
@@ -93,8 +97,8 @@ export default function ClubFilters({
 
   const removeFilter = (filter: ActiveFilter) => {
     if (filter.key === "q") {
-      const kept = (filters.q ?? "").split(",").map((t) => t.trim()).filter((t) => t && t !== filter.value);
-      onChange({ q: kept.join(", ") });
+      const kept = splitFacets(filters.q).filter((t) => t !== filter.value);
+      onChange({ q: joinFacets(kept) });
       return;
     }
     // Clearing the place also clears the radius, which is meaningless without it.
@@ -139,7 +143,14 @@ export default function ClubFilters({
         <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: "wrap", alignItems: "flex-start" }}>
           <Box sx={{ flex: "3 1 340px", minWidth: 240 }}>
             <SmartSearchBar
-              options={{ cities: options.cities, formats: options.formats, days: options.days, facets: options.facets }}
+              options={{
+                cities: options.cities,
+                formats: options.formats,
+                days: options.days,
+                facets: options.facets,
+                withinMiles: options.withinMiles,
+                reviewRatings: options.reviewRatings,
+              }}
               onApply={onChange}
             />
           </Box>
@@ -212,7 +223,18 @@ export default function ClubFilters({
                 </TextField>
               </Field>
 
-              <Field label="Sort results" basis={200}>
+              {/* Sorting by distance needs somewhere to measure from. Without it
+                  the service falls back to Recommended, so say so rather than
+                  leave the control claiming an order the list is not in. */}
+              <Field
+                label="Sort results"
+                basis={200}
+                hint={
+                  filters.sort === "distance" && !filters.location
+                    ? "Enter a location to sort by distance"
+                    : undefined
+                }
+              >
                 <TextField {...select(filters.sort ?? "relevance", "sort")}>
                   {options.sorts.map((s) => <MenuItem key={s.value} value={s.value}>{s.label}</MenuItem>)}
                 </TextField>

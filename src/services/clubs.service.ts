@@ -3,8 +3,11 @@ import "server-only";
 import * as repo from "@/repositories/clubs.repository";
 import * as taxonomy from "@/repositories/taxonomy.repository";
 import { resolveOrigin } from "@/services/location.service";
+import { geocodeUk } from "@/services/geocode.service";
 import { formatMeeting } from "@/utils/format";
 import { haversineMiles, parseLocation } from "@/utils/geo";
+import { splitFacets } from "@/utils/facets";
+import { fold } from "@/utils/text";
 import type { ClubSummary } from "@/types/club";
 
 /** Business rules for clubs. Filters and sorts mirror the existing site exactly. */
@@ -44,15 +47,25 @@ export type ClubListResult = {
   page: number;
   pageSize: number;
   origin: { label: string } | null;
+  /**
+   * True when a place was searched for and we could not turn it into
+   * coordinates. The caller says so instead of showing unfiltered results.
+   */
+  locationUnresolved?: boolean;
 };
 
 type SessionRow = { club_id: number; day: string; time: string; label: string };
 type GameRow = { club_id: number; games: { slug: string; label: string } | null };
+type FacilityRow = { club_id: number; facilities: { slug: string; label: string } | null };
 
 const DAY_INDEX = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 export async function listClubs(filters: ClubFilters = {}): Promise<ClubListResult> {
   const page = Math.max(1, filters.page ?? 1);
+
+  // Trimmed once, up front: a box containing only spaces is an empty box, and
+  // treating it as a place answered "we could not find ' '" with nothing at all.
+  const wantedPlace = (filters.location ?? "").trim();
 
   // Pull the whole active set: 11 clubs today, and distance/rating sorting has
   // to happen across all of them before paging, not within a page.
@@ -64,17 +77,18 @@ export async function listClubs(filters: ClubFilters = {}): Promise<ClubListResu
   });
 
   const ids = rows.map((r) => r.id);
-  const [sessions, games, reviews, , locations] = await Promise.all([
+  const [sessions, games, reviews, facilities, locations] = await Promise.all([
     repo.findSessionsForClubs(ids),
     repo.findGamesForClubs(ids),
     repo.findReviewAggregates(),
-    Promise.resolve(null),
-    filters.location ? repo.findClubLocations() : Promise.resolve([]),
+    repo.findFacilitiesForClubs(ids),
+    wantedPlace ? repo.findClubLocations() : Promise.resolve([]),
   ]);
 
   const prices = await monthlyPrices(rows);
   const sessionsByClub = groupBy(sessions as SessionRow[]);
   const gamesByClub = groupBy(games as unknown as GameRow[]);
+  const facilitiesByClub = groupBy(facilities as unknown as FacilityRow[]);
 
   let matched = rows;
 
@@ -82,20 +96,31 @@ export async function listClubs(filters: ClubFilters = {}): Promise<ClubListResu
   // games and facilities only, which meant typing a club's name returned
   // nothing — a deliberate departure, since people do search by name.
   //
-  // Terms are comma-separated: "warhammer terrain" is one phrase, while
-  // "warhammer, terrain" is two that must both match. Matching runs against the
-  // club's own spellings, so "warhammer 40k" and "aos" still find results.
-  const terms = (filters.q ?? "")
-    .toLowerCase()
-    .split(",")
-    .map((t) => t.trim())
-    .filter(Boolean);
+  // Every term must match, so "warhammer" plus "parking" narrows rather than
+  // widens. Matching runs against the club's own spellings, so "warhammer 40k"
+  // and "aos" still find results.
+  const terms = splitFacets(filters.q).map(fold).filter(Boolean);
   if (terms.length) {
     matched = matched.filter((club) => {
-      const haystack = [club.search_haystack, club.name, club.city]
-        .join(" ")
-        .toLowerCase();
-      return terms.every((term) => haystack.includes(term));
+      // Both spellings have to be searchable. `search_haystack` keeps what each
+      // club actually wrote, which is why "40k" finds anything at all; three of
+      // the four Warhammer clubs wrote "warhammer 40k" and never the full name.
+      // The catalogue labels are the wording the type-ahead offers, so without
+      // them picking "Warhammer 40,000" from the list returned one club.
+      const haystack = fold(
+        [
+          club.search_haystack,
+          club.name,
+          club.city,
+          ...(gamesByClub.get(club.id) ?? []).map((g) => g.games?.label ?? ""),
+          ...(facilitiesByClub.get(club.id) ?? []).map((f) => f.facilities?.label ?? ""),
+        ].join(" "),
+      );
+      // Folded on both sides so accents and hyphens behave the same here as in
+      // the query parser: "Pokémon" and "pokemon", "Wi-Fi" and "wifi".
+      // Substring rather than whole-word is deliberate for a search box, so
+      // "warhammer" still reaches "Warhammer 40,000".
+      return terms.every((term) => haystack.includes(fold(term)));
     });
   }
 
@@ -104,7 +129,22 @@ export async function listClubs(filters: ClubFilters = {}): Promise<ClubListResu
     matched = matched.filter((c) => (reviews.get(c.id)?.average ?? 0) >= min);
   }
 
-  const origin = filters.location ? resolveOrigin(filters.location, locations) : null;
+  const origin = wantedPlace ? await findOrigin(wantedPlace, locations) : null;
+
+  // Silently dropping the place was the worst of both worlds: the chip stayed
+  // on screen and the results ignored it, so a search near Yorkshire returned a
+  // club in Glasgow. Say we couldn't find it instead of guessing.
+  if (wantedPlace && !origin) {
+    return {
+      clubs: [],
+      total: 0,
+      page,
+      pageSize: PAGE_SIZE,
+      origin: null,
+      locationUnresolved: true,
+    };
+  }
+
   const distances = new Map<number, number>();
 
   if (origin) {
@@ -128,7 +168,7 @@ export async function listClubs(filters: ClubFilters = {}): Promise<ClubListResu
     reviews,
     prices,
     sessions: sessionsByClub,
-    locationRank: rankByLocation(matched, filters.location),
+    locationRank: rankByLocation(matched, wantedPlace),
   });
 
   const total = matched.length;
@@ -143,6 +183,37 @@ export async function listClubs(filters: ClubFilters = {}): Promise<ClubListResu
     pageSize: PAGE_SIZE,
     origin: origin ? { label: origin.label } : null,
   };
+}
+
+/**
+ * Turns typed text into a point, trimming a word off the end until something
+ * lands.
+ *
+ * The parser takes everything after "near" up to a short list of stop words, so
+ * "clubs near London this Saturday" arrives here whole and used to resolve to
+ * nowhere. Longest form first, so real two-word places ("Milton Keynes",
+ * "Newcastle upon Tyne") stay intact.
+ *
+ * Each attempt goes through both sources in order. Doing the trimming inside
+ * the geocoder instead skipped the local table, and "Oxford playing Warhammer"
+ * came back as a suburb of Stoke.
+ */
+async function findOrigin(
+  place: string,
+  locations: Awaited<ReturnType<typeof repo.findClubLocations>>,
+) {
+  const words = place.split(/\s+/).filter(Boolean).slice(0, 4);
+
+  for (let take = words.length; take >= 1; take -= 1) {
+    const attempt = words.slice(0, take).join(" ");
+    const local = resolveOrigin(attempt, locations);
+    if (local) return local;
+
+    const remote = await geocodeUk(attempt);
+    if (remote) return remote;
+  }
+
+  return null;
 }
 
 function sortClubs(

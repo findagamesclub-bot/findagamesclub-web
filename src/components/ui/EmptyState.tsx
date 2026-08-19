@@ -9,10 +9,13 @@ export default function EmptyState({
   title,
   description,
   action,
+  onAction,
 }: {
   title: string;
   description: string;
   action?: { label: string; href: string };
+  /** For states where the way out is undoing one filter, not navigating away. */
+  onAction?: { label: string; onClick: () => void };
 }) {
   return (
     <Box
@@ -30,6 +33,8 @@ export default function EmptyState({
         <Typography variant="body2" color="text.secondary">{description}</Typography>
         {action ? (
           <Button href={action.href} variant="outlined" sx={{ mt: 1 }}>{action.label}</Button>
+        ) : onAction ? (
+          <Button onClick={onAction.onClick} variant="outlined" sx={{ mt: 1 }}>{onAction.label}</Button>
         ) : null}
       </Stack>
     </Box>

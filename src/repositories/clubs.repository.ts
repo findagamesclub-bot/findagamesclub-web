@@ -125,6 +125,15 @@ export async function findGamesForClubs(clubIds: number[]) {
   return data ?? [];
 }
 
+export async function findFacilitiesForClubs(clubIds: number[]) {
+  if (clubIds.length === 0) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("club_facilities").select("club_id, facilities(slug, label)").in("club_id", clubIds);
+  if (error) throw new Error(`Failed to load club facilities: ${error.message}`);
+  return data ?? [];
+}
+
 /** Clubs whose game or facility label matches free text — the search box covers both. */
 export async function findClubIdsMatchingText(text: string): Promise<number[]> {
   const supabase = await createClient();
