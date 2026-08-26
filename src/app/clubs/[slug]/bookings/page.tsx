@@ -4,6 +4,7 @@ import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
+import FilterLink from "@/components/ui/FilterLink";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import LockIcon from "@mui/icons-material/Lock";
 import BookingNight from "@/components/bookings/BookingNight";
@@ -181,22 +182,22 @@ export default async function BookingsPage({ params, searchParams }: PageProps<"
 
           {hiddenNights > 0 ? (
             <Box sx={{ pt: 1.5 }}>
-              <NextLink href={`/clubs/${club.slug}/bookings?all=1`} style={{ textDecoration: "none" }}>
+              <FilterLink href={`/clubs/${club.slug}/bookings?all=1`}>
                 <Typography variant="body2" sx={{ color: tokens.brand, fontWeight: 600 }}>
                   Show {hiddenNights} more {hiddenNights === 1 ? "night" : "nights"}, to{" "}
                   {nightLabel(calendar.sessions.at(-1)!.date)}
                 </Typography>
-              </NextLink>
+              </FilterLink>
             </Box>
           ) : null}
 
           {showAll ? (
             <Box sx={{ pt: 1.5 }}>
-              <NextLink href={`/clubs/${club.slug}/bookings`} style={{ textDecoration: "none" }}>
+              <FilterLink href={`/clubs/${club.slug}/bookings`}>
                 <Typography variant="body2" sx={{ color: tokens.brand, fontWeight: 600 }}>
                   Show fewer
                 </Typography>
-              </NextLink>
+              </FilterLink>
             </Box>
           ) : null}
         </Stack>

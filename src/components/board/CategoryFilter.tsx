@@ -53,7 +53,7 @@ export default function CategoryFilter({
         scrollbarWidth: "none",
       }}
     >
-      <Box component={NextLink} href={`/clubs/${slug}/board`}
+      <Box component={NextLink} scroll={false} href={`/clubs/${slug}/board`}
         sx={{ ...tab(!active), textDecoration: "none" }}>
         ALL
       </Box>
@@ -71,6 +71,7 @@ export default function CategoryFilter({
           <Box
             key={option.label}
             component={NextLink}
+            scroll={false}
             href={`/clubs/${slug}/board?category=${encodeURIComponent(option.label)}`}
             sx={{ ...tab(active === option.label), textDecoration: "none" }}
           >

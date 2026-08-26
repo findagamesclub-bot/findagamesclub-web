@@ -3,7 +3,7 @@ import Chip from "@mui/material/Chip";
 import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import NextLink from "next/link";
+import FilterLink from "@/components/ui/FilterLink";
 import EventCard from "@/components/events/EventCard";
 import EventMap from "@/components/events/EventMap";
 import EventCalendar from "@/components/events/EventCalendar";
@@ -53,7 +53,7 @@ export default async function EventsPage({ searchParams }: PageProps<"/events">)
     const active = when === value;
     const href = link({ when: value === "past" ? "past" : undefined });
     return (
-      <NextLink key={value} href={href} style={{ textDecoration: "none" }}>
+      <FilterLink key={value} href={href}>
         <Typography
           sx={{
             fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "1rem",
@@ -64,7 +64,7 @@ export default async function EventsPage({ searchParams }: PageProps<"/events">)
         >
           {label} <Box component="span" sx={{ color: tokens.inkMuted }}>{count}</Box>
         </Typography>
-      </NextLink>
+      </FilterLink>
     );
   };
 
@@ -92,8 +92,7 @@ export default async function EventsPage({ searchParams }: PageProps<"/events">)
           {/* Wrapped in a plain next/link rather than component={NextLink}: a
               Server Component cannot pass a function into an MUI client
               component. Same pattern as ClubCard. */}
-          <NextLink href={when === "past" ? "/events?when=past" : "/events"}
-            style={{ textDecoration: "none" }}>
+          <FilterLink href={when === "past" ? "/events?when=past" : "/events"}>
             <Chip
               clickable
               size="small"
@@ -101,13 +100,9 @@ export default async function EventsPage({ searchParams }: PageProps<"/events">)
               variant={game ? "outlined" : "filled"}
               sx={game ? { borderColor: tokens.rule } : { bgcolor: tokens.ink, color: "#fff" }}
             />
-          </NextLink>
+          </FilterLink>
           {games.map((g) => (
-            <NextLink
-              key={g}
-              href={link({ game: g })}
-              style={{ textDecoration: "none" }}
-            >
+            <FilterLink key={g} href={link({ game: g })}>
               <Chip
                 clickable
                 size="small"
@@ -117,7 +112,7 @@ export default async function EventsPage({ searchParams }: PageProps<"/events">)
                   ? { bgcolor: tokens.ink, color: "#fff" }
                   : { borderColor: tokens.rule }}
               />
-            </NextLink>
+            </FilterLink>
           ))}
         </Stack>
       ) : null}
@@ -137,7 +132,7 @@ export default async function EventsPage({ searchParams }: PageProps<"/events">)
                 ["map", "Map", "map"],
                 ["calendar", "Calendar", "calendar"],
               ] as const).map(([value, label, param]) => (
-                <NextLink key={value} href={link({ view: param })} style={{ textDecoration: "none" }}>
+                <FilterLink key={value} href={link({ view: param })}>
                   <Typography sx={{
                     fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "0.9rem",
                     px: 1.75, py: 0.75, borderRadius: 999, whiteSpace: "nowrap",
@@ -147,7 +142,7 @@ export default async function EventsPage({ searchParams }: PageProps<"/events">)
                   }}>
                     {label}
                   </Typography>
-                </NextLink>
+                </FilterLink>
               ))}
             </Stack>
           </Stack>

@@ -122,6 +122,9 @@ export async function cancelBooking(
         error: "That booking can no longer be cancelled. Club nights cannot be cancelled on the day.",
       };
     }
+    // An unrecognised database error reaching a member as "try again" is a
+    // dead end — trying again does the same thing. Keep the real one.
+    console.error("booking cancellation failed", { bookingId, error });
     return { ok: false as const, error: "Could not cancel that booking. Try again." };
   }
 }
