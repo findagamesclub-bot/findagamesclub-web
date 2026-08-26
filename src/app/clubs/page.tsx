@@ -43,7 +43,11 @@ export default async function ClubsPage({ searchParams }: PageProps<"/clubs">) {
       />
 
       <Container maxWidth="lg" sx={{ py: { xs: 4, md: 5 } }}>
-        <ClubDirectory initialFilters={filters} initialData={initialData} options={options} />
+        <ClubDirectory
+          initialFilters={filters}
+          initialData={initialData}
+          options={options}
+        />
       </Container>
     </Box>
   );

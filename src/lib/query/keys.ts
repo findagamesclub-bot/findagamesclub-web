@@ -11,6 +11,8 @@ export type ClubListFilters = {
   reviewRating?: string;
   sort?: string;
   page?: number;
+  /** Map view asks for every match; the list stays paginated. */
+  pageSize?: number;
 };
 
 export const clubKeys = {

@@ -21,10 +21,22 @@ export async function signUpAction(_prev: FormState, data: FormData): Promise<Fo
   redirect(`/auth/check-email?to=${encodeURIComponent(email(data))}`);
 }
 
+/**
+ * Where to land after signing in.
+ *
+ * Only a path on this site. "//evil.example" is a valid URL to a browser, so
+ * the leading-slash test alone would hand somebody an open redirect.
+ */
+function safeNext(raw: FormDataEntryValue | null): string {
+  const next = String(raw ?? "");
+  if (!next.startsWith("/") || next.startsWith("//")) return "/clubs";
+  return next;
+}
+
 export async function signInAction(_prev: FormState, data: FormData): Promise<FormState> {
   const result = await auth.signIn(email(data), password(data));
   if (!result.ok) return { error: result.error };
-  redirect("/clubs");
+  redirect(safeNext(data.get("next")));
 }
 
 export async function forgotPasswordAction(_prev: FormState, data: FormData): Promise<FormState> {

@@ -51,3 +51,13 @@ export function initialsOf(name: string): string {
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("");
 }
+
+/**
+ * A computed amount, not a club's typed-in price string. Whole pounds lose the
+ * decimals: "£15" reads as a price, "£15.00" reads as a receipt.
+ */
+export function formatMoney(amount: number, currency = "GBP"): string {
+  const symbol = currency === "GBP" ? "£" : `${currency} `;
+  const safe = Number.isFinite(amount) ? amount : 0;
+  return `${symbol}${Number.isInteger(safe) ? safe : safe.toFixed(2)}`;
+}

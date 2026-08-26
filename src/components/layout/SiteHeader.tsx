@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -19,21 +19,33 @@ import AccountMenu from "./AccountMenu";
 import BrandMark from "./BrandMark";
 import { headerHeight, tokens } from "@/lib/tokens";
 
-export type Viewer = { fullName: string; email: string; role: string } | null;
+export type Viewer = { id: string; fullName: string; email: string; role: string } | null;
 
 /**
  * The full navigation the finished product has. Sections that are not built yet
  * are shown but not clickable, so the shape of the site is visible without
  * offering links that go nowhere.
  */
-type NavItem = { label: string; href?: string; milestone?: number };
+type NavItem = {
+  label: string;
+  href?: string;
+  milestone?: number;
+  /**
+   * Extra paths this item owns. An event lives at /clubs/x/events/y, so on path
+   * alone it lights Directory — but it is an event, and Events is where you
+   * came from.
+   */
+  owns?: RegExp;
+  /** Hidden from people who run no club, rather than shown and empty. */
+  ownerOnly?: boolean;
+};
 
 const NAV: NavItem[] = [
   { label: "Directory", href: "/clubs" },
-  { label: "Events", milestone: 2 },
-  { label: "Map", milestone: 2 },
+  { label: "Events", href: "/events", owns: /\/events(\/|$)/ },
+  { label: "Map", href: "/clubs?view=map" },
   { label: "Meta Tracker", milestone: 3 },
-  { label: "My Clubs", milestone: 3 },
+  { label: "My Clubs", href: "/my-clubs", ownerOnly: true },
 ];
 
 const linkSx = (active: boolean) => ({
@@ -77,28 +89,65 @@ function ComingSoon({ label, milestone }: { label: string; milestone: number }) 
   );
 }
 
-export default function SiteHeader({ viewer }: { viewer: Viewer }) {
+export default function SiteHeader({ viewer, unreadMessages = 0, ownerTasks = 0, ownsClubs = false }:
+  { viewer: Viewer; unreadMessages?: number; ownerTasks?: number; ownsClubs?: boolean }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
-  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  /**
+   * Directory and Map share the /clubs path and differ only by ?view=map, so a
+   * path-only check lit Directory on both. Compare the query too, and only the
+   * keys the link itself names — filters in the URL must not unlight the tab.
+   */
+  const isActive = (item: NavItem) => {
+    if (!item.href) return false;
+
+    // A claimed path wins outright, so an event page lights Events rather than
+    // Directory even though it sits under /clubs.
+    const claimed = NAV.find((n) => n.owns?.test(pathname));
+    if (claimed) return claimed.label === item.label;
+
+    const [path, query] = item.href.split("?");
+    if (pathname !== path && !pathname.startsWith(`${path}/`)) return false;
+
+    const wanted = new URLSearchParams(query ?? "");
+    for (const [key, value] of wanted) {
+      if (searchParams.get(key) !== value) return false;
+    }
+    // Directory and Map share /clubs and differ only by ?view=map.
+    if (!query && path === "/clubs" && searchParams.get("view") === "map") return false;
+    return true;
+  };
 
   const renderNav = (onNavigate?: () => void) =>
-    NAV.map((item) =>
-      item.href ? (
-        <Box
-          key={item.label}
-          component={Link}
-          href={item.href}
-          onClick={onNavigate}
-          aria-current={isActive(item.href) ? "page" : undefined}
-          sx={linkSx(isActive(item.href))}
-        >
-          {item.label}
-        </Box>
-      ) : (
-        <ComingSoon key={item.label} label={item.label} milestone={item.milestone!} />
-      ),
-    );
+    NAV
+      // My Clubs is meaningless to somebody who runs none, so it is absent
+      // rather than present and permanently empty.
+      .filter((item) => !item.ownerOnly || ownsClubs)
+      .map((item) =>
+        item.href ? (
+          <Box
+            key={item.label}
+            component={Link}
+            href={item.href}
+            onClick={onNavigate}
+            aria-current={isActive(item) ? "page" : undefined}
+            sx={linkSx(isActive(item))}
+          >
+            {item.label}
+            {item.ownerOnly && ownerTasks ? (
+              <Box component="span" aria-label={`${ownerTasks} waiting`}
+                sx={{ ml: 0.75, px: 0.7, py: 0.1, borderRadius: 999, fontSize: "0.68rem",
+                      fontFamily: "var(--font-mono)", fontWeight: 700,
+                      backgroundColor: tokens.danger, color: "#fff" }}>
+                {ownerTasks}
+              </Box>
+            ) : null}
+          </Box>
+        ) : (
+          <ComingSoon key={item.label} label={item.label} milestone={item.milestone!} />
+        ),
+      );
 
   return (
     <AppBar>
@@ -138,7 +187,7 @@ export default function SiteHeader({ viewer }: { viewer: Viewer }) {
 
           <Box sx={{ display: { xs: "none", sm: "block" } }}>
             {viewer ? (
-              <AccountMenu viewer={viewer} />
+              <AccountMenu viewer={viewer} unreadMessages={unreadMessages} ownsClubs={ownsClubs} />
             ) : (
               <Stack direction="row" spacing={1}>
                 <Button component={Link} href="/auth/sign-in" variant="text">Sign in</Button>

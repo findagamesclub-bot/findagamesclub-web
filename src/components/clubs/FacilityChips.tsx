@@ -65,7 +65,18 @@ function iconFor(label: string): SvgIconComponent {
   return RULES.find(([pattern]) => pattern.test(label))?.[1] ?? CheckCircleIcon;
 }
 
-export default function FacilityChips({ values }: { values: string[] }) {
+export default function FacilityChips({
+  values,
+  iconOnly = false,
+}: {
+  values: string[];
+  /**
+   * Glyphs with no labels. On a card the question is "does this place have
+   * things", not "list them" — the labelled version lives on the club page,
+   * which has the room. Labelled chips wrapped to a second row on every card.
+   */
+  iconOnly?: boolean;
+}) {
   if (values.length === 0) return null;
 
   return (
@@ -75,24 +86,30 @@ export default function FacilityChips({ values }: { values: string[] }) {
         return (
           <Box
             key={value}
+            // The name still reaches a screen reader and a hover, it just is
+            // not printed when there is no room for it.
+            title={iconOnly ? value : undefined}
+            aria-label={iconOnly ? value : undefined}
             sx={{
               display: "inline-flex",
               alignItems: "center",
-              gap: 0.625,
+              gap: iconOnly ? 0 : 0.625,
               backgroundColor: tokens.surface,
               border: `1px solid ${tokens.rule}`,
               borderRadius: "3px",
-              px: 1,
+              px: iconOnly ? 0.75 : 1,
               py: 0.5,
             }}
           >
             <Icon aria-hidden sx={{ fontSize: 16, color: tokens.brand, flexShrink: 0 }} />
-            <Typography
-              component="span"
-              sx={{ fontFamily: "var(--font-display)", fontSize: "0.85rem", fontWeight: 500, lineHeight: 1.2 }}
-            >
-              {value}
-            </Typography>
+            {iconOnly ? null : (
+              <Typography
+                component="span"
+                sx={{ fontFamily: "var(--font-display)", fontSize: "0.85rem", fontWeight: 500, lineHeight: 1.2 }}
+              >
+                {value}
+              </Typography>
+            )}
           </Box>
         );
       })}

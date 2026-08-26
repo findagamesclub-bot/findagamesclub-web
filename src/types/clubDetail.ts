@@ -1,4 +1,5 @@
 import type { ClubSession } from "./club";
+import type { BillingOption } from "./payment";
 
 export type ClubImage = { src: string; alt: string };
 export type ClubLink = { label: string; url: string };
@@ -15,6 +16,19 @@ export type MembershipTier = {
   description: string | null;
   isBasic: boolean;
   benefits: string[];
+  /** Monthly / yearly / one-off. Empty when the tier is free. */
+  billingOptions: BillingOption[];
+  /**
+   * Taken off event tickets for members on this tier. describeTierBenefits
+   * turns the benefits object into sentences, which loses the number, so it is
+   * carried separately rather than parsed back out of prose.
+   */
+  eventDiscountPercent: number;
+  /**
+   * Discussion categories this tier reserves. Same reasoning as the discount:
+   * describeTierBenefits turns the object into sentences and loses the list.
+   */
+  reservedCategories: string[];
 };
 
 export type ClubEventSummary = {
@@ -35,13 +49,20 @@ export type ClubEventSummary = {
 
 export type ClubReview = {
   id: number;
+  authorId: string | null;
   authorName: string;
   rating: number;
   comment: string | null;
   createdAt: string;
+  /** Set when the club has asked an admin to look at it. Still visible. */
+  flaggedAt: string | null;
+  flaggedByName: string | null;
 };
 
 export type ClubDetail = {
+  /** Needed by the membership actions; never shown. */
+  id: number;
+  ownerId: string | null;
   slug: string;
   name: string;
   city: string;
@@ -58,6 +79,10 @@ export type ClubDetail = {
     address: string | null;
     postcode: string | null;
     district: string | null;
+    /** Null when the postcode could not be placed. All 11 clubs currently have one. */
+    coordinates: { latitude: number; longitude: number } | null;
+    /** Opens the venue in the viewer's own maps app. */
+    directionsUrl: string | null;
   };
   contact: { email: string | null; website: string | null };
 

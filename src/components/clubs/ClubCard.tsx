@@ -11,6 +11,9 @@ import SellIcon from "@mui/icons-material/Sell";
 import PlaceIcon from "@mui/icons-material/Place";
 import NearMeIcon from "@mui/icons-material/NearMe";
 import StatLine from "@/components/ui/StatLine";
+import StarRating from "@/components/ui/StarRating";
+import FacilityChips from "./FacilityChips";
+import SocialLinks from "./SocialLinks";
 import ClubArt from "./ClubArt";
 import GameChips from "./GameChips";
 import { mono, tokens } from "@/lib/tokens";
@@ -43,7 +46,7 @@ export default function ClubCard({ club }: { club: ClubSummary }) {
       }}
     >
       <Box sx={{ position: "relative" }}>
-        <ClubArt slug={club.slug} name={club.name} image={club.image} />
+        <ClubArt slug={club.slug} name={club.name} image={club.image} ratio="16 / 10" />
 
         {club.isFeatured ? (
           <Box
@@ -90,7 +93,7 @@ export default function ClubCard({ club }: { club: ClubSummary }) {
         ) : null}
       </Box>
 
-      <CardContent sx={{ display: "flex", flexDirection: "column", gap: 1.25, flex: 1, p: 2.5 }}>
+      <CardContent sx={{ display: "flex", flexDirection: "column", gap: 1.5, flex: 1, p: 2.5, "&:last-child": { pb: 2.5 } }}>
         <Stack spacing={0.375}>
           <Typography variant="h4" component="h3" sx={{ minWidth: 0 }}>
             <Link href={`/clubs/${club.slug}`} style={{ color: "inherit", textDecoration: "none" }}>
@@ -99,14 +102,35 @@ export default function ClubCard({ club }: { club: ClubSummary }) {
               </Box>
             </Link>
           </Typography>
-          {place ? (
-            <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", color: "text.secondary" }}>
-              <PlaceIcon aria-hidden sx={{ fontSize: 16, color: faction.base }} />
-              <Typography variant="overline" sx={{ color: "inherit" }}>
-                {place}{club.postcodeArea ? ` · ${club.postcodeArea}` : ""}
-              </Typography>
-            </Stack>
-          ) : null}
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}
+          >
+            {place ? (
+              <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", color: "text.secondary" }}>
+                <PlaceIcon aria-hidden sx={{ fontSize: 16, color: faction.base }} />
+                {/* Town and postcode only. The neighbourhood pushed this onto a
+                    second line on most cards, and it is the least useful part
+                    when you are scanning a grid. */}
+                <Typography variant="overline" sx={{ color: "inherit" }} noWrap>
+                  {club.city}{club.postcodeArea ? ` · ${club.postcodeArea}` : ""}
+                  {club.formats.length ? (
+                    <Box component="span" sx={{ color: faction.base }}>
+                      {` · ${club.formats[0]}`}
+                    </Box>
+                  ) : null}
+                </Typography>
+              </Stack>
+            ) : <span />}
+            {/* Only when someone has actually reviewed it. An empty row of grey
+                stars reads as "rated zero", which is not what no reviews means. */}
+            {club.rating ? (
+              <StarRating value={club.rating.average} caption={`${club.rating.average.toFixed(1)} (${club.rating.count})`} />
+            ) : null}
+          </Stack>
+
+
         </Stack>
 
         <StatLine
@@ -117,6 +141,7 @@ export default function ClubCard({ club }: { club: ClubSummary }) {
             { label: "From", value: club.fromPrice, icon: SellIcon },
           ]}
           columns={2}
+          dense
         />
 
         {club.summary ? (
@@ -129,9 +154,13 @@ export default function ClubCard({ club }: { club: ClubSummary }) {
           </Typography>
         ) : null}
 
-        <Box sx={{ mt: "auto", pt: 0.5 }}>
+        <Stack spacing={1.25} sx={{ pt: 0.25 }}>
           <GameChips games={club.featuredGames} faction={faction} max={3} />
-        </Box>
+          {club.facilities.length ? <FacilityChips values={club.facilities.slice(0, 5)} iconOnly /> : null}
+          {club.socialLinks?.length ? (
+            <SocialLinks links={club.socialLinks} slug={club.slug} name={club.name} size="small" />
+          ) : null}
+        </Stack>
       </CardContent>
     </Card>
   );

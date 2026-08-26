@@ -10,8 +10,19 @@ export default async function EmailPreviewPage({ searchParams }: PageProps<"/dev
   const which = (Array.isArray(params.t) ? params.t[0] : params.t) ?? "verify";
   const url = "https://findagamesclub.co.uk/auth/confirm?token=example-token-value";
 
+  const club = "Mana Wharf Social Club";
+
   const email =
-    which === "reset" ? templates.resetPassword({ name: "Gulnabi", url })
+    which === "tablePromoted" ? templates.tablePromoted({
+      name: "Gulnabi", clubName: club, night: "Thu 3 Sep", time: "19:00 - 22:30",
+      gameTitle: "Kill Team", price: "£5.00", url })
+    : which === "tableCancelled" ? templates.tableCancelled({
+      name: "Gulnabi", clubName: club, night: "Thu 3 Sep", url })
+    : which === "membershipRequested" ? templates.membershipRequested({ name: "Gulnabi", clubName: club, url })
+    : which === "membershipApproved" ? templates.membershipApproved({ name: "Gulnabi", clubName: club, tierLabel: "Premium Member", url })
+    : which === "membershipDeclined" ? templates.membershipDeclined({ name: "Gulnabi", clubName: club, reason: "We are at capacity until September.", url })
+    : which === "membershipForOwner" ? templates.membershipPendingForOwner({ clubName: club, applicantName: "Gulnabi Afridi", url })
+    : which === "reset" ? templates.resetPassword({ name: "Gulnabi", url })
     : which === "welcome" ? templates.welcome({ name: "Gulnabi", url })
     : which === "passwordChanged" ? templates.passwordChanged({ name: "Gulnabi", url })
     : which === "changed" ? templates.emailChanged({ name: "Gulnabi", url, newEmail: "new@example.com" })
@@ -27,7 +38,9 @@ export default async function EmailPreviewPage({ searchParams }: PageProps<"/dev
   return (
     <div style={{ padding: 16, fontFamily: "system-ui" }}>
       <p style={{ margin: "0 0 12px" }}>
-        {["verify", "reset", "welcome", "passwordChanged", "changed"].map((t) => (
+        {["verify", "reset", "welcome", "passwordChanged", "changed",
+          "membershipRequested", "membershipForOwner", "membershipApproved", "membershipDeclined",
+          "tablePromoted", "tableCancelled"].map((t) => (
           <a key={t} href={`?t=${t}`} style={{ marginRight: 12 }}>{t}</a>
         ))}
         <strong style={{ marginLeft: 12 }}>{email.subject}</strong>

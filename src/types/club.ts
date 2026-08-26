@@ -27,4 +27,9 @@ export type ClubSummary = {
   isFeatured?: boolean;
   /** Card artwork. Null for clubs that haven't uploaded any — the card draws a plate instead. */
   image?: { src: string; alt: string } | null;
+  /** Null when nobody has reviewed the club yet, which is not the same as zero. */
+  rating?: { average: number; count: number } | null;
+  socialLinks?: { label: string; url: string }[];
+  /** Null for a club with no postcode we could place. All 11 currently have one. */
+  coordinates?: { latitude: number; longitude: number } | null;
 };

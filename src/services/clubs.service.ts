@@ -30,6 +30,11 @@ export const WITHIN_MILES_OPTIONS = ["10", "15", "20", "30", "50", "100"] as con
 export const REVIEW_RATING_OPTIONS = ["4", "3", "2"] as const;
 
 export type ClubFilters = {
+  /**
+   * Overrides the 12-per-page default. Only the map uses it: a map missing
+   * page two is a map that lies about where clubs are.
+   */
+  pageSize?: number;
   q?: string;
   city?: string;
   format?: string;
@@ -57,11 +62,13 @@ export type ClubListResult = {
 type SessionRow = { club_id: number; day: string; time: string; label: string };
 type GameRow = { club_id: number; games: { slug: string; label: string } | null };
 type FacilityRow = { club_id: number; facilities: { slug: string; label: string } | null };
+type FormatRow = { club_id: number; formats: { slug: string; label: string } | null };
 
 const DAY_INDEX = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 export async function listClubs(filters: ClubFilters = {}): Promise<ClubListResult> {
   const page = Math.max(1, filters.page ?? 1);
+  const pageSize = Math.max(1, filters.pageSize ?? PAGE_SIZE);
 
   // Trimmed once, up front: a box containing only spaces is an empty box, and
   // treating it as a place answered "we could not find ' '" with nothing at all.
@@ -77,11 +84,12 @@ export async function listClubs(filters: ClubFilters = {}): Promise<ClubListResu
   });
 
   const ids = rows.map((r) => r.id);
-  const [sessions, games, reviews, facilities, locations] = await Promise.all([
+  const [sessions, games, reviews, facilities, formats, locations] = await Promise.all([
     repo.findSessionsForClubs(ids),
     repo.findGamesForClubs(ids),
     repo.findReviewAggregates(),
     repo.findFacilitiesForClubs(ids),
+    repo.findFormatsForClubs(ids),
     wantedPlace ? repo.findClubLocations() : Promise.resolve([]),
   ]);
 
@@ -89,6 +97,7 @@ export async function listClubs(filters: ClubFilters = {}): Promise<ClubListResu
   const sessionsByClub = groupBy(sessions as SessionRow[]);
   const gamesByClub = groupBy(games as unknown as GameRow[]);
   const facilitiesByClub = groupBy(facilities as unknown as FacilityRow[]);
+  const formatsByClub = groupBy(formats as unknown as FormatRow[]);
 
   let matched = rows;
 
@@ -139,7 +148,7 @@ export async function listClubs(filters: ClubFilters = {}): Promise<ClubListResu
       clubs: [],
       total: 0,
       page,
-      pageSize: PAGE_SIZE,
+      pageSize,
       origin: null,
       locationUnresolved: true,
     };
@@ -172,15 +181,19 @@ export async function listClubs(filters: ClubFilters = {}): Promise<ClubListResu
   });
 
   const total = matched.length;
-  const pageRows = matched.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const pageRows = matched.slice((page - 1) * pageSize, page * pageSize);
 
   return {
     clubs: pageRows.map((row) =>
-      toSummary(row, sessionsByClub.get(row.id) ?? [], gamesByClub.get(row.id) ?? [], distances.get(row.id)),
+      toSummary(row, sessionsByClub.get(row.id) ?? [], gamesByClub.get(row.id) ?? [], distances.get(row.id), {
+        facilities: (facilitiesByClub.get(row.id) ?? []).map((f) => f.facilities?.label ?? "").filter(Boolean),
+        formats: (formatsByClub.get(row.id) ?? []).map((f) => f.formats?.label ?? "").filter(Boolean),
+        rating: reviews.get(row.id) ?? null,
+      }),
     ),
     total,
     page,
-    pageSize: PAGE_SIZE,
+    pageSize,
     origin: origin ? { label: origin.label } : null,
   };
 }
@@ -435,6 +448,11 @@ function toSummary(
   sessions: SessionRow[],
   games: GameRow[],
   distanceMiles?: number,
+  extras?: {
+    facilities: string[];
+    formats: string[];
+    rating: { average: number; count: number } | null;
+  },
 ): ClubSummary {
   const first = sessions[0];
   return {
@@ -450,11 +468,20 @@ function toSummary(
     tablesAvailable: row.tables_available || null,
     memberCount: row.member_count || null,
     fromPrice: row.price_drop_in,
-    formats: [],
+    formats: extras?.formats ?? [],
     featuredGames: games.map((g) => g.games?.label ?? "").filter(Boolean),
-    facilities: [],
+    facilities: extras?.facilities ?? [],
     distanceMiles: distanceMiles ?? null,
     isFeatured: row.spotlight,
     image: firstImage(row),
+    rating: extras?.rating ?? null,
+    socialLinks: (row.club_social_links ?? [])
+      .slice()
+      .sort((a, b) => a.position - b.position)
+      .map((l) => ({ label: l.label, url: l.url })),
+    coordinates:
+      row.latitude !== null && row.longitude !== null
+        ? { latitude: row.latitude, longitude: row.longitude }
+        : null,
   };
 }

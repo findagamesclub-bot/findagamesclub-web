@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
         reviewRating: value("reviewRating"),
         sort: value("sort"),
         page: Number(p.get("page") ?? 1),
+        pageSize: p.get("pageSize") ? Number(p.get("pageSize")) : undefined,
       }),
     );
   } catch (error) {

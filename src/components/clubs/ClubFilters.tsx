@@ -15,6 +15,7 @@ import ActiveFilters, { type ActiveFilter } from "./ActiveFilters";
 import FacetSearchInput from "./FacetSearchInput";
 import SmartSearchBar from "./SmartSearchBar";
 import { tokens } from "@/lib/tokens";
+import SearchModeToggle from "@/components/ui/SearchModeToggle";
 import { joinFacets, splitFacets } from "@/utils/facets";
 import type { ClubListFilters } from "@/lib/query/keys";
 
@@ -130,13 +131,18 @@ export default function ClubFilters({
       }}
     >
       <Stack spacing={2.5}>
-        <Stack spacing={0.5}>
-          <Typography variant="h3" sx={{ fontSize: "1.5rem" }}>Search and filter the directory</Typography>
-          {/* A status readout rather than prose, so it takes the UI face. */}
-          <Typography variant="body2" color="text.secondary" sx={{ fontFamily: "var(--font-display)" }}>
-            {resultCount} {resultCount === 1 ? "club matches" : "clubs match"} these filters
-            {pageCount > 1 ? `. Page ${page} of ${pageCount}` : ""}.
-          </Typography>
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}
+          sx={{ justifyContent: "space-between", alignItems: { sm: "flex-start" } }}>
+          <Stack spacing={0.5}>
+            <Typography variant="h3" sx={{ fontSize: "1.5rem" }}>Search and filter the directory</Typography>
+            {/* A status readout rather than prose, so it takes the UI face. */}
+            <Typography variant="body2" color="text.secondary" sx={{ fontFamily: "var(--font-display)" }}>
+              {resultCount} {resultCount === 1 ? "club matches" : "clubs match"} these filters
+              {pageCount > 1 ? `. Page ${page} of ${pageCount}` : ""}.
+            </Typography>
+          </Stack>
+
+          <SearchModeToggle mode="clubs" />
         </Stack>
 
         {/* Always visible, whatever the toggle does. */}

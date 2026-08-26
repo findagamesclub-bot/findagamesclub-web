@@ -8,13 +8,15 @@ import type { Tables } from "@/types/database";
 /** Cards show the club's first image, so the list carries it too. */
 export type ClubRow = Tables<"clubs"> & {
   club_images?: { src: string; alt: string; position: number }[];
+  club_social_links?: { label: string; url: string; position: number }[];
 };
 
 const LIST_COLUMNS =
   "id, slug, name, city, neighbourhood, summary, spotlight, status, " +
   "tables_available, member_count, price_drop_in, legacy_created_at, search_haystack, " +
   "venue_postcode, venue_postcode_district, venue_postcode_area, " +
-  "latitude, longitude, club_images(src, alt, position)";
+  "latitude, longitude, club_images(src, alt, position), " +
+  "club_social_links(label, url, position)";
 
 export type ClubSort = "relevance" | "name" | "members" | "city";
 
@@ -125,6 +127,15 @@ export async function findGamesForClubs(clubIds: number[]) {
   return data ?? [];
 }
 
+export async function findFormatsForClubs(clubIds: number[]) {
+  if (clubIds.length === 0) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("club_formats").select("club_id, formats(slug, label)").in("club_id", clubIds);
+  if (error) throw new Error(`Failed to load club formats: ${error.message}`);
+  return data ?? [];
+}
+
 export async function findFacilitiesForClubs(clubIds: number[]) {
   if (clubIds.length === 0) return [];
   const supabase = await createClient();
@@ -226,7 +237,7 @@ export async function findClubDetail(slug: string) {
        club_social_links(label, url, position),
        club_pricing_models(label, price, notes, position),
        club_announcements(message, created_at),
-       club_membership_tiers(tier_key, label, price, price_duration, description, is_basic, position, benefits),
+       club_membership_tiers(tier_key, label, price, price_duration, description, is_basic, position, benefits, billing_options),
        club_membership_settings(*),
        club_formats(formats(slug, label)),
        club_games(games(slug, label)),
@@ -235,7 +246,8 @@ export async function findClubDetail(slug: string) {
        club_discussion_categories(label, position),
        club_events(id, legacy_id, title, summary, start_date, start_time, end_date, end_time,
                    event_type, price, round_count, tickets_available, venue_name),
-       club_reviews(id, author_name, rating, comment, created_at)`
+       club_reviews(id, author_profile_id, author_name, rating, comment, created_at,
+                    flagged_at, flagged_by_name, removed_at)`
     )
     .eq("slug", slug)
     .eq("status", "active")

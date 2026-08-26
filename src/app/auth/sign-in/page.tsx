@@ -18,6 +18,7 @@ export default async function SignInPage({ searchParams }: PageProps<"/auth/sign
   const params = await searchParams;
   const key = Array.isArray(params.error) ? params.error[0] : params.error;
   const message = key ? MESSAGES[key] : undefined;
+  const next = Array.isArray(params.next) ? params.next[0] : params.next;
 
   return (
     <Container maxWidth="sm" component="main" sx={{ py: { xs: 5, md: 8 } }}>
@@ -40,6 +41,7 @@ export default async function SignInPage({ searchParams }: PageProps<"/auth/sign
             </Stack>
           }
         >
+          {next ? <input type="hidden" name="next" value={next} /> : null}
           <TextField name="email" type="email" label="Email" required autoComplete="email" fullWidth />
           <TextField name="password" type="password" label="Password" required autoComplete="current-password" fullWidth />
         </AuthForm>

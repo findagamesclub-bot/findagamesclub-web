@@ -2,7 +2,10 @@ import "server-only";
 
 import * as repo from "@/repositories/clubs.repository";
 import { formatMeeting, formatPrice, formatPricingLabel } from "@/utils/format";
-import type { ClubDetail, ClubEventSummary } from "@/types/clubDetail";
+import { splitByDate, toEventSummary } from "@/utils/event-summary";
+import { toMembershipTiers } from "@/utils/membership-tiers";
+import { billingOptions } from "./payments.service";
+import type { ClubDetail } from "@/types/clubDetail";
 
 type Row = Awaited<ReturnType<typeof repo.findClubDetail>>;
 
@@ -14,43 +17,27 @@ export async function getClubDetail(slug: string): Promise<ClubDetail | null> {
 const byPosition = <T extends { position?: number | null }>(items: T[] = []) =>
   [...items].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 
-/** An event is over once its end date has passed; undated events stay upcoming. */
-function hasEnded(endDate: string | null, startDate: string | null): boolean {
-  const last = endDate ?? startDate;
-  if (!last) return false;
-  const today = new Date().toISOString().slice(0, 10);
-  return last < today;
-}
-
 function toDetail(row: NonNullable<Row>): ClubDetail {
   const sessions = byPosition(row.club_sessions ?? []);
   const first = sessions[0];
 
-  const events: ClubEventSummary[] = (row.club_events ?? [])
-    .map((e) => ({
-      id: e.id,
-      slug: e.legacy_id,
-      title: e.title,
-      summary: e.summary,
-      startDate: e.start_date,
-      startTime: e.start_time,
-      endDate: e.end_date,
-      eventType: e.event_type,
-      price: e.price,
-      roundCount: e.round_count,
-      ticketsAvailable: e.tickets_available,
-      venueName: e.venue_name,
-      hasEnded: hasEnded(e.end_date, e.start_date),
-    }))
-    .sort((a, b) => (a.startDate ?? "").localeCompare(b.startDate ?? ""));
+  const events = splitByDate((row.club_events ?? []).map(toEventSummary));
 
-  const reviews = (row.club_reviews ?? []).map((r) => ({
-    id: r.id,
-    authorName: r.author_name,
-    rating: r.rating,
-    comment: r.comment,
-    createdAt: r.created_at,
-  }));
+  // A removed review is gone from the page and out of the average. Filtering
+  // in SQL would drop the club when postgrest found no matching child rows.
+  const reviews = (row.club_reviews ?? [])
+    .filter((r) => !r.removed_at)
+    .map((r) => ({
+      id: r.id,
+      authorId: r.author_profile_id,
+      authorName: r.author_name,
+      rating: r.rating,
+      comment: r.comment,
+      createdAt: r.created_at,
+      flaggedAt: r.flagged_at,
+      flaggedByName: r.flagged_by_name,
+    }))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   const reviewSummary = reviews.length
     ? {
@@ -60,6 +47,8 @@ function toDetail(row: NonNullable<Row>): ClubDetail {
     : null;
 
   return {
+    id: row.id,
+    ownerId: row.owner_id,
     slug: row.slug,
     name: row.name,
     city: row.city,
@@ -72,6 +61,18 @@ function toDetail(row: NonNullable<Row>): ClubDetail {
     announcement: row.announcement,
 
     venue: {
+      // Deep-linking the address rather than the coordinates: a postcode is what
+      // people actually type, and it survives a venue moving a few doors down.
+      directionsUrl: (() => {
+        const parts = [row.venue_name, row.venue_address, row.venue_postcode].filter(Boolean);
+        return parts.length
+          ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(parts.join(", "))}`
+          : null;
+      })(),
+      coordinates:
+        row.latitude !== null && row.longitude !== null
+          ? { latitude: row.latitude, longitude: row.longitude }
+          : null,
       name: row.venue_name,
       address: row.venue_address,
       postcode: row.venue_postcode,
@@ -106,18 +107,10 @@ function toDetail(row: NonNullable<Row>): ClubDetail {
     announcements: (row.club_announcements ?? [])
       .map((a) => ({ message: a.message, createdAt: a.created_at }))
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-    membershipTiers: byPosition(row.club_membership_tiers ?? []).map((t) => ({
-      key: t.tier_key,
-      label: t.label,
-      price: formatPrice(t.price),
-      priceDuration: t.price_duration,
-      description: t.description,
-      isBasic: t.is_basic,
-      benefits: Array.isArray(t.benefits) ? (t.benefits as string[]) : [],
-    })),
+    membershipTiers: toMembershipTiers(row.club_membership_tiers ?? []),
 
-    upcomingEvents: events.filter((e) => !e.hasEnded),
-    pastEvents: events.filter((e) => e.hasEnded).reverse(),
+    upcomingEvents: events.upcoming,
+    pastEvents: events.past,
 
     reviews,
     reviewSummary,

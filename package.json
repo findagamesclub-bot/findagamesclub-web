@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check:links": "node scripts/check-server-links.mjs",
+    "verify": "npm run check:links && tsc --noEmit && next build"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -18,13 +20,16 @@
     "@supabase/supabase-js": "^2.112.3",
     "@tanstack/react-query": "^5.101.4",
     "@tanstack/react-query-devtools": "^5.101.4",
+    "leaflet": "^1.9.4",
     "next": "16.3.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "react-leaflet": "^5.0.0",
     "resend": "^6.20.0",
     "server-only": "^0.0.1"
   },
   "devDependencies": {
+    "@types/leaflet": "^1.9.22",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

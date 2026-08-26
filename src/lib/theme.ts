@@ -98,6 +98,12 @@ const theme = createTheme({
           // lines to fit a tight header is never the right trade.
           whiteSpace: "nowrap",
           "&.MuiButton-containedPrimary:hover": { backgroundColor: tokens.brandDeep },
+          // MUI puts a spinner in the start-icon slot, which carries an 8px
+          // gap meant for a real icon. An icon is part of the label's meaning
+          // and earns that space; a spinner is a state marker beside it and
+          // reads as detached at the same distance. Scoped to the loading
+          // state so ordinary start icons keep their spacing.
+          "&.MuiButton-loading .MuiButton-startIcon": { marginRight: 4, marginLeft: -1 },
         },
         sizeLarge: { paddingBlock: "0.65rem", paddingInline: "1.5rem", fontSize: "1rem" },
         outlined: { borderColor: tokens.rule, "&:hover": { borderColor: tokens.brand, background: "transparent" } },
@@ -136,7 +142,23 @@ const theme = createTheme({
       },
     },
 
-    MuiInputLabel: { styleOverrides: { root: { fontFamily: display } } },
+    /**
+     * The floating label and the notch it sits in are measured two different
+     * ways by MUI: the label is shrunk with `transform: scale(0.75)`, while the
+     * legend that cuts the notch is sized with `font-size: 0.75em`. Type does
+     * not render linearly under scaling, so in Archivo those disagree — 1.9px
+     * on "Playing with", 25.7px on "Why Gulnabi is not joining (optional)" —
+     * and the label ends up sitting on the border it is supposed to sit inside.
+     *
+     * Shrinking by font-size instead makes the label measure at exactly the
+     * 0.75rem the legend already uses, so the two agree at any length.
+     */
+    MuiInputLabel: {
+      styleOverrides: {
+        root: { fontFamily: display },
+        shrink: { transform: "translate(14px, -9px) scale(1)", fontSize: "0.75rem" },
+      },
+    },
     MuiMenuItem: { styleOverrides: { root: { fontFamily: display, fontSize: "1rem" } } },
     MuiFormHelperText: { styleOverrides: { root: { fontFamily: display } } },
     MuiFormControlLabel: { styleOverrides: { label: { fontFamily: display } } },

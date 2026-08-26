@@ -159,6 +159,6 @@ export function renderText(options: LayoutOptions): string {
     lines.push("", options.action.label + ":", options.action.url);
   }
   if (options.footnote) lines.push("", options.footnote);
-  lines.push("", "—", "FindAGamesClub · Tabletop and wargaming clubs across the UK");
+  lines.push("", "---", "FindAGamesClub · Tabletop and wargaming clubs across the UK");
   return lines.join("\n");
 }

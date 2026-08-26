@@ -4,6 +4,7 @@ import { useState } from "react";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Link from "next/link";
 import Divider from "@mui/material/Divider";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
@@ -13,7 +14,8 @@ import { tokens } from "@/lib/theme";
 import { initialsOf } from "@/utils/format";
 import type { Viewer } from "./SiteHeader";
 
-export default function AccountMenu({ viewer }: { viewer: NonNullable<Viewer> }) {
+export default function AccountMenu({ viewer, unreadMessages = 0, ownsClubs = false }:
+  { viewer: NonNullable<Viewer>; unreadMessages?: number; ownsClubs?: boolean }) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
 
   return (
@@ -42,6 +44,46 @@ export default function AccountMenu({ viewer }: { viewer: NonNullable<Viewer> })
             {viewer.email}
           </Typography>
         </Stack>
+        <Divider />
+        <MenuItem component={Link} href={`/members/${viewer.id}`} onClick={() => setAnchor(null)}>
+          Your profile
+        </MenuItem>
+        <MenuItem component={Link} href="/account/profile" onClick={() => setAnchor(null)}>
+          Edit profile
+        </MenuItem>
+        <MenuItem component={Link} href="/tickets" onClick={() => setAnchor(null)}>
+          My tickets
+        </MenuItem>
+        {/* Also in the main nav, but this is where people look for their own
+            things — and a club owner's work is one of their own things. */}
+        {ownsClubs ? (
+          <MenuItem component={Link} href="/my-clubs" onClick={() => setAnchor(null)}>
+            My clubs
+          </MenuItem>
+        ) : null}
+        {/* Sits under My tickets on purpose: one is what you are going to, the
+            other is what you are running. */}
+        {ownsClubs ? (
+          <MenuItem component={Link} href="/my-events" onClick={() => setAnchor(null)}>
+            My events
+          </MenuItem>
+        ) : null}
+        <MenuItem component={Link} href="/messages" onClick={() => setAnchor(null)}>
+          <Stack direction="row" spacing={1.5}
+            sx={{ alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+            <span>Messages</span>
+            {unreadMessages ? (
+              <Box sx={{ minWidth: 20, height: 20, px: 0.75, borderRadius: 999,
+                         display: "grid", placeItems: "center",
+                         backgroundColor: tokens.danger, color: "#fff" }}>
+                <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.68rem",
+                                  fontWeight: 700, lineHeight: 1 }}>
+                  {unreadMessages}
+                </Typography>
+              </Box>
+            ) : null}
+          </Stack>
+        </MenuItem>
         <Divider />
         {viewer.role === "admin" ? (
           <MenuItem disabled sx={{ fontSize: "0.95rem" }}>Admin tools · milestone 3</MenuItem>

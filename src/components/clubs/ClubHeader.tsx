@@ -10,12 +10,14 @@ import PlaceIcon from "@mui/icons-material/Place";
 import StatLine from "@/components/ui/StatLine";
 import ClubArt from "./ClubArt";
 import { tokens } from "@/lib/tokens";
-import { clubIdentity } from "@/utils/club-identity";
 import type { ClubDetail } from "@/types/clubDetail";
 
-export default function ClubHeader({ club }: { club: ClubDetail }) {
+export default function ClubHeader({
+  club,
+  /** Members get a way through to booking from the stat that prompts it. */
+  canBook = false,
+}: { club: ClubDetail; canBook?: boolean }) {
   const place = [club.neighbourhood, club.city].filter(Boolean).join(" · ");
-  const { faction } = clubIdentity(club.slug, club.name);
   const banner = club.images[0] ?? null;
 
   return (
@@ -79,7 +81,7 @@ export default function ClubHeader({ club }: { club: ClubDetail }) {
       ) : null}
 
       {club.announcement ? (
-        <Alert severity="info" sx={{ borderLeft: `3px solid ${faction.base}` }}>
+        <Alert severity="info">
           {club.announcement}
         </Alert>
       ) : null}
@@ -87,7 +89,17 @@ export default function ClubHeader({ club }: { club: ClubDetail }) {
       <StatLine
         stats={[
           { label: "Meets", value: club.meetingLabel, icon: CalendarMonthIcon },
-          { label: "Tables", value: club.tablesAvailable, icon: TableRestaurantIcon },
+          {
+            label: "Tables",
+            value: club.tablesAvailable,
+            icon: TableRestaurantIcon,
+            // The club page runs to 3600px and the booking panel sits below the
+            // fold on a laptop. "How many tables" is asked by somebody about to
+            // book one, so the answer carries the way there.
+            href: canBook && (club.tablesAvailable ?? 0) > 0
+              ? `/clubs/${club.slug}/bookings` : undefined,
+            linkLabel: "Book",
+          },
           { label: "Members", value: club.memberCount, icon: GroupsIcon },
           { label: "From", value: club.fromPrice, icon: SellIcon },
         ]}

@@ -34,10 +34,20 @@ export function MembershipTiers({ tiers }: { tiers: MembershipTier[] }) {
               ) : null}
 
               {tier.benefits.length ? (
-                <Stack component="ul" spacing={0.5} sx={{ m: 0, pl: 2.5 }}>
-                  {tier.benefits.map((b, i) => (
-                    <Typography key={i} component="li" variant="body2">{b}</Typography>
-                  ))}
+                <Stack spacing={0.75}>
+                  <Stack component="ul" spacing={0.5} sx={{ m: 0, pl: 2.5 }}>
+                    {/* A paid tier can switch on twenty-odd perks. The whole list
+                        is a wall on a card, so the card sells the headline ones
+                        and the comparison page carries the rest. */}
+                    {tier.benefits.slice(0, 8).map((b, i) => (
+                      <Typography key={i} component="li" variant="body2">{b}</Typography>
+                    ))}
+                  </Stack>
+                  {tier.benefits.length > 8 ? (
+                    <Typography variant="body2" color="text.secondary">
+                      and {tier.benefits.length - 8} more
+                    </Typography>
+                  ) : null}
                 </Stack>
               ) : null}
             </Stack>

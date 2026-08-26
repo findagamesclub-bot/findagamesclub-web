@@ -12,6 +12,7 @@ import PaymentsIcon from "@mui/icons-material/Payments";
 import CakeIcon from "@mui/icons-material/Cake";
 import MailIcon from "@mui/icons-material/Mail";
 import FacilityChips from "./FacilityChips";
+import SocialLinks from "./SocialLinks";
 import ScheduleList from "./ScheduleList";
 import { tokens } from "@/lib/tokens";
 import type { ClubDetail } from "@/types/clubDetail";
@@ -60,30 +61,37 @@ export default function ClubSidebar({ club }: { club: ClubDetail }) {
     sections.push({ title: "Ages", icon: CakeIcon, body: <Typography variant="body2">{club.ages}</Typography> });
   }
 
+  // Email and website stay as text: an address is worth reading, and "Visit
+  // website" is not a brand anyone recognises as a glyph. The networks become
+  // icons.
   const links = [
     club.contact.email ? { href: `mailto:${club.contact.email}`, label: club.contact.email, external: false } : null,
     club.contact.website ? { href: club.contact.website, label: "Visit website", external: true } : null,
-    ...club.socialLinks.map((l) => ({ href: l.url, label: l.label, external: true })),
   ].filter(Boolean) as { href: string; label: string; external: boolean }[];
 
-  if (links.length) {
+  if (links.length || club.socialLinks.length) {
     sections.push({
       title: "Contact",
       icon: MailIcon,
       body: (
-        <Stack spacing={0.5}>
-          {/* Keyed by label: several clubs point every social link at the same
-              placeholder URL, so hrefs are not unique. */}
-          {links.map((l) => (
-            <Link
-              key={l.label}
-              href={l.href}
-              variant="body2"
-              {...(l.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-            >
-              {l.label}
-            </Link>
-          ))}
+        <Stack spacing={1}>
+          {links.length ? (
+            <Stack spacing={0.5}>
+              {/* Keyed by label: several clubs point every social link at the
+                  same placeholder URL, so hrefs are not unique. */}
+              {links.map((l) => (
+                <Link
+                  key={l.label}
+                  href={l.href}
+                  variant="body2"
+                  {...(l.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                >
+                  {l.label}
+                </Link>
+              ))}
+            </Stack>
+          ) : null}
+          <SocialLinks links={club.socialLinks} slug={club.slug} name={club.name} />
         </Stack>
       ),
     });

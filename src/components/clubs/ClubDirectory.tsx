@@ -1,15 +1,18 @@
 "use client";
 
 import { useCallback, useMemo, useState, useTransition } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import Box from "@mui/material/Box";
-import CircularProgress from "@mui/material/CircularProgress";
-import Fade from "@mui/material/Fade";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Pagination from "@mui/material/Pagination";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import ClubFilters, { type FilterOptions } from "./ClubFilters";
 import ClubGrid, { ClubGridSkeleton } from "./ClubGrid";
+import ClubMapView from "@/components/map/ClubMapView";
+import ToggleButton from "@mui/material/ToggleButton";
+import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
+import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
+import MapIcon from "@mui/icons-material/Map";
+import BusyOverlay from "@/components/ui/BusyOverlay";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import { useClubs, type ClubListResponse } from "@/hooks/useClubs";
@@ -22,19 +25,30 @@ type Props = {
   options: FilterOptions;
 };
 
-export default function ClubDirectory({ initialFilters, initialData, options }: Props) {
+export default function ClubDirectory({
+  initialFilters, initialData, options,
+}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const [, startTransition] = useTransition();
   const [filters, setFilters] = useState<ClubListFilters>(initialFilters);
+  const searchParams = useSearchParams();
+  const view: "list" | "map" = searchParams.get("view") === "map" ? "map" : "list";
+
+  // A map showing page one of the matches would be a map that lies about where
+  // clubs are, so map view asks for the whole matching set.
+  const query = useMemo<ClubListFilters>(
+    () => (view === "map" ? { ...filters, page: 1, pageSize: 500 } : filters),
+    [filters, view],
+  );
 
   // Only page one was server-rendered, so only page one seeds the cache.
   const seed = useMemo(
-    () => (JSON.stringify(filters) === JSON.stringify(initialFilters) ? initialData : undefined),
-    [filters, initialFilters, initialData],
+    () => (JSON.stringify(query) === JSON.stringify(initialFilters) ? initialData : undefined),
+    [query, initialFilters, initialData],
   );
 
-  const { data, isFetching, isError } = useClubs(filters, seed);
+  const { data, isFetching, isError } = useClubs(query, seed);
 
   // Keep the URL in step so a filtered view can be shared or bookmarked.
   const syncUrl = useCallback(
@@ -61,6 +75,18 @@ export default function ClubDirectory({ initialFilters, initialData, options }: 
     [filters, syncUrl],
   );
 
+  const setView = useCallback(
+    (next: "list" | "map") => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (next === "map") params.set("view", "map");
+      else params.delete("view");
+      const query = params.toString();
+      startTransition(() =>
+        router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false }));
+    },
+    [pathname, router, searchParams],
+  );
+
   const clear = useCallback(() => {
     const next: ClubListFilters = { sort: filters.sort, page: 1 };
     setFilters(next);
@@ -82,6 +108,29 @@ export default function ClubDirectory({ initialFilters, initialData, options }: 
         onChange={update}
         onClear={clear}
       />
+
+      <Stack direction="row" spacing={2}
+        sx={{ alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+        <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.8rem", color: tokens.inkMuted }}>
+          {total} {total === 1 ? "club" : "clubs"}
+        </Typography>
+        <ToggleButtonGroup
+          size="small"
+          exclusive
+          value={view}
+          onChange={(_, next) => { if (next) setView(next); }}
+          aria-label="How to show the results"
+        >
+          <ToggleButton value="list" aria-label="List view">
+            <FormatListBulletedIcon sx={{ fontSize: 17, mr: 0.75 }} />
+            List
+          </ToggleButton>
+          <ToggleButton value="map" aria-label="Map view">
+            <MapIcon sx={{ fontSize: 17, mr: 0.75 }} />
+            Map
+          </ToggleButton>
+        </ToggleButtonGroup>
+      </Stack>
 
       {data?.origin ? (
         <Typography variant="overline" color="text.secondary" aria-live="polite">
@@ -116,55 +165,12 @@ export default function ClubDirectory({ initialFilters, initialData, options }: 
       ) : (
         // Results stay on screen while refetching rather than flashing empty,
         // but dim and stop responding so it is obvious they are out of date.
-        <Box sx={{ position: "relative" }}>
-          <Box
-            sx={{
-              opacity: isFetching ? 0.4 : 1,
-              pointerEvents: isFetching ? "none" : "auto",
-              transition: "opacity 150ms ease",
-            }}
-            aria-busy={isFetching}
-          >
-            <ClubGrid clubs={clubs} />
-          </Box>
-
-          <Fade in={isFetching} unmountOnExit>
-            <Box
-              sx={{
-                position: "absolute",
-                inset: 0,
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "center",
-                pt: 8,
-              }}
-            >
-              <Stack
-                direction="row"
-                spacing={1.5}
-                sx={{
-                  alignItems: "center",
-                  position: "sticky",
-                  top: 100,
-                  px: 2.5,
-                  py: 1.25,
-                  borderRadius: 999,
-                  backgroundColor: tokens.paper,
-                  border: `1px solid ${tokens.rule}`,
-                  boxShadow: "0 2px 10px rgba(16,27,45,0.08)",
-                }}
-              >
-                <CircularProgress size={16} thickness={5} aria-hidden />
-                <Typography variant="body2" sx={{ fontFamily: "var(--font-display)", fontWeight: 600 }}>
-                  Updating results
-                </Typography>
-              </Stack>
-            </Box>
-          </Fade>
-        </Box>
+        <BusyOverlay busy={isFetching} variant="dim" label="Updating results">
+          {view === "map" ? <ClubMapView clubs={clubs} /> : <ClubGrid clubs={clubs} />}
+        </BusyOverlay>
       )}
 
-      {pageCount > 1 ? (
+      {view === "list" && pageCount > 1 ? (
         <Stack sx={{ alignItems: "center", pt: 1 }}>
           <Pagination
             count={pageCount}

@@ -1,11 +1,16 @@
 import Box from "@mui/material/Box";
+import NextLink from "next/link";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import ConfirmationNumberIcon from "@mui/icons-material/ConfirmationNumber";
 import ScheduleIcon from "@mui/icons-material/Schedule";
+import GroupsIcon from "@mui/icons-material/Groups";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { mono, tokens } from "@/lib/tokens";
+import { formatMoney } from "@/utils/format";
+import type { EventSales } from "@/services/eventBookings.service";
 import type { ClubEventSummary } from "@/types/clubDetail";
 
 /** Day and month split out so the card can stack them as a calendar tile. */
@@ -13,11 +18,14 @@ function dateParts(iso: string | null) {
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
+  // timeZone: UTC on purpose. A club date is a calendar date, and without this
+  // anyone west of Greenwich sees the day before on the tile.
+  const opts = { timeZone: "UTC" } as const;
   return {
-    day: d.toLocaleDateString("en-GB", { day: "numeric" }),
-    month: d.toLocaleDateString("en-GB", { month: "short" }).toUpperCase(),
-    weekday: d.toLocaleDateString("en-GB", { weekday: "short" }),
-    year: d.getFullYear(),
+    day: d.toLocaleDateString("en-GB", { ...opts, day: "numeric" }),
+    month: d.toLocaleDateString("en-GB", { ...opts, month: "short" }).toUpperCase(),
+    weekday: d.toLocaleDateString("en-GB", { ...opts, weekday: "short" }),
+    year: d.getUTCFullYear(),
   };
 }
 
@@ -43,15 +51,37 @@ function Tag({ label, tone = "quiet" }: { label: string; tone?: "quiet" | "sold"
   );
 }
 
-export default function ClubEventList({ events }: { events: ClubEventSummary[] }) {
+export default function ClubEventList({
+  events,
+  clubSlug,
+  sales,
+  trail = "",
+}: {
+  events: ClubEventSummary[];
+  clubSlug: string;
+  /** Only the club gets this. Absent means "not my club", not "nothing sold". */
+  sales?: Map<number, EventSales>;
+  /** Query string marking where these links were followed from. */
+  trail?: string;
+}) {
   return (
     <Stack spacing={1.5}>
       {events.map((event) => {
         const date = dateParts(event.startDate);
         const soldOut = event.ticketsAvailable === 0;
+        const sold = sales?.get(event.id);
 
         return (
-          <Card key={event.id} sx={{ overflow: "hidden" }}>
+          <Card
+            key={event.id}
+            sx={{
+              overflow: "hidden",
+              transition: "border-color 120ms ease",
+              "&:hover": { borderColor: tokens.brass },
+            }}
+          >
+            <NextLink href={`/clubs/${clubSlug}/events/${event.slug}${trail}`}
+              style={{ color: "inherit", textDecoration: "none", display: "block" }}>
             <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
               <Stack direction="row" sx={{ alignItems: "stretch" }}>
                 {/* Calendar tile. A date read as a figure is faster than one
@@ -128,9 +158,57 @@ export default function ClubEventList({ events }: { events: ClubEventSummary[] }
                 </Stack>
               </Stack>
             </CardContent>
+            </NextLink>
+
+            {sales ? (
+              <Stack direction="row" spacing={2} useFlexGap
+                sx={{ flexWrap: "wrap", alignItems: "center", px: 2.5, py: 1.25,
+                      borderTop: `1px solid ${tokens.rule}`, backgroundColor: tokens.surface }}>
+                {sold ? (
+                  <>
+                    <Sold value={sold.bookings} label={sold.bookings === 1 ? "booking" : "bookings"} />
+                    <Sold value={sold.tickets} label={sold.tickets === 1 ? "ticket" : "tickets"} />
+                    <Sold value={formatMoney(sold.due)} label="due" tone={tokens.brass} />
+                  </>
+                ) : (
+                  <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
+                    Nobody has booked yet.
+                  </Typography>
+                )}
+
+                {sold ? (
+                  <NextLink href={`/clubs/${clubSlug}/events/${event.slug}/attendees${trail}`}
+                    style={{ textDecoration: "none", marginLeft: "auto" }}>
+                    <Stack direction="row" spacing={0.25} sx={{ alignItems: "center" }}>
+                      <GroupsIcon sx={{ fontSize: 16, color: tokens.brand }} />
+                      <Typography variant="body2" sx={{ color: tokens.brand, fontWeight: 600 }}>
+                        Door list
+                      </Typography>
+                      <ChevronRightIcon sx={{ fontSize: 16, color: tokens.brand }} />
+                    </Stack>
+                  </NextLink>
+                ) : null}
+              </Stack>
+            ) : null}
           </Card>
         );
       })}
+    </Stack>
+  );
+}
+
+/** One figure in the club's own strip under an event. */
+function Sold({ value, label, tone }: { value: number | string; label: string; tone?: string }) {
+  return (
+    <Stack direction="row" spacing={0.6} sx={{ alignItems: "baseline" }}>
+      <Typography sx={{ fontFamily: mono, fontSize: "0.95rem", fontWeight: 700,
+                        lineHeight: 1, color: tone ?? tokens.ink }}>
+        {value}
+      </Typography>
+      <Typography sx={{ fontFamily: mono, fontSize: "0.62rem", letterSpacing: "0.1em",
+                        color: tokens.inkMuted }}>
+        {label.toUpperCase()}
+      </Typography>
     </Stack>
   );
 }
