@@ -109,11 +109,10 @@ export default async function ClubEventsPage({
             trail={FROM_CLUB_EVENTS}
             clubVenue={{ name: club.venue.name, postcode: club.venue.postcode }} />
           <Pager page={page} total={past.total} noun="past events" size={CLUB_EVENTS_PAGE}
-            hrefFor={(to) =>
-              `/clubs/${club.slug}/events?${new URLSearchParams({
-                ...(query.from ? { from: String(query.from) } : {}),
-                ...(to > 1 ? { page: String(to) } : {}),
-              })}`} />
+            href={{
+              path: `/clubs/${club.slug}/events`,
+              params: { from: query.from ? String(query.from) : undefined },
+            }} />
         </Section>
       ) : null}
     </Container>

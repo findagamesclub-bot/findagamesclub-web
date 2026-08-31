@@ -244,7 +244,19 @@ export default async function EventsPage({ searchParams }: PageProps<"/events">)
 
           {view === "list" || !view ? (
             <Pager page={page} total={events.length} noun="events"
-              size={EVENTS_PER_PAGE} hrefFor={(to) => link({ page: to > 1 ? String(to) : undefined })} />
+              size={EVENTS_PER_PAGE}
+              href={{
+                path: "/events",
+                // The same set `link` carries, so turning the page keeps the
+                // search, the game and the tab the reader is already in.
+                params: {
+                  when: when === "past" ? "past" : undefined,
+                  ...carriedFilters,
+                  game,
+                  view: rawView,
+                  month: rawMonth,
+                },
+              }} />
           ) : null}
         </>
       ) : (

@@ -81,13 +81,9 @@ export default async function ClubBoardPage({
   const { posts } = board;
 
   // Keeps whatever the reader is already filtering by when they turn the page.
-  const pageHref = (to: number) => {
-    const params = new URLSearchParams();
-    if (category) params.set("category", category);
-    if (search) params.set("q", search);
-    if (to > 1) params.set("page", String(to));
-    const q = params.toString();
-    return `/clubs/${slug}/board${q ? `?${q}` : ""}`;
+  const pageTarget = {
+    path: `/clubs/${slug}/board`,
+    params: { category, q: search },
   };
 
   return (
@@ -156,7 +152,7 @@ export default async function ClubBoardPage({
 
       <Box sx={{ mt: 2.5 }}>
         <Pager page={board.page} total={board.total} noun="threads"
-          size={BOARD_PAGE_SIZE} hrefFor={pageHref} />
+          size={BOARD_PAGE_SIZE} href={pageTarget} />
       </Box>
 
     </Container>

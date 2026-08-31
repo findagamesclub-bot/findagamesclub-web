@@ -103,11 +103,10 @@ export default async function CompetitionsPage({
         )}
 
         <Pager page={page} total={total} noun="competitions" size={PER_PAGE}
-          hrefFor={(to) =>
-            `/clubs/${club.slug}/competitions?${new URLSearchParams({
-              ...(status === "completed" ? { status } : {}),
-              ...(to > 1 ? { page: String(to) } : {}),
-            })}`} />
+          href={{
+            path: `/clubs/${club.slug}/competitions`,
+            params: { status: status === "completed" ? status : undefined },
+          }} />
       </Stack>
     </Container>
   );

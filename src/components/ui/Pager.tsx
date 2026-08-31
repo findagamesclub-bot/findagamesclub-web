@@ -17,15 +17,25 @@ type Common = {
   noun: string;
 };
 
+/**
+ * Where the numbered links point.
+ *
+ * A description rather than a `(page) => string` builder: this is a Client
+ * Component, and a function cannot cross that boundary — React refuses to
+ * serialize it and the whole page falls over at render time. So the server
+ * hands over the path and the query to keep, and the URLs are built here.
+ */
+type LinkTarget = {
+  path: string;
+  /** The rest of the query, kept as the reader turns the page. Empty values drop out. */
+  params?: Record<string, string | undefined>;
+};
+
 type Props = Common &
   (
+    | { href: LinkTarget; onChange?: never }
     | {
-        /** Builds the URL for a page, keeping whatever else is in the query. */
-        hrefFor: (page: number) => string;
-        onChange?: never;
-      }
-    | {
-        hrefFor?: never;
+        href?: never;
         /** For lists filtered in the browser, where a round trip would be a step back. */
         onChange: (page: number) => void;
       }
@@ -43,9 +53,21 @@ type Props = Common &
  * much there is, which is the question a bare page number leaves open.
  */
 export default function Pager({
-  page, total, noun, size = PAGE_SIZE, hrefFor, onChange,
+  page, total, noun, size = PAGE_SIZE, href, onChange,
 }: Props) {
   const pages = pageCount(total, size);
+
+  const hrefFor = (to: number) => {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(href?.params ?? {})) {
+      if (value) query.set(key, value);
+    }
+    // Page one is the bare URL, so the first page of a list and the list
+    // itself are the same address rather than two that look different.
+    if (to > 1) query.set("page", String(to));
+    const rest = query.toString();
+    return `${href?.path ?? ""}${rest ? `?${rest}` : ""}`;
+  };
 
   // Below one page there is nothing to page, but the count is still worth
   // saying: it is the difference between a short list and a filtered one.
@@ -69,7 +91,7 @@ export default function Pager({
         boundaryCount={1}
         onChange={onChange ? (_, next) => onChange(next) : undefined}
         renderItem={(item) =>
-          hrefFor && item.page ? (
+          href && item.page ? (
             // scroll={false}: the list is usually below the fold, and jumping
             // to the hero to read page 3 loses the place you were reading.
             <PaginationItem component={NextLink} href={hrefFor(item.page)}
