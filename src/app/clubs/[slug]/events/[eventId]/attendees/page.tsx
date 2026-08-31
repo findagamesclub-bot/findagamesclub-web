@@ -32,7 +32,7 @@ export default async function AttendeesPage({
   // A dashboard trail wins over the event: you came from a list, so that is
   // where "back" means. Without one, up a level is the event itself.
   const back = fromParam(query.from)
-    ? backTarget(query.from, { slug: event.clubSlug, name: event.clubName })
+    ? backTarget(query.from, { slug: event.clubSlug, name: event.clubName }, query)
     : { href: `/clubs/${slug}/events/${eventId}`, label: event.title };
   const attendees = await getAttendees(event.id);
 

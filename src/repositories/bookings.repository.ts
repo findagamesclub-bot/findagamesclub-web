@@ -50,6 +50,26 @@ export async function countUpcomingFor(clubId: number, profileId: string, fromDa
   return count ?? 0;
 }
 
+/**
+ * The viewer's own table bookings across every club, soonest first.
+ *
+ * Cross-club rather than per club: a member with three clubs wants one answer
+ * to "where am I playing this week", not three pages to check.
+ */
+export async function findMyUpcoming(profileId: string, fromDate: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("club_bookings")
+    .select(`${BOOKING_COLUMNS}, clubs!inner(slug, name, logo_url)`)
+    .eq("booked_by", profileId)
+    .gte("session_date", fromDate)
+    .neq("status", "cancelled")
+    .order("session_date", { ascending: true });
+
+  if (error) throw new Error(`Failed to load your bookings: ${error.message}`);
+  return data ?? [];
+}
+
 export async function insertBooking(row: TablesInsert<"club_bookings">) {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -98,6 +118,122 @@ export async function findSchedule(clubId: number) {
 }
 
 /** Booking configuration. A missing row means the club takes no bookings. */
+/**
+ * What this member's tier takes off a table, straight from the function the
+ * insert trigger uses. Reading the benefits here instead would be a second
+ * copy of a rule that already handles waiveGameBookingFee.
+ */
+/**
+ * Games already played at this club, newest first.
+ *
+ * For the club, not for a player: every booking, not just the ones the viewer
+ * was in. Without it a manager can only settle a result on a game they happened
+ * to play, and a dispute between two other members has no way out.
+ */
+export type PlayedBookingRow = {
+  id: number;
+  session_date: string;
+  session_time: string | null;
+  game_title: string | null;
+  opponent_name: string | null;
+  booked_by_score: number | null;
+  opponent_score: number | null;
+  booked_by_army: string | null;
+  opponent_army: string | null;
+  result_mission: string | null;
+  result_deployment: string | null;
+  result_terrain: string | null;
+  result_confirmation: string | null;
+};
+
+export async function findPlayedBookings(clubId: number, before: string, limit = 40) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("club_bookings")
+    // `*` because the result columns arrived in 0030 and 0044 and the generated
+    // types predate them. Delete the cast below once they are regenerated.
+    .select(
+      `*,
+       booker:profiles!club_bookings_booked_by_fkey(id, full_name),
+       opponent:profiles!club_bookings_opponent_profile_id_fkey(id, full_name),
+       acceptor:profiles!club_bookings_accepted_by_fkey(id, full_name)`,
+    )
+    .eq("club_id", clubId)
+    .eq("status", "booked")
+    .lte("session_date", before)
+    .order("session_date", { ascending: false })
+    .limit(limit);
+
+  if (error) throw new Error(`Failed to load played games: ${error.message}`);
+  return (data ?? []) as unknown as PlayedBookingRow[];
+}
+
+/**
+ * Played games across several clubs at once, for an owner who runs more than
+ * one. The per-club version answers "what happened here"; this answers "what is
+ * waiting on me", which is a different question and the one legacy puts in its
+ * Score Approvals section.
+ */
+export async function findPlayedBookingsForClubs(
+  clubIds: number[], before: string, limit = 200,
+) {
+  if (!clubIds.length) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("club_bookings")
+    .select(
+      `*,
+       clubs!inner(id, slug, name, logo_url),
+       booker:profiles!club_bookings_booked_by_fkey(id, full_name),
+       opponent:profiles!club_bookings_opponent_profile_id_fkey(id, full_name),
+       acceptor:profiles!club_bookings_accepted_by_fkey(id, full_name)`,
+    )
+    .in("club_id", clubIds)
+    .eq("status", "booked")
+    .lte("session_date", before)
+    .order("session_date", { ascending: false })
+    .limit(limit);
+
+  if (error) throw new Error(`Failed to load played games: ${error.message}`);
+  return (data ?? []) as unknown as (PlayedBookingRow & { club_id: number })[];
+}
+
+/** Tables still to come across several clubs, newest night first. */
+export async function findUpcomingBookingsForClubs(
+  clubIds: number[], fromDate: string, limit = 200,
+) {
+  if (!clubIds.length) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("club_bookings")
+    .select(
+      `*,
+       clubs!inner(id, slug, name, logo_url),
+       booker:profiles!club_bookings_booked_by_fkey(id, full_name),
+       opponent:profiles!club_bookings_opponent_profile_id_fkey(id, full_name),
+       acceptor:profiles!club_bookings_accepted_by_fkey(id, full_name)`,
+    )
+    .in("club_id", clubIds)
+    .eq("status", "booked")
+    .gte("session_date", fromDate)
+    .order("session_date")
+    .limit(limit);
+
+  if (error) throw new Error(`Failed to load bookings: ${error.message}`);
+  return (data ?? []) as unknown as (PlayedBookingRow & { club_id: number })[];
+}
+
+export async function findBookingDiscountPercent(clubId: number, profileId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("booking_discount_percent", {
+    target_club: clubId,
+    target_profile: profileId,
+  });
+
+  if (error) throw new Error(`Failed to read the booking discount: ${error.message}`);
+  return Number(data ?? 0);
+}
+
 export async function findBookingSettings(clubId: number) {
   const supabase = await createClient();
   const { data, error } = await supabase

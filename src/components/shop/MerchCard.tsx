@@ -4,11 +4,16 @@ import { useState } from "react";
 
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import IconButton from "@mui/material/IconButton";
+import AddIcon from "@mui/icons-material/Add";
+import RemoveIcon from "@mui/icons-material/Remove";
+import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import LockIcon from "@mui/icons-material/Lock";
+import { priceLines } from "@/utils/shop-pricing";
 import { tokens, type Faction } from "@/lib/tokens";
-import type { MerchItem } from "@/types/clubExtras";
+import type { MerchItem, ShopStanding } from "@/types/clubExtras";
 
 /**
  * One thing the club sells.
@@ -18,16 +23,30 @@ import type { MerchItem } from "@/types/clubExtras";
  * an empty box reads as a broken page.
  */
 export default function MerchCard({
-  item, faction, monogram, busy, onOrder,
+  item, faction, monogram, busy, standing, inBag, onAdd, onQuantity,
 }: {
   item: MerchItem;
   faction: Faction;
   monogram: string;
   busy: boolean;
-  onOrder: (item: MerchItem) => void;
+  /** What this viewer pays, and what a better tier would pay. */
+  standing: ShopStanding;
+  /** How many of this are already in the bag. */
+  inBag: number;
+  onAdd: () => void;
+  onQuantity: (quantity: number) => void;
 }) {
   const blocked = Boolean(item.blockedReason) || item.soldOut;
   const low = item.stock > 0 && item.stock <= 5;
+
+  // Priced for whoever is looking, on the card. It used to show the full price
+  // here and the member price only once you opened the order dialog.
+  const price = priceLines({
+    price: item.price,
+    discountPercent: standing.discountPercent,
+    tierLabel: standing.tierLabel,
+    offer: standing.offer,
+  });
 
   // A club's image can go missing — the legacy uploads were half-copied, and a
   // club could delete one. A broken-image icon with the filename as alt text is
@@ -68,11 +87,31 @@ export default function MerchCard({
         <Stack direction="row" spacing={1.5}
           sx={{ alignItems: "baseline", justifyContent: "space-between" }}>
           <Typography variant="subtitle1" sx={{ lineHeight: 1.25 }}>{item.name}</Typography>
-          <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "1rem", fontWeight: 700,
-                            flexShrink: 0 }}>
-            {item.price ?? "—"}
-          </Typography>
+
+          <Stack direction="row" spacing={0.875}
+            sx={{ alignItems: "baseline", flexShrink: 0 }}>
+            {price.was ? (
+              <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.82rem",
+                                color: tokens.inkMuted, textDecoration: "line-through" }}>
+                {price.was}
+              </Typography>
+            ) : null}
+            <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "1rem", fontWeight: 700,
+                              color: price.was ? tokens.brass : tokens.ink }}>
+              {price.now}
+            </Typography>
+          </Stack>
         </Stack>
+
+        {/* Either what your tier saves you, or what a better one would. Both
+            are worth saying out loud; neither was said before. */}
+        {price.note ? (
+          <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.66rem",
+                            letterSpacing: "0.08em", fontWeight: 700,
+                            color: price.was ? tokens.brass : tokens.inkMuted }}>
+            {price.note.toUpperCase()}
+          </Typography>
+        ) : null}
 
         <Stack direction="row" spacing={1.25} useFlexGap
           sx={{ flexWrap: "wrap", alignItems: "center" }}>
@@ -101,12 +140,41 @@ export default function MerchCard({
           </Stack>
         ) : null}
 
+        {/* Once it is in the bag the button becomes a counter, because a
+            button reading "In your bag · 2" that quietly makes it 3 when you
+            press it is a trap. Plus adds, minus takes away, zero removes. */}
         <Box sx={{ mt: "auto", pt: 1.25 }}>
-          <Button fullWidth variant="contained" disabled={blocked || busy}
-            onClick={() => onOrder(item)}
-            sx={{ backgroundColor: faction.base, "&:hover": { backgroundColor: faction.deep } }}>
-            {item.soldOut ? "Sold out" : "Order"}
-          </Button>
+          {inBag ? (
+            <Stack direction="row"
+              sx={{ alignItems: "center", justifyContent: "space-between",
+                    border: `1px solid ${faction.base}`, borderRadius: 1, px: 0.5, height: 40 }}>
+              <IconButton size="small" disabled={busy}
+                aria-label={inBag === 1 ? `Remove ${item.name} from your bag` : `One fewer ${item.name}`}
+                onClick={() => onQuantity(inBag - 1)}>
+                {inBag === 1
+                  ? <DeleteOutlinedIcon sx={{ fontSize: 18 }} />
+                  : <RemoveIcon sx={{ fontSize: 18 }} />}
+              </IconButton>
+
+              <Typography sx={{ fontFamily: "var(--font-mono)", fontWeight: 700,
+                                color: faction.deep }}>
+                {inBag} in bag
+              </Typography>
+
+              <IconButton size="small"
+                disabled={busy || inBag >= Math.min(20, item.stock)}
+                aria-label={`One more ${item.name}`}
+                onClick={() => onQuantity(inBag + 1)}>
+                <AddIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Stack>
+          ) : (
+            <Button fullWidth variant="contained" disabled={blocked || busy}
+              onClick={onAdd}
+              sx={{ backgroundColor: faction.base, "&:hover": { backgroundColor: faction.deep } }}>
+              {item.soldOut ? "Sold out" : "Add to bag"}
+            </Button>
+          )}
         </Box>
       </Stack>
     </Stack>

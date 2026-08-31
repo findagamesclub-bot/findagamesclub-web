@@ -8,8 +8,7 @@ import Typography from "@mui/material/Typography";
 import ClubFilters, { type FilterOptions } from "./ClubFilters";
 import ClubGrid, { ClubGridSkeleton } from "./ClubGrid";
 import ClubMapView from "@/components/map/ClubMapView";
-import ToggleButton from "@mui/material/ToggleButton";
-import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
+import NavTabs from "@/components/ui/NavTabs";
 import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
 import MapIcon from "@mui/icons-material/Map";
 import BusyOverlay from "@/components/ui/BusyOverlay";
@@ -75,16 +74,17 @@ export default function ClubDirectory({
     [filters, syncUrl],
   );
 
-  const setView = useCallback(
+  // Links, not buttons, so a view is shareable and the back button works.
+  // Same NavTabs the events directory uses: one control for one job.
+  const viewHref = useCallback(
     (next: "list" | "map") => {
       const params = new URLSearchParams(searchParams.toString());
       if (next === "map") params.set("view", "map");
       else params.delete("view");
       const query = params.toString();
-      startTransition(() =>
-        router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false }));
+      return query ? `${pathname}?${query}` : pathname;
     },
-    [pathname, router, searchParams],
+    [pathname, searchParams],
   );
 
   const clear = useCallback(() => {
@@ -114,22 +114,17 @@ export default function ClubDirectory({
         <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.8rem", color: tokens.inkMuted }}>
           {total} {total === 1 ? "club" : "clubs"}
         </Typography>
-        <ToggleButtonGroup
-          size="small"
-          exclusive
+        <NavTabs
+          ariaLabel="How to show the results"
           value={view}
-          onChange={(_, next) => { if (next) setView(next); }}
-          aria-label="How to show the results"
-        >
-          <ToggleButton value="list" aria-label="List view">
-            <FormatListBulletedIcon sx={{ fontSize: 17, mr: 0.75 }} />
-            List
-          </ToggleButton>
-          <ToggleButton value="map" aria-label="Map view">
-            <MapIcon sx={{ fontSize: 17, mr: 0.75 }} />
-            Map
-          </ToggleButton>
-        </ToggleButtonGroup>
+          dense
+          tabs={[
+            { value: "list", label: "List", href: viewHref("list"),
+              icon: <FormatListBulletedIcon sx={{ fontSize: 18 }} /> },
+            { value: "map", label: "Map", href: viewHref("map"),
+              icon: <MapIcon sx={{ fontSize: 18 }} /> },
+          ]}
+        />
       </Stack>
 
       {data?.origin ? (

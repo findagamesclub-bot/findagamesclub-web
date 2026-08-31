@@ -1,7 +1,7 @@
 "use client";
 
 import { startTransition, useActionState } from "react";
-import Alert from "@mui/material/Alert";
+import { useActionToast } from "@/components/ui/Toaster";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -24,6 +24,7 @@ export default function CoachingCalendar({
   isMember: boolean;
 }) {
   const [state, submit, busy] = useActionState<CoachingState, FormData>(coachingAction, {});
+  useActionToast(state);
 
   const send = (fields: Record<string, string | number | boolean>) => {
     const data = new FormData();
@@ -34,8 +35,6 @@ export default function CoachingCalendar({
 
   return (
     <Stack spacing={2.5}>
-      {state.error ? <Alert severity="error">{state.error}</Alert> : null}
-      {state.notice ? <Alert severity="success">{state.notice}</Alert> : null}
 
       {canManage ? (
         <NewSlotForm slug={slug} clubId={clubId} faction={faction} onSubmit={submit} busy={busy} />

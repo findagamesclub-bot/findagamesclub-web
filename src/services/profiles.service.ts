@@ -2,6 +2,7 @@ import "server-only";
 
 import * as repo from "@/repositories/profiles.repository";
 import { parseLocation } from "@/utils/geo";
+import { buildSocialLinks, toSocialLinks } from "@/utils/social-links";
 import type { MemberProfile, ProfileDraft } from "@/types/profile";
 
 /** Business rules for member profiles. */
@@ -37,6 +38,7 @@ export async function getProfile(id: string): Promise<MemberProfile | null> {
     memberSince: row.created_at
       ? new Date(row.created_at).toLocaleDateString("en-GB", { month: "long", year: "numeric" })
       : undefined,
+    socials: toSocialLinks(row.social_profiles),
     isAdmin: row.role === "admin",
   };
 }
@@ -55,6 +57,7 @@ export async function getOwnDraft(id: string): Promise<ProfileDraft | null> {
     availability: row.availability_days ?? [],
     ageGroups: row.age_groups ?? [],
     playStyle: row.play_style_tags ?? [],
+    socials: toSocialLinks(row.social_profiles),
   };
 }
 
@@ -68,6 +71,16 @@ export async function saveOwnProfile(id: string, draft: ProfileDraft) {
     // The column has the same check constraint, so catching it here is only so
     // the person gets a sentence instead of a database error.
     return { ok: false as const, error: "How far you will travel must be between 0 and 500 miles." };
+  }
+
+  // Told which one, rather than "check your links": with seven fields, a
+  // general complaint means checking all seven.
+  const { links, rejected } = buildSocialLinks(draft.socials);
+  if (rejected.length) {
+    return {
+      ok: false as const,
+      error: `That ${rejected.join(" and ")} link is not a web address. Paste the full link, like https://instagram.com/yourname.`,
+    };
   }
 
   const clean = (values: string[], allowed?: readonly string[]) => {
@@ -86,6 +99,7 @@ export async function saveOwnProfile(id: string, draft: ProfileDraft) {
     availability_days: clean(draft.availability, AVAILABILITY_DAYS),
     age_groups: clean(draft.ageGroups, AGE_GROUPS),
     play_style_tags: clean(draft.playStyle, PLAY_STYLES),
+    social_profiles: links,
   });
 
   return { ok: true as const };

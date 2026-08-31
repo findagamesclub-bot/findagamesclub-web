@@ -164,7 +164,8 @@ export async function leaveClub(membershipId: number) {
 }
 
 function toMember(row: Row): ClubMember {
-  const profile = (row as unknown as { profiles: { id: string; full_name: string; games_interested: string[]; factions_armies: string[] } | null }).profiles;
+  const profile = (row as unknown as { profiles: { id: string; full_name: string; games_interested: string[]; factions_armies: string[];
+    play_style_tags: string[] } | null }).profiles;
   return {
     membershipId: row.id,
     profileId: profile?.id ?? "",
@@ -176,14 +177,31 @@ function toMember(row: Row): ClubMember {
     requestedAt: row.created_at,
     games: profile?.games_interested ?? [],
     armies: profile?.factions_armies ?? [],
+    playStyle: profile?.play_style_tags ?? [],
     tenureYears: tenureYears(row.joined_at),
   };
 }
 
 /** The roster. Only approved people, in join order. */
 export async function getRoster(clubId: number): Promise<ClubMember[]> {
-  const rows = await repo.findClubMemberships(clubId, ["approved"]);
-  return rows.map(toMember);
+  const [rows, requests] = await Promise.all([
+    repo.findClubMemberships(clubId, ["approved"]),
+    // A club with no outstanding requests should still get its roster.
+    repo.findTierRequests(clubId).catch(() => []),
+  ]);
+
+  const asked = new Map(requests.map((row) => [row.id, row]));
+  return rows.map((row) => {
+    const member = toMember(row);
+    const request = asked.get(member.membershipId);
+    return request
+      ? {
+          ...member,
+          requestedTierKey: request.requested_tier_key,
+          tierRequestedAt: request.tier_requested_at,
+        }
+      : member;
+  });
 }
 
 /** People still waiting. Owners and admins only, enforced by policy. */
@@ -210,8 +228,59 @@ export async function changeMemberTier(membershipId: number, tierKey: string, re
     }
 
     await repo.setMembershipTier(membershipId, tierKey, reviewerId);
+    // Granting the tier answers the request, so it stops being outstanding.
+    await repo.clearTierRequest(membershipId).catch(() => undefined);
+    // Until now only the owner heard about a tier change, and the member found
+    // out by noticing a different badge on the club page.
+    await announceTierChange(membershipId, tierKey);
     return { ok: true as const };
   } catch {
     return { ok: false as const, error: "Only the club owner can change a member's tier." };
+  }
+}
+
+/** Best effort, after the fact. Never allowed to fail the tier change. */
+async function announceTierChange(membershipId: number, tierKey: string) {
+  try {
+    const row = await repo.findMembershipForPayment(membershipId);
+    if (!row) return;
+    const [club, label] = await Promise.all([
+      repo.findClubBasics(row.club_id),
+      repo.findTierLabel(row.club_id, tierKey),
+    ]);
+    if (!club) return;
+    await notify.notifyTierChanged({
+      memberId: row.profile_id,
+      clubName: club.name,
+      clubSlug: club.slug,
+      tierLabel: label || tierKey,
+    });
+  } catch (error) {
+    console.error("tier change notification failed", { membershipId, error });
+  }
+}
+
+/**
+ * How many people have joined, for the club's public header.
+ *
+ * Zero is a real answer and means nobody has joined through the site yet; the
+ * header falls back to the club's own figure for that. A failure returns null,
+ * which falls back the same way rather than taking the page down.
+ */
+export async function getJoinedCount(clubId: number): Promise<number | null> {
+  try {
+    return await repo.countApprovedPublic(clubId);
+  } catch {
+    return null;
+  }
+}
+
+/** The club says no, or has already dealt with it another way. */
+export async function dismissTierRequest(membershipId: number) {
+  try {
+    await repo.clearTierRequest(membershipId);
+    return { ok: true as const };
+  } catch {
+    return { ok: false as const, error: "Only the club owner can clear that request." };
   }
 }

@@ -57,11 +57,11 @@ export default function CheckoutForm({
             <LockIcon sx={{ fontSize: 18, color: tokens.inkMuted, mt: 0.25 }} />
             <Stack spacing={0.25}>
               <Typography variant="subtitle2" sx={{ fontFamily: "var(--font-display)" }}>
-                Payment on the day
+                Payment for the event
               </Typography>
               <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-                Reserving holds your place. You settle up with the club when you arrive —
-                card payment through the site is coming later.
+                Reserving holds your place. You settle up with the club either prior to
+                the event or on the day, depending on their terms.
               </Typography>
             </Stack>
           </Stack>

@@ -1,3 +1,5 @@
+import type { SocialLink } from "@/utils/social-links";
+
 /** What a profile page renders. Already normalised by the service. */
 export type MemberProfile = {
   id: string;
@@ -13,6 +15,8 @@ export type MemberProfile = {
   playStyle: string[];
   /** Month and year only. A join date is context, not an anniversary. */
   memberSince?: string;
+  /** Where else to find them. Empty for most people. */
+  socials: SocialLink[];
   isAdmin: boolean;
 };
 
@@ -27,4 +31,5 @@ export type ProfileDraft = {
   availability: string[];
   ageGroups: string[];
   playStyle: string[];
+  socials: SocialLink[];
 };

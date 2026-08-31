@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import Alert from "@mui/material/Alert";
+import { useActionToast } from "@/components/ui/Toaster";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -40,6 +40,7 @@ export default function PendingRow({
   askedLabel?: string | null;
 }) {
   const [state, review, busy] = useActionState(reviewMemberAction, {});
+  useActionToast(state);
   const [declining, setDeclining] = useState(false);
 
   const firstName = member.fullName.split(" ")[0] || "they";
@@ -171,12 +172,6 @@ export default function PendingRow({
             </Stack>
           </Stack>
         </form>
-      ) : null}
-
-      {/* Beside the controls, never instead of them — an owner who hits an
-          error still needs a way to act on the request. */}
-      {state.error ? (
-        <Alert severity="error" sx={{ fontSize: "0.8rem", mt: 1.5 }}>{state.error}</Alert>
       ) : null}
     </Stack>
   );

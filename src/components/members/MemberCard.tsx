@@ -6,6 +6,7 @@ import NextLink from "next/link";
 import MetalPlate from "@/components/ui/MetalPlate";
 import MemberLoyaltyButton from "@/components/loyalty/MemberLoyaltyButton";
 import type { LoyaltyEntry } from "@/types/loyalty";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import { tokens, type Faction } from "@/lib/tokens";
 import { monthYear } from "@/utils/dates";
 import type { ClubMember } from "@/types/membership";
@@ -46,13 +47,29 @@ export default function MemberCard({
   return (
     <Box
       sx={{
-        border: `1px solid ${tokens.rule}`,
+        // A member the club owes an answer to is marked on the card as well
+        // as listed in the queue above: an owner scrolling the roster should
+        // not have to remember which names were in the queue.
+        border: `1px solid ${member.requestedTierKey ? tokens.danger : tokens.rule}`,
         borderRadius: 2,
+        overflow: "hidden",
         bgcolor: tokens.paper,
         transition: "border-color 120ms ease",
-        "&:hover": { borderColor: faction.base },
+        "&:hover": { borderColor: member.requestedTierKey ? tokens.danger : faction.base },
       }}
     >
+      {member.requestedTierKey ? (
+        <Stack direction="row" spacing={0.75}
+          sx={{ px: 2.25, py: 0.875, alignItems: "center",
+                backgroundColor: tokens.danger, color: "#fff" }}>
+          <ArrowUpwardIcon sx={{ fontSize: 14 }} />
+          <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.62rem",
+                            fontWeight: 700, letterSpacing: "0.1em" }}>
+            WANTS A TIER CHANGE
+          </Typography>
+        </Stack>
+      ) : null}
+
       <Stack spacing={1.5} sx={{ p: 2.25, minWidth: 0 }}>
         <Stack direction="row" spacing={1.75} sx={{ alignItems: "center", minWidth: 0 }}>
           <Avatar

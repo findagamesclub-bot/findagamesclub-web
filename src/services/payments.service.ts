@@ -2,6 +2,7 @@ import "server-only";
 
 import * as repo from "@/repositories/payments.repository";
 import * as memberships from "@/repositories/memberships.repository";
+import * as notify from "./membership-notify.service";
 import { addMonths, addYears } from "@/utils/dates";
 import { billingOptions, standing } from "@/utils/membership-billing";
 import type { MembershipPayment } from "@/types/payment";
@@ -102,8 +103,38 @@ export async function recordPayment(
       note: note.trim().slice(0, 300) || null,
       recorded_by: actorId,
     });
+
+    // A receipt for money that changed hands offline. Nothing was charged here,
+    // so the wording confirms what the club recorded, not what we took.
+    await announcePayment(row.club_id, row.profile_id, {
+      tierLabel: tier.label,
+      billingLabel: option.label,
+      price: option.price,
+      periodEnd: until ? until.toISOString() : null,
+    });
+
     return { ok: true };
   } catch {
     return { ok: false, error: "Only the club owner can record payments." };
+  }
+}
+
+/** Best effort, after the fact. Never allowed to fail a recorded payment. */
+async function announcePayment(
+  clubId: number,
+  memberId: string,
+  detail: { tierLabel: string; billingLabel: string; price: string; periodEnd: string | null },
+) {
+  try {
+    const club = await memberships.findClubBasics(clubId);
+    if (!club) return;
+    await notify.notifyPaid({
+      memberId,
+      clubName: club.name,
+      clubSlug: club.slug,
+      ...detail,
+    });
+  } catch (error) {
+    console.error("payment receipt failed", { clubId, memberId, error });
   }
 }

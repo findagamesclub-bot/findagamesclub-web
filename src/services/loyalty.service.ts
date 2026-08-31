@@ -20,7 +20,7 @@ const MILESTONES: { key: string; label: string; category: string }[] = [
   { key: "membershipApproved", label: "Joining the club", category: "membership-approved" },
   { key: "gameBooking", label: "Booking a table", category: "game-booking" },
   { key: "eventBooking", label: "Booking event tickets", category: "event-booking" },
-  { key: "merchandisePurchase", label: "Ordering club kit", category: "merchandise-order" },
+  { key: "merchandisePurchase", label: "Ordering merchandise", category: "merchandise-order" },
 ];
 
 function toTiers(raw: unknown): LoyaltyTier[] {

@@ -6,7 +6,7 @@ import * as bookings from "@/services/bookings.service";
 import * as waitlist from "@/services/waitlist.service";
 import * as lfg from "@/services/lookingForGames.service";
 import { getClubDetail } from "@/services/clubDetail.service";
-import { getBookingCalendar, londonToday } from "@/services/bookingCalendar.service";
+import { getBookingCalendar } from "@/services/bookingCalendar.service";
 
 export type BookingState = { error?: string; notice?: string };
 
@@ -36,6 +36,8 @@ export async function bookingAction(
       gameTitle: String(data.get("gameTitle") ?? ""),
       notes: String(data.get("notes") ?? ""),
       opponentName: String(data.get("opponentName") ?? ""),
+      opponentProfileId: String(data.get("opponentProfileId") ?? "") || null,
+      redeemPoints: Number(data.get("redeemPoints") ?? 0),
     });
 
     refresh();

@@ -10,6 +10,7 @@ import GroupAddIcon from "@mui/icons-material/GroupAdd";
 import HourglassTopIcon from "@mui/icons-material/HourglassTop";
 import VerifiedIcon from "@mui/icons-material/Verified";
 import LoginIcon from "@mui/icons-material/Login";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import ShieldIcon from "@mui/icons-material/Shield";
 import ClubLinks from "./ClubLinks";
 import TableRestaurantIcon from "@mui/icons-material/TableRestaurant";
@@ -17,6 +18,8 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import CloseIcon from "@mui/icons-material/Close";
 import NextLink from "next/link";
 import { membershipAction, type MembershipState } from "@/app/clubs/[slug]/membership-actions";
+import LinkPending from "@/components/ui/LinkPending";
+import { useActionToast } from "@/components/ui/Toaster";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { MyMembership } from "@/types/membership";
 import type { MembershipTier } from "@/types/clubDetail";
@@ -42,6 +45,12 @@ type Props = {
   hasLoyalty: boolean;
   hasShop: boolean;
   hasCoaching: boolean;
+  /** The club has at least one scored pairing to show. */
+  hasRivalries?: boolean;
+  /** The club runs a league, ladder or campaign. */
+  hasCompetitions?: boolean;
+  /** Names in this club's results with no account against them. */
+  unmatchedResults?: number;
   standing: PaymentStanding;
   payments: MembershipPayment[];
 };
@@ -53,7 +62,9 @@ type Props = {
  */
 export default function JoinClubPanel({
   clubId, slug, clubName, membership, signedIn, faction, memberCount, pendingCount, tiers, canManage, takesBookings,
-  hasLoyalty, hasShop, hasCoaching, standing, payments,
+  hasLoyalty, hasShop, hasCoaching, hasRivalries = false, hasCompetitions = false,
+  unmatchedResults = 0,
+  standing, payments,
 }: Props) {
   // Default to the free tier when there is one, so the common case is one click.
   const [tierKey, setTierKey] = useState(
@@ -62,7 +73,7 @@ export default function JoinClubPanel({
   // One state for both forms: two could disagree, and the older of the pair
   // used to win — leaving "Request sent." sitting above an "Ask to join" button.
   const [state, submit, busy] = useActionState<MembershipState, FormData>(membershipAction, {});
-  const { error: message, notice } = state;
+  useActionToast(state);
   const joining = busy;
   const leaving = busy;
 
@@ -80,7 +91,7 @@ export default function JoinClubPanel({
   const offers = [
     takesBookings ? "book tables" : null,
     hasCoaching ? "book coaching" : null,
-    hasShop ? "order club kit" : null,
+    hasShop ? "order merchandise" : null,
     hasLoyalty ? "earn loyalty points" : null,
     "see members-only posts",
   ].filter(Boolean).reduce((sentence, part, i, all) => {
@@ -149,8 +160,6 @@ export default function JoinClubPanel({
           </Alert>
         ) : null}
 
-        {notice ? <Alert severity="success" sx={{ fontSize: "0.85rem" }}>{notice}</Alert> : null}
-        {message ? <Alert severity="error" sx={{ fontSize: "0.85rem" }}>{message}</Alert> : null}
 
         {manages ? (
           <Button
@@ -162,6 +171,27 @@ export default function JoinClubPanel({
             sx={{ bgcolor: faction.base, "&:hover": { bgcolor: faction.deep } }}
           >
             {pendingCount ? `Review ${pendingCount} request${pendingCount === 1 ? "" : "s"}` : "Manage members"}
+          </Button>
+        ) : null}
+
+        {/* Only while there is something to match. A club whose results are
+            all attached should not be offered a page of nothing. */}
+        {manages && unmatchedResults ? (
+          <Button
+            component={NextLink}
+            href={`/clubs/${slug}/results`}
+            variant="outlined"
+            fullWidth
+            startIcon={
+              <LinkPending size={18}>
+                <EmojiEventsIcon />
+              </LinkPending>
+            }
+            sx={{ bgcolor: tokens.paper, color: tokens.ink, borderColor: tokens.brass,
+                  "&:hover": { bgcolor: tokens.paper, borderColor: faction.base,
+                               color: faction.deep } }}
+          >
+            {`Match ${unmatchedResults} result${unmatchedResults === 1 ? "" : "s"}`}
           </Button>
         ) : null}
 
@@ -181,7 +211,8 @@ export default function JoinClubPanel({
 
         {manages ? (
           <ClubLinks slug={slug} faction={faction}
-            hasLoyalty={hasLoyalty} hasShop={hasShop} hasCoaching={hasCoaching} />
+            hasLoyalty={hasLoyalty} hasShop={hasShop} hasCoaching={hasCoaching}
+            hasRivalries={hasRivalries} hasCompetitions={hasCompetitions} />
         ) : null}
 
         {!signedIn ? (
@@ -204,7 +235,11 @@ export default function JoinClubPanel({
                 href={`/clubs/${slug}/bookings`}
                 variant="contained"
                 fullWidth
-                startIcon={<TableRestaurantIcon />}
+                startIcon={
+                  <LinkPending size={18} colour="#fff">
+                    <TableRestaurantIcon />
+                  </LinkPending>
+                }
                 sx={{ bgcolor: faction.base, "&:hover": { bgcolor: faction.deep } }}
               >
                 Book a table
@@ -212,7 +247,8 @@ export default function JoinClubPanel({
             ) : null}
 
             <ClubLinks slug={slug} faction={faction}
-              hasLoyalty={hasLoyalty} hasShop={hasShop} hasCoaching={hasCoaching} />
+              hasLoyalty={hasLoyalty} hasShop={hasShop} hasCoaching={hasCoaching}
+            hasRivalries={hasRivalries} hasCompetitions={hasCompetitions} />
 
           <form action={submit}>
             <input type="hidden" name="intent" value="leave" />
@@ -318,6 +354,9 @@ export default function JoinClubPanel({
             variant="body2"
             sx={{ color: tokens.brand, textDecoration: "none", fontWeight: 600, "&:hover": { textDecoration: "underline" } }}
           >
+            <LinkPending size={13}>
+              <Box component="span" />
+            </LinkPending>
             See members
           </Typography>
           {/* No bare count here: the header stat above is the club's own

@@ -57,7 +57,7 @@ function buildMonth(key: string): Cell[] {
 }
 
 export default function EventCalendar({
-  events, today, month, monthHref,
+  events, today, month, monthHref, trail = "",
 }: {
   events: EventSummary[];
   today: string;
@@ -65,6 +65,8 @@ export default function EventCalendar({
   month: string;
   /** Builds a link to another month, so navigation lives in the URL. */
   monthHref: (month: string) => string;
+  /** Query string that sends an event's back arrow to this search. */
+  trail?: string;
 }) {
   const dated = events.filter((e) => e.startDate);
 
@@ -189,7 +191,7 @@ export default function EventCalendar({
                   return (
                     <NextLink
                       key={event.id}
-                      href={`/clubs/${event.club.slug}/events/${event.legacyId}`}
+                      href={`/clubs/${event.club.slug}/events/${event.legacyId}${trail}`}
                       style={{ textDecoration: "none", display: "block" }}
                     >
                       {/* Past events are not greyed out. Each tab is already all

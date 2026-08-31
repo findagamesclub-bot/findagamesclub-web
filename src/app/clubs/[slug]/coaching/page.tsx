@@ -19,7 +19,7 @@ export async function generateMetadata({
 }: PageProps<"/clubs/[slug]/coaching">) {
   const { slug } = await params;
   const club = await getClubDetail(slug);
-  return { title: club ? `Coaching — ${club.name}` : "Club not found" };
+  return { title: club ? `Coaching · ${club.name}` : "Club not found" };
 }
 
 export default async function CoachingPage({

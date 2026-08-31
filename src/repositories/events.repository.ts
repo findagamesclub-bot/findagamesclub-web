@@ -40,9 +40,14 @@ export async function findEvents(params: { from?: string; to?: string; limit?: n
   let query = supabase
     .from("club_events")
     .select(
-      `id, legacy_id, title, summary, start_date, start_time, end_date, event_type,
-       price, round_count, tickets_available, venue_name, featured_games,
-       clubs!inner(slug, name, city, latitude, longitude, club_images(src, alt, position)),
+      `id, legacy_id, title, summary, start_date, start_time, end_date, end_time, event_type,
+       event_types, formats, facilities,
+       price, round_count, tickets_available,
+       venue_name, venue_address, venue_postcode, featured_games,
+       club_event_ticket_types(price),
+       clubs!inner(slug, name, city, logo_url, status, latitude, longitude,
+                   club_images(src, alt, position),
+                   club_formats(formats(label))),
        club_event_results(rank, placement, member_name, army)`,
     )
     .eq("clubs.status", "active");
@@ -65,8 +70,9 @@ export async function findEventsForClubs(clubIds: number[]) {
   const { data, error } = await supabase
     .from("club_events")
     .select(
-      `id, legacy_id, title, summary, start_date, start_time, end_date, event_type,
-       price, round_count, tickets_available, venue_name, club_id,
+      `id, legacy_id, title, summary, start_date, start_time, end_date, end_time, event_type,
+       price, round_count, tickets_available,
+       venue_name, venue_address, venue_postcode, club_id,
        clubs!inner(id, slug, name)`,
     )
     .in("club_id", clubIds)
@@ -74,4 +80,43 @@ export async function findEventsForClubs(clubIds: number[]) {
 
   if (error) throw new Error(`Failed to load your events: ${error.message}`);
   return data ?? [];
+}
+
+/**
+ * One page of a club's events, past or upcoming.
+ *
+ * Separate from the club detail query, which pulls every event a club has ever
+ * run alongside the club itself. That was fine at nineteen events and is not
+ * at ten years of them, and the club page only ever shows the next few.
+ *
+ * The date test is the SQL half of `hasEnded`: an event is past once its last
+ * day is behind us. `hasEnded` still runs per row for the label, because on
+ * the day itself only an end time can call a thing finished.
+ */
+export async function findClubEventsPage(
+  clubId: number,
+  params: { past: boolean; today: string; from: number; to: number },
+) {
+  const supabase = await createClient();
+  const { past, today } = params;
+
+  const query = supabase
+    .from("club_events")
+    .select(
+      `id, legacy_id, title, summary, start_date, start_time, end_date, end_time,
+       event_type, price, round_count, tickets_available,
+       venue_name, venue_address, venue_postcode`,
+      { count: "exact" },
+    )
+    .eq("club_id", clubId)
+    // An event with no end date is a one-day event, so its start date decides.
+    .or(past
+      ? `end_date.lt.${today},and(end_date.is.null,start_date.lt.${today})`
+      : `end_date.gte.${today},and(end_date.is.null,start_date.gte.${today})`)
+    .order("start_date", { ascending: !past })
+    .range(params.from, params.to);
+
+  const { data, error, count } = await query;
+  if (error) throw new Error(`Failed to load club events: ${error.message}`);
+  return { rows: data ?? [], total: count ?? 0 };
 }

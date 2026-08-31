@@ -89,3 +89,22 @@ export async function removeReview(reviewId: number) {
   if (!data) throw new Error("NOT_PERMITTED");
   return data;
 }
+
+/**
+ * How many reviews a club actually has.
+ *
+ * The club page carries the newest `REVIEW_CAP` of them. This is what says so
+ * out loud when there are more, rather than letting the page quietly present
+ * five hundred as all of them.
+ */
+export async function countReviews(clubId: number): Promise<number> {
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("club_reviews")
+    .select("id", { count: "exact", head: true })
+    .eq("club_id", clubId)
+    .is("removed_at", null);
+
+  if (error) throw new Error(`Failed to count reviews: ${error.message}`);
+  return count ?? 0;
+}

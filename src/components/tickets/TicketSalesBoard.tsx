@@ -104,7 +104,7 @@ export default function TicketSalesBoard({
       <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
         {hasEnded
           ? "This event has finished. Figures are the final reserved count."
-          : "Figures count reserved bookings. Payment is taken on the day."}
+          : "Figures count reserved bookings. Payment is taken before the event or on the day."}
       </Typography>
     </Stack>
   );

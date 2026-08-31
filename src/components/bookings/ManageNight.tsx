@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import Alert from "@mui/material/Alert";
+import { startTransition, useActionState, useState } from "react";
+import { useActionToast } from "@/components/ui/Toaster";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
@@ -18,7 +19,7 @@ import TuneIcon from "@mui/icons-material/Tune";
 import { bookingAction, type BookingState } from "@/app/clubs/[slug]/bookings/actions";
 import { tokens } from "@/lib/tokens";
 import { nightLabel } from "@/utils/dates";
-import type { CalendarSession } from "@/types/booking";
+import type { Booking, CalendarSession } from "@/types/booking";
 import type { QueueEntry } from "@/services/waitlist.service";
 
 /**
@@ -35,6 +36,18 @@ export default function ManageNight({
   const [opened, setOpen] = useState(false);
   const fullScreen = useMediaQuery("(max-width:600px)");
   const [state, submit, busy] = useActionState<BookingState, FormData>(bookingAction, {});
+  useActionToast(state);
+  const [dropping, setDropping] = useState<Booking | null>(null);
+
+  const dropTable = () => {
+    if (!dropping) return;
+    const data = new FormData();
+    data.set("intent", "cancel");
+    data.set("slug", slug);
+    data.set("bookingId", String(dropping.id));
+    startTransition(() => submit(data));
+    setDropping(null);
+  };
 
   // Each action re-renders the page underneath, so the dialog stays open and
   // shows the updated list rather than closing after every single cancel. It
@@ -50,6 +63,21 @@ export default function ManageNight({
         sx={{ color: tokens.inkMuted, fontSize: "0.78rem" }}>
         Manage night
       </Button>
+
+      <ConfirmDialog
+        open={Boolean(dropping)}
+        title="Cancel this member's table?"
+        body={dropping
+          ? `${dropping.booker.name}'s table on ${nightLabel(session.date)} will be given up. `
+            + "They are told straight away, and anybody on the waiting list is offered it."
+          : ""}
+        confirmLabel="Cancel their booking"
+        cancelLabel="Leave it"
+        destructive
+        busy={busy}
+        onConfirm={dropTable}
+        onClose={() => setDropping(null)}
+      />
 
       <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="md" fullScreen={fullScreen}>
         <DialogTitle sx={{ pb: 1.5 }}>
@@ -69,8 +97,6 @@ export default function ManageNight({
 
         <DialogContent dividers>
           <Stack spacing={3}>
-            {state.error ? <Alert severity="error" sx={{ fontSize: "0.85rem" }}>{state.error}</Alert> : null}
-            {state.notice ? <Alert severity="success" sx={{ fontSize: "0.85rem" }}>{state.notice}</Alert> : null}
 
             <Box>
               <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.68rem",
@@ -97,17 +123,17 @@ export default function ManageNight({
                           {b.gameTitle}
                         </Typography>
                       </Box>
-                      <form action={submit}>
-                        <input type="hidden" name="intent" value="cancel" />
-                        <input type="hidden" name="slug" value={slug} />
-                        <input type="hidden" name="bookingId" value={b.id} />
-                        <Button type="submit" size="small" variant="text" disabled={busy}
-                          startIcon={<EventBusyIcon />}
-                          sx={{ color: tokens.inkMuted, fontSize: "0.75rem", flexShrink: 0,
-                                "&:hover": { color: tokens.danger } }}>
-                          Cancel
-                        </Button>
-                      </form>
+                      {/* Asked for, not fired on click. Taking somebody else's
+                          table away is worse than giving up your own: they are
+                          not in the room, and the waiting list is offered it
+                          straight away. */}
+                      <Button size="small" variant="text" disabled={busy}
+                        onClick={() => setDropping(b)}
+                        startIcon={<EventBusyIcon />}
+                        sx={{ color: tokens.inkMuted, fontSize: "0.75rem", flexShrink: 0,
+                              "&:hover": { color: tokens.danger } }}>
+                        Cancel
+                      </Button>
                     </Stack>
                   ))}
                 </Stack>

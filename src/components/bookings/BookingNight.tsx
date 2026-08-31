@@ -3,6 +3,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import TablePips from "./TablePips";
 import BookingActions from "./BookingActions";
+import type { BookingStanding } from "@/utils/booking-pricing";
 import LookingForGames from "./LookingForGames";
 import ManageNight from "./ManageNight";
 import { tokens, type Faction } from "@/lib/tokens";
@@ -22,14 +23,16 @@ import type { LookingForGame } from "@/services/lookingForGames.service";
  * busy one earns its space.
  */
 export default function BookingNight({
-  session, clubId, faction, slug, price, waitlistEnabled, queue, posts, lfgEnabled,
-  showTime, canManage,
+  session, clubId, faction, slug, standing, waitlistEnabled, queue, posts, lfgEnabled,
+  showTime, canManage, roster = [],
 }: {
+  /** Club members the booker can name as their opponent. */
+  roster?: { id: string; name: string }[];
   session: CalendarSession;
   clubId: number;
   faction: Faction;
   slug: string;
-  price: string | null;
+  standing: BookingStanding | null;
   waitlistEnabled: boolean;
   queue: QueueEntry[];
   posts: LookingForGame[];
@@ -98,10 +101,11 @@ export default function BookingNight({
         {canManage ? <ManageNight session={session} queue={queue} slug={slug} /> : null}
 
         <BookingActions
+          roster={roster}
           session={session}
           clubId={clubId}
           slug={slug}
-          price={price}
+          standing={standing}
           faction={faction}
           waitlistEnabled={waitlistEnabled}
           myBookingId={mine?.id ?? null}

@@ -6,10 +6,10 @@ import * as extras from "@/services/clubExtras-writes.service";
 
 export type ShopState = { error?: string; notice?: string };
 
-/** Ordering club kit, and the club answering. */
+/** Ordering merchandise, and the club answering. */
 export async function shopAction(_prev: ShopState, data: FormData): Promise<ShopState> {
   const viewer = await getCurrentProfile();
-  if (!viewer) return { error: "Sign in to order club kit." };
+  if (!viewer) return { error: "Sign in to order merchandise." };
 
   const slug = String(data.get("slug") ?? "");
   const intent = String(data.get("intent") ?? "");
@@ -30,6 +30,35 @@ export async function shopAction(_prev: ShopState, data: FormData): Promise<Shop
       }),
       "Order placed. The club will be in touch about payment.",
     );
+  }
+
+  if (intent === "order-bag") {
+    // Lines arrive as JSON rather than parallel fields: a bag is a list, and
+    // two getAll() arrays that have to line up by index is a bug waiting for
+    // the day one of them is empty.
+    let lines: { itemId: number; quantity: number }[] = [];
+    try {
+      const raw: unknown = JSON.parse(String(data.get("lines") ?? "[]"));
+      if (Array.isArray(raw)) {
+        lines = raw.map((l) => ({
+          itemId: Number((l as { itemId?: unknown }).itemId),
+          quantity: Number((l as { quantity?: unknown }).quantity),
+        }));
+      }
+    } catch {
+      return { error: "Something went wrong with your bag. Reload and try again." };
+    }
+
+    const result = await extras.orderBag({
+      lines,
+      notes: String(data.get("notes") ?? ""),
+      redeemPoints: Number(data.get("redeemPoints") ?? 0),
+    });
+    revalidatePath(`/clubs/${slug}/shop`);
+    revalidatePath("/account/orders");
+    return result.ok
+      ? { notice: `Order placed. The club will be in touch about payment.` }
+      : { error: result.error };
   }
 
   if (intent === "set-status") {

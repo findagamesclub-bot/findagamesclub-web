@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import Alert from "@mui/material/Alert";
+import { useActionState, useRef, useState } from "react";
+import { useActionToast } from "@/components/ui/Toaster";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
@@ -12,6 +12,8 @@ import DialogTitle from "@mui/material/DialogTitle";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
+import Pager from "@/components/ui/Pager";
+import { usePagedList } from "@/hooks/usePagedList";
 import TicketStub from "./TicketStub";
 import { cancelTicketAction, type CancelState } from "@/app/tickets/actions";
 import { tokens, type Faction } from "@/lib/tokens";
@@ -22,12 +24,15 @@ type Entry = { booking: EventBooking; faction: Faction; monogram: string };
 /** The member's own tickets, newest first, with a way to give one back. */
 export default function MyTickets({ live, past }: { live: Entry[]; past: Entry[] }) {
   const [state, submit, busy] = useActionState<CancelState, FormData>(cancelTicketAction, {});
+  useActionToast(state);
   const [confirming, setConfirming] = useState<EventBooking | null>(null);
+  // Cancelled tickets only ever accumulate, and they are the half nobody is
+  // looking for. Live ones are few by definition, so they stay on one screen.
+  const top = useRef<HTMLDivElement>(null);
+  const paged = usePagedList(past, 6, top);
 
   return (
     <Stack spacing={3}>
-      {state.error ? <Alert severity="error">{state.error}</Alert> : null}
-      {state.notice ? <Alert severity="success">{state.notice}</Alert> : null}
 
       {live.map((entry) => (
         <Stack key={entry.booking.id} spacing={1}>
@@ -54,9 +59,11 @@ export default function MyTickets({ live, past }: { live: Entry[]; past: Entry[]
                             letterSpacing: "0.12em", color: tokens.inkMuted, mb: 1.5 }}>
             CANCELLED
           </Typography>
-          <Stack spacing={2}>
-            {past.map((entry) => <TicketStub key={entry.booking.id} {...entry} />)}
+          <Stack ref={top} spacing={2}>
+            {paged.shown.map((entry) => <TicketStub key={entry.booking.id} {...entry} />)}
           </Stack>
+          <Pager page={paged.page} total={paged.total} noun="cancelled tickets"
+            size={6} onChange={paged.goTo} />
         </Box>
       ) : null}
 

@@ -1,6 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import MemberProfileView from "@/components/members/MemberProfileView";
 import { getProfile } from "@/services/profiles.service";
+import { getMemberContext } from "@/services/memberContext.service";
+import { getMemberRecords } from "@/services/memberRecords.service";
 import { getCurrentProfile } from "@/services/auth.service";
 
 export async function generateMetadata({ params }: PageProps<"/members/[id]">) {
@@ -21,5 +23,22 @@ export default async function MemberPage({ params }: PageProps<"/members/[id]">)
   const profile = await getProfile(id);
   if (!profile) notFound();
 
-  return <MemberProfileView profile={profile} isSelf={viewer.id === profile.id} />;
+  // Where they play, and how the reader has done against them. Both are
+  // limited by policy to what the reader may already see.
+  const [context, records] = await Promise.all([
+    getMemberContext(viewer.id, profile.id)
+      .catch(() => ({ clubs: [], events: [], meetings: [],
+                      record: { played: 0, won: 0, drawn: 0, lost: 0 } })),
+    getMemberRecords(profile.id)
+      .catch(() => ({ competitions: [], podiums: [], badges: [] })),
+  ]);
+
+  return (
+    <MemberProfileView
+      profile={profile}
+      isSelf={viewer.id === profile.id}
+      context={context}
+      records={records}
+    />
+  );
 }

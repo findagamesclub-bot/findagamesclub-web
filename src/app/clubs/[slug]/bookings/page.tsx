@@ -10,8 +10,14 @@ import LockIcon from "@mui/icons-material/Lock";
 import BookingNight from "@/components/bookings/BookingNight";
 import { getClubDetail } from "@/services/clubDetail.service";
 import { getCurrentProfile } from "@/services/auth.service";
-import { getMyMembership } from "@/services/memberships.service";
+import { getMyMembership, getRoster } from "@/services/memberships.service";
 import { getBookingCalendar, londonToday } from "@/services/bookingCalendar.service";
+import { getBookingStanding } from "@/services/bookingPricing.service";
+import { getClubResults } from "@/services/clubResults.service";
+import ClubResults from "@/components/bookings/ClubResults";
+import Section from "@/components/ui/Section";
+import ScoreboardIcon from "@mui/icons-material/ScoreboardOutlined";
+import { priceBooking, priceSummary } from "@/utils/booking-pricing";
 import { getWaitlist } from "@/services/waitlist.service";
 import { getOpenPosts } from "@/services/lookingForGames.service";
 import { addDays, bookableSessions } from "@/utils/booking-sessions";
@@ -22,7 +28,7 @@ import { tokens } from "@/lib/tokens";
 export async function generateMetadata({ params }: PageProps<"/clubs/[slug]/bookings">) {
   const { slug } = await params;
   const club = await getClubDetail(slug);
-  return { title: club ? `Book a table — ${club.name}` : "Club not found" };
+  return { title: club ? `Book a table · ${club.name}` : "Club not found" };
 }
 
 export default async function BookingsPage({ params, searchParams }: PageProps<"/clubs/[slug]/bookings">) {
@@ -41,6 +47,15 @@ export default async function BookingsPage({ params, searchParams }: PageProps<"
     : { id: null, status: "none" as const, tierKey: null, tierAssignedAt: null };
   const isMember = canManage || membership.status === "approved";
 
+  // Who you can name as your opponent. Typing a name records a game against
+  // nobody: the head to head has no person to count it against, and the other
+  // player never sees it in their own history.
+  const roster = isMember && viewer
+    ? (await getRoster(club.id).catch(() => []))
+        .filter((member) => member.profileId !== viewer.id)
+        .map((member) => ({ id: member.profileId, name: member.fullName }))
+    : [];
+
   const calendar = await getBookingCalendar({
     clubId: club.id,
     clubSlug: club.slug,
@@ -50,6 +65,17 @@ export default async function BookingsPage({ params, searchParams }: PageProps<"
     isMember,
     canManage,
   });
+
+  // What this member pays, as opposed to what the club advertises. The two
+  // differ the moment a tier discounts a table, and only the first one is what
+  // the booking will actually be written at.
+  const standing = viewer && isMember
+    ? await getBookingStanding(club.id, viewer.id)
+    : null;
+  const myPrice = standing ? priceBooking(standing) : null;
+
+  // Only the club needs this, so only the club pays for the query.
+  const played = canManage ? await getClubResults(club.id) : [];
 
   const today = londonToday();
   const until = addDays(today, calendar.settings?.horizonDays ?? 60);
@@ -103,8 +129,11 @@ export default async function BookingsPage({ params, searchParams }: PageProps<"
           {[
             nights,
             times.length === 1 ? times[0] : null,
-            calendar.settings?.price ? `${calendar.settings.price} a table` : null,
-            `${calendar.capacity} tables`,
+            // The member's own price, so the summary and the dialog agree.
+            standing && myPrice
+              ? priceSummary(standing, myPrice)
+              : calendar.settings?.price ? `${calendar.settings.price} a table` : null,
+            `${calendar.capacity} ${calendar.capacity === 1 ? "table" : "tables"}`,
             calendar.benefits.maxUpcomingBookings > 0
               ? `you can hold ${calendar.benefits.maxUpcomingBookings}` : null,
           ].filter(Boolean).join("  ·  ")}
@@ -164,11 +193,12 @@ export default async function BookingsPage({ params, searchParams }: PageProps<"
                   </Typography>
                 ) : null}
                 <BookingNight
+                  roster={roster}
                   session={session}
                   clubId={club.id}
                   slug={club.slug}
                   faction={faction}
-                  price={calendar.settings?.price ?? null}
+                  standing={standing}
                   waitlistEnabled={calendar.settings?.waitlistEnabled ?? false}
                   queue={queues.get(`${session.clubSessionId}:${session.date}`) ?? []}
                   posts={posts.get(`${session.clubSessionId}:${session.date}`) ?? []}
@@ -202,6 +232,15 @@ export default async function BookingsPage({ params, searchParams }: PageProps<"
           ) : null}
         </Stack>
       )}
+
+      {/* The club's own view of what has been played here. Members see only
+          their own games on Your games, which left a dispute between two other
+          people with nobody able to reach it. */}
+      {canManage && played.length ? (
+        <Section title="Results" icon={ScoreboardIcon}>
+          <ClubResults results={played} slug={slug} faction={faction} />
+        </Section>
+      ) : null}
     </Container>
   );
 }

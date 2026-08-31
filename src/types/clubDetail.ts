@@ -16,6 +16,18 @@ export type MembershipTier = {
   description: string | null;
   isBasic: boolean;
   benefits: string[];
+  /**
+   * The same perks under Savings / Access / Tools. Computed here for the same
+   * reason as the discount: describeTierBenefits turns the object into
+   * sentences, and the grouping cannot be recovered from prose.
+   */
+  benefitGroups: { group: string; label: string; items: string[] }[];
+  /**
+   * The club's raw benefit switches. Sentences cannot be compared column by
+   * column, so the comparison table reads these instead. Public club config,
+   * the same values the tier card is built from.
+   */
+  benefitValues: Record<string, unknown>;
   /** Monthly / yearly / one-off. Empty when the tier is free. */
   billingOptions: BillingOption[];
   /**
@@ -39,11 +51,14 @@ export type ClubEventSummary = {
   startDate: string | null;
   startTime: string | null;
   endDate: string | null;
+  endTime: string | null;
   eventType: string | null;
   price: string | null;
   roundCount: number | null;
   ticketsAvailable: number | null;
   venueName: string | null;
+  /** Where it actually runs. Often the club's own hall, sometimes not. */
+  venue: { name: string | null; address: string | null; postcode: string | null };
   hasEnded: boolean;
 };
 
@@ -107,9 +122,6 @@ export type ClubDetail = {
   pricingModels: PricingModel[];
   announcements: Announcement[];
   membershipTiers: MembershipTier[];
-
-  upcomingEvents: ClubEventSummary[];
-  pastEvents: ClubEventSummary[];
 
   reviews: ClubReview[];
   reviewSummary: { average: number; count: number } | null;

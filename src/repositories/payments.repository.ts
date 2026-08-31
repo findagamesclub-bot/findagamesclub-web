@@ -31,6 +31,20 @@ export async function findPaymentsForMembership(membershipId: number) {
   return data ?? [];
 }
 
+/** Payments for several of the viewer's memberships at once. */
+export async function findPaymentsForMemberships(membershipIds: number[]) {
+  if (!membershipIds.length) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("club_membership_payments")
+    .select(COLUMNS)
+    .in("membership_id", membershipIds)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(`Failed to load payments: ${error.message}`);
+  return data ?? [];
+}
+
 export async function insertPayment(row: TablesInsert<"club_membership_payments">) {
   const supabase = await createClient();
   const { data, error } = await supabase

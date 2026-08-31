@@ -14,7 +14,9 @@ import MailIcon from "@mui/icons-material/Mail";
 import FacilityChips from "./FacilityChips";
 import SocialLinks from "./SocialLinks";
 import ScheduleList from "./ScheduleList";
+import Button from "@mui/material/Button";
 import { tokens } from "@/lib/tokens";
+import { clubIdentity } from "@/utils/club-identity";
 import type { ClubDetail } from "@/types/clubDetail";
 
 /**
@@ -23,6 +25,7 @@ import type { ClubDetail } from "@/types/clubDetail";
  * conditional — so separators are drawn with a border instead.
  */
 export default function ClubSidebar({ club }: { club: ClubDetail }) {
+  const { faction } = clubIdentity(club.slug, club.name);
   const address = [club.venue.name, club.venue.address, club.venue.postcode].filter(Boolean);
   const sections: { title: string; icon: SvgIconComponent; body: React.ReactNode }[] = [];
 
@@ -61,20 +64,37 @@ export default function ClubSidebar({ club }: { club: ClubDetail }) {
     sections.push({ title: "Ages", icon: CakeIcon, body: <Typography variant="body2">{club.ages}</Typography> });
   }
 
-  // Email and website stay as text: an address is worth reading, and "Visit
-  // website" is not a brand anyone recognises as a glyph. The networks become
-  // icons.
+  // The website stays as a text link; "Visit website" is not a brand anyone
+  // recognises as a glyph, and the networks below become icons.
+  //
+  // Email is a button instead. Printing the address made the club's inbox
+  // scrapeable from a public page, and reading an address off a screen to type
+  // it somewhere else is work nobody should have to do when the machine can
+  // open the message for them.
   const links = [
-    club.contact.email ? { href: `mailto:${club.contact.email}`, label: club.contact.email, external: false } : null,
     club.contact.website ? { href: club.contact.website, label: "Visit website", external: true } : null,
   ].filter(Boolean) as { href: string; label: string; external: boolean }[];
 
-  if (links.length || club.socialLinks.length) {
+  if (club.contact.email || links.length || club.socialLinks.length) {
     sections.push({
       title: "Contact",
       icon: MailIcon,
       body: (
-        <Stack spacing={1}>
+        <Stack spacing={1.25}>
+          {club.contact.email ? (
+            <Button
+              component="a"
+              href={`mailto:${club.contact.email}?subject=${encodeURIComponent(club.name)}`}
+              variant="outlined"
+              fullWidth
+              startIcon={<MailIcon sx={{ fontSize: 18 }} />}
+              sx={{ minHeight: 44, color: tokens.ink, borderColor: tokens.rule,
+                    "&:hover": { borderColor: faction.base, color: faction.deep } }}
+            >
+              Email club
+            </Button>
+          ) : null}
+
           {links.length ? (
             <Stack spacing={0.5}>
               {/* Keyed by label: several clubs point every social link at the

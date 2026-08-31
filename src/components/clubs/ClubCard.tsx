@@ -5,8 +5,8 @@ import CardContent from "@mui/material/CardContent";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
-import TableRestaurantIcon from "@mui/icons-material/TableRestaurant";
 import GroupsIcon from "@mui/icons-material/Groups";
+import PersonIcon from "@mui/icons-material/PersonOutlined";
 import SellIcon from "@mui/icons-material/Sell";
 import PlaceIcon from "@mui/icons-material/Place";
 import NearMeIcon from "@mui/icons-material/NearMe";
@@ -15,6 +15,7 @@ import StarRating from "@/components/ui/StarRating";
 import FacilityChips from "./FacilityChips";
 import SocialLinks from "./SocialLinks";
 import ClubArt from "./ClubArt";
+import ClubLogo from "./ClubLogo";
 import GameChips from "./GameChips";
 import { mono, tokens } from "@/lib/tokens";
 import { clubIdentity } from "@/utils/club-identity";
@@ -46,7 +47,15 @@ export default function ClubCard({ club }: { club: ClubSummary }) {
       }}
     >
       <Box sx={{ position: "relative" }}>
-        <ClubArt slug={club.slug} name={club.name} image={club.image} ratio="16 / 10" />
+        <ClubArt slug={club.slug} name={club.name} image={club.image}
+          backdrop={club.logoUrl} ratio="16 / 10" />
+
+        {/* Overlapping the artwork, so a grid of nineteen clubs can be scanned
+            by mark rather than read by name. */}
+        <Box sx={{ position: "absolute", left: 16, bottom: -22, zIndex: 1 }}>
+          <ClubLogo slug={club.slug} name={club.name} logoUrl={club.logoUrl}
+            size={48} ring={tokens.paper} />
+        </Box>
 
         {club.isFeatured ? (
           <Box
@@ -93,7 +102,9 @@ export default function ClubCard({ club }: { club: ClubSummary }) {
         ) : null}
       </Box>
 
-      <CardContent sx={{ display: "flex", flexDirection: "column", gap: 1.5, flex: 1, p: 2.5, "&:last-child": { pb: 2.5 } }}>
+      {/* Extra top padding clears the plate hanging over this edge. */}
+      <CardContent sx={{ display: "flex", flexDirection: "column", gap: 1.5, flex: 1,
+                         p: 2.5, pt: 3.75, "&:last-child": { pb: 2.5 } }}>
         <Stack spacing={0.375}>
           <Typography variant="h4" component="h3" sx={{ minWidth: 0 }}>
             <Link href={`/clubs/${club.slug}`} style={{ color: "inherit", textDecoration: "none" }}>
@@ -126,7 +137,8 @@ export default function ClubCard({ club }: { club: ClubSummary }) {
             {/* Only when someone has actually reviewed it. An empty row of grey
                 stars reads as "rated zero", which is not what no reviews means. */}
             {club.rating ? (
-              <StarRating value={club.rating.average} caption={`${club.rating.average.toFixed(1)} (${club.rating.count})`} />
+              <StarRating value={club.rating.average}
+                caption={`${club.rating.average.toFixed(1)} · ${club.rating.count} ${club.rating.count === 1 ? "review" : "reviews"}`} />
             ) : null}
           </Stack>
 
@@ -136,8 +148,9 @@ export default function ClubCard({ club }: { club: ClubSummary }) {
         <StatLine
           stats={[
             { label: "Meets", value: club.meetingLabel, icon: CalendarMonthIcon },
-            { label: "Tables", value: club.tablesAvailable, icon: TableRestaurantIcon },
-            { label: "Members", value: club.memberCount, icon: GroupsIcon },
+            { label: "Age", value: club.ages, icon: PersonIcon },
+            // Same chain as the club page: live count, then the club's own figure.
+            { label: "Members", value: club.joinedCount || "Open", icon: GroupsIcon },
             { label: "From", value: club.fromPrice, icon: SellIcon },
           ]}
           columns={2}
@@ -156,7 +169,7 @@ export default function ClubCard({ club }: { club: ClubSummary }) {
 
         <Stack spacing={1.25} sx={{ pt: 0.25 }}>
           <GameChips games={club.featuredGames} faction={faction} max={3} />
-          {club.facilities.length ? <FacilityChips values={club.facilities.slice(0, 5)} iconOnly /> : null}
+          {club.facilities.length ? <FacilityChips values={club.facilities.slice(0, 4)} /> : null}
           {club.socialLinks?.length ? (
             <SocialLinks links={club.socialLinks} slug={club.slug} name={club.name} size="small" />
           ) : null}

@@ -1,6 +1,7 @@
 "use client";
 
 import { startTransition, useActionState, useEffect, useState } from "react";
+import { useActionToast } from "@/components/ui/Toaster";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -41,6 +42,7 @@ export default function EventTickets({
   myBookingCount?: number;
 }) {
   const [state, dispatch, busy] = useActionState<TicketState, FormData>(ticketAction, {});
+  useActionToast(state);
   const count = cart?.lines.reduce((n, l) => n + l.quantity, 0) ?? 0;
 
   // Same rule as the booking row: a success message is a confirmation of
@@ -106,7 +108,6 @@ export default function EventTickets({
         </Alert>
       ) : null}
 
-      {state.error ? <Alert severity="error">{state.error}</Alert> : null}
       {notice ? <Alert severity="success" sx={{ fontSize: "0.85rem" }}>{notice}</Alert> : null}
 
       {/*
@@ -160,7 +161,8 @@ export default function EventTickets({
       </BusyOverlay>
 
       <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-        Tickets are reserved with the club. Payment is taken on the day.
+        Tickets are reserved with the club. Payment is taken either before the event
+        or on the day, depending on the club.
       </Typography>
 
       {/*

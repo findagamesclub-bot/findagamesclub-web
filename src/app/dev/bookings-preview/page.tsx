@@ -115,7 +115,7 @@ export default function BookingsPreviewPage() {
                 </Typography>
               ) : null}
               <BookingNight session={s} clubId={9} slug="didcot-wargames-didcot"
-                faction={faction} price="£5.00" waitlistEnabled
+                faction={faction} standing={null} waitlistEnabled
                 queue={s.isFull ? sampleQueue : []}
                 posts={i === 1 ? samplePosts : []}
                 lfgEnabled showTime={false} canManage />

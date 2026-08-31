@@ -22,6 +22,12 @@ export type ClubMember = {
   requestedAt: string;
   games: string[];
   armies: string[];
+  /** Casual, competitive, narrative. Used to pair people up. */
+  playStyle: string[];
   /** Whole years since joining. Derived, never stored. */
   tenureYears: number;
+  /** A tier this member has asked to move to. Null when they have not. */
+  requestedTierKey?: string | null;
+  /** When they asked. Distinct from requestedAt, which is when they applied. */
+  tierRequestedAt?: string | null;
 };

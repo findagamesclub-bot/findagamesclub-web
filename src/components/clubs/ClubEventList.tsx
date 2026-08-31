@@ -6,9 +6,11 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import ConfirmationNumberIcon from "@mui/icons-material/ConfirmationNumber";
 import ScheduleIcon from "@mui/icons-material/Schedule";
+import PlaceIcon from "@mui/icons-material/Place";
 import GroupsIcon from "@mui/icons-material/Groups";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { mono, tokens } from "@/lib/tokens";
+import { ticketsLeft } from "@/utils/tickets-left";
 import { formatMoney } from "@/utils/format";
 import type { EventSales } from "@/services/eventBookings.service";
 import type { ClubEventSummary } from "@/types/clubDetail";
@@ -56,9 +58,12 @@ export default function ClubEventList({
   clubSlug,
   sales,
   trail = "",
+  clubVenue,
 }: {
   events: ClubEventSummary[];
   clubSlug: string;
+  /** Falls back to this when the event does not name a venue of its own. */
+  clubVenue?: { name: string | null; postcode: string | null };
   /** Only the club gets this. Absent means "not my club", not "nothing sold". */
   sales?: Map<number, EventSales>;
   /** Query string marking where these links were followed from. */
@@ -68,7 +73,19 @@ export default function ClubEventList({
     <Stack spacing={1.5}>
       {events.map((event) => {
         const date = dateParts(event.startDate);
-        const soldOut = event.ticketsAvailable === 0;
+        const spansDays = Boolean(
+          event.endDate && event.startDate && event.endDate !== event.startDate,
+        );
+        const endDate = spansDays ? dateParts(event.endDate) : null;
+        const tickets = ticketsLeft(event.ticketsAvailable, true);
+
+        // An event usually runs at the club's own hall, so an empty venue means
+        // "here" rather than "unknown". Saying nothing left somebody unable to
+        // tell a home night from one across the county.
+        const place = [
+          event.venue.name || clubVenue?.name,
+          event.venue.postcode || (event.venue.name ? null : clubVenue?.postcode),
+        ].filter(Boolean).join(" · ");
         const sold = sales?.get(event.id);
 
         return (
@@ -111,6 +128,19 @@ export default function ClubEventList({
                       <Typography sx={{ fontFamily: mono, fontSize: "0.72rem", letterSpacing: "0.08em", color: "#B9C9DD" }}>
                         {date.month}
                       </Typography>
+                      {endDate ? (
+                        <>
+                          <Box aria-hidden sx={{ width: 16, height: "1px", my: 0.5,
+                                                 bgcolor: "rgba(255,255,255,0.45)" }} />
+                          <Typography sx={{ fontFamily: mono, fontSize: "1.15rem", fontWeight: 600, lineHeight: 1.1 }}>
+                            {endDate.day}
+                          </Typography>
+                          <Typography sx={{ fontFamily: mono, fontSize: "0.68rem",
+                                            letterSpacing: "0.08em", color: "#B9C9DD" }}>
+                            {endDate.month}
+                          </Typography>
+                        </>
+                      ) : null}
                     </>
                   ) : (
                     <Typography sx={{ fontFamily: mono, fontSize: "0.72rem", color: "#B9C9DD", textAlign: "center", px: 1 }}>
@@ -128,6 +158,7 @@ export default function ClubEventList({
                         <ScheduleIcon aria-hidden sx={{ fontSize: 15, color: tokens.brass }} />
                         <Typography sx={{ fontFamily: mono, fontSize: "0.85rem", color: "text.secondary" }}>
                           {event.startTime}
+                          {event.endTime ? ` \u2013 ${event.endTime}` : ""}
                         </Typography>
                       </Stack>
                     ) : null}
@@ -141,6 +172,16 @@ export default function ClubEventList({
                     ) : null}
                   </Stack>
 
+                  {place ? (
+                    <Stack direction="row" spacing={0.6} sx={{ alignItems: "flex-start" }}>
+                      <PlaceIcon aria-hidden
+                        sx={{ fontSize: 15, color: tokens.brass, mt: 0.25, flexShrink: 0 }} />
+                      <Typography variant="body2" sx={{ color: "text.secondary", minWidth: 0 }}>
+                        {place}
+                      </Typography>
+                    </Stack>
+                  ) : null}
+
                   {event.summary ? (
                     <Typography variant="body2" color="text.secondary">{event.summary}</Typography>
                   ) : null}
@@ -148,11 +189,8 @@ export default function ClubEventList({
                   <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: "wrap", pt: 0.25 }}>
                     {event.eventType ? <Tag label={event.eventType} /> : null}
                     {event.roundCount ? <Tag label={`${event.roundCount} rounds`} /> : null}
-                    {event.ticketsAvailable != null ? (
-                      <Tag
-                        label={soldOut ? "Sold out" : `${event.ticketsAvailable} tickets left`}
-                        tone={soldOut ? "sold" : "quiet"}
-                      />
+                    {tickets ? (
+                      <Tag label={tickets.label} tone={tickets.soldOut ? "sold" : "quiet"} />
                     ) : null}
                   </Stack>
                 </Stack>

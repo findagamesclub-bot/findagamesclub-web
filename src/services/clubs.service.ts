@@ -1,12 +1,13 @@
 import "server-only";
 
 import * as repo from "@/repositories/clubs.repository";
+import { countApprovedPublicByClub } from "@/repositories/memberships.repository";
 import * as taxonomy from "@/repositories/taxonomy.repository";
-import { resolveOrigin } from "@/services/location.service";
-import { geocodeUk } from "@/services/geocode.service";
+import { findOrigin } from "@/services/location.service";
 import { formatMeeting } from "@/utils/format";
 import { haversineMiles, parseLocation } from "@/utils/geo";
 import { splitFacets } from "@/utils/facets";
+import { formatPrice } from "@/utils/format";
 import { fold } from "@/utils/text";
 import type { ClubSummary } from "@/types/club";
 
@@ -93,7 +94,8 @@ export async function listClubs(filters: ClubFilters = {}): Promise<ClubListResu
     wantedPlace ? repo.findClubLocations() : Promise.resolve([]),
   ]);
 
-  const prices = await monthlyPrices(rows);
+  const pricing = await tierPricing(rows);
+  const prices = pricing.lowest;
   const sessionsByClub = groupBy(sessions as SessionRow[]);
   const gamesByClub = groupBy(games as unknown as GameRow[]);
   const facilitiesByClub = groupBy(facilities as unknown as FacilityRow[]);
@@ -154,6 +156,20 @@ export async function listClubs(filters: ClubFilters = {}): Promise<ClubListResu
     };
   }
 
+  // Fetched across everything that matched, not just the page: "most members"
+  // sorts on it, and sorting a page by a number the page cannot see would
+  // order the results by something nobody could check.
+  //
+  // Legacy publishes this figure to everyone; ours is behind RLS, so it reads
+  // past it and returns counts only. A failure leaves the counts empty rather
+  // than emptying the directory.
+  let joined = new Map<number, number>();
+  try {
+    joined = await countApprovedPublicByClub(matched.map((r) => r.id));
+  } catch {
+    joined = new Map();
+  }
+
   const distances = new Map<number, number>();
 
   if (origin) {
@@ -178,6 +194,7 @@ export async function listClubs(filters: ClubFilters = {}): Promise<ClubListResu
     prices,
     sessions: sessionsByClub,
     locationRank: rankByLocation(matched, wantedPlace),
+    joined,
   });
 
   const total = matched.length;
@@ -189,6 +206,8 @@ export async function listClubs(filters: ClubFilters = {}): Promise<ClubListResu
         facilities: (facilitiesByClub.get(row.id) ?? []).map((f) => f.facilities?.label ?? "").filter(Boolean),
         formats: (formatsByClub.get(row.id) ?? []).map((f) => f.formats?.label ?? "").filter(Boolean),
         rating: reviews.get(row.id) ?? null,
+        joinedCount: joined.get(row.id) ?? null,
+        fromPrice: pricing.label.get(row.id) ?? null,
       }),
     ),
     total,
@@ -211,24 +230,6 @@ export async function listClubs(filters: ClubFilters = {}): Promise<ClubListResu
  * the geocoder instead skipped the local table, and "Oxford playing Warhammer"
  * came back as a suburb of Stoke.
  */
-async function findOrigin(
-  place: string,
-  locations: Awaited<ReturnType<typeof repo.findClubLocations>>,
-) {
-  const words = place.split(/\s+/).filter(Boolean).slice(0, 4);
-
-  for (let take = words.length; take >= 1; take -= 1) {
-    const attempt = words.slice(0, take).join(" ");
-    const local = resolveOrigin(attempt, locations);
-    if (local) return local;
-
-    const remote = await geocodeUk(attempt);
-    if (remote) return remote;
-  }
-
-  return null;
-}
-
 function sortClubs(
   clubs: repo.ClubRow[],
   sort: string,
@@ -238,6 +239,7 @@ function sortClubs(
     prices: Map<number, number>;
     sessions: Map<number, SessionRow[]>;
     locationRank: Map<number, number>;
+    joined: Map<number, number>;
   },
 ): repo.ClubRow[] {
   const rows = [...clubs];
@@ -272,9 +274,11 @@ function sortClubs(
         return ad - bd || at - bt || a.name.toLowerCase().localeCompare(b.name.toLowerCase());
       });
     case "members":
+      // The live count, not the club's own figure. Sorting by a number the
+      // cards no longer show would order the results by something invisible.
       return rows.sort(
         (a, b) =>
-          (b.member_count ?? 0) - (a.member_count ?? 0) ||
+          (ctx.joined.get(b.id) ?? 0) - (ctx.joined.get(a.id) ?? 0) ||
           a.name.toLowerCase().localeCompare(b.name.toLowerCase()),
       );
     case "newest":
@@ -345,7 +349,10 @@ export async function getFilterOptions() {
  * tier with no recognised duration is ignored — same rule the legacy app uses,
  * so the ordering matches.
  */
-async function monthlyPrices(clubs: repo.ClubRow[]): Promise<Map<number, number>> {
+async function tierPricing(clubs: repo.ClubRow[]): Promise<{
+  lowest: Map<number, number>;
+  label: Map<number, string>;
+}> {
   const [rows, models] = await Promise.all([
     repo.findTierPricing(),
     repo.findPricingModels(clubs.map((c) => c.id)),
@@ -364,10 +371,29 @@ async function monthlyPrices(clubs: repo.ClubRow[]): Promise<Map<number, number>
   };
 
   const lowest = new Map<number, number>();
+  // What the card prints. Kept as the club's own wording rather than the
+  // monthly-equivalent number, which for a yearly tier would be £8.33 and read
+  // as a price nobody is actually charged.
+  const label = new Map<number, string>();
+  // Tracked separately from `lowest`, and on the raw amount rather than the
+  // monthly equivalent. £100 a year is the cheaper deal and sorts first, but
+  // "From £100 / year" is not what somebody wants read to them on a card when
+  // £10 a month gets them in the door.
+  const cheapestRaw = new Map<number, number>();
+
   const record = (clubId: number, value: number | null) => {
     if (value === null) return;
     const current = lowest.get(clubId);
     if (current === undefined || value < current) lowest.set(clubId, value);
+  };
+
+  const offer = (clubId: number, raw: number | null, display: string) => {
+    if (raw === null || !display.trim()) return;
+    const current = cheapestRaw.get(clubId);
+    if (current === undefined || raw < current) {
+      cheapestRaw.set(clubId, raw);
+      label.set(clubId, display);
+    }
   };
 
   for (const row of rows) {
@@ -375,11 +401,23 @@ async function monthlyPrices(clubs: repo.ClubRow[]): Promise<Map<number, number>
     const candidates = options.length
       ? options.map((o) => {
           const opt = o as Record<string, unknown>;
-          return perMonth(opt.price, opt.priceDuration ?? opt.cadence);
+          const cadence = String(opt.priceDuration ?? opt.cadence ?? "").trim().toLowerCase();
+          return {
+            value: perMonth(opt.price, cadence),
+            raw: amount(opt.price),
+            display: `${formatPrice(String(opt.price ?? "")) ?? ""}${cadence ? ` / ${cadence}` : ""}`,
+          };
         })
-      : [perMonth(row.price, row.price_duration)];
+      : [{
+          value: perMonth(row.price, row.price_duration),
+          raw: amount(row.price),
+          display: `${formatPrice(row.price ?? "") ?? ""}${row.price_duration ? ` / ${row.price_duration}` : ""}`,
+        }];
 
-    for (const value of candidates) record(row.club_id, value);
+    for (const c of candidates) {
+      record(row.club_id, c.value);
+      offer(row.club_id, c.raw, c.display);
+    }
   }
 
   // Older clubs price membership as free text rather than tiers. The period is
@@ -396,11 +434,16 @@ async function monthlyPrices(clubs: repo.ClubRow[]): Promise<Map<number, number>
 
   for (const club of clubs) record(club.id, fromText(club.price_membership ?? ""));
   for (const model of models) {
-    if (!model.label.toLowerCase().includes("membership")) continue;
-    record(model.club_id, fromText(model.price ?? ""));
+    // Sorting only counts memberships, since that is what the sort is called.
+    if (model.label.toLowerCase().includes("membership")) {
+      record(model.club_id, fromText(model.price ?? ""));
+    }
+    // The card's "From" counts every model. Abingdon prices £5 pay-as-you-go
+    // and £20 monthly here rather than in a tier, and was showing a dash.
+    offer(model.club_id, amount(model.price), formatPrice(model.price ?? "") ?? "");
   }
 
-  return lowest;
+  return { lowest, label };
 }
 
 /**
@@ -452,6 +495,8 @@ function toSummary(
     facilities: string[];
     formats: string[];
     rating: { average: number; count: number } | null;
+    joinedCount: number | null;
+    fromPrice: string | null;
   },
 ): ClubSummary {
   const first = sessions[0];
@@ -467,13 +512,19 @@ function toSummary(
     // Zero means no table booking offered, not "none free tonight".
     tablesAvailable: row.tables_available || null,
     memberCount: row.member_count || null,
-    fromPrice: row.price_drop_in,
+    joinedCount: extras?.joinedCount ?? null,
+    ages: row.ages || null,
+    // Drop-in first: it is the cheapest way to try a club. Falling back to the
+    // cheapest membership stops a club that only sells memberships showing a
+    // dash where its price should be.
+    fromPrice: row.price_drop_in || extras?.fromPrice || null,
     formats: extras?.formats ?? [],
     featuredGames: games.map((g) => g.games?.label ?? "").filter(Boolean),
     facilities: extras?.facilities ?? [],
     distanceMiles: distanceMiles ?? null,
     isFeatured: row.spotlight,
     image: firstImage(row),
+    logoUrl: row.logo_url,
     rating: extras?.rating ?? null,
     socialLinks: (row.club_social_links ?? [])
       .slice()

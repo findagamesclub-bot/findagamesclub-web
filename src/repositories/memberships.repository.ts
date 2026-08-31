@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { Tables } from "@/types/database";
 
 export type MembershipRow = Tables<"club_memberships">;
@@ -36,7 +37,7 @@ export async function findClubMemberships(clubId: number, statuses: string[]) {
   const { data, error } = await supabase
     .from("club_memberships")
     .select(
-      `${COLUMNS}, profiles!club_memberships_profile_id_fkey(id, full_name, games_interested, factions_armies)`,
+      `${COLUMNS}, profiles!club_memberships_profile_id_fkey(id, full_name, games_interested, factions_armies, play_style_tags)`,
     )
     .eq("club_id", clubId)
     .in("status", statuses)
@@ -218,6 +219,44 @@ export async function findMembershipForPayment(id: number) {
 }
 
 /** Set a member's tier. Approved members only — a pending row keeps what they asked for. */
+/**
+ * Tier requests outstanding at a club, by membership id.
+ *
+ * A second query rather than two more columns on the roster select: those
+ * columns arrived in 0025 and `database.ts` does not know them until the types
+ * are regenerated. Delete this narrowing then, and fold the columns in.
+ */
+export async function findTierRequests(clubId: number) {
+  const supabase = await createClient();
+  type Row = { id: number; requested_tier_key: string | null; tier_requested_at: string | null };
+  type Chain = {
+    select(columns: string): Chain;
+    eq(column: string, value: number): Chain;
+    not(column: string, op: string, value: null): Promise<
+      { data: Row[] | null; error: { message: string } | null }
+    >;
+  };
+
+  const { data, error } = await (supabase as unknown as { from(name: string): Chain })
+    .from("club_memberships")
+    .select("id, requested_tier_key, tier_requested_at")
+    .eq("club_id", clubId)
+    .not("requested_tier_key", "is", null);
+
+  if (error) throw new Error(`Failed to load tier requests: ${error.message}`);
+  return data ?? [];
+}
+
+/** Clear a request once the club has decided, either way. See 0026. */
+export async function clearTierRequest(membershipId: number) {
+  const supabase = await createClient();
+  const { error } = await (supabase as unknown as {
+    rpc(name: string, args: Record<string, unknown>): Promise<{ error: { message: string } | null }>;
+  }).rpc("resolve_tier_request", { membership: membershipId });
+
+  if (error) throw new Error(error.message);
+}
+
 export async function setMembershipTier(id: number, tierKey: string, reviewedBy: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -238,4 +277,52 @@ export async function setMembershipTier(id: number, tierKey: string, reviewedBy:
   if (error) throw new Error(error.message);
   if (!data) throw new Error("NOT_PERMITTED");
   return data;
+}
+
+/**
+ * How many people have joined this club, for anybody to see.
+ *
+ * The roster is members-only by RLS, so the ordinary client counts zero for a
+ * visitor. Legacy has no such problem and publishes the figure to everyone
+ * (`approvedMemberCount`, club_store.py:1486), so this reads past RLS with the
+ * service role.
+ *
+ * Deliberately narrow: it selects no columns and returns an integer, so the
+ * privileged client can never hand a caller somebody's membership row. Any
+ * change here should keep `head: true`.
+ */
+export async function countApprovedPublic(clubId: number): Promise<number> {
+  const supabase = createAdminClient();
+  const { count, error } = await supabase
+    .from("club_memberships")
+    .select("id", { count: "exact", head: true })
+    .eq("club_id", clubId)
+    .eq("status", "approved");
+
+  if (error) throw new Error(`Failed to count members: ${error.message}`);
+  return count ?? 0;
+}
+
+/**
+ * Joined counts for a page of clubs, for anybody to see.
+ *
+ * The single-club version in one query rather than one per card. Same reason
+ * for the privileged client: RLS would answer zero for a visitor, and legacy
+ * publishes this figure to everyone.
+ */
+export async function countApprovedPublicByClub(clubIds: number[]) {
+  const counts = new Map<number, number>();
+  if (!clubIds.length) return counts;
+
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("club_memberships")
+    // club_id only: enough to count by, and nothing that identifies a member.
+    .select("club_id")
+    .in("club_id", clubIds)
+    .eq("status", "approved");
+
+  if (error) throw new Error(`Failed to count members: ${error.message}`);
+  for (const row of data ?? []) counts.set(row.club_id, (counts.get(row.club_id) ?? 0) + 1);
+  return counts;
 }

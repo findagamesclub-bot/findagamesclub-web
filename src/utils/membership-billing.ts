@@ -7,6 +7,8 @@
  */
 
 import { addMonths, addYears } from "./dates";
+import { formatPrice } from "./format";
+import { amountOf } from "./cart-pricing";
 import type { BillingOption, MembershipPayment, PaymentStanding } from "@/types/payment";
 
 const PAYABLE = new Set(["month", "year", "one-off"]);
@@ -27,18 +29,28 @@ export function billingOptions(raw: unknown, fallbackPrice: string, fallbackDura
       return {
         id: String(row.id ?? ""),
         label: String(row.label ?? ""),
+        // Raw here, so isPayable still sees what the club typed. Formatted
+        // below, once it is known to be a real price.
         price: String(row.price ?? ""),
         cadence,
       };
     })
     .filter((o) => o.id && PAYABLE.has(o.cadence) && isPayable(o.price));
 
-  if (parsed.length) return parsed;
+  // "GBP 30" is what the importer stored; "£30" is what a person reads.
+  if (parsed.length) {
+    return parsed.map((o) => ({ ...o, price: formatPrice(o.price) ?? o.price }));
+  }
 
   // Older clubs carry a bare price with no options list.
   const cadence = fallbackDuration.trim().toLowerCase();
   if (!isPayable(fallbackPrice) || !PAYABLE.has(cadence)) return [];
-  return [{ id: cadence, label: cadence === "one-off" ? "One-off" : `Per ${cadence}`, price: fallbackPrice, cadence }];
+  return [{
+    id: cadence,
+    label: cadence === "one-off" ? "One-off" : `Per ${cadence}`,
+    price: formatPrice(fallbackPrice) ?? fallbackPrice,
+    cadence,
+  }];
 }
 
 /**
@@ -82,4 +94,40 @@ export function standing(
     overdue: Boolean(paidThrough) && new Date(paidThrough!).getTime() < Date.now(),
     settledOneOff,
   };
+}
+
+/**
+ * What the yearly option saves against paying monthly.
+ *
+ * The most useful thing a price list can say and the one thing it was not
+ * saying: £100 a year against £10 a month is two months free, and nobody
+ * should have to do that arithmetic in their head to see it.
+ *
+ * Returns null when there is nothing to compare, or when the yearly price is
+ * not actually cheaper. A club is allowed to price its year higher, and a
+ * "save -£30" badge would be worse than no badge.
+ */
+export function yearlySaving(
+  options: BillingOption[],
+): { amount: number; percent: number } | null {
+  const monthly = options.find((o) => o.cadence === "month");
+  const yearly = options.find((o) => o.cadence === "year");
+  if (!monthly || !yearly) return null;
+
+  const perMonth = amountOf(monthly.price);
+  const perYear = amountOf(yearly.price);
+  if (perMonth <= 0 || perYear <= 0) return null;
+
+  const full = perMonth * 12;
+  const saved = full - perYear;
+  if (saved <= 0) return null;
+
+  return { amount: saved, percent: Math.round((saved / full) * 100) };
+}
+
+/** "£8.33 a month" for a yearly price, so the two can be compared directly. */
+export function perMonth(options: BillingOption[]): string | null {
+  const yearly = options.find((o) => o.cadence === "year");
+  const value = yearly ? amountOf(yearly.price) / 12 : 0;
+  return value > 0 ? `£${value.toFixed(2)} a month` : null;
 }

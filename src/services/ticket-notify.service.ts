@@ -35,7 +35,7 @@ export async function notifyBooked(booking: EventBooking) {
       when: booking.eventDate ? nightLabel(booking.eventDate) : "",
       reference: booking.reference,
       tickets: ticketSummary(booking),
-      total: `${formatMoney(booking.total, booking.currency)} due on the day`,
+      total: `${formatMoney(booking.total, booking.currency)} to pay`,
       url: `${siteUrl()}/tickets/${booking.reference}`,
     });
 

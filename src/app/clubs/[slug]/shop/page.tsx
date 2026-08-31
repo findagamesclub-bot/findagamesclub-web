@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import NextLink from "next/link";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
@@ -20,7 +21,7 @@ export async function generateMetadata({
 }: PageProps<"/clubs/[slug]/shop">) {
   const { slug } = await params;
   const club = await getClubDetail(slug);
-  return { title: club ? `Club kit — ${club.name}` : "Club not found" };
+  return { title: club ? `Merchandise · ${club.name}` : "Club not found" };
 }
 
 export default async function ShopPage({
@@ -38,7 +39,6 @@ export default async function ShopPage({
   const back = backTarget(query.from, club);
   const canManage = club.ownerId === viewer.id || viewer.role === "admin";
   const membership = await getMyMembership(club.id, viewer.id);
-  const tierLabel = club.membershipTiers.find((t) => t.key === membership.tierKey)?.label ?? null;
 
   const [items, orders, standing] = await Promise.all([
     getShop({
@@ -50,7 +50,7 @@ export default async function ShopPage({
       viewerTierKey: membership.tierKey,
     }),
     canManage ? getOrders(club.id) : Promise.resolve([]),
-    getShopStanding(club.id, viewer.id),
+    getShopStanding(club.id, viewer.id, club.membershipTiers),
   ]);
 
   // A club with nothing for sale has no shop, rather than an empty one.
@@ -60,7 +60,7 @@ export default async function ShopPage({
 
   return (
     <Container maxWidth="lg" component="main" sx={{ py: { xs: 4, md: 6 } }}>
-      <ClubSectionHeader back={back} title="Club kit" clubName={club.name} clubSlug={club.slug}
+      <ClubSectionHeader back={back} title="Merchandise" clubName={club.name} clubSlug={club.slug}
         faction={faction}
         stats={[
           { label: items.length === 1 ? "item" : "items", value: String(items.length) },
@@ -69,14 +69,26 @@ export default async function ShopPage({
             : []),
         ]} />
 
+      {/* The one thing the shop cannot answer: what you already ordered.
+          Members were finding this page and then hunting for their own orders. */}
+      <Box sx={{ mb: 2.5 }}>
+        <NextLink href="/account/orders" style={{ textDecoration: "none" }}>
+          <Typography variant="body2"
+            sx={{ color: faction.deep, fontWeight: 600,
+                  "&:hover": { textDecoration: "underline" } }}>
+            Your merchandise orders
+          </Typography>
+        </NextLink>
+      </Box>
+
       {items.length ? (
         <ClubShop items={items} faction={faction} monogram={monogram} slug={slug}
-          standing={standing} />
+          clubId={club.id} profileId={viewer.id} standing={standing} />
       ) : (
         <Box sx={{ border: `1px dashed ${tokens.rule}`, borderRadius: 1.5, p: 4,
                    textAlign: "center" }}>
           <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-            Nothing listed yet. Club kit is set up on the club record.
+            Nothing listed yet. Merchandise is set up on the club record.
           </Typography>
         </Box>
       )}

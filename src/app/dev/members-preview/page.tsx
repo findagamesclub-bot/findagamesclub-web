@@ -29,19 +29,20 @@ export default function MembersPreviewPage() {
     requestedAt: new Date(Date.now() - 3 * 86_400_000).toISOString(),
     games,
     armies,
+    playStyle: [],
     tenureYears: years,
   });
 
   const tiers: MembershipTier[] = [
     { key: "basic", label: "Basic Membership", price: "£10", priceDuration: "month",
-      description: null, isBasic: true, benefits: [], eventDiscountPercent: 0, reservedCategories: [],
+      description: null, isBasic: true, benefits: [], benefitGroups: [], benefitValues: {}, eventDiscountPercent: 0, reservedCategories: [],
       billingOptions: [
         { id: "basic-month", label: "Monthly", price: "£10", cadence: "month" },
         { id: "basic-year", label: "Yearly", price: "£100", cadence: "year" },
         { id: "basic-one-off", label: "One-off", price: "£300", cadence: "one-off" },
       ] },
     { key: "premium-membership", label: "Premium Membership", price: "£15", priceDuration: "month",
-      description: null, isBasic: false, benefits: [], eventDiscountPercent: 10, reservedCategories: [],
+      description: null, isBasic: false, benefits: [], benefitGroups: [], benefitValues: {}, eventDiscountPercent: 10, reservedCategories: [],
       billingOptions: [{ id: "premium-membership-month", label: "Monthly", price: "£15", cadence: "month" }] },
   ];
 

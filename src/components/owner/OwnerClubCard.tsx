@@ -3,7 +3,8 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import CheckCircleIcon from "@mui/icons-material/CheckCircleOutlined";
-import OwnerTaskRow from "./OwnerTaskRow";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutlineOutlined";
+import { sinceLabel } from "@/utils/dates";
 import { matGrid, tokens } from "@/lib/tokens";
 import { clubIdentity } from "@/utils/club-identity";
 import { FROM_MY_CLUBS } from "@/utils/back-link";
@@ -17,19 +18,19 @@ import type { OwnerClub } from "@/services/ownerInbox.service";
  * outstanding keeps its card — an owner wants to see that all three are clear,
  * not have two of them disappear.
  */
-/**
- * How many rows of detail a card shows before it stops.
- *
- * A club with fifty people waiting would otherwise draw a fifty-row card and
- * push every other club off the screen. Three is enough to see who has waited
- * longest; the counts on the links below carry the rest.
- */
-const SHOW_TASKS = 3;
-
 export default function OwnerClubCard({ club }: { club: OwnerClub }) {
   const { faction, monogram } = clubIdentity(club.slug, club.name);
   const waiting = club.tasks.length;
-  const shown = club.tasks.slice(0, SHOW_TASKS);
+  // The one that has been waiting longest, which is the fact an owner acts on.
+  const oldest = club.tasks
+    .map((task) => task.at)
+    .filter(Boolean)
+    .sort()[0] ?? null;
+  // Somebody waiting on a decision, as opposed to money the owner has yet to
+  // mark off. Only the first kind earns red.
+  const decisions = club.tasks.filter(
+    (task) => task.kind === "join" || task.kind === "tier",
+  ).length;
   const countOf = (kind: OwnerClub["tasks"][number]["kind"]) =>
     club.tasks.filter((t) => t.kind === kind).length;
 
@@ -40,7 +41,6 @@ export default function OwnerClubCard({ club }: { club: OwnerClub }) {
         borderRadius: 1.5,
         overflow: "hidden",
         backgroundColor: tokens.paper,
-        height: "100%",
         transition: "box-shadow 160ms ease",
         "&:hover": { boxShadow: "0 2px 14px rgba(16,27,45,0.08)" },
       }}
@@ -81,12 +81,18 @@ export default function OwnerClubCard({ club }: { club: OwnerClub }) {
               ) : null}
             </Stack>
 
+            {/* Red on the club's own colour, so a shelf of cards can be read
+                for "which of these needs me" before any of them is read for
+                what it says. */}
             {waiting ? (
-              <Box sx={{ minWidth: 26, height: 26, px: 0.75, borderRadius: 999, flexShrink: 0,
-                         display: "grid", placeItems: "center",
-                         backgroundColor: tokens.brassOnDark }}>
+              <Box aria-label={`${waiting} waiting`}
+                sx={{ minWidth: 26, height: 26, px: 0.75, borderRadius: 999, flexShrink: 0,
+                      display: "grid", placeItems: "center",
+                      backgroundColor: decisions ? "#fff" : "rgba(255,255,255,0.16)",
+                      border: decisions ? `2px solid ${tokens.danger}` : "none" }}>
                 <Typography sx={{ fontFamily: "var(--font-mono)", fontWeight: 700,
-                                  fontSize: "0.78rem", color: "#2A1D06", lineHeight: 1 }}>
+                                  fontSize: "0.78rem", lineHeight: 1,
+                                  color: decisions ? tokens.danger : "#fff" }}>
                   {waiting}
                 </Typography>
               </Box>
@@ -95,23 +101,26 @@ export default function OwnerClubCard({ club }: { club: OwnerClub }) {
         </Box>
       </NextLink>
 
+      {/* One line, whether nothing is waiting or fifty things are.
+          Listing the first three made a busy club three times the height of a
+          clear one, and a grid of cards that each pick their own height is
+          harder to read than the list it replaced. Which sections need the
+          owner is on the links below; who exactly is on the section page. */}
       {waiting ? (
-        <Stack>
-          {shown.map((task, i) => (
-            <OwnerTaskRow key={`${task.kind}-${task.id}`} task={task}
-              faction={faction} first={i === 0} />
-          ))}
-          {waiting > SHOW_TASKS ? (
-            <Typography variant="body2"
-              sx={{ px: 2, py: 1.25, color: tokens.inkMuted,
-                    borderTop: `1px solid ${tokens.rule}` }}>
-              {waiting - SHOW_TASKS} more waiting. Counts are on the links below.
-            </Typography>
-          ) : null}
+        <Stack direction="row" spacing={1.25}
+          sx={{ px: 2, py: 1.5, alignItems: "center" }}>
+          <ErrorOutlineIcon sx={{ fontSize: 17, flexShrink: 0,
+                                  color: decisions ? tokens.danger : tokens.brass }} />
+          <Typography variant="body2">
+            <Box component="span" sx={{ fontWeight: 700 }}>
+              {waiting === 1 ? "One thing" : `${waiting} things`}
+            </Box>
+            {oldest ? ` waiting, longest ${sinceLabel(oldest)}.` : " waiting."}
+          </Typography>
         </Stack>
       ) : (
         <Stack direction="row" spacing={1.25}
-          sx={{ px: 2, py: 2.25, alignItems: "center", flex: 1 }}>
+          sx={{ px: 2, py: 1.5, alignItems: "center" }}>
           <CheckCircleIcon sx={{ fontSize: 17, color: tokens.positive, flexShrink: 0 }} />
           <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
             Nothing waiting.
@@ -126,9 +135,24 @@ export default function OwnerClubCard({ club }: { club: OwnerClub }) {
         sx={{ mt: "auto", px: 1.25, py: 1.25, flexWrap: "wrap",
               borderTop: `1px solid ${tokens.rule}`, backgroundColor: tokens.surface }}>
         <CardLink href={`/clubs/${club.slug}/members${FROM_MY_CLUBS}`} faction={faction}
-          lead count={countOf("join")}>
+          lead urgent count={countOf("join") + countOf("tier")}>
           {club.memberCount} {club.memberCount === 1 ? "member" : "members"}
         </CardLink>
+        {/* Money owed is the club's own view of its roster, so it sits next to
+            the member count rather than inside it. */}
+        <CardLink href={`/clubs/${club.slug}/members/renewals${FROM_MY_CLUBS}`} faction={faction}
+          urgent count={club.membershipsOwing}>
+          Memberships
+        </CardLink>
+        {/* Tables booked from today on. Deliberately not `urgent`: a booking
+            asks nothing of the club, so it never turns the count red or adds to
+            "things waiting". It is here because an owner wants to know at a
+            glance whether anybody is turning up. */}
+        {club.upcomingTables ? (
+          <CardLink href={`/clubs/${club.slug}/bookings${FROM_MY_CLUBS}`} faction={faction}>
+            {club.upcomingTables} {club.upcomingTables === 1 ? "table" : "tables"}
+          </CardLink>
+        ) : null}
         {club.runs.events ? (
           <CardLink href={`/clubs/${club.slug}/events${FROM_MY_CLUBS}`} faction={faction}>Events</CardLink>
         ) : null}
@@ -139,6 +163,13 @@ export default function OwnerClubCard({ club }: { club: OwnerClub }) {
           <CardLink href={`/clubs/${club.slug}/shop${FROM_MY_CLUBS}`} faction={faction}
             count={countOf("order")}>Kit</CardLink>
         ) : null}
+        {/* Always shown, unlike the others: a club with no competitions has no
+            public page for them, so this is the only way in to set the first
+            one up. */}
+        <CardLink href={`/clubs/${club.slug}/competitions/manage${FROM_MY_CLUBS}`}
+          faction={faction}>
+          Competitions
+        </CardLink>
         {club.runs.coaching ? (
           <CardLink href={`/clubs/${club.slug}/coaching${FROM_MY_CLUBS}`} faction={faction}
             count={countOf("coaching")}>Coaching</CardLink>
@@ -154,11 +185,13 @@ export default function OwnerClubCard({ club }: { club: OwnerClub }) {
  * The count is what makes this scale: an owner does not need fifty rows to
  * know fifty people are waiting, they need the number and a way in.
  */
-function CardLink({ href, faction, lead, count = 0, children }: {
+function CardLink({ href, faction, lead, count = 0, urgent = false, children }: {
   href: string;
   faction: ReturnType<typeof clubIdentity>["faction"];
   lead?: boolean;
   count?: number;
+  /** Somebody is waiting on a decision, rather than on the owner's paperwork. */
+  urgent?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -178,10 +211,23 @@ function CardLink({ href, faction, lead, count = 0, children }: {
         {count ? (
           <Box component="span"
             aria-label={`${count} waiting`}
-            sx={{ minWidth: 16, height: 16, px: 0.4, borderRadius: 999,
-                  display: "inline-grid", placeItems: "center",
-                  fontSize: "0.6rem", fontWeight: 700, lineHeight: 1,
-                  backgroundColor: tokens.brass, color: "#FFFFFF" }}>
+            sx={{
+              minWidth: 16, height: 16, px: 0.4, borderRadius: 999,
+              display: "inline-grid", placeItems: "center",
+              fontSize: "0.6rem", fontWeight: 700, lineHeight: 1,
+              backgroundColor: urgent ? tokens.danger : tokens.brass,
+              color: "#FFFFFF",
+              ...(urgent ? {
+                "@keyframes ownerPing": {
+                  "0%": { boxShadow: "0 0 0 0 rgba(179,38,30,0.45)" },
+                  "70%": { boxShadow: "0 0 0 5px rgba(179,38,30,0)" },
+                  "100%": { boxShadow: "0 0 0 0 rgba(179,38,30,0)" },
+                },
+                // globals.css already stops this for anyone who asks for less
+                // motion; that keeps the mark, just still.
+                animation: "ownerPing 2.4s ease-out infinite",
+              } : {}),
+            }}>
             {count}
           </Box>
         ) : null}

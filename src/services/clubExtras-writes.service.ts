@@ -1,6 +1,7 @@
 import "server-only";
 
 import * as repo from "@/repositories/clubExtras.repository";
+import * as notify from "./order-notify.service";
 
 /** Writes for rivalries, the shop and coaching. */
 
@@ -38,14 +39,14 @@ export async function unmarkRival(rivalRowId: number): Promise<Result> {
 const ORDER_ERRORS: [string, string][] = [
   ["NOT_ENOUGH_STOCK", "There are not that many left. Lower the quantity and try again."],
   ["SOLD_OUT", "That has sold out."],
-  ["NO_MERCH_ACCESS", "Your membership tier does not include club kit."],
+  ["NO_MERCH_ACCESS", "Your membership tier does not include merchandise."],
   ["TIER_TOO_LOW", "That item is for a higher membership tier."],
   ["MEMBERS_ONLY", "Only approved members of this club can order kit."],
   ["NOT_ENOUGH_POINTS", "You do not have that many points."],
   ["OVER_REDEMPTION_CAP", "Points cannot cover that much of this order."],
-  ["NO_REDEMPTION", "This club does not take points off club kit."],
+  ["NO_REDEMPTION", "This club does not take points off merchandise."],
   ["ITEM_NOT_FOUND", "That item is no longer listed."],
-  ["NOT_SIGNED_IN", "Sign in to order club kit."],
+  ["NOT_SIGNED_IN", "Sign in to order merchandise."],
 ];
 
 export async function orderMerch(params: {
@@ -55,18 +56,58 @@ export async function orderMerch(params: {
   redeemPoints: number;
 }): Promise<Result> {
   try {
-    await repo.placeOrder({
+    const order = await repo.placeOrder({
       itemId: params.itemId,
       quantity: Math.max(1, Math.min(20, Math.floor(params.quantity))),
       notes: params.notes.trim(),
       redeemPoints: Math.max(0, Math.floor(params.redeemPoints || 0)),
     });
+    await notify.notifyOrdered(order.id);
     return { ok: true };
   } catch (error) {
-    const raw = error instanceof Error ? error.message : "";
-    const known = ORDER_ERRORS.find(([code]) => raw.includes(code));
-    return { ok: false, error: known?.[1] ?? "Could not place that order. Try again." };
+    return { ok: false, error: orderRefusal(error) };
   }
+}
+
+/** The whole bag, as one order. */
+export async function orderBag(params: {
+  lines: { itemId: number; quantity: number }[];
+  notes: string;
+  redeemPoints: number;
+}): Promise<Result> {
+  const lines = params.lines
+    .filter((l) => Number.isFinite(l.itemId) && l.quantity > 0)
+    .map((l) => ({ itemId: l.itemId, quantity: Math.max(1, Math.min(20, Math.floor(l.quantity))) }));
+
+  if (!lines.length) return { ok: false, error: "Your bag is empty." };
+
+  try {
+    const order = await repo.placeCartOrder({
+      lines,
+      notes: params.notes.trim(),
+      redeemPoints: Math.max(0, Math.floor(params.redeemPoints || 0)),
+    });
+    await notify.notifyOrdered(order.id);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: orderRefusal(error) };
+  }
+}
+
+/**
+ * A refusal we planned for, or a bug.
+ *
+ * The catch-all used to swallow real database errors: a broken function read as
+ * "try again", and trying again did the same thing forever. Anything that is
+ * not one of ours is logged with its actual message.
+ */
+function orderRefusal(error: unknown): string {
+  const raw = error instanceof Error ? error.message : String(error);
+  const known = ORDER_ERRORS.find(([code]) => raw.includes(code));
+  if (known) return known[1];
+
+  console.error("[merchandise] unexpected order failure:", raw);
+  return "Could not place that order. Try again.";
 }
 
 const ORDER_STATUSES = new Set(["placed", "paid", "fulfilled", "cancelled"]);
@@ -102,7 +143,10 @@ export async function noteOnOrder(
 }
 
 function coachingError(raw: string): string {
-  if (raw.includes("SLOT_FULL")) return "Somebody took the last place while you were deciding.";
+  // Not "somebody took the last place": that describes a race, and it sent
+  // people looking for a rival who was never there. The page had simply been
+  // showing a count it was not allowed to compute.
+  if (raw.includes("SLOT_FULL")) return "That slot is full. Reload to see the places left.";
   if (raw.includes("SLOT_CLOSED")) return "That slot is no longer open.";
   if (raw.includes("SLOT_PASSED")) return "That slot has already happened.";
   if (raw.includes("MEMBERS_ONLY")) return "Coaching is for approved members of the club.";
@@ -112,7 +156,8 @@ function coachingError(raw: string): string {
 
 export async function bookCoaching(slotId: number): Promise<Result> {
   try {
-    await repo.bookSlot(slotId);
+    const booking = await repo.bookSlot(slotId);
+    await notify.notifyCoachingBooked(booking.id);
     return { ok: true };
   } catch (error) {
     return { ok: false, error: coachingError(error instanceof Error ? error.message : "") };

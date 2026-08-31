@@ -175,6 +175,31 @@ const theme = createTheme({
       styleOverrides: { root: { fontFamily: "inherit", textUnderlineOffset: "0.15em" } },
     },
 
+    // Figures, so 9 and 10 sit the same width apart and the row does not
+    // shuffle sideways as you page through it.
+    MuiPaginationItem: {
+      styleOverrides: {
+        root: {
+          fontFamily: display,
+          fontVariantNumeric: "tabular-nums",
+          fontWeight: 500,
+          borderColor: tokens.rule,
+          color: tokens.ink,
+          minWidth: 36,
+          height: 36,
+          transition: "background-color 120ms ease, border-color 120ms ease",
+          "&:hover": { backgroundColor: tokens.brandSoft },
+          "&.Mui-selected": {
+            backgroundColor: tokens.brand,
+            color: "#FFFFFF",
+            fontWeight: 700,
+            "&:hover": { backgroundColor: tokens.brandDeep },
+          },
+        },
+        ellipsis: { color: tokens.inkMuted, height: 36, lineHeight: "36px" },
+      },
+    },
+
     MuiDivider: { styleOverrides: { root: { borderColor: tokens.rule } } },
 
     MuiSkeleton: { defaultProps: { animation: "wave" }, styleOverrides: { root: { backgroundColor: "#E9EFF6" } } },

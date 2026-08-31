@@ -6,15 +6,20 @@ import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import LockIcon from "@mui/icons-material/Lock";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutlineRounded";
+import GroupAddIcon from "@mui/icons-material/GroupAdd";
 import Button from "@mui/material/Button";
 import ClubSectionHeader from "@/components/clubs/ClubSectionHeader";
 import MemberCard from "@/components/members/MemberCard";
+import RosterFilters from "@/components/members/RosterFilters";
 import PendingRow from "@/components/members/PendingRow";
+import TierRequestQueue from "@/components/members/TierRequestQueue";
 import { getClubDetail } from "@/services/clubDetail.service";
 import { getCurrentProfile } from "@/services/auth.service";
-import { getMyMembership, getPendingRequests, getRoster } from "@/services/memberships.service";
+import { getJoinedCount, getMyMembership, getPendingRequests, getRoster } from "@/services/memberships.service";
 import { getClubPayments, standing } from "@/services/payments.service";
 import { getRivals } from "@/services/clubExtras.service";
+import { getOpponentFinder } from "@/services/games.service";
+import OpponentFinder from "@/components/members/OpponentFinder";
 import { getProgramme, getStandings } from "@/services/loyalty.service";
 import { tierFor } from "@/utils/loyalty";
 import RivalButton from "@/components/rivals/RivalButton";
@@ -29,7 +34,7 @@ export async function generateMetadata({
 }: PageProps<"/clubs/[slug]/members">) {
   const { slug } = await params;
   const club = await getClubDetail(slug);
-  return { title: club ? `Members — ${club.name}` : "Club not found" };
+  return { title: club ? `Members · ${club.name}` : "Club not found" };
 }
 
 export default async function ClubMembersPage({
@@ -62,7 +67,33 @@ export default async function ClubMembersPage({
 
   // Rivalries hang off the roster, so they are loaded with it rather than on a
   // page of their own — you name a rival while looking at the list of people.
+  // The count is public even though the names are not, so a visitor who is
+  // refused still learns something and gets the way in.
+  const joinedCount = canSeeRoster ? null : await getJoinedCount(club.id);
+
   const rivals = viewer && canSeeRoster ? await getRivals(club.id, viewer.id, roster) : [];
+
+  // Tiers a club sells with priority placement, so the scoring can disclose it
+  // rather than quietly moving somebody up the list.
+  const priorityTiers = new Set(
+    club.membershipTiers
+      .filter((tier) => Boolean(
+        (tier.benefitValues as Record<string, unknown>)?.priorityOpponentFinderPlacement,
+      ))
+      .map((tier) => tier.key),
+  );
+
+  // Members only, and only for somebody on the roster: a suggestion needs the
+  // reader's own games and record to mean anything.
+  const finder = viewer && canSeeRoster && roster.some((m) => m.profileId === viewer.id)
+    ? await getOpponentFinder(club.id, viewer.id, roster.map((member) => ({
+        profileId: member.profileId,
+        fullName: member.fullName,
+        games: member.games,
+        playStyle: member.playStyle,
+        tierKey: member.tierKey,
+      })), priorityTiers).catch(() => null)
+    : null;
   const rivalRowOf = new Map(rivals.map((r) => [r.personId, r]));
 
   // Standings sit on the roster so an owner can see at a glance who is close to
@@ -116,6 +147,30 @@ export default async function ClubMembersPage({
         }
       />
 
+      {/* Chasing money is a different job from browsing the roster, done at a
+          different time, so it is a page rather than columns bolted on here.
+          Only the club sees the link at all. */}
+      {canManage ? (
+        <Box sx={{ mb: 3 }}>
+          <NextLink href={`/clubs/${club.slug}/members/renewals`} style={{ textDecoration: "none" }}>
+            <Typography variant="body2"
+              sx={{ color: faction.deep, fontWeight: 600,
+                    "&:hover": { textDecoration: "underline" } }}>
+              Memberships, payments and renewals
+            </Typography>
+          </NextLink>
+        </Box>
+      ) : null}
+
+      {finder ? <OpponentFinder finder={finder} faction={faction} /> : null}
+
+      {/* Above the roster and above the join queue: the email that brought the
+          owner here was about this, and on a club with a hundred members there
+          is otherwise no way to tell which card asked. */}
+      {canManage ? (
+        <TierRequestQueue members={roster} tiers={club.membershipTiers} slug={club.slug} />
+      ) : null}
+
       {canManage && pendingRequests.length ? (
         <Box
           sx={{
@@ -166,8 +221,21 @@ export default async function ClubMembersPage({
           <Typography variant="body2" color="text.secondary">
             {membership.status === "pending"
               ? "Your request is with the club. You will see the roster once they approve it."
-              : "Ask to join from the club page and you will see who plays here once the club approves you."}
+              : joinedCount
+                ? `${joinedCount} ${joinedCount === 1 ? "person has" : "people have"} joined ${club.name} here. Join the club and you will see who they are.`
+                : "Join the club and you will see who plays here once they approve you."}
           </Typography>
+
+          {/* The count is what made somebody click through, so being refused
+              without a way in wastes the one moment they were interested. */}
+          {membership.status !== "pending" ? (
+            <NextLink href={`/clubs/${club.slug}#join`} style={{ textDecoration: "none" }}>
+              <Button variant="contained" startIcon={<GroupAddIcon />}
+                sx={{ bgcolor: faction.base, "&:hover": { bgcolor: faction.deep } }}>
+                {viewer ? "Join this club" : "Sign in and join"}
+              </Button>
+            </NextLink>
+          ) : null}
 
           {/* Owner notification emails arrive at the club's address, which is
               often not the account the browser is signed in to. Without this
@@ -188,14 +256,11 @@ export default async function ClubMembersPage({
           )}
         </Stack>
       ) : roster.length ? (
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))", lg: "repeat(3, minmax(0, 1fr))" },
-            gap: 2,
-          }}
-        >
-          {roster.map((m) => (
+        <RosterFilters
+          members={roster}
+          cards={roster.map((m) => ({
+            id: m.profileId,
+            node: (
             <MemberCard
               key={m.membershipId}
               member={m}
@@ -211,6 +276,8 @@ export default async function ClubMembersPage({
                     slug={club.slug}
                     memberName={m.fullName}
                     tierKey={m.tierKey}
+                    requestedTierKey={m.requestedTierKey}
+                    tierRequestedAt={m.tierRequestedAt}
                     tiers={club.membershipTiers}
                     standing={standing(payments.get(m.membershipId) ?? [], m.tierKey, m.tierAssignedAt)}
                     payments={payments.get(m.membershipId) ?? []}
@@ -220,7 +287,7 @@ export default async function ClubMembersPage({
                   // Wrapped, not `component={NextLink}`: this is a Server
                   // Component, and MUI's `component` prop cannot cross that line.
                   <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", gap: 1 }}>
-                    <NextLink href={`/messages/${club.id}/${m.profileId}`}
+                    <NextLink href={`/account/messages/${club.id}/${m.profileId}`}
                       style={{ textDecoration: "none" }}>
                       <Button
                         size="small"
@@ -245,8 +312,9 @@ export default async function ClubMembersPage({
                 ) : undefined
               }
             />
-          ))}
-        </Box>
+            ),
+          }))}
+        />
       ) : (
         <Stack spacing={1} sx={{ border: `1px dashed ${tokens.rule}`, borderRadius: 2,
                                  p: { xs: 3, md: 5 }, textAlign: "center", bgcolor: tokens.paper }}>

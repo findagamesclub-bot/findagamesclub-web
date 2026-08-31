@@ -10,6 +10,11 @@ type Props = {
   ratio?: string;
   /** Corner monogram plate. Off for the club page, which has a real title. */
   showPlate?: boolean;
+  /**
+   * Stands in when there is no image: painted blurred and oversized behind the
+   * crest. A club that has uploaded a logo but no photographs yet.
+   */
+  backdrop?: string | null;
 };
 
 /**
@@ -20,7 +25,9 @@ type Props = {
  * club's faction colour, a table grid, and its monogram. It reads as a
  * deliberate crest rather than an absence.
  */
-export default function ClubArt({ slug, name, image, ratio = "16 / 9", showPlate = true }: Props) {
+export default function ClubArt({
+  slug, name, image, ratio = "16 / 9", showPlate = true, backdrop = null,
+}: Props) {
   const { faction, monogram } = clubIdentity(slug, name);
   // Only the supplied placeholder SVGs get recoloured. Didcot and a few others
   // uploaded real photographs, and tinting a photograph looks like a fault.
@@ -54,6 +61,20 @@ export default function ClubArt({ slug, name, image, ratio = "16 / 9", showPlate
           sx={{
             position: "absolute",
             inset: 0,
+            // Blurred hard and darkened, so it reads as a colour wash taken
+            // from the club rather than as a badly cropped photograph.
+            ...(backdrop ? {
+              "&::before": {
+                content: '""',
+                position: "absolute",
+                inset: "-8%",
+                backgroundImage: `url(${backdrop})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                filter: "blur(26px) saturate(1.1)",
+                opacity: 0.55,
+              },
+            } : {}),
             // A gaming table's grid, 44px squares, held back to a whisper.
             backgroundImage: `
               repeating-linear-gradient(0deg, rgba(255,255,255,0.07) 0 1px, transparent 1px 44px),

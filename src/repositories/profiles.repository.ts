@@ -28,7 +28,7 @@ export type ProfileEdit = Pick<
   ProfileRow,
   | "full_name" | "bio" | "home_postcode" | "preferred_travel_miles"
   | "games_interested" | "factions_armies" | "availability_days"
-  | "age_groups" | "play_style_tags"
+  | "age_groups" | "play_style_tags" | "social_profiles"
 >;
 
 export async function updateOwnProfile(id: string, patch: ProfileEdit) {

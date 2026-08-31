@@ -1,7 +1,7 @@
 "use client";
 
-import { startTransition, useActionState, useState } from "react";
-import Alert from "@mui/material/Alert";
+import { startTransition, useActionState, useMemo, useRef, useState, useTransition } from "react";
+import { useActionToast } from "@/components/ui/Toaster";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import MenuItem from "@mui/material/MenuItem";
@@ -9,9 +9,18 @@ import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import BusyOverlay from "@/components/ui/BusyOverlay";
+import Pager from "@/components/ui/Pager";
+import { usePagedList } from "@/hooks/usePagedList";
+import FilterBar from "@/components/account/FilterBar";
+import {
+  countClubOrders, filterClubOrders,
+  type ClubOrderFilter, type ClubOrderSort,
+} from "@/utils/club-order-filter";
 import Counter from "@/components/ui/Counter";
 import { shopAction, type ShopState } from "@/app/clubs/[slug]/shop/actions";
 import { formatMoney, initialsOf } from "@/utils/format";
+import { needsQuote } from "@/utils/merch-bag";
+import { orderTotalLabel } from "@/utils/order-total";
 import { messageTime } from "@/utils/dates";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { MerchOrder } from "@/types/clubExtras";
@@ -38,7 +47,20 @@ export default function OrderQueue({
   faction: Faction;
 }) {
   const [state, submit, busy] = useActionState<ShopState, FormData>(shopAction, {});
+  useActionToast(state);
   const [drafts, setDrafts] = useState<Record<number, string>>({});
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<ClubOrderFilter>("all");
+  const [sort, setSort] = useState<ClubOrderSort>("recent");
+  const [reordering, startReorder] = useTransition();
+
+  const counts = useMemo(() => countClubOrders(orders), [orders]);
+  const results = useMemo(
+    () => filterClubOrders(orders, { query, filter, sort }), [orders, query, filter, sort]);
+  const top = useRef<HTMLDivElement>(null);
+  // Twelve, not the usual page: each order carries its own note log and status
+  // control, so a page of them is far taller than a page of cards.
+  const paged = usePagedList(results, 12, top);
 
   const setStatus = (orderId: number, status: string) => {
     const data = new FormData();
@@ -72,12 +94,40 @@ export default function OrderQueue({
 
   return (
     <Stack spacing={2}>
-      {state.error ? <Alert severity="error">{state.error}</Alert> : null}
-      {state.notice ? <Alert severity="success">{state.notice}</Alert> : null}
+      {/* The same FilterBar as everywhere else. A club with forty orders was
+          scrolling to find the one somebody is standing in front of them
+          asking about. */}
+      <FilterBar
+        query={query}
+        onQuery={(value) => startReorder(() => setQuery(value))}
+        placeholder="Search by member, item or note"
+        tabs={[
+          { value: "all" as const, label: "All", count: counts.all },
+          { value: "placed" as const, label: "Placed", count: counts.placed },
+          { value: "paid" as const, label: "Paid", count: counts.paid },
+          { value: "fulfilled" as const, label: "Collected", count: counts.fulfilled },
+          { value: "cancelled" as const, label: "Cancelled", count: counts.cancelled },
+        ]}
+        filter={filter}
+        onFilter={(value) => startReorder(() => setFilter(value))}
+        sorts={[
+          { value: "recent" as const, label: "Newest first" },
+          { value: "value" as const, label: "Highest value" },
+          { value: "name" as const, label: "Member name" },
+        ]}
+        sort={sort}
+        onSort={(value) => startReorder(() => setSort(value))}
+      />
 
-      <BusyOverlay busy={busy} label="Saving">
-      <Stack spacing={2}>
-      {orders.map((order) => {
+      {!results.length ? (
+        <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
+          Nothing matches. Clear the search or pick a different tab.
+        </Typography>
+      ) : null}
+
+      <BusyOverlay busy={busy || reordering} label="Saving">
+      <Stack ref={top} spacing={2}>
+      {paged.shown.map((order) => {
         const tone = STATES.find((s) => s.value === order.status)?.tone ?? tokens.inkMuted;
         return (
           <Box key={order.id}
@@ -142,7 +192,8 @@ export default function OrderQueue({
                 ) : null}
                 <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.9rem",
                                   fontWeight: 700 }}>
-                  {formatMoney(order.total)} total
+                  {orderTotalLabel(order, formatMoney)}
+                  {order.lines.every((l) => needsQuote(l.price)) ? "" : " total"}
                 </Typography>
               </Stack>
             </Stack>
@@ -194,6 +245,9 @@ export default function OrderQueue({
         );
       })}
       </Stack>
+
+      <Pager page={paged.page} total={paged.total} noun="orders" size={12}
+        onChange={paged.goTo} />
       </BusyOverlay>
     </Stack>
   );

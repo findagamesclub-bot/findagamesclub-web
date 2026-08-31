@@ -27,7 +27,7 @@ export async function generateMetadata({
 }: PageProps<"/clubs/[slug]/loyalty">) {
   const { slug } = await params;
   const club = await getClubDetail(slug);
-  return { title: club ? `Loyalty — ${club.name}` : "Club not found" };
+  return { title: club ? `Loyalty · ${club.name}` : "Club not found" };
 }
 
 export default async function LoyaltyPage({

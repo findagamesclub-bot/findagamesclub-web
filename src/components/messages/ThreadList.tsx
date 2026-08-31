@@ -73,7 +73,7 @@ export default function ThreadList({ entries }: { entries: RailEntry[] }) {
 
       {shown.map((entry, i) => {
         const { faction } = clubIdentity(entry.clubSlug, entry.clubName);
-        const href = `/messages/${entry.clubId}/${entry.personId}`;
+        const href = `/account/messages/${entry.clubId}/${entry.personId}`;
         const open = pathname === href;
 
         return (

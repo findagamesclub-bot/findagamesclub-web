@@ -8,11 +8,13 @@ import BoardMasthead from "@/components/board/BoardMasthead";
 import PostCard from "@/components/board/PostCard";
 import NewPostForm from "@/components/board/NewPostForm";
 import CategoryFilter from "@/components/board/CategoryFilter";
+import BoardSearch from "@/components/board/BoardSearch";
+import Pager from "@/components/ui/Pager";
 import EmptyState from "@/components/ui/EmptyState";
 import { getClubDetail } from "@/services/clubDetail.service";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getMyMembership } from "@/services/memberships.service";
-import { getBoard } from "@/services/discussions.service";
+import { BOARD_PAGE_SIZE, getBoard } from "@/services/discussions.service";
 import { categoryOptions, tierRank } from "@/utils/discussion-categories";
 import { clubIdentity } from "@/utils/club-identity";
 import { backTarget } from "@/utils/back-link";
@@ -21,7 +23,7 @@ import { tokens } from "@/lib/tokens";
 export async function generateMetadata({ params }: PageProps<"/clubs/[slug]/board">) {
   const { slug } = await params;
   const club = await getClubDetail(slug);
-  return { title: club ? `Board — ${club.name}` : "Club not found" };
+  return { title: club ? `Board · ${club.name}` : "Club not found" };
 }
 
 export default async function ClubBoardPage({
@@ -30,6 +32,8 @@ export default async function ClubBoardPage({
   const { slug } = await params;
   const query = await searchParams;
   const category = Array.isArray(query.category) ? query.category[0] : query.category;
+  const search = Array.isArray(query.q) ? query.q[0] : query.q;
+  const page = Math.max(1, Number(Array.isArray(query.page) ? query.page[0] : query.page) || 1);
 
   const club = await getClubDetail(slug);
   if (!club) notFound();
@@ -72,8 +76,19 @@ export default async function ClubBoardPage({
     );
   }
 
-  const posts = await getBoard(club.id, { id: viewer.id, canManageClub }, category);
-  const locked = options.filter((o) => o.lockedBy);
+  const board = await getBoard(club.id, { id: viewer.id, canManageClub },
+    { category, search, page });
+  const { posts } = board;
+
+  // Keeps whatever the reader is already filtering by when they turn the page.
+  const pageHref = (to: number) => {
+    const params = new URLSearchParams();
+    if (category) params.set("category", category);
+    if (search) params.set("q", search);
+    if (to > 1) params.set("page", String(to));
+    const q = params.toString();
+    return `/clubs/${slug}/board${q ? `?${q}` : ""}`;
+  };
 
   return (
     <Container maxWidth="md" component="main" sx={{ py: { xs: 4, md: 6 } }}>
@@ -82,30 +97,53 @@ export default async function ClubBoardPage({
         clubSlug={club.slug}
         faction={faction}
         monogram={monogram}
-        threads={posts.length}
+        threads={board.total}
         replies={posts.reduce((n, p) => n + p.replyCount, 0)}
       >
+        {/* Top-aligned: the categories wrap now, so bottom-aligning dropped the
+            button level with the last row instead of the first. */}
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}
-          sx={{ justifyContent: "space-between", alignItems: { sm: "flex-end" } }}>
+          sx={{ justifyContent: "space-between", alignItems: { sm: "flex-start" } }}>
           <Box sx={{ minWidth: 0, flex: 1 }}>
             <CategoryFilter options={options} active={category ?? null} slug={slug}
-              faction={faction} />
+              faction={faction} search={search ?? null} />
           </Box>
-          <Box sx={{ flexShrink: 0, pb: { sm: 0.75 } }}>
-            <NewPostForm clubId={club.id} slug={slug} faction={faction} categories={options} />
+          <Box sx={{ flexShrink: 0 }}>
+            <NewPostForm clubId={club.id} slug={slug} faction={faction} categories={options}
+              profileId={viewer.id} />
           </Box>
         </Stack>
       </BoardMasthead>
 
+      <Box sx={{ maxWidth: 420, mb: 2 }}>
+        <BoardSearch slug={slug} category={category ?? null} initial={search ?? ""} />
+      </Box>
+
+      {search ? (
+        <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.7rem",
+                          letterSpacing: "0.08em", color: tokens.inkMuted, mb: 1.5 }}>
+          {board.total === 1 ? "1 THREAD MATCHES" : `${board.total} THREADS MATCH`}
+          {` "${search.toUpperCase()}"`}
+        </Typography>
+      ) : null}
+
       {posts.length === 0 ? (
         <EmptyState
-          title={category ? `Nothing in ${category} yet` : "No threads yet"}
-          description={
-            category
-              ? "Start one, or clear the filter to see the whole board."
-              : "Be the first. Ask a question, show a model, or run a poll."
+          title={
+            search
+              ? `Nothing matches "${search}"`
+              : category ? `Nothing in ${category} yet` : "No threads yet"
           }
-          action={category ? { label: "Show every category", href: `/clubs/${slug}/board` } : undefined}
+          description={
+            search
+              ? "Try a shorter word, or clear the search to see the whole board."
+              : category
+                ? "Start one, or clear the filter to see the whole board."
+                : "Be the first. Ask a question, show a model, or run a poll."
+          }
+          action={category || search
+            ? { label: "Show every thread", href: `/clubs/${slug}/board` }
+            : undefined}
         />
       ) : (
         <Box sx={{ border: `1px solid ${tokens.rule}`, borderRadius: 1.5,
@@ -116,16 +154,11 @@ export default async function ClubBoardPage({
         </Box>
       )}
 
-      {locked.length ? (
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center", mt: 3 }}>
-          <LockIcon sx={{ fontSize: 15, color: tokens.inkMuted }} />
-          <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-            {locked.length === 1
-              ? `${locked[0].label} is open to ${locked[0].lockedBy} members.`
-              : `${locked.length} categories are open to higher tiers only.`}
-          </Typography>
-        </Stack>
-      ) : null}
+      <Box sx={{ mt: 2.5 }}>
+        <Pager page={board.page} total={board.total} noun="threads"
+          size={BOARD_PAGE_SIZE} hrefFor={pageHref} />
+      </Box>
+
     </Container>
   );
 }

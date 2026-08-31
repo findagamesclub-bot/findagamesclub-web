@@ -34,6 +34,12 @@ export async function boardAction(_prev: BoardState, data: FormData): Promise<Bo
       content: String(data.get("content") ?? ""),
       pollQuestion: String(data.get("pollQuestion") ?? ""),
       pollOptions: data.getAll("pollOption").map(String),
+      // Rendered as a pair per photo, so the two lists line up by position.
+      images: data.getAll("image").map((path, i) => ({
+        path: String(path),
+        alt: String(data.getAll("imageAlt")[i] ?? ""),
+      })),
+      authorId: viewer.id,
     });
 
     refresh();

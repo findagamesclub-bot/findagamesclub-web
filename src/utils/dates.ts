@@ -137,3 +137,28 @@ export function messageTime(iso: string | null | undefined, now = new Date()): s
 
   return day.slice(0, 4) === today.slice(0, 4) ? dayMonth.format(d) : withYear.format(d);
 }
+
+/**
+ * The clock in London, as wall-clock strings.
+ *
+ * Club dates and times are London wall-clock on both sides of the app, so
+ * comparing an event's 17:00 against the viewer's own clock would end events
+ * an hour early for anyone in Paris.
+ */
+export function londonNow(at: Date = new Date()): { date: string; time: string } {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/London",
+      year: "numeric", month: "2-digit", day: "2-digit",
+      // h23, not hour12:false: the latter can render midnight as "24".
+      hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+    })
+      .formatToParts(at)
+      .map((part) => [part.type, part.value]),
+  ) as Record<string, string>;
+
+  return {
+    date: `${parts.year}-${parts.month}-${parts.day}`,
+    time: `${parts.hour}:${parts.minute}`,
+  };
+}

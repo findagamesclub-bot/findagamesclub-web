@@ -2,6 +2,8 @@ import "server-only";
 
 import * as repo from "@/repositories/discussions.repository";
 import { parsePoll, tally, type Poll } from "@/utils/poll";
+import { toPostImages } from "@/utils/post-images";
+import { DISCUSSION_PHOTOS, publicUrl } from "@/lib/supabase/storage";
 import type { BoardPost, BoardReply, BoardThread } from "@/types/discussion";
 
 /**
@@ -38,6 +40,14 @@ function nameOf(author: Author): string {
   return author?.full_name?.trim() || "Club member";
 }
 
+/** Stored paths become URLs here so components never touch a bucket name. */
+function imagesOf(row: unknown) {
+  return toPostImages((row as { images?: unknown }).images).map((image) => ({
+    url: publicUrl(DISCUSSION_PHOTOS, image.path),
+    alt: image.alt,
+  }));
+}
+
 function pollOf(
   raw: unknown,
   votes: { option_key: string; profile_id: string }[],
@@ -50,14 +60,24 @@ function pollOf(
   return tally(poll, votes.map((v) => ({ optionKey: v.option_key })), mine);
 }
 
+/** One page of the board, plus how many threads there are in total. */
+export const BOARD_PAGE_SIZE = 20;
+
 export async function getBoard(
   clubId: number,
   viewer: Viewer,
-  category?: string | null,
-): Promise<BoardPost[]> {
-  const rows = await repo.findPosts(clubId, category);
+  params: { category?: string | null; search?: string | null; page?: number } = {},
+): Promise<{ posts: BoardPost[]; total: number; page: number; pageCount: number }> {
+  const page = Math.max(1, Math.floor(params.page ?? 1));
+  const { rows, total } = await repo.findPosts({
+    clubId: clubId,
+    category: params.category,
+    search: params.search,
+    offset: (page - 1) * BOARD_PAGE_SIZE,
+    limit: BOARD_PAGE_SIZE,
+  });
 
-  return rows.map((row) => {
+  const posts = rows.map((row) => {
     const r = row as unknown as {
       profiles: Author;
       club_discussion_replies: { id: number; created_at: string; removed_at: string | null }[] | null;
@@ -81,12 +101,21 @@ export async function getBoard(
       lastActivityAt: live.reduce((latest, x) =>
         x.created_at > latest ? x.created_at : latest, row.created_at),
       poll: pollOf(row.poll, r.club_discussion_poll_votes ?? [], viewer.id),
+      images: imagesOf(row),
       isMine,
       canRemove: isMine || viewer.canManageClub,
       removed: removalOf(row, viewer.id),
     };
-  })
-  .sort((a, b) => b.lastActivityAt.localeCompare(a.lastActivityAt));
+  });
+
+  // Already ordered by the database on last_activity_at; the reply scan here
+  // only builds the label, it does not decide the order.
+  return {
+    posts,
+    total,
+    page,
+    pageCount: Math.max(1, Math.ceil(total / BOARD_PAGE_SIZE)),
+  };
 }
 
 export async function getThread(postId: number, viewer: Viewer): Promise<BoardThread | null> {
@@ -132,6 +161,7 @@ export async function getThread(postId: number, viewer: Viewer): Promise<BoardTh
     lastActivityAt: replies.at(-1)?.createdAt ?? row.created_at,
     replyCount: replies.length,
     poll: pollOf(row.poll, r.club_discussion_poll_votes ?? [], viewer.id),
+    images: imagesOf(row),
     isMine,
     canRemove: isMine || viewer.canManageClub,
     removed: removalOf(row, viewer.id),

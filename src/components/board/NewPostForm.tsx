@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import Alert from "@mui/material/Alert";
+import { useActionToast } from "@/components/ui/Toaster";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
@@ -17,23 +17,29 @@ import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
 import LockIcon from "@mui/icons-material/Lock";
 import PollIcon from "@mui/icons-material/Poll";
+import PhotoPicker from "./PhotoPicker";
+import { usePostPhotos } from "@/hooks/usePostPhotos";
 import { boardAction, type BoardState } from "@/app/clubs/[slug]/board/actions";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { CategoryOption } from "@/utils/discussion-categories";
 
 /** Start a thread, optionally with a poll attached. */
 export default function NewPostForm({
-  clubId, slug, faction, categories,
+  clubId, slug, faction, categories, profileId,
 }: {
   clubId: number;
   slug: string;
   faction: Faction;
   categories: CategoryOption[];
+  /** Whose folder the photos upload into. */
+  profileId: string;
 }) {
   const [state, submit, busy] = useActionState<BoardState, FormData>(boardAction, {});
+  useActionToast(state);
   const [open, setOpen] = useState(false);
   const [showPoll, setShowPoll] = useState(false);
   const [options, setOptions] = useState(["", ""]);
+  const photos = usePostPhotos(profileId);
   const fullScreen = useMediaQuery("(max-width:600px)");
 
   const open_ = categories.filter((c) => !c.lockedBy);
@@ -62,7 +68,6 @@ export default function NewPostForm({
             <input type="hidden" name="clubId" value={clubId} />
 
             <Stack spacing={2.25}>
-              {state.error ? <Alert severity="error">{state.error}</Alert> : null}
 
               <TextField name="category" select label="Category" required fullWidth
                 defaultValue={open_[0]?.label ?? ""}>
@@ -86,6 +91,8 @@ export default function NewPostForm({
 
               <TextField name="content" label="What do you want to say?" required fullWidth
                 multiline minRows={4} slotProps={{ htmlInput: { maxLength: 8000 } }} />
+
+              <PhotoPicker {...photos} />
 
               {showPoll ? (
                 <Box sx={{ border: `1px solid ${tokens.rule}`, borderRadius: 1.5, p: 2 }}>
@@ -138,7 +145,13 @@ export default function NewPostForm({
                 </Button>
               )}
 
-              <Button type="submit" variant="contained" size="large" loading={busy}
+              {/* Held back while a photo is still going up: its hidden field
+                  only exists once the upload lands, so posting now would drop
+                  the picture without saying so. */}
+              <Button type="submit" variant="contained" size="large"
+                loading={busy || photos.busy}
+                disabled={photos.busy}
+                aria-label={photos.busy ? "Waiting for the photo to upload" : undefined}
                 loadingPosition="start"
                 sx={{ backgroundColor: faction.base, "&:hover": { backgroundColor: faction.deep } }}>
                 Post to the board

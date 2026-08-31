@@ -18,7 +18,8 @@ export default function FormPreviewPage() {
           armies: ["Death Guard", "Custodes"],
           availability: ["Tuesday", "Thursday", "Saturday"],
           ageGroups: ["18+"],
-          playStyle: ["Narrative", "Teaching newcomers"],
+          socials: [],
+  playStyle: ["Narrative", "Teaching newcomers"],
         }}
       />
     </Container>

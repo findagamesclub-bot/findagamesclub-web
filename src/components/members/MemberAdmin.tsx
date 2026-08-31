@@ -17,10 +17,12 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import CloseIcon from "@mui/icons-material/Close";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import TuneIcon from "@mui/icons-material/Tune";
-import { changeTierAction, recordPaymentAction } from "@/app/clubs/[slug]/membership-actions";
+import { changeTierAction, dismissTierRequestAction, recordPaymentAction }
+  from "@/app/clubs/[slug]/membership-actions";
 import PaymentHistory from "./PaymentHistory";
+import { useActionToast } from "@/components/ui/Toaster";
+import { shortDate, sinceLabel } from "@/utils/dates";
 import { tokens, type Faction } from "@/lib/tokens";
-import { shortDate } from "@/utils/dates";
 import type { MembershipTier } from "@/types/clubDetail";
 import type { MembershipPayment, PaymentStanding } from "@/types/payment";
 
@@ -29,6 +31,9 @@ type Props = {
   slug: string;
   memberName: string;
   tierKey: string | null;
+  /** A tier this member has asked to move to. */
+  requestedTierKey?: string | null;
+  tierRequestedAt?: string | null;
   tiers: MembershipTier[];
   standing: PaymentStanding;
   payments: MembershipPayment[];
@@ -48,19 +53,23 @@ function initials(name: string): string {
  * rather than squeezed into a 320px column.
  */
 export default function MemberAdmin({
-  membershipId, slug, memberName, tierKey, tiers, standing, payments, faction,
+  membershipId, slug, memberName, tierKey, requestedTierKey = null,
+  tierRequestedAt = null, tiers, standing, payments, faction,
 }: Props) {
   const [open, setOpen] = useState(false);
   const fullScreen = useMediaQuery("(max-width:600px)");
 
   const [tierState, changeTier, changingTier] = useActionState(changeTierAction, {});
+  const [dismissState, dismiss, dismissing] = useActionState(dismissTierRequestAction, {});
   const [payState, recordPayment, paying] = useActionState(recordPaymentAction, {});
+
+  useActionToast(tierState);
+  useActionToast(payState);
+  useActionToast(dismissState);
 
   const tier = tiers.find((t) => t.key === tierKey) ?? null;
   const options = tier?.billingOptions ?? [];
 
-  const message = tierState.error ?? payState.error;
-  const notice = tierState.notice ?? payState.notice;
 
   const paidThrough = shortDate(standing.paidThrough);
   const status = !options.length
@@ -109,8 +118,44 @@ export default function MemberAdmin({
 
         <DialogContent dividers>
           <Stack spacing={3}>
-            {notice ? <Alert severity="success" sx={{ fontSize: "0.85rem" }}>{notice}</Alert> : null}
-            {message ? <Alert severity="error" sx={{ fontSize: "0.85rem" }}>{message}</Alert> : null}
+            {/* The member has asked to move. Shown first and given the
+                one-press answer, because it is the only thing in this dialog
+                that somebody is waiting on. */}
+            {requestedTierKey ? (
+              <Box sx={{ p: 2, borderRadius: 2, backgroundColor: tokens.brassSoft,
+                         border: `1px solid rgba(184,134,43,0.3)` }}>
+                <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.66rem",
+                                  fontWeight: 700, letterSpacing: "0.1em", color: "#5c4310" }}>
+                  {`TIER REQUESTED${tierRequestedAt ? ` · ${(sinceLabel(tierRequestedAt) ?? "").toUpperCase()}` : ""}`}
+                </Typography>
+                <Typography variant="body2" sx={{ color: "#5c4310", mt: 0.5, mb: 1.5 }}>
+                  {memberName} has asked to move to{" "}
+                  <strong>
+                    {tiers.find((t) => t.key === requestedTierKey)?.label ?? requestedTierKey}
+                  </strong>.
+                </Typography>
+
+                <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: "wrap" }}>
+                  <Box component="form" action={changeTier}>
+                    <input type="hidden" name="membershipId" value={membershipId} />
+                    <input type="hidden" name="slug" value={slug} />
+                    <input type="hidden" name="tierKey" value={requestedTierKey} />
+                    <Button type="submit" size="small" variant="contained"
+                      loading={changingTier}>
+                      Move them
+                    </Button>
+                  </Box>
+                  <Box component="form" action={dismiss}>
+                    <input type="hidden" name="membershipId" value={membershipId} />
+                    <input type="hidden" name="slug" value={slug} />
+                    <Button type="submit" size="small" variant="text" loading={dismissing}
+                      sx={{ color: "#5c4310" }}>
+                      Not now
+                    </Button>
+                  </Box>
+                </Stack>
+              </Box>
+            ) : null}
 
             {tiers.length > 1 ? (
               <Box component="form" action={changeTier}>

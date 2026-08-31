@@ -1,7 +1,7 @@
 "use client";
 
 import { startTransition, useActionState, useOptimistic } from "react";
-import Alert from "@mui/material/Alert";
+import { useActionToast } from "@/components/ui/Toaster";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
@@ -10,6 +10,7 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import Counter from "@/components/ui/Counter";
 import PollBars from "./PollBars";
+import PostPhotos from "./PostPhotos";
 import ReplyRow, { type PendingReply } from "./ReplyRow";
 import SubmitButton from "@/components/ui/SubmitButton";
 import { boardAction, type BoardState } from "@/app/clubs/[slug]/board/actions";
@@ -46,6 +47,7 @@ export default function ThreadView({
   viewerName: string;
 }) {
   const [state, submit, busy] = useActionState<BoardState, FormData>(boardAction, {});
+  useActionToast(state);
 
   /**
    * The reply appears the moment it is sent, held back at half opacity with a
@@ -83,7 +85,6 @@ export default function ThreadView({
 
   return (
     <Stack spacing={3}>
-      {state.error ? <Alert severity="error">{state.error}</Alert> : null}
 
       {/* The notice itself, lifted off the page. Everything under it hangs
           from its spine, so the thread reads as one conversation. */}
@@ -113,12 +114,15 @@ export default function ThreadView({
           ) : null}
         </Stack>
 
-        <Typography variant="body1" sx={{ whiteSpace: "pre-line", mb: thread.poll ? 3 : 0 }}>
+        <Typography variant="body1"
+          sx={{ whiteSpace: "pre-line", mb: thread.poll && !thread.images.length ? 3 : 0 }}>
           {thread.content}
         </Typography>
 
+        <PostPhotos images={thread.images} />
+
         {thread.poll ? (
-          <Box sx={{ pt: 2.5, borderTop: `1px solid ${tokens.rule}` }}>
+          <Box sx={{ mt: thread.images.length ? 3 : 0, pt: 2.5, borderTop: `1px solid ${tokens.rule}` }}>
             <PollBars poll={thread.poll} faction={faction} busy={busy} canVote={canPost}
               onVote={(optionKey) => send({ intent: "vote", optionKey })} />
           </Box>

@@ -10,6 +10,8 @@ import ChipListField from "./ChipListField";
 import ToggleListField from "./ToggleListField";
 import WeekPicker from "./WeekPicker";
 import Panel from "./Panel";
+import PublicIcon from "@mui/icons-material/Public";
+import { SOCIAL_NETWORKS, socialValue } from "@/utils/social-links";
 import SubmitButton from "@/components/ui/SubmitButton";
 import { saveProfileAction, type ProfileFormState } from "@/app/account/profile/actions";
 import PersonIcon from "@mui/icons-material/Person";
@@ -31,17 +33,6 @@ export default function ProfileForm({ draft }: { draft: ProfileDraft }) {
   return (
     <form action={formAction}>
       <Stack spacing={2.5}>
-        <Stack spacing={0.75}>
-          <Typography variant="overline" color="text.secondary">Your profile</Typography>
-          <Typography variant="h1" sx={{ fontSize: { xs: "2rem", md: "2.6rem" } }}>
-            Tell people what you play
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 620 }}>
-            Other members see this when you post or ask for a game. Everything is optional
-            except your name.
-          </Typography>
-        </Stack>
-
         {state.error ? <Alert severity="error">{state.error}</Alert> : null}
 
         {/* Two columns so the whole form is visible at once. It was one stack of
@@ -52,6 +43,7 @@ export default function ProfileForm({ draft }: { draft: ProfileDraft }) {
             display: "grid",
             gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1fr) minmax(0, 1fr)" },
             gap: 2.5,
+            width: "100%",
             alignItems: "start",
           }}
         >
@@ -102,6 +94,37 @@ export default function ProfileForm({ draft }: { draft: ProfileDraft }) {
               <Stack spacing={2.5}>
                 <ToggleListField name="playStyle" label="Play style" options={PLAY_STYLES} value={draft.playStyle} />
                 <ToggleListField name="ageGroups" label="Age group" options={AGE_GROUPS} value={draft.ageGroups} />
+              </Stack>
+            </Panel>
+
+            {/* Seven fields rather than a add-your-own list: these are the
+                networks people actually name, and a fixed set means the
+                profile can show the right icon for each. */}
+            <Panel title="Find you elsewhere" icon={PublicIcon}>
+              <Stack spacing={2}>
+                <Typography variant="body2" color="text.secondary">
+                  Optional, and only shown to signed-in members. Paste the full
+                  link to your page.
+                </Typography>
+                <Box sx={{ display: "grid", gap: 2,
+                           gridTemplateColumns: {
+                             xs: "1fr",
+                             sm: "repeat(2, minmax(0, 1fr))",
+                             lg: "repeat(3, minmax(0, 1fr))",
+                           } }}>
+                  {SOCIAL_NETWORKS.map((network) => (
+                    <TextField
+                      key={network}
+                      name={`social-${network}`}
+                      label={network}
+                      type="url"
+                      size="small"
+                      defaultValue={socialValue(draft.socials, network)}
+                      placeholder="https://..."
+                      slotProps={{ inputLabel: { shrink: true } }}
+                    />
+                  ))}
+                </Box>
               </Stack>
             </Panel>
           </Stack>

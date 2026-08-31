@@ -143,3 +143,24 @@ export async function changeTierAction(
   if (!result.ok) return { error: result.error };
   return { notice: "Membership tier updated." };
 }
+
+/** Owner clears a tier request without granting it. */
+export async function dismissTierRequestAction(
+  _prev: MembershipState,
+  data: FormData,
+): Promise<MembershipState> {
+  const viewer = await getCurrentProfile();
+  if (!viewer) return { error: "Sign in first." };
+
+  const membershipId = Number(data.get("membershipId"));
+  const slug = String(data.get("slug") ?? "");
+  if (!membershipId || !slug) {
+    return { error: "Something went wrong. Reload and try again." };
+  }
+
+  const result = await memberships.dismissTierRequest(membershipId);
+
+  refresh(slug);
+  if (!result.ok) return { error: result.error };
+  return { notice: "Request cleared." };
+}

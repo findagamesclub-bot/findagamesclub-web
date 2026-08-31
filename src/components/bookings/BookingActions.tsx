@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
-import Alert from "@mui/material/Alert";
+import { startTransition, useActionState, useState } from "react";
+import Autocomplete from "@mui/material/Autocomplete";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
@@ -18,8 +18,12 @@ import EventBusyIcon from "@mui/icons-material/EventBusy";
 import HourglassTopIcon from "@mui/icons-material/HourglassTop";
 import HandshakeIcon from "@mui/icons-material/Handshake";
 import { bookingAction, type BookingState } from "@/app/clubs/[slug]/bookings/actions";
+import { useActionToast } from "@/components/ui/Toaster";
 import { tokens, type Faction } from "@/lib/tokens";
+import BookingPricePanel from "./BookingPricePanel";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { nightLabel } from "@/utils/dates";
+import type { BookingStanding } from "@/utils/booking-pricing";
 import type { CalendarSession } from "@/types/booking";
 
 /**
@@ -30,13 +34,16 @@ import type { CalendarSession } from "@/types/booking";
  * is reading.
  */
 export default function BookingActions({
-  session, clubId, slug, price, faction, waitlistEnabled, myBookingId, canCancelMine,
-  myQueueEntryId, queueLength, lfgEnabled, hasOpenPost,
+  session, clubId, slug, standing, faction, waitlistEnabled, myBookingId,
+  canCancelMine, myQueueEntryId, queueLength, lfgEnabled, hasOpenPost, roster = [],
 }: {
+  /** Club members who can be named as the opponent. */
+  roster?: { id: string; name: string }[];
   session: CalendarSession;
   clubId: number;
   slug: string;
-  price: string | null;
+  /** What this member pays, and what they can pay with. Null when signed out. */
+  standing: BookingStanding | null;
   faction: Faction;
   waitlistEnabled: boolean;
   myBookingId: number | null;
@@ -51,55 +58,62 @@ export default function BookingActions({
   const [mode, setMode] = useState<"book" | "waitlist" | "lfg-post">("book");
   const [state, submit, busy] = useActionState<BookingState, FormData>(bookingAction, {});
   const [opened, setOpened] = useState(false);
+  // Set only when a real member was picked; a typed name leaves it null.
+  const [opponent, setOpponent] = useState<string | null>(null);
+  const [points, setPoints] = useState(0);
+  const [dropping, setDropping] = useState(false);
 
   const fullScreen = useMediaQuery("(max-width:600px)");
 
   /**
-   * A success notice is a confirmation of something you just did, so it is
-   * transient. Left to persist it lingers on one night and not another,
-   * depending on whether the page happened to reload in between — which is
-   * exactly what it looked like: two identical bookings, one with a green box
-   * and one without.
-   *
-   * The row itself is the durable confirmation: your name at a table, a filled
-   * pip, and the button changed to Cancel my table.
+   * Success and failure both go to the toast, like every other action on the
+   * site. A green box in the night's row pushed the list around and then sat
+   * there after the reader had moved on; the row itself is the durable
+   * confirmation anyway — your name at a table, a filled pip, and the button
+   * changed to Cancel my table.
    */
-  const [dismissed, setDismissed] = useState<BookingState | null>(null);
-  const notice = state.notice && dismissed !== state ? state.notice : null;
+  useActionToast(state);
 
-  // A success both closes the dialog and shows the notice, so both are derived
-  // from the same fact. Copying either into state inside the effect would be a
-  // render scheduling another render.
-  const open = opened && !notice;
+  // A success closes the dialog, derived rather than set in an effect: an
+  // effect that calls setState is a render scheduling another render, and the
+  // dialog would spring back open the moment the next action started.
+  const open = opened && !state.notice;
 
-  useEffect(() => {
-    if (!notice) return;
-    // Also clears `opened`, or the dialog would spring back open the moment
-    // the notice expired.
-    const timer = setTimeout(() => { setDismissed(state); setOpened(false); }, 6000);
-    return () => clearTimeout(timer);
-  }, [notice, state]);
+  const dropTable = () => {
+    const data = new FormData();
+    data.set("intent", "cancel");
+    data.set("slug", slug);
+    data.set("bookingId", String(myBookingId));
+    startTransition(() => submit(data));
+    setDropping(false);
+  };
 
   return (
     <Stack spacing={1.25}>
-      {notice ? <Alert severity="success" sx={{ fontSize: "0.85rem" }}>{notice}</Alert> : null}
-      {state.error && !open ? (
-        <Alert severity="error" sx={{ fontSize: "0.85rem" }}>{state.error}</Alert>
-      ) : null}
-
+      <ConfirmDialog
+        open={dropping}
+        title="Cancel this table?"
+        body={`Your table on ${nightLabel(session.date)} will be given up, and anybody
+               on the waiting list is offered it straight away.`}
+        confirmLabel="Cancel the booking"
+        cancelLabel="Keep it"
+        destructive
+        busy={busy}
+        onConfirm={dropTable}
+        onClose={() => setDropping(false)}
+      />
       <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}>
         {myBookingId && canCancelMine ? (
-          <form action={submit}>
-            <input type="hidden" name="intent" value="cancel" />
-            <input type="hidden" name="slug" value={slug} />
-            <input type="hidden" name="bookingId" value={myBookingId} />
-            <Button type="submit" variant="outlined" size="small"
-              loading={busy} loadingPosition="start" startIcon={<EventBusyIcon />}
-              sx={{ color: tokens.ink, borderColor: tokens.rule,
-                    "&:hover": { color: tokens.danger, borderColor: tokens.danger } }}>
-              Cancel my table
-            </Button>
-          </form>
+          // Asked for, not fired on click. Giving up a table is not undoable:
+          // the waiting list is offered it the moment the row changes. The
+          // account page has asked since it was built and this did not, which
+          // is the same action behaving two ways.
+          <Button variant="outlined" size="small" onClick={() => setDropping(true)}
+            loading={busy} loadingPosition="start" startIcon={<EventBusyIcon />}
+            sx={{ color: tokens.ink, borderColor: tokens.rule,
+                  "&:hover": { color: tokens.danger, borderColor: tokens.danger } }}>
+            Cancel my table
+          </Button>
         ) : myBookingId ? (
           <Typography variant="body2" color="text.secondary">
             Tonight&rsquo;s tables cannot be cancelled. Speak to the club.
@@ -173,7 +187,6 @@ export default function BookingActions({
               <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.78rem",
                                 color: tokens.inkMuted, letterSpacing: "0.04em" }}>
                 {nightLabel(session.date).toUpperCase()} · {session.time}
-                {price ? ` · ${price}` : ""}
               </Typography>
             </Box>
             <IconButton onClick={() => setOpened(false)} aria-label="Close" sx={{ flexShrink: 0 }}>
@@ -190,11 +203,6 @@ export default function BookingActions({
             <input type="hidden" name="sessionDate" value={session.date} />
             <input type="hidden" name="clubId" value={clubId} />
             <Stack spacing={2}>
-              {/* Inside the dialog, because a failure leaves the dialog open and
-                  an alert on the row behind it would be invisible. */}
-              {state.error ? (
-                <Alert severity="error" sx={{ fontSize: "0.85rem" }}>{state.error}</Alert>
-              ) : null}
               {mode === "waitlist" ? (
                 <Typography variant="body2" color="text.secondary">
                   Every table is taken. If somebody cancels, the longest wait gets the table
@@ -217,14 +225,48 @@ export default function BookingActions({
                 slotProps={{ htmlInput: { maxLength: 120 } }}
               />
               {mode === "book" ? (
-                <TextField
-                  name="opponentName"
-                  label="Playing with"
-                  helperText="Optional. Leave it blank if you are still after an opponent."
-                  fullWidth
-                  slotProps={{ htmlInput: { maxLength: 120 } }}
+                // A member, not a typed name where we have the choice. A typed
+                // name is a game against nobody: it cannot count toward either
+                // player's record and never appears in theirs at all.
+                <Autocomplete
+                  freeSolo
+                  options={roster}
+                  // The list floats over the field below it, so it needs an
+                  // edge of its own. Without one the label underneath reads
+                  // through it and the whole thing looks broken.
+                  slotProps={{
+                    paper: {
+                      sx: {
+                        mt: 0.5,
+                        border: `1px solid ${tokens.rule}`,
+                        boxShadow: "0 10px 30px rgba(16,27,45,0.18)",
+                      },
+                    },
+                  }}
+                  getOptionLabel={(option) =>
+                    typeof option === "string" ? option : option.name}
+                  onChange={(_event, value) =>
+                    setOpponent(typeof value === "string" || !value ? null : value.id)}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      name="opponentName"
+                      label="Playing with"
+                      helperText={roster.length
+                        ? "Pick a member so the game counts for both of you, or type any name."
+                        : "Optional. Leave it blank if you are still after an opponent."}
+                      slotProps={{
+                        ...params.slotProps,
+                        htmlInput: {
+                          ...(params.slotProps?.htmlInput ?? {}),
+                          maxLength: 120,
+                        },
+                      }}
+                    />
+                  )}
                 />
               ) : null}
+              <input type="hidden" name="opponentProfileId" value={opponent ?? ""} />
               <TextField
                 name="notes"
                 label="Anything the club should know"
@@ -234,6 +276,10 @@ export default function BookingActions({
                 fullWidth
                 slotProps={{ htmlInput: { maxLength: 500 } }}
               />
+              {mode === "book" && standing ? (
+                <BookingPricePanel standing={standing} points={points} onPoints={setPoints} />
+              ) : null}
+
               <Button type="submit" variant="contained" size="large" fullWidth
                 loading={busy} loadingPosition="start"
                 startIcon={mode === "book" ? <TableRestaurantIcon />

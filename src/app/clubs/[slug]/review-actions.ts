@@ -33,7 +33,7 @@ export async function reviewAction(_prev: ReviewState, data: FormData): Promise<
         rating,
         comment,
       }),
-      "Thanks — your review is live.",
+      "Thanks. Your review is live.",
     );
   }
 

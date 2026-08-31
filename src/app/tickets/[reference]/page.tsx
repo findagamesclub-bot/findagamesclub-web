@@ -48,11 +48,11 @@ export default async function BookingPage({ params }: PageProps<"/tickets/[refer
       <Box sx={{ mt: 3, p: 2, border: `1px solid ${tokens.rule}`, borderRadius: 1.5,
                  backgroundColor: tokens.surface }}>
         <Typography variant="subtitle2" sx={{ fontFamily: "var(--font-display)", mb: 0.5 }}>
-          Paying on the day
+          Paying for the event
         </Typography>
         <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-          {booking.clubName} takes payment when you arrive. Bring your reference — quoting
-          it is enough, you do not need to print anything.
+          {booking.clubName} takes payment either before the event or when you arrive.
+          Bring your reference. Quoting it is enough, you do not need to print anything.
         </Typography>
       </Box>
 

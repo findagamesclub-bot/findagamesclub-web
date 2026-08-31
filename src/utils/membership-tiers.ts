@@ -1,4 +1,4 @@
-import { describeTierBenefits } from "./tier-benefits";
+import { describeTierBenefits, groupTierBenefits } from "./tier-benefits";
 import { billingOptions } from "./membership-billing";
 import { formatPrice } from "./format";
 import { reservedCategories } from "./discussion-categories";
@@ -48,6 +48,11 @@ export function toMembershipTiers(rows: TierRow[]): MembershipTier[] {
       // sentences. Array.isArray was always false here, so every tier card
       // rendered with no benefits at all.
       benefits: describeTierBenefits(t.benefits),
+      benefitGroups: groupTierBenefits(t.benefits),
+      benefitValues:
+        t.benefits && typeof t.benefits === "object" && !Array.isArray(t.benefits)
+          ? (t.benefits as Record<string, unknown>)
+          : {},
       billingOptions: billingOptions(t.billing_options, t.price ?? "", t.price_duration),
       eventDiscountPercent: eventDiscountPercent(t.benefits),
       reservedCategories: reservedCategories(t.benefits),

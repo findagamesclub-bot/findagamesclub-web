@@ -4,6 +4,7 @@ import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import FilterLink from "@/components/ui/FilterLink";
+import NavTabs from "@/components/ui/NavTabs";
 import EventCard from "@/components/events/EventCard";
 import EventMap from "@/components/events/EventMap";
 import EventCalendar from "@/components/events/EventCalendar";
@@ -12,6 +13,21 @@ import { listEvents } from "@/services/events.service";
 import { tokens } from "@/lib/tokens";
 import SearchModeToggle from "@/components/ui/SearchModeToggle";
 import EventsHero from "@/components/events/EventsHero";
+import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
+import MapIcon from "@mui/icons-material/Map";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import EventFilters from "@/components/events/EventFilters";
+import SavedAlerts from "@/components/events/SavedAlerts";
+import { EventsBusyProvider, EventResults } from "@/components/events/EventsBusy";
+import EmptyState from "@/components/ui/EmptyState";
+import Pager from "@/components/ui/Pager";
+import { pageFrom, pageOf } from "@/utils/paging";
+
+/** Three across on a wide screen, so a page is a whole number of rows. */
+const EVENTS_PER_PAGE = 18;
+import { getCurrentProfile } from "@/services/auth.service";
+import { getMyAlerts } from "@/services/eventAlerts.service";
+import { EVENT_SORTS, type EventSort } from "@/utils/event-filters";
 
 export const metadata = {
   title: "Events",
@@ -30,12 +46,52 @@ export default async function EventsPage({ searchParams }: PageProps<"/events">)
 
   const rawMonth = first(params.month);
 
+  const rawSort = first(params.sort);
+  const filters = {
+    q: first(params.q),
+    city: first(params.city),
+    format: first(params.format),
+    days: first(params.day) ? [first(params.day)!] : undefined,
+    eventType: first(params.eventType),
+    featuredGame: first(params.featuredGame),
+    facility: first(params.facility),
+    dateFrom: first(params.dateFrom),
+    dateTo: first(params.dateTo),
+    location: first(params.location),
+    withinMiles: first(params.withinMiles),
+    sort: EVENT_SORTS.includes(rawSort as EventSort) ? (rawSort as EventSort) : undefined,
+  };
+
+  /** Every filter rides along, so a tab or a view change keeps the search. */
+  const carriedFilters = Object.fromEntries(
+    Object.entries({
+      q: filters.q, city: filters.city, format: filters.format, day: first(params.day),
+      eventType: filters.eventType, featuredGame: filters.featuredGame,
+      facility: filters.facility, dateFrom: filters.dateFrom, dateTo: filters.dateTo,
+      location: filters.location, withinMiles: filters.withinMiles, sort: rawSort,
+    }).filter(([, v]) => v),
+  ) as Record<string, string>;
+
+  /**
+   * The trail back to this exact search. Appended to every link out to an
+   * event, so its back arrow returns here rather than to the club.
+   */
+  const trail = (() => {
+    const params = new URLSearchParams({ from: "events" });
+    if (when === "past") params.set("when", "past");
+    if (rawView) params.set("view", rawView);
+    if (game) params.set("game", game);
+    if (rawMonth) params.set("month", rawMonth);
+    for (const [k, v] of Object.entries(carriedFilters)) params.set(k, v);
+    return `?${params.toString()}`;
+  })();
+
   /** Keeps every other choice while changing one. */
   const link = (patch: Record<string, string | undefined>) => {
     const next = new URLSearchParams();
     const merged = {
       when: when === "past" ? "past" : undefined,
-      game, view: rawView, month: rawMonth, ...patch,
+      ...carriedFilters, game, view: rawView, month: rawMonth, ...patch,
     };
     for (const [key, value] of Object.entries(merged)) {
       if (value) next.set(key, value);
@@ -44,29 +100,19 @@ export default async function EventsPage({ searchParams }: PageProps<"/events">)
     return query ? `/events?${query}` : "/events";
   };
 
-  const [{ events, upcomingCount, pastCount, games }, everything] = await Promise.all([
-    listEvents({ when, game }),
+  const [{ events, upcomingCount, pastCount, games, options, origin, locationUnresolved },
+         everything, viewer] = await Promise.all([
+    listEvents({ ...filters, when, game }),
     listEvents({ when: "all" }),
+    getCurrentProfile(),
   ]);
 
-  const tab = (value: "upcoming" | "past", label: string, count: number) => {
-    const active = when === value;
-    const href = link({ when: value === "past" ? "past" : undefined });
-    return (
-      <FilterLink key={value} href={href}>
-        <Typography
-          sx={{
-            fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "1rem",
-            py: 0.5, whiteSpace: "nowrap",
-            color: active ? tokens.ink : tokens.inkMuted,
-            borderBottom: `2px solid ${active ? tokens.brass : "transparent"}`,
-          }}
-        >
-          {label} <Box component="span" sx={{ color: tokens.inkMuted }}>{count}</Box>
-        </Typography>
-      </FilterLink>
-    );
-  };
+  const savedAlerts = viewer ? await getMyAlerts(viewer.id) : [];
+
+  // The list pages; the map and the calendar do not. Both of those are a view
+  // of the whole set at once, and a map showing a page of pins is a wrong map.
+  const page = pageFrom(params.page);
+  const listed = pageOf(events, page, EVENTS_PER_PAGE);
 
   return (
     <Box component="main">
@@ -82,20 +128,53 @@ export default async function EventsPage({ searchParams }: PageProps<"/events">)
         <SearchModeToggle mode="events" />
       </Stack>
 
-      <Stack direction="row" spacing={3} sx={{ borderBottom: `1px solid ${tokens.rule}`, mb: 3 }}>
-        {tab("upcoming", "Coming up", upcomingCount)}
-        {tab("past", "Already run", pastCount)}
-      </Stack>
+      <Box sx={{ mb: 3 }}>
+        <NavTabs
+          ariaLabel="Upcoming or past events"
+          value={when}
+          tabs={[
+            { value: "upcoming", label: "Coming up", count: upcomingCount,
+              href: link({ when: undefined }) },
+            { value: "past", label: "Already run", count: pastCount,
+              href: link({ when: "past" }) },
+          ]}
+        />
+      </Box>
+
+      <EventsBusyProvider>
+      <EventFilters
+        options={options}
+        resultCount={events.length}
+        canSaveAlert={Boolean(viewer)}
+      />
+
+      <SavedAlerts alerts={savedAlerts} />
+
+      {locationUnresolved ? (
+        <Box sx={{ mb: 3 }}>
+          <EmptyState
+            title={`We could not find “${filters.location}”`}
+            description="Try a town, a city or a postcode: “Didcot”, “Manchester” or “OX11”."
+          />
+        </Box>
+      ) : null}
+
+      {origin ? (
+        <Typography variant="body2" sx={{ color: tokens.inkMuted, mb: 2 }}>
+          Distances measured from <strong>{origin.label}</strong>.
+        </Typography>
+      ) : null}
 
       {games.length ? (
         <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: "wrap", mb: 3 }}>
           {/* Wrapped in a plain next/link rather than component={NextLink}: a
               Server Component cannot pass a function into an MUI client
               component. Same pattern as ClubCard. */}
-          <FilterLink href={when === "past" ? "/events?when=past" : "/events"}>
+          {/* Clears the game only. It used to rebuild the URL from scratch,
+              which silently threw away every other filter. */}
+          <FilterLink href={link({ game: undefined })}>
             <Chip
               clickable
-              size="small"
               label="All games"
               variant={game ? "outlined" : "filled"}
               sx={game ? { borderColor: tokens.rule } : { bgcolor: tokens.ink, color: "#fff" }}
@@ -105,7 +184,6 @@ export default async function EventsPage({ searchParams }: PageProps<"/events">)
             <FilterLink key={g} href={link({ game: g })}>
               <Chip
                 clickable
-                size="small"
                 label={g}
                 variant={game === g ? "filled" : "outlined"}
                 sx={game === g
@@ -117,6 +195,7 @@ export default async function EventsPage({ searchParams }: PageProps<"/events">)
         </Stack>
       ) : null}
 
+      <EventResults>
       {events.length ? (
         <>
           <Stack direction="row" spacing={2}
@@ -124,31 +203,23 @@ export default async function EventsPage({ searchParams }: PageProps<"/events">)
             <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.8rem", color: tokens.inkMuted }}>
               {events.length} {events.length === 1 ? "event" : "events"}
             </Typography>
-            <Stack direction="row" spacing={0.5}
-              sx={{ p: 0.5, borderRadius: 999, bgcolor: tokens.surface,
-                    border: `1px solid ${tokens.rule}` }}>
-              {([
-                ["list", "List", undefined],
-                ["map", "Map", "map"],
-                ["calendar", "Calendar", "calendar"],
-              ] as const).map(([value, label, param]) => (
-                <FilterLink key={value} href={link({ view: param })}>
-                  <Typography sx={{
-                    fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "0.9rem",
-                    px: 1.75, py: 0.75, borderRadius: 999, whiteSpace: "nowrap",
-                    bgcolor: view === value ? tokens.ink : "transparent",
-                    color: view === value ? "#FFFFFF" : tokens.inkMuted,
-                    "&:hover": view === value ? {} : { color: tokens.ink },
-                  }}>
-                    {label}
-                  </Typography>
-                </FilterLink>
-              ))}
-            </Stack>
+            <NavTabs
+              ariaLabel="How to show the results"
+              value={view}
+              dense
+              tabs={[
+                { value: "list", label: "List", href: link({ view: undefined }),
+                  icon: <FormatListBulletedIcon sx={{ fontSize: 18 }} /> },
+                { value: "map", label: "Map", href: link({ view: "map" }),
+                  icon: <MapIcon sx={{ fontSize: 18 }} /> },
+                { value: "calendar", label: "Calendar", href: link({ view: "calendar" }),
+                  icon: <CalendarMonthIcon sx={{ fontSize: 18 }} /> },
+              ]}
+            />
           </Stack>
 
           {view === "map" ? (
-            <EventMap events={events} />
+            <EventMap events={events} trail={trail} />
           ) : view === "calendar" ? (
             <EventCalendar
               events={events}
@@ -162,13 +233,19 @@ export default async function EventsPage({ searchParams }: PageProps<"/events">)
                     ?? londonToday().slice(0, 7)
               }
               monthHref={(m) => link({ month: m })}
+              trail={trail}
             />
           ) : (
             <Box sx={{ display: "grid", gap: 2.5,
                        gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)" } }}>
-              {events.map((event) => <EventCard key={event.id} event={event} />)}
+              {listed.map((event) => <EventCard key={event.id} event={event} canSaveAlert={Boolean(viewer)} trail={trail} />)}
             </Box>
           )}
+
+          {view === "list" || !view ? (
+            <Pager page={page} total={events.length} noun="events"
+              size={EVENTS_PER_PAGE} hrefFor={(to) => link({ page: to > 1 ? String(to) : undefined })} />
+          ) : null}
         </>
       ) : (
         <Stack spacing={1} sx={{ border: `1px dashed ${tokens.rule}`, borderRadius: 2,
@@ -185,6 +262,8 @@ export default async function EventsPage({ searchParams }: PageProps<"/events">)
           </Typography>
         </Stack>
       )}
+      </EventResults>
+      </EventsBusyProvider>
       </Container>
     </Box>
   );

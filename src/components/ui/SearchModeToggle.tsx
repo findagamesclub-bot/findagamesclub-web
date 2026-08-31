@@ -23,16 +23,16 @@ export default function SearchModeToggle({ mode }: { mode: "clubs" | "events" })
           spacing={0.75}
           sx={{
             alignItems: "center",
-            px: 1.75, py: 0.875, borderRadius: 999,
+            px: 2.25, minHeight: 44, borderRadius: 999,
             bgcolor: active ? tokens.ink : "transparent",
             color: active ? "#FFFFFF" : tokens.inkMuted,
             transition: "background-color 120ms ease, color 120ms ease",
             "&:hover": active ? {} : { color: tokens.ink },
           }}
         >
-          <Icon aria-hidden sx={{ fontSize: 17 }} />
+          <Icon aria-hidden sx={{ fontSize: 19 }} />
           <Typography sx={{ fontFamily: "var(--font-display)", fontWeight: 600,
-                            fontSize: "0.92rem", whiteSpace: "nowrap" }}>
+                            fontSize: "1rem", whiteSpace: "nowrap" }}>
             {label}
           </Typography>
         </Stack>

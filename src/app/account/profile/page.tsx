@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import Container from "@mui/material/Container";
+import PageHead from "@/components/account/PageHead";
 import ProfileForm from "@/components/members/ProfileForm";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getOwnDraft } from "@/services/profiles.service";
@@ -14,8 +14,12 @@ export default async function EditProfilePage() {
   if (!draft) redirect("/auth/sign-in");
 
   return (
-    <Container maxWidth="lg" component="main" sx={{ py: { xs: 3, md: 5 } }}>
+    <>
+      <PageHead
+        title="Tell people what you play"
+        lede="Other members see this when you post or ask for a game. Everything is optional except your name."
+      />
       <ProfileForm draft={draft} />
-    </Container>
+    </>
   );
 }

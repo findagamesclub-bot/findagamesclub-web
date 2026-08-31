@@ -63,7 +63,7 @@ export default async function EventPage({
   const attendees = event.canManageClub ? await getAttendees(event.id) : [];
 
   const { faction, monogram } = clubIdentity(event.clubSlug, event.clubName);
-  const back = backTarget(query.from, { slug: event.clubSlug, name: event.clubName });
+  const back = backTarget(query.from, { slug: event.clubSlug, name: event.clubName }, query);
   // Passed on to the door list so its own back link lands where you started.
   const trail = carryFrom(query.from);
 

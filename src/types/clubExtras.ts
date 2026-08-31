@@ -21,7 +21,7 @@ export type MerchItem = {
   blockedReason: string | null;
 };
 
-/** What the viewer's tier does to club kit, and what they can pay with. */
+/** What the viewer's tier does to merchandise, and what they can pay with. */
 export type ShopStanding = {
   discountPercent: number;
   tierLabel: string | null;
@@ -31,6 +31,13 @@ export type ShopStanding = {
   pointValue: number | null;
   /** Share of a bill points may cover. Zero means points are not currency here. */
   redemptionCapPercent: number;
+  /**
+   * A bigger kit discount they could reach by upgrading, or null when they are
+   * already on the best tier for it.
+   */
+  offer: { percent: number; tierLabel: string } | null;
+  /** Points an order earns at this club. Zero when the club rewards nothing. */
+  earnPerOrder: number;
 };
 
 export type MerchOrder = {

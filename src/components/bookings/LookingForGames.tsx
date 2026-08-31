@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import Alert from "@mui/material/Alert";
+import { useActionToast } from "@/components/ui/Toaster";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
@@ -29,6 +29,7 @@ export default function LookingForGames({
   canPlay: boolean;
 }) {
   const [state, submit, busy] = useActionState<BookingState, FormData>(bookingAction, {});
+  useActionToast(state);
 
   // Legacy: "No one is currently looking for a game on the upcoming club
   // nights." Per night that is noise, so an empty board simply is not drawn.
@@ -41,8 +42,6 @@ export default function LookingForGames({
         LOOKING FOR A GAME
       </Typography>
 
-      {state.error ? <Alert severity="error" sx={{ fontSize: "0.8rem" }}>{state.error}</Alert> : null}
-      {state.notice ? <Alert severity="success" sx={{ fontSize: "0.8rem" }}>{state.notice}</Alert> : null}
 
       {posts.map((post) => (
         <Stack

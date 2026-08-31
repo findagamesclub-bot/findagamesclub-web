@@ -12,6 +12,7 @@ import { tokens } from "@/lib/tokens";
 
 type Props = {
   links: { label: string; url: string }[];
+  /** A club's identity, for the hover colour. Members pass their own. */
   slug: string;
   name: string;
   size?: "small" | "medium";

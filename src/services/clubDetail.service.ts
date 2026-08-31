@@ -2,7 +2,6 @@ import "server-only";
 
 import * as repo from "@/repositories/clubs.repository";
 import { formatMeeting, formatPrice, formatPricingLabel } from "@/utils/format";
-import { splitByDate, toEventSummary } from "@/utils/event-summary";
 import { toMembershipTiers } from "@/utils/membership-tiers";
 import { billingOptions } from "./payments.service";
 import type { ClubDetail } from "@/types/clubDetail";
@@ -20,8 +19,6 @@ const byPosition = <T extends { position?: number | null }>(items: T[] = []) =>
 function toDetail(row: NonNullable<Row>): ClubDetail {
   const sessions = byPosition(row.club_sessions ?? []);
   const first = sessions[0];
-
-  const events = splitByDate((row.club_events ?? []).map(toEventSummary));
 
   // A removed review is gone from the page and out of the average. Filtering
   // in SQL would drop the club when postgrest found no matching child rows.
@@ -109,8 +106,6 @@ function toDetail(row: NonNullable<Row>): ClubDetail {
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
     membershipTiers: toMembershipTiers(row.club_membership_tiers ?? []),
 
-    upcomingEvents: events.upcoming,
-    pastEvents: events.past,
 
     reviews,
     reviewSummary,

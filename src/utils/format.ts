@@ -56,6 +56,19 @@ export function initialsOf(name: string): string {
  * A computed amount, not a club's typed-in price string. Whole pounds lose the
  * decimals: "£15" reads as a price, "£15.00" reads as a receipt.
  */
+/**
+ * Money in a column, always to the penny.
+ *
+ * formatMoney drops ".00" so a price reads "£15" rather than "£15.00", which is
+ * right on a card and wrong in a stack of figures: "£15" above "− £1.50" above
+ * "£12.15" does not line up and reads as sloppy arithmetic.
+ */
+export function formatPence(amount: number, currency = "GBP"): string {
+  const symbol = currency === "GBP" ? "£" : `${currency} `;
+  const safe = Number.isFinite(amount) ? amount : 0;
+  return `${symbol}${safe.toFixed(2)}`;
+}
+
 export function formatMoney(amount: number, currency = "GBP"): string {
   const symbol = currency === "GBP" ? "£" : `${currency} `;
   const safe = Number.isFinite(amount) ? amount : 0;

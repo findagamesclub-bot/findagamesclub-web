@@ -10,10 +10,24 @@ import CakeIcon from "@mui/icons-material/Cake";
 import MemberBanner from "./MemberBanner";
 import WeekStrip from "./WeekStrip";
 import Panel from "./Panel";
+import MemberClubs from "./MemberClubs";
+import MemberRecord from "./MemberRecord";
+import MemberBadges from "./MemberBadges";
+import MemberEvents from "./MemberEvents";
+import ConfirmationNumberIcon from "@mui/icons-material/ConfirmationNumber";
+import { CompetitionRecords, Podiums } from "./MemberCompetitions";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import MilitaryTechIcon from "@mui/icons-material/MilitaryTech";
+import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
+import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
+import SocialLinks from "@/components/clubs/SocialLinks";
+import PublicIcon from "@mui/icons-material/Public";
 import GameChips from "@/components/clubs/GameChips";
 import { clubIdentity } from "@/utils/club-identity";
 import LinkButton from "@/components/ui/LinkButton";
 import type { MemberProfile } from "@/types/profile";
+import type { MemberContext } from "@/services/memberContext.service";
+import type { MemberRecords } from "@/services/memberRecords.service";
 
 /**
  * A member laid out as a datasheet rather than a column of sections.
@@ -26,9 +40,15 @@ import type { MemberProfile } from "@/types/profile";
 export default function MemberProfileView({
   profile,
   isSelf = false,
+  context,
+  records,
 }: {
   profile: MemberProfile;
   isSelf?: boolean;
+  /** Shared clubs and the reader's record against them. */
+  context?: MemberContext;
+  /** League finishes, podiums and the badges they earn. */
+  records?: MemberRecords;
 }) {
   const { faction } = clubIdentity(profile.id, profile.fullName);
 
@@ -37,7 +57,13 @@ export default function MemberProfileView({
     profile.games.length > 0 ||
     profile.armies.length > 0 ||
     profile.availability.length > 0 ||
-    profile.playStyle.length > 0;
+    profile.playStyle.length > 0 ||
+    profile.socials.length > 0 ||
+    Boolean(context?.clubs.length) ||
+    Boolean(context?.meetings.length) ||
+    Boolean(records?.competitions.length) ||
+    Boolean(records?.podiums.length) ||
+    Boolean(context?.events.length);
 
   return (
     <Container maxWidth="lg" component="main" sx={{ py: { xs: 3, md: 5 } }}>
@@ -103,6 +129,62 @@ export default function MemberProfileView({
               {profile.ageGroups.length ? (
                 <Panel title="Age group" icon={CakeIcon}>
                   <GameChips games={profile.ageGroups} faction={faction} max={profile.ageGroups.length} />
+                </Panel>
+              ) : null}
+
+              {/* Earned from standings rather than stored, so correcting a
+                  league table corrects the badges with it. */}
+              {records?.badges.length ? (
+                <Panel title="League and campaign badges" icon={EmojiEventsIcon}>
+                  <MemberBadges badges={records.badges} />
+                </Panel>
+              ) : null}
+
+              {records?.competitions.length ? (
+                <Panel title="League and campaign record" icon={MilitaryTechIcon}>
+                  <CompetitionRecords records={records.competitions} />
+                </Panel>
+              ) : null}
+
+              {records?.podiums.length ? (
+                <Panel title="Competition results" icon={EmojiEventsIcon}>
+                  <Podiums podiums={records.podiums} />
+                </Panel>
+              ) : null}
+
+              {/* Where they play. Policy limits this to clubs the reader is
+                  also in, so it reads as "where we both play". */}
+              {context?.clubs.length ? (
+                <Panel title="Clubs" icon={GroupsOutlinedIcon}>
+                  <MemberClubs clubs={context.clubs} />
+                </Panel>
+              ) : null}
+
+              {!isSelf && context?.meetings.length ? (
+                <Panel title="You against them" icon={SportsEsportsIcon}>
+                  <MemberRecord
+                    name={profile.fullName.split(" ")[0] ?? profile.fullName}
+                    fullName={profile.fullName}
+                    record={context.record}
+                    meetings={context.meetings}
+                    clubs={context.clubs}
+                  />
+                </Panel>
+              ) : null}
+
+              {context?.events.length ? (
+                <Panel title="Event bookings and attendance" icon={ConfirmationNumberIcon}>
+                  <MemberEvents events={context.events} />
+                </Panel>
+              ) : null}
+
+              {/* The same icon row the club pages use. A member's id stands in
+                  for a club's slug, so each person gets their own hover
+                  colour from the same function. */}
+              {profile.socials.length ? (
+                <Panel title="Find them elsewhere" icon={PublicIcon}>
+                  <SocialLinks links={profile.socials} slug={profile.id}
+                    name={profile.fullName} />
                 </Panel>
               ) : null}
             </Stack>

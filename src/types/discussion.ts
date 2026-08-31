@@ -14,6 +14,8 @@ export type BoardPost = {
   replyCount: number;
   /** Null when the thread carries no poll. */
   poll: PollResult | null;
+  /** Up to two photos. Empty on most threads. */
+  images: { url: string; alt: string }[];
   isMine: boolean;
   canRemove: boolean;
   /**

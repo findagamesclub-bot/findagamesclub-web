@@ -49,7 +49,7 @@ export default function AttendeeList({
         <Stack direction="row" spacing={3} useFlexGap sx={{ flexWrap: "wrap", alignItems: "baseline" }}>
           <Figure value={String(sorted.length)} label={sorted.length === 1 ? "booking" : "bookings"} />
           <Figure value={String(seats)} label={seats === 1 ? "ticket" : "tickets"} />
-          <Figure value={formatMoney(takings, currency)} label="due on the day" tone={tokens.brass} />
+          <Figure value={formatMoney(takings, currency)} label="to pay" tone={tokens.brass} />
         </Stack>
       ) : null}
 

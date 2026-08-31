@@ -1,39 +1,71 @@
 import "server-only";
 
-import { createAdminClient } from "@/lib/supabase/admin";
-import { sendEmail } from "@/lib/email/send";
+import * as receipts from "@/repositories/receipts.repository";
 import * as templates from "@/lib/email/templates";
+import { deliver, siteUrl } from "./mail-recipient.service";
 import { nightLabel } from "@/utils/dates";
 import { formatPrice } from "@/utils/format";
 
 /**
- * Booking emails.
+ * Table booking emails.
  *
- * Legacy sends none at all for table bookings — it writes an in-app message
- * from a synthetic "{Club} admin" sender that nobody reads (club_store.py:16468).
- * Waitlist promotion is the one that genuinely cannot go unsent: the member is
- * committed to a table, at a price, at a moment they were not looking at the
- * site and did not ask for.
+ * Legacy sends none at all — it writes an in-app message from a synthetic
+ * "{Club} admin" sender that nobody reads (club_store.py:16468). A table is a
+ * commitment on a date, at a price, so it belongs in an inbox next to the
+ * event tickets that already land there.
  *
  * Kept apart from bookings.service so a mail failure can never fail the
- * cancellation that triggered it. Every function swallows its own errors.
+ * booking that triggered it. Every function swallows its own errors.
  */
 
-function siteUrl(): string {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const money = (n: number, currency: string) =>
+  formatPrice(`${currency} ${n.toFixed(2)}`) ?? `${n.toFixed(2)}`;
+
+export async function notifyBooked(bookingId: number) {
+  try {
+    const row = await receipts.findBookingReceipt(bookingId);
+    if (!row?.clubs) return;
+    const club = row.clubs;
+
+    await deliver(row.booked_by, (name) =>
+      templates.tableBooked({
+        name,
+        clubName: club.name,
+        night: nightLabel(row.session_date),
+        time: row.session_time ?? "",
+        gameTitle: row.game_title,
+        tableIndex: row.table_index,
+        price: money(row.total_price, row.price_currency),
+        pointsSpent: row.loyalty_points_spent,
+        opponentName: row.opponent_name,
+        url: `${siteUrl()}/clubs/${club.slug}/bookings`,
+      }),
+    );
+  } catch (error) {
+    console.error("booking confirmation failed", { bookingId, error });
+  }
 }
 
-async function recipient(profileId: string): Promise<{ email: string; name?: string } | null> {
+/**
+ * Told to whoever holds the table, which is not always whoever cancelled it:
+ * the club can call a game off, and the member finds out here.
+ */
+export async function notifyCancelled(bookingId: number) {
   try {
-    const admin = createAdminClient();
-    const { data, error } = await admin.auth.admin.getUserById(profileId);
-    if (error || !data.user?.email) return null;
-    return {
-      email: data.user.email,
-      name: (data.user.user_metadata?.full_name as string) || undefined,
-    };
-  } catch {
-    return null;
+    const row = await receipts.findBookingReceipt(bookingId);
+    if (!row?.clubs) return;
+    const club = row.clubs;
+
+    await deliver(row.booked_by, (name) =>
+      templates.tableCancelled({
+        name,
+        clubName: club.name,
+        night: nightLabel(row.session_date),
+        url: `${siteUrl()}/clubs/${club.slug}/bookings`,
+      }),
+    );
+  } catch (error) {
+    console.error("cancellation email failed", { bookingId, error });
   }
 }
 
@@ -46,23 +78,15 @@ export async function notifyPromoted(params: {
   gameTitle: string;
   price?: string | null;
 }) {
-  try {
-    const to = await recipient(params.profileId);
-    if (!to) return;
-
-    const message = templates.tablePromoted({
-      name: to.name,
+  await deliver(params.profileId, (name) =>
+    templates.tablePromoted({
+      name,
       clubName: params.clubName,
       night: nightLabel(params.sessionDate),
       time: params.sessionTime,
       gameTitle: params.gameTitle,
       price: formatPrice(params.price ?? ""),
       url: `${siteUrl()}/clubs/${params.clubSlug}/bookings`,
-    });
-
-    const sent = await sendEmail({ to: to.email, ...message });
-    if (!sent.ok) console.error("promotion email failed", { profileId: params.profileId });
-  } catch (error) {
-    console.error("promotion notification failed", { error });
-  }
+    }),
+  );
 }

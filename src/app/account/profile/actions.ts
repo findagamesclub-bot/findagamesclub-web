@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/services/auth.service";
 import { saveOwnProfile } from "@/services/profiles.service";
+import { SOCIAL_NETWORKS } from "@/utils/social-links";
 
 export type ProfileFormState = { error?: string };
 
@@ -27,6 +28,8 @@ export async function saveProfileAction(
     availability: list("availability"),
     ageGroups: list("ageGroups"),
     playStyle: list("playStyle"),
+    // One field per network, named after it, so the form stays declarative.
+    socials: SOCIAL_NETWORKS.map((label) => ({ label, url: text(`social-${label}`) })),
   });
 
   if (!result.ok) return { error: result.error };

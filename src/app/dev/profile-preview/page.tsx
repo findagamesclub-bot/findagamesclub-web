@@ -17,7 +17,11 @@ export default function ProfilePreviewPage() {
     armies: ["Death Guard", "Custodes", "Orks"],
     availability: ["Tuesday", "Thursday", "Saturday"],
     ageGroups: ["18+"],
-    playStyle: ["Narrative", "Painting and hobby", "Teaching newcomers"],
+    socials: [
+    { label: "Instagram", url: "https://instagram.com/example" },
+    { label: "Discord", url: "https://discord.gg/example" },
+  ],
+  playStyle: ["Narrative", "Painting and hobby", "Teaching newcomers"],
     memberSince: "April 2026",
     isAdmin: false,
   };
@@ -26,7 +30,7 @@ export default function ProfilePreviewPage() {
   const _empty: MemberProfile = {
     id: "6fa4fc73-f094-4d19-8900-d7dd0067b348",
     fullName: "gul",
-    games: [], armies: [], availability: [], ageGroups: [], playStyle: [],
+    games: [], armies: [], availability: [], ageGroups: [], playStyle: [], socials: [],
     memberSince: "August 2026",
     isAdmin: false,
   };

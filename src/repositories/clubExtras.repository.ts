@@ -22,6 +22,18 @@ export async function findRivals(clubId: number) {
   return data ?? [];
 }
 
+/** Rivals this person has named, at any club. */
+export async function findRivalsFor(profileId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("club_rivals")
+    .select("rival_id")
+    .eq("profile_id", profileId);
+
+  if (error) throw new Error(`Failed to load your rivals: ${error.message}`);
+  return data ?? [];
+}
+
 export async function addRival(clubId: number, rivalId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("club_rivals").insert({ club_id: clubId, rival_id: rivalId });
@@ -94,6 +106,32 @@ export async function placeOrder(params: {
   return { id: data as number };
 }
 
+/**
+ * A whole bag in one order.
+ *
+ * Same reasoning as placeOrder above, times the number of lines: stock is
+ * locked and decremented per item, and the tier discount and the points are
+ * recomputed from the club's own settings rather than trusted from the form.
+ */
+export async function placeCartOrder(params: {
+  lines: { itemId: number; quantity: number }[];
+  notes: string;
+  redeemPoints: number;
+}) {
+  const supabase = await createClient();
+  // 0038 is newer than the generated types. Delete the cast once they are
+  // regenerated, along with the one in placeOrder's neighbours.
+  const { data, error } = await (supabase.rpc as unknown as (
+    name: string, args: Record<string, unknown>,
+  ) => Promise<{ data: unknown; error: { message: string; code?: string } | null }>)(
+    "place_merchandise_cart_order",
+    { lines: params.lines, note: params.notes, redeem: params.redeemPoints },
+  );
+
+  if (error) throw Object.assign(new Error(error.message), { code: error.code });
+  return { id: Number(data) };
+}
+
 export async function setOrderStatus(orderId: number, status: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -152,8 +190,16 @@ export async function findSlots(clubId: number, from: string) {
 
 export async function bookSlot(slotId: number) {
   const supabase = await createClient();
-  const { error } = await supabase.from("club_coaching_bookings").insert({ slot_id: slotId });
+  const { data, error } = await supabase
+    .from("club_coaching_bookings")
+    .insert({ slot_id: slotId })
+    .select("id")
+    .maybeSingle();
+
   if (error) throw Object.assign(new Error(error.message), { code: error.code });
+  // Zero rows means RLS filtered it out - see the trap in CLAUDE.md.
+  if (!data) throw new Error("MEMBERS_ONLY");
+  return { id: data.id };
 }
 
 export async function setBookingState(
@@ -227,4 +273,24 @@ export async function setSlotStatus(slotId: number, status: string) {
 
   if (error) throw new Error(error.message);
   if (!data) throw new Error("NOT_PERMITTED");
+}
+
+/**
+ * Places taken on each of a club's coaching slots.
+ *
+ * Through a function because a member cannot read another member's booking:
+ * counting the rows a reader can see makes every slot look emptier than it is.
+ * Returns numbers only, never a row about anybody.
+ */
+export async function findCoachingSeats(clubId: number) {
+  const supabase = await createClient();
+  const { data, error } = await (supabase as unknown as {
+    rpc(name: string, args: Record<string, unknown>): Promise<{
+      data: { slot_id: number; taken: number }[] | null;
+      error: { message: string } | null;
+    }>;
+  }).rpc("club_coaching_seats", { p_club: clubId });
+
+  if (error) throw new Error(`Failed to count coaching places: ${error.message}`);
+  return data ?? [];
 }

@@ -5,11 +5,8 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import { tokens, type Faction } from "@/lib/tokens";
+import { initials } from "@/utils/initials";
 import type { ClubMember } from "@/types/membership";
-
-function initials(name: string): string {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("");
-}
 
 /** One person on the roster. Games and armies come from their own profile. */
 export default function MemberRow({

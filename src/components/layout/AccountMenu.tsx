@@ -14,8 +14,8 @@ import { tokens } from "@/lib/theme";
 import { initialsOf } from "@/utils/format";
 import type { Viewer } from "./SiteHeader";
 
-export default function AccountMenu({ viewer, unreadMessages = 0, ownsClubs = false }:
-  { viewer: NonNullable<Viewer>; unreadMessages?: number; ownsClubs?: boolean }) {
+export default function AccountMenu({ viewer, unreadMessages = 0 }:
+  { viewer: NonNullable<Viewer>; unreadMessages?: number }) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
 
   return (
@@ -45,30 +45,20 @@ export default function AccountMenu({ viewer, unreadMessages = 0, ownsClubs = fa
           </Typography>
         </Stack>
         <Divider />
+        {/* The way in. Everything the account holds is one click inside it,
+            so listing those sections here as well only makes two places to
+            keep in step. */}
+        <MenuItem component={Link} href="/account" onClick={() => setAnchor(null)}>
+          Dashboard
+        </MenuItem>
+        {/* Not in the sidebar, and not the same thing as the profile editor:
+            this is the page other members see. */}
         <MenuItem component={Link} href={`/members/${viewer.id}`} onClick={() => setAnchor(null)}>
-          Your profile
+          Your public profile
         </MenuItem>
-        <MenuItem component={Link} href="/account/profile" onClick={() => setAnchor(null)}>
-          Edit profile
-        </MenuItem>
-        <MenuItem component={Link} href="/tickets" onClick={() => setAnchor(null)}>
-          My tickets
-        </MenuItem>
-        {/* Also in the main nav, but this is where people look for their own
-            things — and a club owner's work is one of their own things. */}
-        {ownsClubs ? (
-          <MenuItem component={Link} href="/my-clubs" onClick={() => setAnchor(null)}>
-            My clubs
-          </MenuItem>
-        ) : null}
-        {/* Sits under My tickets on purpose: one is what you are going to, the
-            other is what you are running. */}
-        {ownsClubs ? (
-          <MenuItem component={Link} href="/my-events" onClick={() => setAnchor(null)}>
-            My events
-          </MenuItem>
-        ) : null}
-        <MenuItem component={Link} href="/messages" onClick={() => setAnchor(null)}>
+        {/* Kept for its unread count, which is the one thing worth knowing
+            from a page that is nothing to do with the account. */}
+        <MenuItem component={Link} href="/account/messages" onClick={() => setAnchor(null)}>
           <Stack direction="row" spacing={1.5}
             sx={{ alignItems: "center", justifyContent: "space-between", width: "100%" }}>
             <span>Messages</span>

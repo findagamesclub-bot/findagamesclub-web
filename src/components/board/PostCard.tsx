@@ -2,6 +2,7 @@ import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
+import Image from "next/image";
 import PollIcon from "@mui/icons-material/Poll";
 import Counter from "@/components/ui/Counter";
 import { sinceLabel } from "@/utils/dates";
@@ -112,11 +113,32 @@ export default function PostCard({
 
           {/* Two lines of the body, in the prose face. Enough to tell threads
               apart; more and the list becomes the thread. */}
-          <Typography variant="body2"
-            sx={{ color: tokens.inkMuted, display: "-webkit-box", WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-            {post.content}
-          </Typography>
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: "flex-start" }}>
+            <Typography variant="body2"
+              sx={{ color: tokens.inkMuted, display: "-webkit-box", WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical", overflow: "hidden", minWidth: 0, flex: 1 }}>
+              {post.content}
+            </Typography>
+
+            {/* One thumbnail, not both: the row is a index entry, and a second
+                picture buys nothing at 56px. */}
+            {post.images.length ? (
+              <Box sx={{ position: "relative", width: 56, height: 56, flexShrink: 0,
+                         borderRadius: 1, overflow: "hidden",
+                         border: `1px solid ${tokens.rule}` }}>
+                <Image src={post.images[0].url} alt="" fill sizes="56px"
+                  style={{ objectFit: "cover" }} />
+                {post.images.length > 1 ? (
+                  <Box sx={{ position: "absolute", right: 0, bottom: 0, px: 0.5,
+                             fontFamily: "var(--font-mono)", fontSize: "0.6rem",
+                             fontWeight: 700, color: "#fff",
+                             backgroundColor: "rgba(16,27,45,0.78)" }}>
+                    +1
+                  </Box>
+                ) : null}
+              </Box>
+            ) : null}
+          </Stack>
         </Stack>
       </Stack>
     </NextLink>

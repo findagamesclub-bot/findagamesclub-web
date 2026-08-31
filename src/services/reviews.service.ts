@@ -79,3 +79,19 @@ export async function takeDown(reviewId: number): Promise<Result> {
     return { ok: false, error: "Only an administrator can remove a review." };
   }
 }
+
+/**
+ * How many reviews the club has, against however many the page is carrying.
+ *
+ * A count rather than a length: the club page loads the newest few hundred, and
+ * the difference is what the page has to admit to.
+ */
+export async function getReviewCount(clubId: number): Promise<number> {
+  try {
+    return await repo.countReviews(clubId);
+  } catch {
+    // A failed count must not take the club page down. Zero reads as "no more
+    // than what is on the page", which is the safe way to be wrong.
+    return 0;
+  }
+}

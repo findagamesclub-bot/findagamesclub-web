@@ -5,6 +5,7 @@ import * as loyaltyRepo from "@/repositories/loyalty.repository";
 
 import { ticketBlockedReason } from "@/utils/ticket-eligibility";
 import { formatPrice } from "@/utils/format";
+import { betterOffer } from "@/utils/shop-pricing";
 import type { MembershipTier } from "@/types/clubDetail";
 import type { CoachingSlot, MerchItem, MerchOrder, Rivalry, ShopStanding } from "@/types/clubExtras";
 
@@ -87,6 +88,7 @@ export async function getShop(params: {
 export async function getShopStanding(
   clubId: number,
   profileId: string,
+  tiers: MembershipTier[] = [],
 ): Promise<ShopStanding> {
   const [tier, settings, wallet] = await Promise.all([
     repo.findMemberTier(clubId, profileId),
@@ -96,14 +98,21 @@ export async function getShopStanding(
 
   const benefits = (tier?.benefits ?? {}) as Record<string, unknown>;
   const clamp = (v: unknown) => Math.max(0, Math.min(100, Math.floor(Number(v ?? 0)) || 0));
+  const discountPercent = clamp(benefits.merchandiseDiscountPercent);
 
   return {
-    discountPercent: clamp(benefits.merchandiseDiscountPercent),
+    discountPercent,
+    offer: betterOffer(tiers, tier?.tier_key ?? null, discountPercent),
     tierLabel: tier?.tier_label ?? null,
     points: wallet,
     pointValue: settings?.enabled && settings.point_value !== null
       ? Number(settings.point_value) : null,
     redemptionCapPercent: clamp(benefits.loyaltyRedemptionCapPercent),
+    earnPerOrder: settings?.enabled
+      ? Math.max(0, Math.floor(Number(
+          (settings.milestones as Record<string, unknown> | null)?.merchandisePurchase ?? 0,
+        )) || 0)
+      : 0,
   };
 }
 
@@ -170,6 +179,13 @@ export async function getCoaching(clubId: number, viewerId: string | null, from:
 
   const slots = await repo.findSlots(clubId, from);
 
+  // The true count, past RLS. The nested bookings below only carry the people
+  // this reader may see, which for an ordinary member is themselves.
+  const seats = new Map(
+    (await repo.findCoachingSeats(clubId).catch(() => []))
+      .map((row) => [row.slot_id, row.taken]),
+  );
+
   const mapped: CoachingSlot[] = slots.map((slot) => {
     const bookings = (slot as unknown as {
       club_coaching_bookings: {
@@ -177,8 +193,11 @@ export async function getCoaching(clubId: number, viewerId: string | null, from:
       }[] | null;
     }).club_coaching_bookings ?? [];
 
-    const live = bookings.filter((b) => b.status === "booked");
-    const mine = live.find((b) => b.profile_id === viewerId);
+    const visible = bookings.filter((b) => b.status === "booked");
+    const mine = visible.find((b) => b.profile_id === viewerId);
+    // Falls back to what can be seen if the count could not be read, which is
+    // the old behaviour and still better than showing nothing.
+    const taken = seats.get(slot.id) ?? visible.length;
 
     return {
       id: slot.id,
@@ -190,11 +209,13 @@ export async function getCoaching(clubId: number, viewerId: string | null, from:
       price: formatPrice(slot.price ?? ""),
       coachingType: slot.coaching_type,
       capacity: slot.capacity,
-      taken: live.length,
-      spacesLeft: Math.max(0, slot.capacity - live.length),
+      taken,
+      spacesLeft: Math.max(0, slot.capacity - taken),
       status: slot.status as CoachingSlot["status"],
       mine: mine ? { id: mine.id, paid: mine.payment_status === "paid" } : null,
-      attendees: live.map((b) => ({
+      // Only the people this reader may see. The club sees everybody; a
+      // member sees themselves, which is why the count above is separate.
+      attendees: visible.map((b) => ({
         id: b.id, name: nameOf(b.profiles), paid: b.payment_status === "paid",
       })),
     };
@@ -206,4 +227,15 @@ export async function getCoaching(clubId: number, viewerId: string | null, from:
     policy: settings.policy_text,
     slots: mapped,
   };
+}
+
+/**
+ * Everyone this member has marked as a rival, across every club.
+ *
+ * Ids only: the games page already knows the names from the record, and this
+ * is only used to pull those rows to the top.
+ */
+export async function getMyRivalIds(profileId: string): Promise<Set<string>> {
+  const rows = await repo.findRivalsFor(profileId);
+  return new Set(rows.map((row) => row.rival_id));
 }

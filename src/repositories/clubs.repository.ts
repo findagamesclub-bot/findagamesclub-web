@@ -12,8 +12,8 @@ export type ClubRow = Tables<"clubs"> & {
 };
 
 const LIST_COLUMNS =
-  "id, slug, name, city, neighbourhood, summary, spotlight, status, " +
-  "tables_available, member_count, price_drop_in, legacy_created_at, search_haystack, " +
+  "id, slug, name, city, neighbourhood, summary, spotlight, status, logo_url, " +
+  "tables_available, member_count, ages, price_drop_in, legacy_created_at, search_haystack, " +
   "venue_postcode, venue_postcode_district, venue_postcode_area, " +
   "latitude, longitude, club_images(src, alt, position), " +
   "club_social_links(label, url, position)";
@@ -226,6 +226,16 @@ export async function findPricingModels(clubIds: number[]) {
 }
 
 /** Everything the club page renders, in one round trip. */
+/**
+ * The newest reviews carried with the club page.
+ *
+ * A ceiling rather than paging: the rating breakdown and the average are
+ * computed from what is loaded, so a page of reviews at a time would make both
+ * of them lie. No club in the directory is within two orders of magnitude of
+ * this, and `countReviews` says plainly when it bites.
+ */
+export const REVIEW_CAP = 500;
+
 export async function findClubDetail(slug: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -244,11 +254,13 @@ export async function findClubDetail(slug: string) {
        club_facilities(facilities(slug, label)),
        club_payment_methods(payment_methods(slug, label)),
        club_discussion_categories(label, position),
-       club_events(id, legacy_id, title, summary, start_date, start_time, end_date, end_time,
-                   event_type, price, round_count, tickets_available, venue_name),
        club_reviews(id, author_profile_id, author_name, rating, comment, created_at,
                     flagged_at, flagged_by_name, removed_at)`
     )
+    // Events are queried separately and paged. Embedded here, every visit to
+    // every club page paid for ten years of them to show the next three.
+    .order("created_at", { referencedTable: "club_reviews", ascending: false })
+    .limit(REVIEW_CAP, { referencedTable: "club_reviews" })
     .eq("slug", slug)
     .eq("status", "active")
     .maybeSingle();

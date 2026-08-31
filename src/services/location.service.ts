@@ -1,6 +1,7 @@
 import "server-only";
 
 import { parseLocation } from "@/utils/geo";
+import { geocodeUk } from "./geocode.service";
 import centroids from "@/data/location-centroids.json";
 
 /**
@@ -69,6 +70,32 @@ export function resolveOrigin(input: string, clubs: ClubPoint[]): Origin | null 
 
   const place = PLACES[lower];
   if (place) return { ...place, label: parts.raw || place.label };
+
+  return null;
+}
+
+/**
+ * Resolve a place, trimming a word off the end until something lands.
+ *
+ * "near London this Saturday" is a place plus noise, and the noise is at the
+ * end. Trimming happens here rather than in the geocoder so the local centroid
+ * table gets a shot at every attempt — doing it the other way round skipped it
+ * and asked the network for things we already knew.
+ */
+export async function findOrigin(
+  place: string,
+  clubs: ClubPoint[],
+): Promise<Origin | null> {
+  const words = place.split(/\s+/).filter(Boolean).slice(0, 4);
+
+  for (let take = words.length; take >= 1; take -= 1) {
+    const attempt = words.slice(0, take).join(" ");
+    const local = resolveOrigin(attempt, clubs);
+    if (local) return local;
+
+    const remote = await geocodeUk(attempt);
+    if (remote) return remote;
+  }
 
   return null;
 }

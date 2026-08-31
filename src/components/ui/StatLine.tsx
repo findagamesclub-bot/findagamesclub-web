@@ -115,9 +115,11 @@ export default function StatLine({
                   fontSize: dense ? "0.92rem" : "1.075rem",
                   fontWeight: 500,
                   color: hasValue ? tokens.ink : tokens.inkMuted,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
+                  // Wraps rather than clipping. "Pay what you like" cut to
+                  // "Pay what y…" reads as broken, not as "there is more"; a
+                  // second line costs a few pixels and says the whole thing.
+                  overflowWrap: "anywhere",
+                  lineHeight: 1.35,
                 }}
               >
                 {hasValue ? stat.value : "—"}

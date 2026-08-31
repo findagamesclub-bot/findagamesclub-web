@@ -18,6 +18,34 @@ export default async function EmailPreviewPage({ searchParams }: PageProps<"/dev
       gameTitle: "Kill Team", price: "£5.00", url })
     : which === "tableCancelled" ? templates.tableCancelled({
       name: "Gulnabi", clubName: club, night: "Thu 3 Sep", url })
+    : which === "ticketsBooked" ? templates.ticketsBooked({
+      name: "Gulnabi", clubName: "Didcot Wargames", eventTitle: "Autumn Open",
+      when: "Sat 26 Sep", reference: "FAGC-SYCMZP",
+      tickets: "1 x Standard entry", total: "£28.50 to pay", url })
+    : which === "ticketsCancelled" ? templates.ticketsCancelled({
+      name: "Gulnabi", clubName: "Didcot Wargames", eventTitle: "Autumn Open",
+      reference: "FAGC-SYCMZP", url })
+    : which === "tableBooked" ? templates.tableBooked({
+      name: "Gulnabi", clubName: club, night: "Thu 3 Sep", time: "19:00 - 22:30",
+      gameTitle: "Kill Team", tableIndex: 4, price: "£5.00", pointsSpent: 45,
+      opponentName: "Sam Whitfield", url })
+    : which === "merchandiseOrdered" ? templates.merchandiseOrdered({
+      name: "Gulnabi", clubName: club, reference: "Order #128",
+      lines: [
+        { label: "Club shirt (L) × 2", value: "£36.00" },
+        { label: "Dice set", value: "£8.00" },
+        { label: "Club patch", value: "To be priced" },
+      ],
+      total: "£40.00", pointsSpent: 40, url })
+    : which === "coachingBooked" ? templates.coachingBooked({
+      name: "Gulnabi", clubName: club, title: "Kill Team for beginners",
+      when: "Sat 12 Sep, 10:00 to 12:00", coachingType: "one to one",
+      price: "£15.00", url })
+    : which === "membershipPaid" ? templates.membershipPaid({
+      name: "Gulnabi", clubName: club, tierLabel: "Premium Member",
+      billingLabel: "Monthly", price: "£12.00", paidUntil: "30 September 2026", url })
+    : which === "tierChanged" ? templates.tierChanged({
+      name: "Gulnabi", clubName: club, tierLabel: "Premium Member", url })
     : which === "membershipRequested" ? templates.membershipRequested({ name: "Gulnabi", clubName: club, url })
     : which === "membershipApproved" ? templates.membershipApproved({ name: "Gulnabi", clubName: club, tierLabel: "Premium Member", url })
     : which === "membershipDeclined" ? templates.membershipDeclined({ name: "Gulnabi", clubName: club, reason: "We are at capacity until September.", url })
@@ -40,7 +68,10 @@ export default async function EmailPreviewPage({ searchParams }: PageProps<"/dev
       <p style={{ margin: "0 0 12px" }}>
         {["verify", "reset", "welcome", "passwordChanged", "changed",
           "membershipRequested", "membershipForOwner", "membershipApproved", "membershipDeclined",
-          "tablePromoted", "tableCancelled"].map((t) => (
+          "membershipPaid", "tierChanged",
+          "tableBooked", "tablePromoted", "tableCancelled",
+          "merchandiseOrdered", "coachingBooked",
+          "ticketsBooked", "ticketsCancelled"].map((t) => (
           <a key={t} href={`?t=${t}`} style={{ marginRight: 12 }}>{t}</a>
         ))}
         <strong style={{ marginLeft: 12 }}>{email.subject}</strong>

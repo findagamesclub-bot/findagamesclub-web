@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import { tokens, type Faction } from "@/lib/tokens";
+import MapHint from "./MapHint";
+import { mapPinHtml, mapSurfaceSx, mapTooltipHtml, pinSize, TILE_OPTIONS, TILE_URL, TOOLTIP_OPTIONS } from "./mapSurface";
+import { type Faction } from "@/lib/tokens";
 
 /**
  * Where a club actually meets, at street level.
@@ -55,26 +57,21 @@ export default function VenueMap({
           el.removeEventListener("mouseleave", give);
         };
 
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          attribution: "&copy; OpenStreetMap contributors",
-          maxZoom: 18,
-        }).addTo(map as never);
+        L.tileLayer(TILE_URL, TILE_OPTIONS).addTo(map as never);
 
-        L.marker([latitude, longitude], {
+        const pin = L.marker([latitude, longitude], {
           title: name,
+          // The only pin on the page, and it is what the page is about, so it
+          // takes the size the directory gives its selected pin.
           icon: L.divIcon({
             className: "",
-            html: `<span style="
-              display:flex;align-items:center;justify-content:center;
-              width:38px;height:38px;border-radius:50%;
-              background:${faction.base};color:#fff;
-              font-family:var(--font-display);font-weight:700;font-size:14px;
-              border:3px solid #fff;box-shadow:0 2px 8px rgba(16,27,45,.4);
-              ">${monogram}</span>`,
-            iconSize: [38, 38],
-            iconAnchor: [19, 19],
+            html: mapPinHtml(monogram, faction.base, true),
+            iconSize: [pinSize(true), pinSize(true)],
+            iconAnchor: [pinSize(true) / 2, pinSize(true) / 2],
           }),
         }).addTo(map as never);
+
+        pin.bindTooltip(mapTooltipHtml(name), TOOLTIP_OPTIONS);
       } catch (error) {
         console.error("venue map failed to load", error);
         setFailed(true);
@@ -97,18 +94,16 @@ export default function VenueMap({
   }
 
   return (
-    <Box
-      ref={container}
-      role="application"
-      aria-label={`Map showing ${name}`}
-      sx={{
-        height: { xs: 240, md: 300 },
-        borderRadius: 2,
-        overflow: "hidden",
-        border: `1px solid ${tokens.rule}`,
-        bgcolor: tokens.surface,
-        "& .leaflet-container": { fontFamily: "var(--font-display)" },
-      }}
-    />
+    <Box>
+      {/* The same line the directory maps carry. Shorter than those, because a
+          detail page is showing one address rather than a country. */}
+      <MapHint>{name}</MapHint>
+      <Box
+        ref={container}
+        role="application"
+        aria-label={`Map showing ${name}`}
+        sx={mapSurfaceSx({ xs: 300, md: 380 })}
+      />
+    </Box>
   );
 }

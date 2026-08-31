@@ -5,8 +5,11 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import EmptyState from "@/components/ui/EmptyState";
 import OwnerClubCard from "@/components/owner/OwnerClubCard";
+import WorkspaceLink from "@/components/owner/WorkspaceLink";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getOwnerInbox } from "@/services/ownerInbox.service";
+import { getOwnedOrders, getScoreQueue } from "@/services/ownerBookings.service";
+import { countUnanswered } from "@/utils/club-order-filter";
 import { tokens } from "@/lib/tokens";
 
 export const metadata = { title: "My clubs" };
@@ -17,6 +20,14 @@ export default async function MyClubsPage() {
 
   const clubs = await getOwnerInbox(viewer.id);
   const tasks = clubs.flatMap((c) => c.tasks);
+
+  // Disputed and unscored games across every club. Counted here so the link can
+  // carry the number, the way legacy shows "Score Approvals (3)".
+  const queue = await getScoreQueue(viewer.id);
+  const openResults = queue.contested.length + queue.unscored.length;
+
+  // Orders nobody has answered yet, across every club.
+  const ordersWaiting = countUnanswered(await getOwnedOrders(viewer.id));
   const clear = clubs.filter((c) => c.tasks.length === 0).length;
 
   // Clubs with something outstanding come first: the point of the page is what
@@ -27,6 +38,7 @@ export default async function MyClubsPage() {
     { label: tasks.length === 1 ? "thing waiting" : "things waiting",
       value: tasks.length, emphasis: true },
     { label: "joins", value: tasks.filter((t) => t.kind === "join").length },
+    { label: "tier requests", value: tasks.filter((t) => t.kind === "tier").length },
     { label: "orders", value: tasks.filter((t) => t.kind === "order").length },
     { label: "coaching", value: tasks.filter((t) => t.kind === "coaching").length },
   ].filter((c) => c.emphasis || c.value > 0);
@@ -65,7 +77,21 @@ export default async function MyClubsPage() {
                 : "Every club has something outstanding."}
           </Typography>
 
+          {/* Across every club, rather than per club. An owner with four clubs
+              had to open four pages to answer "is anybody playing this week"
+              or "what is waiting on me to settle". */}
+          <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: "wrap", mb: 3 }}>
+            <WorkspaceLink href="/my-clubs/bookings" label="All table bookings" />
+            <WorkspaceLink href="/my-clubs/results" label="Score approvals"
+              count={openResults} />
+            <WorkspaceLink href="/my-clubs/orders" label="Merchandise orders"
+              count={ordersWaiting} />
+          </Stack>
+
           <Box sx={{ display: "grid", gap: 2,
+                     // Each card is its own height. Stretching them left a
+                     // clear club with a column of empty paper under one line.
+                     alignItems: "start",
                      gridTemplateColumns: {
                        xs: "1fr",
                        sm: "repeat(2, 1fr)",

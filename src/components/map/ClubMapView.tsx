@@ -8,8 +8,11 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import GroupsIcon from "@mui/icons-material/Groups";
 import { tokens } from "@/lib/tokens";
 import { clubIdentity } from "@/utils/club-identity";
+import MapHint from "./MapHint";
+import { mapPinHtml, mapSurfaceSx, mapTooltipHtml, pinSize, TILE_OPTIONS, TILE_URL, TOOLTIP_OPTIONS } from "./mapSurface";
 import { similarClubs } from "@/utils/similar-clubs";
 import SimilarClubs from "./SimilarClubs";
 import ClubArt from "@/components/clubs/ClubArt";
@@ -62,17 +65,9 @@ export default function ClubMapView({ clubs }: { clubs: ClubSummary[] }) {
           const { faction } = clubIdentity(club.slug, club.name);
           return L.divIcon({
             className: "",
-            html: `<span style="
-              display:flex;align-items:center;justify-content:center;
-              width:${isActive ? 40 : 32}px;height:${isActive ? 40 : 32}px;
-              border-radius:50%;background:${faction.base};color:#fff;
-              font-family:var(--font-display);font-weight:700;
-              font-size:${isActive ? 15 : 13}px;
-              border:${isActive ? 3 : 2}px solid #fff;
-              box-shadow:0 ${isActive ? 3 : 1}px ${isActive ? 10 : 4}px rgba(16,27,45,.4);
-              ">${index + 1}</span>`,
-            iconSize: isActive ? [40, 40] : [32, 32],
-            iconAnchor: isActive ? [20, 20] : [16, 16],
+            html: mapPinHtml(String(index + 1), faction.base, isActive),
+            iconSize: [pinSize(isActive), pinSize(isActive)],
+            iconAnchor: [pinSize(isActive) / 2, pinSize(isActive) / 2],
           });
         };
         iconFactory.current = makeIcon as never;
@@ -85,16 +80,17 @@ export default function ClubMapView({ clubs }: { clubs: ClubSummary[] }) {
         });
         mapRef.current = map as never;
 
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          attribution: "&copy; OpenStreetMap contributors",
-          maxZoom: 18,
-        }).addTo(map);
+        L.tileLayer(TILE_URL, TILE_OPTIONS).addTo(map);
 
         placed.forEach((club, index) => {
           const marker = L.marker(
             [club.coordinates!.latitude, club.coordinates!.longitude],
             { icon: makeIcon(club, index, index === 0) as never, title: club.name },
           ).addTo(map);
+          marker.bindTooltip(
+            mapTooltipHtml(club.name, [club.city, club.neighbourhood].filter(Boolean).join(" · ")),
+            TOOLTIP_OPTIONS,
+          );
           marker.on("click", () => setSelected(club.slug));
           markersRef.current.set(club.slug, marker as never);
         });
@@ -124,12 +120,14 @@ export default function ClubMapView({ clubs }: { clubs: ClubSummary[] }) {
       }
     })();
 
+    // Captured now: by the time cleanup runs the ref may point elsewhere.
+    const markers = markersRef.current;
     return () => {
       cancelled = true;
       observer?.disconnect();
       mapRef.current?.remove();
       mapRef.current = null;
-      markersRef.current.clear();
+      markers.clear();
     };
   }, [placed]);
 
@@ -168,28 +166,15 @@ export default function ClubMapView({ clubs }: { clubs: ClubSummary[] }) {
                gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1.6fr) minmax(300px, 1fr)" },
                gap: 2 }}>
       <Box>
-        <Stack direction="row" spacing={2}
-          sx={{ alignItems: "baseline", justifyContent: "space-between", mb: 1 }}>
-          <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.8rem", color: tokens.inkMuted }}>
-            {placed.length} {placed.length === 1 ? "club" : "clubs"} mapped
-          </Typography>
-          <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: tokens.inkMuted }}>
-            Scroll to zoom · drag to move
-          </Typography>
-        </Stack>
+        <MapHint>
+          {placed.length} {placed.length === 1 ? "club" : "clubs"} mapped
+        </MapHint>
 
         <Box
           ref={container}
           role="application"
           aria-label={`Map of ${placed.length} clubs`}
-          sx={{
-            height: { xs: 380, md: 560 },
-            borderRadius: 2,
-            overflow: "hidden",
-            border: `1px solid ${tokens.rule}`,
-            bgcolor: tokens.surface,
-            "& .leaflet-container": { fontFamily: "var(--font-display)" },
-          }}
+          sx={mapSurfaceSx({ xs: 380, md: 560 })}
         />
 
         {failed ? (
@@ -237,7 +222,7 @@ export default function ClubMapView({ clubs }: { clubs: ClubSummary[] }) {
               {active.rating ? (
                 <StarRating
                   value={active.rating.average}
-                  caption={`${active.rating.average.toFixed(1)} (${active.rating.count})`}
+                  caption={`${active.rating.average.toFixed(1)} · ${active.rating.count} ${active.rating.count === 1 ? "review" : "reviews"}`}
                 />
               ) : null}
               {typeof active.distanceMiles === "number" ? (
@@ -280,10 +265,24 @@ export default function ClubMapView({ clubs }: { clubs: ClubSummary[] }) {
               stats={[
                 { label: "From", value: active.fromPrice },
                 { label: "Tables", value: active.tablesAvailable },
-                { label: "Members", value: active.memberCount },
-                { label: "Games", value: active.featuredGames?.length || null },
+                { label: "Members", value: active.joinedCount || "Open" },
+                { label: "Age", value: active.ages },
               ]}
             />
+
+            {/* 1. The figure is the club's own headline count; the roster is who
+                has joined through the site, and it is members-only. Saying so on
+                the link stops the two numbers reading as a contradiction. */}
+            <NextLink href={`/clubs/${active.slug}/members`} style={{ textDecoration: "none" }}>
+              <Stack direction="row" spacing={0.6} sx={{ alignItems: "center" }}>
+                <GroupsIcon sx={{ fontSize: 16, color: identity.faction.base }} />
+                <Typography variant="body2"
+                  sx={{ color: identity.faction.deep, fontWeight: 600,
+                        "&:hover": { textDecoration: "underline" } }}>
+                  See who has joined
+                </Typography>
+              </Stack>
+            </NextLink>
 
             {active.featuredGames?.length ? (
               <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: "wrap" }}>
@@ -301,7 +300,7 @@ export default function ClubMapView({ clubs }: { clubs: ClubSummary[] }) {
                                   letterSpacing: "0.1em", color: tokens.inkMuted, mb: 0.5 }}>
                   FACILITIES
                 </Typography>
-                <FacilityChips values={active.facilities.slice(0, 6)} iconOnly />
+                <FacilityChips values={active.facilities.slice(0, 6)} />
               </Box>
             ) : null}
 

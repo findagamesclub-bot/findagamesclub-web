@@ -1,7 +1,12 @@
+"use client";
+
+import { useRef } from "react";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { messageTime } from "@/utils/dates";
+import Pager from "@/components/ui/Pager";
+import { usePagedList } from "@/hooks/usePagedList";
 import { tokens } from "@/lib/tokens";
 import type { LoyaltyEntry } from "@/types/loyalty";
 
@@ -12,7 +17,13 @@ import type { LoyaltyEntry } from "@/types/loyalty";
  * column you can read down. That column is the whole point of it, and anything
  * in the left margin competes with it.
  */
+/** A ledger page, sized so the running column stays readable in one glance. */
+const LEDGER_PAGE = 15;
+
 export default function LoyaltyLedger({ entries }: { entries: LoyaltyEntry[] }) {
+  const top = useRef<HTMLDivElement>(null);
+  const paged = usePagedList(entries, LEDGER_PAGE, top);
+
   if (!entries.length) {
     return (
       <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
@@ -22,8 +33,9 @@ export default function LoyaltyLedger({ entries }: { entries: LoyaltyEntry[] }) 
   }
 
   return (
-    <Box sx={{ border: `1px solid ${tokens.rule}`, borderRadius: 1.5, overflow: "hidden" }}>
-      {entries.map((entry, i) => {
+    <>
+    <Box ref={top} sx={{ border: `1px solid ${tokens.rule}`, borderRadius: 1.5, overflow: "hidden" }}>
+      {paged.shown.map((entry, i) => {
         const negative = entry.points < 0;
         return (
           <Stack key={entry.id} direction="row" spacing={2}
@@ -47,5 +59,9 @@ export default function LoyaltyLedger({ entries }: { entries: LoyaltyEntry[] }) 
         );
       })}
     </Box>
+
+    <Pager page={paged.page} total={paged.total} noun="entries"
+      size={LEDGER_PAGE} onChange={paged.goTo} />
+    </>
   );
 }

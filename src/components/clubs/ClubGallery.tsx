@@ -1,5 +1,4 @@
-import Box from "@mui/material/Box";
-import ClubArt from "./ClubArt";
+import GalleryLightbox from "./GalleryLightbox";
 import type { ClubImage } from "@/types/clubDetail";
 
 type Props = {
@@ -16,25 +15,10 @@ type Props = {
  * untinted they came back the original blue and looked like another club's.
  */
 export default function ClubGallery({ images, slug, name }: Props) {
+  // The first image is already the page banner, so the grid starts at the
+  // second and renders nothing when there is not one.
   const rest = images.slice(1);
   if (rest.length === 0) return null;
 
-  return (
-    <Box
-      sx={{
-        display: "grid",
-        gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))" },
-        gap: 1.5,
-      }}
-    >
-      {rest.map((image) => (
-        <Box
-          key={image.src}
-          sx={{ borderRadius: 1, overflow: "hidden", border: "1px solid", borderColor: "divider" }}
-        >
-          <ClubArt slug={slug} name={name} image={image} ratio="16 / 10" showPlate={false} />
-        </Box>
-      ))}
-    </Box>
-  );
+  return <GalleryLightbox images={rest} slug={slug} name={name} />;
 }

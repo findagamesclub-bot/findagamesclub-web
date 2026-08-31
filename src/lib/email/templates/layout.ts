@@ -32,6 +32,15 @@ export type LayoutOptions = {
   /** Paragraphs of body copy. */
   body: string[];
   action?: { label: string; url: string };
+  /**
+   * An itemised block: what was ordered, what it costs. A receipt read as five
+   * loose paragraphs, which is the one thing a receipt must not do.
+   */
+  details?: {
+    rows: { label: string; value: string }[];
+    /** Emphasised last line, ruled off from the rest. */
+    total?: { label: string; value: string };
+  };
   /** Shown under the button for people who can't click it. */
   fallbackNote?: string;
   /** Small print above the footer rule. */
@@ -43,7 +52,7 @@ const esc = (value: string) =>
   value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 export function renderEmail(options: LayoutOptions): string {
-  const { eyebrow, heading, body, action, fallbackNote, footnote, previewText } = options;
+  const { eyebrow, heading, body, action, details, fallbackNote, footnote, previewText } = options;
 
   return `<!doctype html>
 <html lang="en-GB">
@@ -93,6 +102,8 @@ export function renderEmail(options: LayoutOptions): string {
                     `<p style="margin:0 0 16px;font-family:${BODY};font-size:16px;line-height:1.6;color:${brand.ink};">${esc(p)}</p>`,
                 )
                 .join("\n              ")}
+
+              ${details && (details.rows.length || details.total) ? renderDetails(details) : ""}
 
               ${
                 action
@@ -146,6 +157,24 @@ export function renderEmail(options: LayoutOptions): string {
 </html>`;
 }
 
+/**
+ * The itemised block. Values are monospaced so figures line up column-wise,
+ * which is the whole reason a receipt is a table and not a sentence.
+ */
+function renderDetails(details: NonNullable<LayoutOptions["details"]>): string {
+  const row = (label: string, value: string, emphasis: boolean) => `
+                <tr>
+                  <td style="padding:${emphasis ? "12px 14px" : "8px 14px"};font-family:${BODY};font-size:${emphasis ? "15px" : "14px"};line-height:1.5;color:${brand.ink};${emphasis ? `border-top:1px solid ${brand.rule};font-weight:bold;` : ""}">${esc(label)}</td>
+                  <td align="right" style="padding:${emphasis ? "12px 14px" : "8px 14px"};font-family:${MONO};font-size:${emphasis ? "15px" : "13px"};line-height:1.5;white-space:nowrap;color:${emphasis ? brand.ink : brand.inkMuted};${emphasis ? `border-top:1px solid ${brand.rule};font-weight:bold;` : ""}">${esc(value)}</td>
+                </tr>`;
+
+  return `
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 8px;background:${brand.surface};border:1px solid ${brand.rule};border-radius:5px;">
+                ${details.rows.map((r) => row(r.label, r.value, false)).join("")}
+                ${details.total ? row(details.total.label, details.total.value, true) : ""}
+              </table>`;
+}
+
 /** Plain-text alternative. Every email should have one; it improves deliverability. */
 export function renderText(options: LayoutOptions): string {
   const lines = [
@@ -155,6 +184,10 @@ export function renderText(options: LayoutOptions): string {
     "",
     ...options.body,
   ];
+  if (options.details) {
+    const all = [...options.details.rows, ...(options.details.total ? [options.details.total] : [])];
+    if (all.length) lines.push("", ...all.map((r) => `${r.label}: ${r.value}`));
+  }
   if (options.action) {
     lines.push("", options.action.label + ":", options.action.url);
   }

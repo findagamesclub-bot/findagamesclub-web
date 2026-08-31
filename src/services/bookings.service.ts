@@ -29,8 +29,19 @@ function messageFor(raw: string): string {
   if (raw.includes("BOOKING_SESSION_WRONG_DAY")) return "That booking session is not available for this club.";
   if (raw.includes("BOOKING_SESSION_NOT_FOUND")) return "That booking session is not available for this club.";
   if (raw.includes("BOOKING_CLOSED")) return "This club is not accepting bookings yet.";
+  // Raised by club_bookings_price when a points request cannot be honoured.
+  if (raw.includes("NOT_ENOUGH_POINTS")) return "You do not have that many points.";
+  if (raw.includes("OVER_REDEMPTION_CAP")) {
+    return "Points cannot cover that much of this booking. Lower the number and try again.";
+  }
+  if (raw.includes("NO_REDEMPTION")) return "This club does not take points off table bookings.";
   if (raw.includes("club_booking_participants_one_per_date")) return "You already have a booking for that club date.";
   if (raw.includes("NOT_PERMITTED")) return "Only approved club members can book tables for this club.";
+
+  // Anything unrecognised is a bug, not a refusal we planned for. It reached a
+  // member as "try again", and trying again did the same thing forever: an RLS
+  // policy left over from Stage 3 hid behind this line for a whole round trip.
+  console.error("[bookings] unexpected refusal:", raw);
   return "Could not book that table. Try again.";
 }
 
@@ -42,6 +53,8 @@ export async function createBooking(params: {
   notes?: string;
   opponentProfileId?: string | null;
   opponentName?: string;
+  /** Points the member wants to put towards it. The trigger has final say. */
+  redeemPoints?: number;
 }): Promise<Result> {
   const gameTitle = params.gameTitle.trim();
   if (!gameTitle) return { ok: false, error: "Game title is required." };
@@ -59,6 +72,11 @@ export async function createBooking(params: {
         notes: (params.notes ?? "").trim().slice(0, 500),
         opponent_profile_id: params.opponentProfileId || null,
         opponent_name: (params.opponentName ?? "").trim().slice(0, 120),
+        // A request, not an instruction. club_bookings_price() checks it
+        // against the balance and the tier's cap and writes what it allows.
+        // `loyalty_points_spent` arrived with 0043 and the generated types
+        // predate it. Delete the cast once they are regenerated.
+        ...({ loyalty_points_spent: Math.max(0, Math.floor(params.redeemPoints ?? 0)) } as object),
       });
 
       // You have your game now, so the advert comes down. Left up it could
@@ -72,6 +90,9 @@ export async function createBooking(params: {
       } catch (error) {
         console.error("could not withdraw a looking-for-game post", { error });
       }
+
+      // After the post comes down, so a mail failure cannot leave an advert up.
+      await notify.notifyBooked(row.id);
 
       return {
         ok: true,
@@ -111,6 +132,10 @@ export async function cancelBooking(
     // The promotion already happened, inside the trigger, so nothing in this
     // request knows about it. Look for it and tell whoever now has a table —
     // they are committed to it without ever having asked.
+    // Whoever holds the table, which is not always whoever cancelled it: a club
+    // can call a game off and the member finds out by email.
+    await notify.notifyCancelled(bookingId);
+
     if (club) await announcePromotion(row.club_session_id, row.session_date, club);
 
     return { ok: true as const };

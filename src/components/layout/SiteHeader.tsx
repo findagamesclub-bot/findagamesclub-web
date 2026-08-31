@@ -16,6 +16,7 @@ import Typography from "@mui/material/Typography";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
 import AccountMenu from "./AccountMenu";
+import NotificationBell from "./NotificationBell";
 import BrandMark from "./BrandMark";
 import { headerHeight, tokens } from "@/lib/tokens";
 
@@ -89,8 +90,12 @@ function ComingSoon({ label, milestone }: { label: string; milestone: number }) 
   );
 }
 
-export default function SiteHeader({ viewer, unreadMessages = 0, ownerTasks = 0, ownsClubs = false }:
-  { viewer: Viewer; unreadMessages?: number; ownerTasks?: number; ownsClubs?: boolean }) {
+export default function SiteHeader({
+  viewer, unreadMessages = 0, ownerTasks = 0, ownsClubs = false, notifications = 0,
+}: {
+  viewer: Viewer; unreadMessages?: number; ownerTasks?: number;
+  ownsClubs?: boolean; notifications?: number;
+}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
@@ -187,7 +192,10 @@ export default function SiteHeader({ viewer, unreadMessages = 0, ownerTasks = 0,
 
           <Box sx={{ display: { xs: "none", sm: "block" } }}>
             {viewer ? (
-              <AccountMenu viewer={viewer} unreadMessages={unreadMessages} ownsClubs={ownsClubs} />
+              <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+                <NotificationBell viewerId={viewer.id} initialUnread={notifications} />
+                <AccountMenu viewer={viewer} unreadMessages={unreadMessages} />
+              </Stack>
             ) : (
               <Stack direction="row" spacing={1}>
                 <Button component={Link} href="/auth/sign-in" variant="text">Sign in</Button>

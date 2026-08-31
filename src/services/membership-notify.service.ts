@@ -1,43 +1,14 @@
 import "server-only";
 
-import { createAdminClient } from "@/lib/supabase/admin";
-import { sendEmail } from "@/lib/email/send";
 import * as templates from "@/lib/email/templates";
+import { deliver, siteUrl } from "./mail-recipient.service";
 
 /**
  * Membership emails.
  *
  * Kept apart from memberships.service so a mail failure can never roll back a
- * membership decision — the row is already written by the time these run, and
- * every function here swallows its own errors.
+ * membership decision — the row is already written by the time these run.
  */
-
-function siteUrl(): string {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-}
-
-/** Addresses live in auth.users, not profiles, so this needs the admin client. */
-async function recipient(profileId: string): Promise<{ email: string; name?: string } | null> {
-  try {
-    const admin = createAdminClient();
-    const { data, error } = await admin.auth.admin.getUserById(profileId);
-    if (error || !data.user?.email) return null;
-    return {
-      email: data.user.email,
-      name: (data.user.user_metadata?.full_name as string) || undefined,
-    };
-  } catch {
-    return null;
-  }
-}
-
-async function deliver(profileId: string, make: (name?: string) => templates.Email) {
-  const to = await recipient(profileId);
-  if (!to) return;
-  const message = make(to.name);
-  const sent = await sendEmail({ to: to.email, ...message });
-  if (!sent.ok) console.error("membership email failed", { profileId, subject: message.subject });
-}
 
 export async function notifyRequested(params: {
   applicantId: string;
@@ -60,6 +31,24 @@ export async function notifyRequested(params: {
     templates.membershipPendingForOwner({
       clubName: params.clubName,
       applicantName: params.applicantName,
+      url: `${siteUrl()}/clubs/${params.clubSlug}/members`,
+    }),
+  );
+}
+
+export async function notifyTierRequested(params: {
+  ownerId: string | null;
+  clubName: string;
+  clubSlug: string;
+  memberName: string;
+  tierLabel: string;
+}) {
+  if (!params.ownerId) return;
+  await deliver(params.ownerId, () =>
+    templates.tierUpgradeForOwner({
+      clubName: params.clubName,
+      memberName: params.memberName,
+      tierLabel: params.tierLabel,
       url: `${siteUrl()}/clubs/${params.clubSlug}/members`,
     }),
   );
@@ -92,6 +81,49 @@ export async function notifyDeclined(params: {
       clubName: params.clubName,
       reason: params.reason,
       url: `${siteUrl()}/clubs`,
+    }),
+  );
+}
+
+/** A receipt for money the club recorded, not money we took. */
+export async function notifyPaid(params: {
+  memberId: string;
+  clubName: string;
+  clubSlug: string;
+  tierLabel: string;
+  billingLabel: string;
+  price: string;
+  periodEnd: string | null;
+}) {
+  await deliver(params.memberId, (name) =>
+    templates.membershipPaid({
+      name,
+      clubName: params.clubName,
+      tierLabel: params.tierLabel,
+      billingLabel: params.billingLabel,
+      price: params.price,
+      paidUntil: params.periodEnd
+        ? new Date(params.periodEnd).toLocaleDateString("en-GB", {
+            day: "numeric", month: "long", year: "numeric",
+          })
+        : null,
+      url: `${siteUrl()}/clubs/${params.clubSlug}`,
+    }),
+  );
+}
+
+export async function notifyTierChanged(params: {
+  memberId: string;
+  clubName: string;
+  clubSlug: string;
+  tierLabel: string;
+}) {
+  await deliver(params.memberId, (name) =>
+    templates.tierChanged({
+      name,
+      clubName: params.clubName,
+      tierLabel: params.tierLabel,
+      url: `${siteUrl()}/clubs/${params.clubSlug}`,
     }),
   );
 }

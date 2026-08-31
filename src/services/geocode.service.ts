@@ -126,3 +126,35 @@ export async function geocodeUk(input: string): Promise<Origin | null> {
   if (origin || reachable) cache.set(key, origin);
   return origin;
 }
+
+/**
+ * Turn the browser's coordinates into a place our own search understands.
+ *
+ * Legacy keeps the raw latitude and longitude and labels the box "Current
+ * location", which means the box no longer says where it is searching. Here the
+ * coordinates are resolved to the postcode district instead: it goes through
+ * the same pipeline as anything typed, it is visible and editable, and a
+ * district is the right size for a radius search.
+ *
+ * The district, not the full postcode, on purpose. "OX11" is a town-sized area
+ * and answers the question; "OX11 9AT" is somebody's street.
+ */
+export async function reverseGeocodeUk(
+  latitude: number,
+  longitude: number,
+): Promise<{ district: string; town: string | null } | null> {
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+
+  const res = await getJson(
+    `${BASE}/postcodes?lat=${latitude}&lon=${longitude}&limit=1&radius=2000`,
+  );
+  const rows = (res.data as { result?: { postcode?: string; admin_district?: string }[] } | null)?.result;
+  const first = rows?.[0];
+  if (!first?.postcode) return null;
+
+  // "OX11 9AT" -> "OX11". postcodes.io always returns the spaced form.
+  const district = first.postcode.split(" ")[0]?.trim().toUpperCase();
+  if (!district) return null;
+
+  return { district, town: first.admin_district?.trim() || null };
+}

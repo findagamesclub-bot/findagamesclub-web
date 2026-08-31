@@ -8,6 +8,9 @@ import ForumIcon from "@mui/icons-material/Forum";
 import MilitaryTechIcon from "@mui/icons-material/MilitaryTech";
 import StorefrontIcon from "@mui/icons-material/Storefront";
 import SchoolIcon from "@mui/icons-material/School";
+import SwordsIcon from "@mui/icons-material/SportsKabaddi";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import LinkPending from "@/components/ui/LinkPending";
 import { tokens, type Faction } from "@/lib/tokens";
 
 /**
@@ -18,19 +21,30 @@ import { tokens, type Faction } from "@/lib/tokens";
  * equal choices. Only the ones this club actually runs appear.
  */
 export default function ClubLinks({
-  slug, faction, hasLoyalty, hasShop, hasCoaching,
+  slug, faction, hasLoyalty, hasShop, hasCoaching, hasRivalries = false,
+  hasCompetitions = false,
 }: {
   slug: string;
   faction: Faction;
   hasLoyalty: boolean;
   hasShop: boolean;
   hasCoaching: boolean;
+  /** Somebody has played somebody. An empty leaderboard is not worth a tile. */
+  hasRivalries?: boolean;
+  /** The club runs a league, ladder or campaign. */
+  hasCompetitions?: boolean;
 }) {
   const links = [
     { href: `/clubs/${slug}/board`, label: "Board", Icon: ForumIcon, on: true },
     { href: `/clubs/${slug}/loyalty`, label: "Loyalty", Icon: MilitaryTechIcon, on: hasLoyalty },
-    { href: `/clubs/${slug}/shop`, label: "Club kit", Icon: StorefrontIcon, on: hasShop },
+    { href: `/clubs/${slug}/shop`, label: "Merchandise", Icon: StorefrontIcon, on: hasShop },
     { href: `/clubs/${slug}/coaching`, label: "Coaching", Icon: SchoolIcon, on: hasCoaching },
+    { href: `/clubs/${slug}/rivalries`, label: "Rivalries", Icon: SwordsIcon,
+      on: hasRivalries },
+    // A club feature like the rest, so it belongs in the grid rather than only
+    // as a section somebody has to scroll to.
+    { href: `/clubs/${slug}/competitions`, label: "Competitions",
+      Icon: EmojiEventsIcon, on: hasCompetitions },
   ].filter((l) => l.on);
 
   return (
@@ -52,7 +66,10 @@ export default function ClubLinks({
                          backgroundColor: faction.soft },
           }}
         >
-          <Icon sx={{ fontSize: 20 }} />
+          {/* The icon becomes the spinner, so the tile keeps its size. */}
+          <LinkPending size={20}>
+            <Icon sx={{ fontSize: 20 }} />
+          </LinkPending>
           <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.66rem",
                             letterSpacing: "0.1em", fontWeight: 700 }}>
             {label.toUpperCase()}

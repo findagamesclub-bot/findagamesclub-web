@@ -1,8 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
+import { useActionToast } from "@/components/ui/Toaster";
 import { useFormStatus } from "react-dom";
-import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
@@ -12,7 +12,7 @@ import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SendIcon from "@mui/icons-material/Send";
-import { messageAction, type MessageState } from "@/app/messages/actions";
+import { messageAction, type MessageState } from "@/app/account/messages/actions";
 import { initialsOf } from "@/utils/format";
 import { sinceLabel } from "@/utils/dates";
 import { tokens, type Faction } from "@/lib/tokens";
@@ -26,6 +26,7 @@ export default function Conversation({
   faction: Faction;
 }) {
   const [state, submit] = useActionState<MessageState, FormData>(messageAction, {});
+  useActionToast(state);
   const foot = useRef<HTMLDivElement>(null);
   const count = conversation.messages.length;
 
@@ -42,7 +43,7 @@ export default function Conversation({
         sx={{ px: { xs: 1.5, md: 2.5 }, py: 1.5, alignItems: "center", flexShrink: 0,
               borderBottom: `1px solid ${tokens.rule}`, backgroundColor: tokens.surface }}>
         {/* Only on a phone, where the rail is not on screen to go back to. */}
-        <IconButton component={NextLink} href="/messages" aria-label="All messages"
+        <IconButton component={NextLink} href="/account/messages" aria-label="All messages"
           sx={{ display: { md: "none" }, ml: -0.5 }}>
           <ArrowBackIcon sx={{ fontSize: 20 }} />
         </IconButton>
@@ -72,13 +73,12 @@ export default function Conversation({
 
       <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto",
                  px: { xs: 1.5, md: 2.5 }, py: 2 }}>
-        {state.error ? <Alert severity="error" sx={{ mb: 2 }}>{state.error}</Alert> : null}
 
         {count === 0 ? (
           <Stack spacing={1} sx={{ py: 6, textAlign: "center" }}>
             <Typography variant="subtitle2">No messages yet</Typography>
             <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-              Say hello — they will see it straight away.
+              Say hello. They will see it straight away.
             </Typography>
           </Stack>
         ) : (

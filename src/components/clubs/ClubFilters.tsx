@@ -16,6 +16,7 @@ import FacetSearchInput from "./FacetSearchInput";
 import SmartSearchBar from "./SmartSearchBar";
 import { tokens } from "@/lib/tokens";
 import SearchModeToggle from "@/components/ui/SearchModeToggle";
+import FindMyLocationButton from "@/components/ui/FindMyLocationButton";
 import { joinFacets, splitFacets } from "@/utils/facets";
 import type { ClubListFilters } from "@/lib/query/keys";
 
@@ -186,12 +187,22 @@ export default function ClubFilters({
               </Field>
 
               <Field label="Location or postcode" basis={200}>
-                <TextField
-                  placeholder="Try E14, M1, or London"
-                  value={locationDraft}
-                  onChange={(e) => setLocationDraft(e.target.value)}
-                  fullWidth
-                />
+                <Stack direction="row" spacing={1}>
+                  <FindMyLocationButton
+                    onFound={(place) => {
+                      setLocationDraft(place);
+                      // Straight through rather than waiting on the debounce:
+                      // pressing the button is the decision, not typing into it.
+                      onChange({ location: place });
+                    }}
+                  />
+                  <TextField
+                    placeholder="Try E14, M1, or London"
+                    value={locationDraft}
+                    onChange={(e) => setLocationDraft(e.target.value)}
+                    fullWidth
+                  />
+                </Stack>
               </Field>
 
               <Field label="City">

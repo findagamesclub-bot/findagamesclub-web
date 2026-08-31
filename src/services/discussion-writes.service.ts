@@ -2,6 +2,7 @@ import "server-only";
 
 import * as repo from "@/repositories/discussions.repository";
 import { buildPoll } from "@/utils/poll";
+import { MAX_POST_IMAGES, toPostImages } from "@/utils/post-images";
 
 /**
  * Writing to the board.
@@ -30,6 +31,9 @@ export async function createPost(params: {
   content: string;
   pollQuestion: string;
   pollOptions: string[];
+  images: { path: string; alt: string }[];
+  /** Whose folder the photos must be in. */
+  authorId: string;
 }): Promise<Result> {
   const title = params.title.trim();
   const content = params.content.trim();
@@ -47,8 +51,22 @@ export async function createPost(params: {
     return { ok: false, error: "A poll needs a question and at least two answers." };
   }
 
+  // Re-read through the same parser the page uses, so a hand-built form
+  // cannot post twenty paths or a path that is not a string.
+  const images = toPostImages(params.images);
+  if (params.images.length > MAX_POST_IMAGES) {
+    return { ok: false, error: "Two photos at most on a thread." };
+  }
+  // Storage already refuses a write outside somebody's own folder; this stops
+  // a hand-built form pointing a post at a file it does not own.
+  if (images.some((image) => !image.path.startsWith(`${params.authorId}/`))) {
+    return { ok: false, error: "Those photos did not upload properly. Try again." };
+  }
+
   try {
-    const row = await repo.insertPost({ clubId: params.clubId, category, title, content, poll });
+    const row = await repo.insertPost({
+      clubId: params.clubId, category, title, content, poll, images,
+    });
     return { ok: true, id: row.id };
   } catch (error) {
     const raw = error instanceof Error ? error.message : "";

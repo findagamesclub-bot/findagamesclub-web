@@ -4,6 +4,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import ClubArt from "@/components/clubs/ClubArt";
 import { nightLabel } from "@/utils/dates";
+import { ticketsLeft } from "@/utils/tickets-left";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { ClubEventDetail } from "@/types/event";
 
@@ -20,10 +21,13 @@ export default function EventHero({
     event.endDate && event.endDate !== event.startDate ? `to ${nightLabel(event.endDate)}` : null,
   ].filter(Boolean).join(" \u00b7 ");
 
+  const tickets = ticketsLeft(event.ticketsAvailable, true);
+
   const facts = [
     event.price ? { label: "entry", value: event.price } : null,
     event.roundCount ? { label: "rounds", value: String(event.roundCount) } : null,
-    event.ticketsAvailable ? { label: "tickets left", value: String(event.ticketsAvailable) } : null,
+    tickets ? { label: tickets.soldOut ? "tickets" : "tickets left",
+                value: tickets.soldOut ? "None" : String(event.ticketsAvailable) } : null,
   ].filter(Boolean) as { label: string; value: string }[];
 
   return (
@@ -51,9 +55,10 @@ export default function EventHero({
             {event.hasEnded ? (
               <Chip size="small" label="Finished"
                 sx={{ bgcolor: "rgba(255,255,255,.9)", color: tokens.ink, fontWeight: 600 }} />
-            ) : event.ticketsAvailable ? (
-              <Chip size="small" label={`${event.ticketsAvailable} tickets left`}
-                sx={{ bgcolor: tokens.brass, color: "#fff", fontWeight: 700 }} />
+            ) : tickets ? (
+              <Chip size="small" label={tickets.label}
+                sx={{ bgcolor: tickets.soldOut ? tokens.danger : tokens.brass,
+                      color: "#fff", fontWeight: 700 }} />
             ) : null}
             {when ? (
               <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.78rem",
