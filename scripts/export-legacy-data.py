@@ -54,7 +54,9 @@ def better_cased(candidate: str, current: str) -> bool:
 def main() -> None:
     clubs = server.CLUB_STORE._load_clubs()
 
-    alias_path = Path(__file__).resolve().parent / "canonical-labels.json"
+    # Lives under src/utils/ because the app reads it too: a synonym fixed at
+    # import time and not at read time leaves free-typed labels split in two.
+    alias_path = Path(__file__).resolve().parent.parent / "src" / "utils" / "canonical-labels.json"
     aliases = json.loads(alias_path.read_text()) if alias_path.exists() else {}
 
     # Canonical vocabularies, deduped by slug. Fixes PayPal/Paypal,

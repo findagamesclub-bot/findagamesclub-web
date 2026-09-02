@@ -1,6 +1,5 @@
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
-import Link from "@mui/material/Link";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import type { SvgIconComponent } from "@mui/icons-material";
@@ -15,6 +14,9 @@ import FacilityChips from "./FacilityChips";
 import SocialLinks from "./SocialLinks";
 import ScheduleList from "./ScheduleList";
 import Button from "@mui/material/Button";
+import LanguageIcon from "@mui/icons-material/Language";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import { externalUrl } from "@/utils/external-url";
 import { tokens } from "@/lib/tokens";
 import { clubIdentity } from "@/utils/club-identity";
 import type { ClubDetail } from "@/types/clubDetail";
@@ -64,18 +66,20 @@ export default function ClubSidebar({ club }: { club: ClubDetail }) {
     sections.push({ title: "Ages", icon: CakeIcon, body: <Typography variant="body2">{club.ages}</Typography> });
   }
 
-  // The website stays as a text link; "Visit website" is not a brand anyone
-  // recognises as a glyph, and the networks below become icons.
+  // Both ways of reaching a club are buttons, and the same size. They are the
+  // two things somebody does from this panel, and a text link beside a button
+  // reads as the lesser of the two when neither is.
   //
-  // Email is a button instead. Printing the address made the club's inbox
-  // scrapeable from a public page, and reading an address off a screen to type
-  // it somewhere else is work nobody should have to do when the machine can
-  // open the message for them.
-  const links = [
-    club.contact.website ? { href: club.contact.website, label: "Visit website", external: true } : null,
-  ].filter(Boolean) as { href: string; label: string; external: boolean }[];
+  // Email is a button rather than a printed address for a second reason:
+  // printing it made the club's inbox scrapeable from a public page, and
+  // reading an address off a screen to type it somewhere else is work nobody
+  // should do when the machine can open the message for them.
+  //
+  // Validated rather than trusted: clubs type these by hand, and one that
+  // cannot be opened is hidden instead of rendered going nowhere.
+  const website = externalUrl(club.contact.website);
 
-  if (club.contact.email || links.length || club.socialLinks.length) {
+  if (club.contact.email || website || club.socialLinks.length) {
     sections.push({
       title: "Contact",
       icon: MailIcon,
@@ -95,21 +99,23 @@ export default function ClubSidebar({ club }: { club: ClubDetail }) {
             </Button>
           ) : null}
 
-          {links.length ? (
-            <Stack spacing={0.5}>
-              {/* Keyed by label: several clubs point every social link at the
-                  same placeholder URL, so hrefs are not unique. */}
-              {links.map((l) => (
-                <Link
-                  key={l.label}
-                  href={l.href}
-                  variant="body2"
-                  {...(l.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                >
-                  {l.label}
-                </Link>
-              ))}
-            </Stack>
+          {website ? (
+            <Button
+              component="a"
+              href={website}
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="outlined"
+              fullWidth
+              startIcon={<LanguageIcon sx={{ fontSize: 18 }} />}
+              // Leaves the site, so it says so. The mail button does not need
+              // this because opening a mail client is not navigating away.
+              endIcon={<OpenInNewIcon sx={{ fontSize: 15, opacity: 0.7 }} />}
+              sx={{ minHeight: 44, color: tokens.ink, borderColor: tokens.rule,
+                    "&:hover": { borderColor: faction.base, color: faction.deep } }}
+            >
+              Visit website
+            </Button>
           ) : null}
           <SocialLinks links={club.socialLinks} slug={club.slug} name={club.name} />
         </Stack>

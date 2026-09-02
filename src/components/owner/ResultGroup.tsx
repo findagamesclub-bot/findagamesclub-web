@@ -9,6 +9,7 @@ import Pager from "@/components/ui/Pager";
 import { usePagedList } from "@/hooks/usePagedList";
 import { tokens } from "@/lib/tokens";
 import type { OwnerResult } from "@/services/ownerBookings.service";
+import { PER_PAGE } from "@/utils/paging";
 
 /**
  * One band of the score queue, paged on its own.
@@ -26,7 +27,7 @@ export default function ResultGroup({
   onOpen: (result: OwnerResult) => void;
 }) {
   const top = useRef<HTMLDivElement>(null);
-  const paged = usePagedList(rows, 12, top);
+  const paged = usePagedList(rows, PER_PAGE.rows, top);
 
   return (
     <Box>

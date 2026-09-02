@@ -3,6 +3,7 @@ import MemberProfileView from "@/components/members/MemberProfileView";
 import { getProfile } from "@/services/profiles.service";
 import { getMemberContext } from "@/services/memberContext.service";
 import { getMemberRecords } from "@/services/memberRecords.service";
+import { getGrudgeTracker } from "@/services/grudgeTracker.service";
 import { getCurrentProfile } from "@/services/auth.service";
 
 export async function generateMetadata({ params }: PageProps<"/members/[id]">) {
@@ -33,12 +34,19 @@ export default async function MemberPage({ params }: PageProps<"/members/[id]">)
       .catch(() => ({ competitions: [], podiums: [], badges: [] })),
   ]);
 
+  // Their playing record, one card per club the reader also belongs to. Read
+  // through a members-only function because RLS deliberately hides other
+  // people's past bookings from the table itself.
+  const trackers = await getGrudgeTracker(profile.id, context.clubs)
+    .catch(() => []);
+
   return (
     <MemberProfileView
       profile={profile}
       isSelf={viewer.id === profile.id}
       context={context}
       records={records}
+      trackers={trackers}
     />
   );
 }

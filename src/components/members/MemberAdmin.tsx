@@ -38,6 +38,12 @@ type Props = {
   standing: PaymentStanding;
   payments: MembershipPayment[];
   faction: Faction;
+  /**
+   * The roster card says nothing about money, so this carries its own standing
+   * line. The Memberships card already states it underneath, and the same date
+   * twice one line apart reads as a bug.
+   */
+  showStatus?: boolean;
 };
 
 function initials(name: string): string {
@@ -54,7 +60,7 @@ function initials(name: string): string {
  */
 export default function MemberAdmin({
   membershipId, slug, memberName, tierKey, requestedTierKey = null,
-  tierRequestedAt = null, tiers, standing, payments, faction,
+  tierRequestedAt = null, tiers, standing, payments, faction, showStatus = true,
 }: Props) {
   const [open, setOpen] = useState(false);
   const fullScreen = useMediaQuery("(max-width:600px)");
@@ -84,11 +90,15 @@ export default function MemberAdmin({
 
   return (
     <Box sx={{ borderTop: `1px solid ${tokens.rule}`, pt: 1.25 }}>
-      <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}>
-        <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.7rem",
-                          letterSpacing: "0.06em", color: status.colour, fontWeight: 600 }}>
-          {status.text}
-        </Typography>
+      <Stack direction="row" spacing={1}
+        sx={{ alignItems: "center",
+              justifyContent: showStatus ? "space-between" : "flex-end" }}>
+        {showStatus ? (
+          <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.7rem",
+                            letterSpacing: "0.06em", color: status.colour, fontWeight: 600 }}>
+            {status.text}
+          </Typography>
+        ) : null}
         <Button size="small" variant="text" startIcon={<TuneIcon />} onClick={() => setOpen(true)}
           sx={{ color: tokens.inkMuted, fontSize: "0.78rem" }}>
           Manage

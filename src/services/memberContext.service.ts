@@ -4,6 +4,8 @@ import * as repo from "@/repositories/memberContext.repository";
 import { londonToday } from "./bookingCalendar.service";
 
 export type SharedClub = {
+  /** The grudge tracker reads past RLS by club id, so it is carried here. */
+  id: number;
   slug: string;
   name: string;
   logoUrl: string | null;
@@ -120,12 +122,13 @@ export async function getMemberContext(
   const clubs: SharedClub[] = memberships.map((row) => {
     const club = (row as unknown as {
       clubs: {
-        slug: string; name: string; logo_url: string | null;
+        id: number; slug: string; name: string; logo_url: string | null;
         club_membership_tiers: { tier_key: string; label: string }[];
       };
     }).clubs;
 
     return {
+      id: club.id,
       slug: club.slug,
       name: club.name,
       logoUrl: club.logo_url,

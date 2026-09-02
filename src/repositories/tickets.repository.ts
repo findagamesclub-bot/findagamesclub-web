@@ -104,39 +104,25 @@ export async function checkout(params: {
   fullName: string;
   email: string;
   reference: string;
-  discountPercent: number;
-  tierKey: string | null;
-  tierLabel: string;
+  /** A request, not an instruction. 0050 checks it against the tier and the balance. */
+  redeemPoints: number;
 }) {
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("checkout_event_cart", {
-    target_event: params.eventId,
-    buyer_name: params.fullName,
-    buyer_email: params.email,
-    booking_reference: params.reference,
-    discount_percent: params.discountPercent,
-    tier_key: params.tierKey,
-    tier_label: params.tierLabel,
-  });
+  // 0050 replaced the old signature, which took the tier discount and labels
+  // from the caller. Everything about the money is read from the database now.
+  // Delete the cast once the generated types are regenerated against it.
+  const { data, error } = await (supabase.rpc as unknown as (
+    name: string, args: Record<string, unknown>,
+  ) => Promise<{ data: unknown; error: { message: string; code?: string } | null }>)(
+    "checkout_event_cart", {
+      target_event: params.eventId,
+      buyer_name: params.fullName,
+      buyer_email: params.email,
+      booking_reference: params.reference,
+      redeem: params.redeemPoints,
+    });
 
   if (error) throw Object.assign(new Error(error.message), { code: error.code });
   return data as number;
 }
 
-/** The event's club and its tiers, for pricing a checkout server-side. */
-export async function findEventClub(eventId: number) {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("club_events")
-    .select(
-      `id, club_id, title,
-       clubs!inner(id, slug, name,
-                   club_membership_tiers(tier_key, label, price, price_duration, description,
-                                         is_basic, position, benefits, billing_options))`,
-    )
-    .eq("id", eventId)
-    .maybeSingle();
-
-  if (error) throw new Error(`Failed to load that event: ${error.message}`);
-  return data;
-}

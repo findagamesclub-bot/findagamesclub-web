@@ -10,6 +10,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import FilterBar from "@/components/account/FilterBar";
 import OwnerBookingCard from "./OwnerBookingCard";
 import type { OwnerResult } from "@/services/ownerBookings.service";
+import { PER_PAGE } from "@/utils/paging";
 
 /**
  * Upcoming tables across every club, grouped by night.
@@ -43,7 +44,7 @@ export default function OwnerBookings({ bookings }: { bookings: OwnerResult[] })
     });
   }, [bookings, query, club]);
   const top = useRef<HTMLDivElement>(null);
-  const paged = usePagedList(results, undefined, top);
+  const paged = usePagedList(results, PER_PAGE.cards, top);
 
   return (
     <Stack spacing={2}>

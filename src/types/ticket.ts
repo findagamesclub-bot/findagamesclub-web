@@ -42,6 +42,8 @@ export type EventBooking = {
   eventDate: string | null;
   clubSlug: string;
   clubName: string;
+  /** Needed to reach the owner when the club has to be told. Never shown. */
+  clubId: number;
   legacyId: string;
   fullName: string;
   email: string;

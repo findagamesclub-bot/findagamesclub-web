@@ -18,6 +18,7 @@ import TicketStub from "./TicketStub";
 import { cancelTicketAction, type CancelState } from "@/app/tickets/actions";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { EventBooking } from "@/types/ticket";
+import { PER_PAGE } from "@/utils/paging";
 
 type Entry = { booking: EventBooking; faction: Faction; monogram: string };
 
@@ -29,7 +30,7 @@ export default function MyTickets({ live, past }: { live: Entry[]; past: Entry[]
   // Cancelled tickets only ever accumulate, and they are the half nobody is
   // looking for. Live ones are few by definition, so they stay on one screen.
   const top = useRef<HTMLDivElement>(null);
-  const paged = usePagedList(past, 6, top);
+  const paged = usePagedList(past, PER_PAGE.rich, top);
 
   return (
     <Stack spacing={3}>

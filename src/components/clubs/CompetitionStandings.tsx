@@ -7,11 +7,12 @@ import Pager from "@/components/ui/Pager";
 import { usePagedList } from "@/hooks/usePagedList";
 import { mono, tokens, type Faction } from "@/lib/tokens";
 import type { CompetitionStanding } from "@/types/competition";
+import { PER_PAGE } from "@/utils/paging";
 
 const HEAD = ["", "Player", "Faction", "Record", "Pts"];
 
 /** A league table's worth of rows. Ranks stay continuous across pages. */
-const ROWS_PER_PAGE = 25;
+const ROWS_PER_PAGE = PER_PAGE.rows;
 
 /**
  * The league table.

@@ -48,7 +48,9 @@ export default function ClubSectionHeader({
         direction="row"
         spacing={{ xs: 2.5, sm: 4 }}
         useFlexGap
-        sx={{ flexWrap: "wrap", alignItems: "baseline" }}
+        // useFlexGap makes `spacing` the row gap too, so a strip that wraps
+        // onto a second line left a hole the size of a paragraph break.
+        sx={{ flexWrap: "wrap", alignItems: "baseline", rowGap: 1.25 }}
       >
         {stats.map((s) => (
           <Stack key={s.label} direction="row" spacing={1} sx={{ alignItems: "baseline" }}>

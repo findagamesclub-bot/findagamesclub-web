@@ -7,8 +7,10 @@ import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import { initialsOf } from "@/utils/format";
 import { shortDate } from "@/utils/dates";
+import MemberAdmin from "./MemberAdmin";
 import { EXPIRING_DAYS, type RenewalRow as Row } from "@/utils/renewal-filter";
-import { mono, tokens } from "@/lib/tokens";
+import { mono, tokens, type Faction } from "@/lib/tokens";
+import type { MembershipTier } from "@/types/clubDetail";
 
 /**
  * One membership, as a card.
@@ -20,7 +22,14 @@ import { mono, tokens } from "@/lib/tokens";
  * The state is said in words rather than left as a date to work out. "Lapsed 5
  * days ago" is a job; "Paid to 26 Sep" is not.
  */
-export default function RenewalRow({ row }: { row: Row }) {
+export default function RenewalRow({
+  row, slug, tiers, faction,
+}: {
+  row: Row;
+  slug: string;
+  tiers: MembershipTier[];
+  faction: Faction;
+}) {
   const state = stateOf(row);
 
   return (
@@ -63,6 +72,25 @@ export default function RenewalRow({ row }: { row: Row }) {
                   backgroundColor: tokens.brassSoft, color: "#5c4310" }} />
         ) : null}
       </Stack>
+
+      {/* The same dialog the roster carries, not a link back to it. This page
+          IS the chasing list, so the club is one click from "Due in 29 days"
+          to recording the payment that clears it. */}
+      <Box sx={{ px: 2, pb: 1.5 }}>
+        <MemberAdmin
+          membershipId={row.member.membershipId}
+          slug={slug}
+          memberName={row.member.fullName}
+          tierKey={row.member.tierKey}
+          requestedTierKey={row.member.requestedTierKey}
+          tierRequestedAt={row.member.tierRequestedAt}
+          tiers={tiers}
+          standing={row.standing}
+          payments={row.payments}
+          faction={faction}
+          showStatus={false}
+        />
+      </Box>
 
       <Stack direction="row" spacing={1.5}
         sx={{ mt: "auto", px: 2, py: 1.5, alignItems: "baseline",

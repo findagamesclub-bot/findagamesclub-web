@@ -16,6 +16,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import EventBusyIcon from "@mui/icons-material/EventBusy";
 import HowToRegIcon from "@mui/icons-material/HowToReg";
 import TuneIcon from "@mui/icons-material/Tune";
+import EditBookingDialog from "./EditBookingDialog";
 import { bookingAction, type BookingState } from "@/app/clubs/[slug]/bookings/actions";
 import { tokens } from "@/lib/tokens";
 import { nightLabel } from "@/utils/dates";
@@ -123,6 +124,8 @@ export default function ManageNight({
                           {b.gameTitle}
                         </Typography>
                       </Box>
+                      <EditBookingDialog booking={b} slug={slug} />
+
                       {/* Asked for, not fired on click. Taking somebody else's
                           table away is worse than giving up your own: they are
                           not in the room, and the waiting list is offered it

@@ -9,6 +9,7 @@ import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import GroupsIcon from "@mui/icons-material/Groups";
+import { milesLabel } from "@/utils/geo";
 import { tokens } from "@/lib/tokens";
 import { clubIdentity } from "@/utils/club-identity";
 import MapHint from "./MapHint";
@@ -228,7 +229,7 @@ export default function ClubMapView({ clubs }: { clubs: ClubSummary[] }) {
               {typeof active.distanceMiles === "number" ? (
                 <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.78rem",
                                   color: tokens.brass, fontWeight: 600 }}>
-                  {active.distanceMiles.toFixed(1)} mi away
+                  {milesLabel(active.distanceMiles)}
                 </Typography>
               ) : null}
             </Stack>

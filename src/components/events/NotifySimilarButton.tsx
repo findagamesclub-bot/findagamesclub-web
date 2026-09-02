@@ -7,7 +7,7 @@ import { tokens } from "@/lib/tokens";
 import type { EventSummary } from "@/types/eventList";
 
 /**
- * "Notify me about similar events", on an event's card.
+ * "Notify of similar events", on an event's card.
  *
  * The alert it saves describes THIS event — its game and its town — not
  * whatever filters happened to be set when the button was pressed. Anything
@@ -30,7 +30,7 @@ export default function NotifySimilarButton({
     <SaveAlertButton
       canSave={canSave}
       preset={preset}
-      title="Notify me about similar events"
+      title="Notify of similar events"
       trigger={(open) => (
         <Button
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); open(); }}
@@ -40,7 +40,7 @@ export default function NotifySimilarButton({
           sx={{ borderColor: tokens.rule, color: tokens.inkMuted, whiteSpace: "nowrap",
                 "&:hover": { borderColor: tokens.brass, color: tokens.ink } }}
         >
-          Notify me
+          Notify of similar events
         </Button>
       )}
     />

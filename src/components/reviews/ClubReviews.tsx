@@ -19,9 +19,10 @@ import { reviewAction, type ReviewState } from "@/app/clubs/[slug]/review-action
 import { sinceLabel } from "@/utils/dates";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { ClubReview } from "@/types/clubDetail";
+import { PER_PAGE } from "@/utils/paging";
 
 /** Long enough to read as a page of opinion, short enough to skim. */
-const REVIEWS_PER_PAGE = 8;
+const REVIEWS_PER_PAGE = PER_PAGE.rich;
 
 /**
  * The review list, and whatever the viewer is allowed to do to it.

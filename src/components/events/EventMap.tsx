@@ -9,16 +9,15 @@ import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import GroupsIcon from "@mui/icons-material/Groups";
-import SimilarEvents from "./SimilarEvents";
 import ClubArt from "@/components/clubs/ClubArt";
 import StatLine from "@/components/ui/StatLine";
 import FacilityChips from "@/components/clubs/FacilityChips";
-import { similarEvents } from "@/utils/similar-events";
 import { clubIdentity } from "@/utils/club-identity";
 import MapHint from "@/components/map/MapHint";
 import { mapPinHtml, mapSurfaceSx, mapTooltipHtml, pinSize, TILE_OPTIONS, TILE_URL, TOOLTIP_OPTIONS } from "@/components/map/mapSurface";
-import { nightLabel } from "@/utils/dates";
 import { ticketsLeft } from "@/utils/tickets-left";
+import { milesLabel } from "@/utils/geo";
+import EventWhen from "./EventWhen";
 import { tokens } from "@/lib/tokens";
 import type { EventSummary } from "@/types/eventList";
 
@@ -147,7 +146,6 @@ export default function EventMap({ events, trail = "" }: {
   }
 
   const activeIndex = active ? placed.findIndex((e) => e.id === active.id) : -1;
-  const similar = active ? similarEvents(active, events) : [];
   const identity = active ? clubIdentity(active.club.slug, active.club.name) : null;
 
   return (
@@ -202,19 +200,18 @@ export default function EventMap({ events, trail = "" }: {
                 </Box>
               </Stack>
 
-              {active.startDate ? (
-                <Box>
-                  <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.66rem",
-                                    letterSpacing: "0.1em", color: tokens.inkMuted, mb: 0.5 }}>
-                    WHEN
-                  </Typography>
-                  <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.82rem" }}>
-                    {nightLabel(active.startDate)}
-                    {active.startTime ? (
-                      <Box component="span" sx={{ color: tokens.inkMuted }}> · {active.startTime}</Box>
-                    ) : null}
-                  </Typography>
-                </Box>
+              {/* The same block the event's own page uses, in the club's colour. */}
+              <EventWhen event={active} faction={identity.faction} dense />
+
+              {/* How far it is from the place they searched. Only ever set when
+                  they named one, so it appears exactly when it means something.
+                  Worded and styled as on the club map, which is the same panel
+                  in the same position answering the same question. */}
+              {typeof active.distanceMiles === "number" ? (
+                <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.78rem",
+                                  color: tokens.brass, fontWeight: 600 }}>
+                  {milesLabel(active.distanceMiles)}
+                </Typography>
               ) : null}
 
               {active.summary ? (
@@ -225,12 +222,19 @@ export default function EventMap({ events, trail = "" }: {
                 columns={2}
                 dense
                 stats={[
-                  { label: "Entry", value: active.price },
+                  // "From £24", the same figure the cards show. An event can
+                  // sell four ticket types, and the club's own price field
+                  // holds one of them, so the cheapest is the honest one.
+                  { label: "Entry",
+                    value: active.fromPrice ? `From ${active.fromPrice}` : active.price },
                   { label: "Rounds", value: active.roundCount },
                   { label: ticketsLeft(active.ticketsAvailable)?.soldOut ? "Tickets" : "Tickets left",
                     value: ticketsLeft(active.ticketsAvailable)?.soldOut
                       ? "Sold out" : active.ticketsAvailable },
-                  { label: "Games", value: active.featuredGames?.length || null },
+                  // Who can come, which is worth knowing before you travel. A
+                  // count of games was not: the games themselves are listed
+                  // directly underneath.
+                  { label: "Age", value: active.ages },
                 ]}
               />
 
@@ -290,8 +294,6 @@ export default function EventMap({ events, trail = "" }: {
           </Stack>
         ) : null}
       </Box>
-
-      <SimilarEvents items={similar} trail={trail} />
     </Box>
   );
 }

@@ -15,8 +15,9 @@ import {
 } from "@/utils/order-filter";
 import { mono, tokens } from "@/lib/tokens";
 import type { MyOrder } from "@/services/myActivity.service";
+import { PER_PAGE } from "@/utils/paging";
 
-const PAGE = 12;
+const PAGE = PER_PAGE.cards;
 
 /** Search, filter and sort over the member's kit orders, then a grid. */
 export default function OrderBrowser({ orders }: { orders: MyOrder[] }) {

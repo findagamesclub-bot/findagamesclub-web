@@ -17,9 +17,10 @@ import {
 } from "@/utils/membership-filter";
 import { tokens } from "@/lib/tokens";
 import type { MyClubMembership } from "@/services/myMemberships.service";
+import { PER_PAGE } from "@/utils/paging";
 
 /** Cards drawn before the list stops and offers more. */
-const PAGE = 12;
+const PAGE = PER_PAGE.cards;
 
 /**
  * Search, filter and sort over the member's clubs, then a grid.

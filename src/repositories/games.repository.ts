@@ -141,7 +141,61 @@ export type RivalryRow = {
   wins_two: number;
   draws: number;
   last_played: string | null;
+  /** Added by 0054: what each of them has scored across the rivalry. */
+  score_one: number;
+  score_two: number;
+  /** How many of the pair named the other. Two is mutual. */
+  nominations: number;
+  mutual: boolean;
 };
+
+export type RivalryMatchRow = {
+  booking_id: number;
+  /** "booking" or "competition". Legacy counts both towards a rivalry. */
+  source: string;
+  session_date: string | null;
+  game_title: string;
+  competition: string;
+  /** Always from the first member's side, whichever seat they were in. */
+  score_one: number;
+  score_two: number;
+};
+
+export type RivalryUpcomingRow = {
+  booking_id: number;
+  session_date: string;
+  session_time: string;
+  session_label: string;
+  game_title: string;
+  booked_by_name: string;
+  notes: string;
+};
+
+/** Every scored game between two members, for the head-to-head page. */
+export async function findRivalryMatches(clubId: number, one: string, two: string) {
+  const supabase = await createClient();
+  const { data, error } = await (supabase as unknown as {
+    rpc(name: string, args: Record<string, unknown>): Promise<{
+      data: RivalryMatchRow[] | null; error: { message: string } | null;
+    }>;
+  }).rpc("club_rivalry_matches", { p_club: clubId, p_one: one, p_two: two });
+
+  if (error) throw new Error(`Failed to load that rivalry: ${error.message}`);
+  return data ?? [];
+}
+
+/** The pair's booked meetings that have not been played yet. */
+export async function findRivalryUpcoming(clubId: number, one: string, two: string) {
+  const supabase = await createClient();
+  const { data, error } = await (supabase as unknown as {
+    rpc(name: string, args: Record<string, unknown>): Promise<{
+      data: RivalryUpcomingRow[] | null; error: { message: string } | null;
+    }>;
+  }).rpc("club_rivalry_upcoming", { p_club: clubId, p_one: one, p_two: two });
+
+  if (error) throw new Error(`Failed to load upcoming meetings: ${error.message}`);
+  return data ?? [];
+}
 
 /**
  * Every pair at one club who have played a scored game.
@@ -179,5 +233,36 @@ export async function findClubForm(clubId: number) {
   }).rpc("club_member_form", { p_club: clubId });
 
   if (error) throw new Error(`Failed to load form: ${error.message}`);
+  return data ?? [];
+}
+
+export type MemberGameRow = {
+  ref_id: number;
+  source: string;
+  played_on: string | null;
+  game_title: string;
+  competition: string;
+  opponent_id: string | null;
+  opponent_name: string;
+  my_score: number;
+  their_score: number;
+};
+
+/**
+ * One member's scored games at one club, newest first.
+ *
+ * Not a plain select: club_bookings_select shows a member only FUTURE bookings
+ * of other people, so somebody else's history is invisible through RLS by
+ * design. 0056 reads past it behind the same members-only guard.
+ */
+export async function findMemberGames(clubId: number, memberId: string) {
+  const supabase = await createClient();
+  const { data, error } = await (supabase as unknown as {
+    rpc(name: string, args: Record<string, unknown>): Promise<{
+      data: MemberGameRow[] | null; error: { message: string } | null;
+    }>;
+  }).rpc("club_member_games", { p_club: clubId, p_member: memberId });
+
+  if (error) throw new Error(`Failed to load their record: ${error.message}`);
   return data ?? [];
 }

@@ -4,13 +4,23 @@ import * as repo from "@/repositories/clubs.repository";
 import { formatMeeting, formatPrice, formatPricingLabel } from "@/utils/format";
 import { toMembershipTiers } from "@/utils/membership-tiers";
 import { billingOptions } from "./payments.service";
+import { fromPriceFor } from "./clubs.service";
 import type { ClubDetail } from "@/types/clubDetail";
 
 type Row = Awaited<ReturnType<typeof repo.findClubDetail>>;
 
 export async function getClubDetail(slug: string): Promise<ClubDetail | null> {
   const row = await repo.findClubDetail(slug);
-  return row ? toDetail(row) : null;
+  if (!row) return null;
+
+  // The same figure the club's own card carries in the directory. Read off
+  // `price_drop_in` alone, three clubs showed a dash here while their cards
+  // showed a price, because that legacy field was never filled for them.
+  const detail = toDetail(row);
+  return {
+    ...detail,
+    fromPrice: detail.fromPrice ?? (await fromPriceFor(row.id)),
+  };
 }
 
 const byPosition = <T extends { position?: number | null }>(items: T[] = []) =>

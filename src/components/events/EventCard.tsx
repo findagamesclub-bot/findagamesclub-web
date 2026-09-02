@@ -13,6 +13,7 @@ import ClubArt from "@/components/clubs/ClubArt";
 import ClubLogo from "@/components/clubs/ClubLogo";
 import FacilityChips from "@/components/clubs/FacilityChips";
 import NotifySimilarButton from "./NotifySimilarButton";
+import BestCoastButton from "./BestCoastButton";
 import { mono, tokens } from "@/lib/tokens";
 import { clubIdentity } from "@/utils/club-identity";
 import { nightLabel } from "@/utils/dates";
@@ -279,6 +280,9 @@ export default function EventCard({
         {!event.hasEnded ? (
           <NotifySimilarButton event={event} canSave={canSaveAlert} />
         ) : null}
+        {/* Where the club runs registration and pairings. Subordinate to
+            "View event", which is the filled one. */}
+        <BestCoastButton href={event.bestcoastLink} faction={faction} />
       </Stack>
     </Stack>
   );

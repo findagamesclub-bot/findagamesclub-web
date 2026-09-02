@@ -21,7 +21,8 @@ import SavedAlerts from "@/components/events/SavedAlerts";
 import { EventsBusyProvider, EventResults } from "@/components/events/EventsBusy";
 import EmptyState from "@/components/ui/EmptyState";
 import Pager from "@/components/ui/Pager";
-import { pageFrom, pageOf } from "@/utils/paging";
+import SimilarEvents from "@/components/events/SimilarEvents";
+import { pageCount, pageFrom, pageOf } from "@/utils/paging";
 
 /** Three across on a wide screen, so a page is a whole number of rows. */
 const EVENTS_PER_PAGE = 18;
@@ -100,7 +101,8 @@ export default async function EventsPage({ searchParams }: PageProps<"/events">)
     return query ? `/events?${query}` : "/events";
   };
 
-  const [{ events, upcomingCount, pastCount, games, options, origin, locationUnresolved },
+  const [{ events, upcomingCount, pastCount, games, options, origin, locationUnresolved,
+           suggestions },
          everything, viewer] = await Promise.all([
     listEvents({ ...filters, when, game }),
     listEvents({ when: "all" }),
@@ -113,6 +115,11 @@ export default async function EventsPage({ searchParams }: PageProps<"/events">)
   // of the whole set at once, and a map showing a page of pins is a wrong map.
   const page = pageFrom(params.page);
   const listed = pageOf(events, page, EVENTS_PER_PAGE);
+
+  // Shown once the reader has run out, not before. On the last page, or on the
+  // map and the calendar, which show the whole result set at once. Under page
+  // one of twelve it would be noise sitting where the pager belongs.
+  const atTheEnd = view !== "list" || page >= pageCount(events.length, EVENTS_PER_PAGE);
 
   return (
     <Box component="main">
@@ -274,6 +281,24 @@ export default async function EventsPage({ searchParams }: PageProps<"/events">)
           </Typography>
         </Stack>
       )}
+
+      {atTheEnd ? (
+        <SimilarEvents
+          items={suggestions.items}
+          trail={trail}
+          lede={
+            // Three different situations, and passing off the third as the
+            // first would have people turning up to something that has run.
+            suggestions.basis === "history"
+              ? when === "past"
+                ? "That is everything that has run. Here is what is coming up instead."
+                : "That is every event coming up. Here is what these clubs have run before."
+              : events.length
+                ? "Other events near the ones above, by the games they share."
+                : "Nothing matched that search, so here is what else is on."
+          }
+        />
+      ) : null}
       </EventResults>
       </EventsBusyProvider>
       </Container>

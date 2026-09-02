@@ -44,7 +44,7 @@ export default function SaveAlertButton({
   canSave: boolean;
   /**
    * A search to save instead of the one in the URL. An event card passes its
-   * own game and town, so "notify me about similar events" means events like
+   * own game and town, so "notify of similar events" means events like
    * this one rather than whatever happened to be filtered at the time.
    */
   preset?: Record<string, string>;

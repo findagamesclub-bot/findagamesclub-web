@@ -10,6 +10,21 @@ export function haversineMiles(lat1: number, lon1: number, lat2: number, lon2: n
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+/**
+ * A distance, worded the same way everywhere it appears.
+ *
+ * Precision where it changes a decision and not where it does not: half a mile
+ * is a walk and 0.8 of one is too, so both read as "under a mile"; three and a
+ * half miles is worth a decimal; sixty-one is not, and "61.3 mi away" only
+ * looks like it was measured by a machine.
+ */
+export function milesLabel(miles: number): string {
+  if (!Number.isFinite(miles) || miles < 0) return "";
+  if (miles < 1) return "under a mile";
+  if (miles < 10) return `${miles.toFixed(1)} mi away`;
+  return `${Math.round(miles)} mi away`;
+}
+
 export type LocationParts = {
   raw: string;
   clean: string;    // OX119AT

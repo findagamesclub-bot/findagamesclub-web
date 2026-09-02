@@ -6,13 +6,19 @@ import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import { tokens, type Faction } from "@/lib/tokens";
 import { initials } from "@/utils/initials";
+import TagChip from "./TagChip";
 import type { ClubMember } from "@/types/membership";
 
 /** One person on the roster. Games and armies come from their own profile. */
 export default function MemberRow({
   member, faction, action,
 }: { member: ClubMember; faction: Faction; action?: React.ReactNode }) {
-  const tags = [...member.games.slice(0, 3), ...member.armies.slice(0, 2)];
+  // One line, because a row has no space for two labelled groups. Games are
+  // filled and armies outlined, so the two can still be told apart.
+  const tags = [
+    ...member.games.slice(0, 3).map((label) => ({ label, kind: "game" as const })),
+    ...member.armies.slice(0, 2).map((label) => ({ label, kind: "army" as const })),
+  ];
 
   return (
     <Stack
@@ -47,8 +53,7 @@ export default function MemberRow({
         {tags.length ? (
           <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", mt: 0.5 }} useFlexGap>
             {tags.map((t) => (
-              <Chip key={t} size="small" variant="outlined" label={t}
-                sx={{ borderColor: tokens.rule, fontSize: "0.75rem" }} />
+              <TagChip key={t.label} label={t.label} faction={faction} kind={t.kind} />
             ))}
           </Stack>
         ) : (

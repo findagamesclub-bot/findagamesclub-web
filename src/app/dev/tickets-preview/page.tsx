@@ -38,7 +38,7 @@ export default function TicketsPreviewPage() {
 
   const booking: EventBooking = {
     id: 1, reference: "FAGC-K7M2QP", eventId: 115, eventTitle: "Autumn Open",
-    eventDate: "2026-09-26", clubSlug: "didcot-wargames-didcot", clubName: "Didcot Wargames",
+    eventDate: "2026-09-26", clubSlug: "didcot-wargames-didcot", clubName: "Didcot Wargames", clubId: 9,
     legacyId: "2026-09-26-autumn-open-test", fullName: "Ada Marchetti",
     email: "ada@example.com", status: "reserved", subtotal: 60, discountAmount: 3,
     total: 57, currency: "GBP", createdAt: "2026-08-22T10:00:00Z", lines: cart.lines,
@@ -46,11 +46,14 @@ export default function TicketsPreviewPage() {
 
   const attendees = [
     { id: 1, reference: "FAGC-K7M2QP", fullName: "Ada Marchetti", email: "ada@example.com",
-      total: 57, currency: "GBP", tickets: 2, summary: "2× Standard entry" },
+      total: 57, currency: "GBP", tickets: 2, summary: "2× Standard entry",
+      createdAt: "2026-09-01T10:00:00Z", types: ["Standard entry"] },
     { id: 2, reference: "FAGC-B4XN9T", fullName: "Tom Okonkwo", email: "tom@example.com",
-      total: 24, currency: "GBP", tickets: 1, summary: "1× Club member" },
+      total: 24, currency: "GBP", tickets: 1, summary: "1× Club member",
+      createdAt: "2026-09-02T10:00:00Z", types: ["Club member"] },
     { id: 3, reference: "FAGC-R8HQ2D", fullName: "Priya Raman", email: "priya@example.com",
-      total: 90, currency: "GBP", tickets: 3, summary: "2× Standard entry, 1× Club member" },
+      total: 90, currency: "GBP", tickets: 3, summary: "2× Standard entry, 1× Club member",
+      createdAt: "2026-09-03T10:00:00Z", types: ["Standard entry", "Club member"] },
   ];
 
   return (

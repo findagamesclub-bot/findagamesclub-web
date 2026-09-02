@@ -66,7 +66,7 @@ export default async function LoyaltyPage({
   );
 
   return (
-    <Container maxWidth="md" component="main" sx={{ py: { xs: 4, md: 6 } }}>
+    <Container maxWidth="lg" component="main" sx={{ py: { xs: 4, md: 6 } }}>
       {/* No figures here: the panel below carries them, and the same number in
           two places reads as two different numbers that happen to agree. */}
       <ClubSectionHeader back={back} title="Loyalty" clubName={club.name} clubSlug={club.slug}
@@ -83,16 +83,10 @@ export default async function LoyaltyPage({
       ) : null}
 
       {wallet && membership.status === "approved" ? (
-        <>
-          <Box sx={{ border: `1px solid ${tokens.rule}`, borderRadius: 1.5, p: { xs: 2, sm: 2.75 },
-                     backgroundColor: tokens.paper, mb: 1 }}>
-            <LoyaltyPanel wallet={wallet} />
-          </Box>
-
-          <Section title="How it adds up" icon={HistoryIcon}>
-            <LoyaltyLedger entries={wallet.entries} />
-          </Section>
-        </>
+        <Box sx={{ border: `1px solid ${tokens.rule}`, borderRadius: 1.5, p: { xs: 2, sm: 2.75 },
+                   backgroundColor: tokens.paper, mb: 1 }}>
+          <LoyaltyPanel wallet={wallet} />
+        </Box>
       ) : canManage ? null : (
         <Box sx={{ border: `1px solid ${tokens.rule}`, borderRadius: 1.5, p: 3,
                    backgroundColor: tokens.paper, mb: 1 }}>
@@ -106,6 +100,14 @@ export default async function LoyaltyPage({
         </Box>
       )}
 
+      {/* Two columns from md up, and in this order on a phone.
+          What a reader wants, in order: where am I, what can I reach, how do I
+          get there, and only then what have I already done. The history is the
+          longest of the four and the least urgent, so it moves out of the way
+          rather than pushing the ladder below fifteen rows of it. */}
+      <Box sx={{ display: "grid", gap: { xs: 0, md: 4 }, alignItems: "start",
+                 gridTemplateColumns: { xs: "1fr", md: "minmax(0,1fr) minmax(0,1fr)" } }}>
+      <Box>
       <Section title="The ladder" icon={MilitaryTechIcon}>
         <TierLadder tiers={programme.tiers} lifetime={wallet?.lifetime ?? 0} />
       </Section>
@@ -127,6 +129,14 @@ export default async function LoyaltyPage({
           ))}
         </Stack>
       </Section>
+      </Box>
+
+      {wallet && membership.status === "approved" ? (
+        <Section title="How it adds up" icon={HistoryIcon}>
+          <LoyaltyLedger entries={wallet.entries} />
+        </Section>
+      ) : null}
+      </Box>
     </Container>
   );
 }

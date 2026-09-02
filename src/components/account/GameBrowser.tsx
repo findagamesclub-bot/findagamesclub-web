@@ -15,8 +15,9 @@ import {
 } from "@/utils/game-filter";
 import { mono, tokens } from "@/lib/tokens";
 import type { MyGame } from "@/services/games.service";
+import { PER_PAGE } from "@/utils/paging";
 
-const PAGE = 12;
+const PAGE = PER_PAGE.cards;
 
 /** Search, filter and sort a member's games, then a grid. */
 export default function GameBrowser({

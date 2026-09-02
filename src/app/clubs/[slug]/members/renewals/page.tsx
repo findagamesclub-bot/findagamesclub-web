@@ -60,7 +60,8 @@ export default async function ClubRenewalsPage({
         ]}
       />
 
-      <RenewalBrowser rows={rows} />
+      <RenewalBrowser rows={rows} slug={club.slug}
+        tiers={club.membershipTiers} faction={faction} />
     </Container>
   );
 }

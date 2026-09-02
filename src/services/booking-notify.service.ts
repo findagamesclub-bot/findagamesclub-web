@@ -3,6 +3,7 @@ import "server-only";
 import * as receipts from "@/repositories/receipts.repository";
 import * as templates from "@/lib/email/templates";
 import { deliver, siteUrl } from "./mail-recipient.service";
+import * as memberships from "@/repositories/memberships.repository";
 import { nightLabel } from "@/utils/dates";
 import { formatPrice } from "@/utils/format";
 
@@ -89,4 +90,73 @@ export async function notifyPromoted(params: {
       url: `${siteUrl()}/clubs/${params.clubSlug}/bookings`,
     }),
   );
+}
+
+/**
+ * The poster, when somebody takes up their advert.
+ *
+ * Same reasoning as notifyPromoted: accept_looking_for_game books the table in
+ * the POSTER's name, so they are committed to a night and a price at a moment
+ * they were not looking. The bell (0052) tells them too; this is the half that
+ * reaches somebody who is not on the site.
+ */
+export async function notifyGameFound(bookingId: number, opponentName: string) {
+  try {
+    const row = await receipts.findBookingReceipt(bookingId);
+    if (!row?.clubs) return;
+    const club = row.clubs;
+
+    await deliver(row.booked_by, (name) =>
+      templates.gameFound({
+        name,
+        clubName: club.name,
+        opponentName: opponentName.trim() || "Another member",
+        gameTitle: row.game_title,
+        night: nightLabel(row.session_date),
+        time: row.session_time ?? "",
+        price: money(row.total_price, row.price_currency),
+        url: `${siteUrl()}/clubs/${club.slug}/bookings`,
+      }),
+    );
+  } catch (error) {
+    console.error("game found notification failed", { bookingId, error });
+  }
+}
+
+/**
+ * The club, when a member puts an advert up.
+ *
+ * Goes to the owner's account address rather than anything on the post, and
+ * never to an owner advertising at their own club: nobody is told about their
+ * own doing, the same rule the trigger applies.
+ */
+export async function notifyClubOfLookingForGame(params: {
+  clubId: number;
+  clubSlug: string;
+  clubName: string;
+  posterId: string;
+  memberName: string;
+  gameTitle: string;
+  sessionDate: string;
+  sessionTime: string;
+  notes?: string | null;
+}) {
+  try {
+    const club = await memberships.findClubBasics(params.clubId);
+    if (!club?.owner_id || club.owner_id === params.posterId) return;
+
+    await deliver(club.owner_id, () =>
+      templates.lookingForGameForOwner({
+        clubName: params.clubName,
+        memberName: params.memberName.trim() || "A member",
+        gameTitle: params.gameTitle,
+        night: nightLabel(params.sessionDate),
+        time: params.sessionTime,
+        notes: params.notes,
+        url: `${siteUrl()}/clubs/${params.clubSlug}/bookings`,
+      }),
+    );
+  } catch (error) {
+    console.error("looking-for-game notification failed", { clubId: params.clubId, error });
+  }
 }

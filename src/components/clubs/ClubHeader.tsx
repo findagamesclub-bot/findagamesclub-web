@@ -96,8 +96,11 @@ export default function ClubHeader({
         </Box>
       </Box>
 
+      {/* Full width, matching the artwork above it. Held to 680 it sat as a
+          narrow column under a full-width image, which read as a caption that
+          had come loose rather than as the club describing itself. */}
       {club.summary ? (
-        <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 680 }}>
+        <Typography variant="body1" color="text.secondary">
           {club.summary}
         </Typography>
       ) : null}

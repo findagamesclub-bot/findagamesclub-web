@@ -4,6 +4,8 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import ClubArt from "@/components/clubs/ClubArt";
 import { nightLabel } from "@/utils/dates";
+import EventWhen from "./EventWhen";
+import BestCoastButton from "./BestCoastButton";
 import { ticketsLeft } from "@/utils/tickets-left";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { ClubEventDetail } from "@/types/event";
@@ -15,11 +17,18 @@ export default function EventHero({
   event: ClubEventDetail;
   faction: Faction;
 }) {
-  const when = [
-    event.startDate ? nightLabel(event.startDate) : null,
-    event.startTime,
-    event.endDate && event.endDate !== event.startDate ? `to ${nightLabel(event.endDate)}` : null,
-  ].filter(Boolean).join(" \u00b7 ");
+  // Over the artwork this stays a glance: the day, and the second day when
+  // there is one. The exact times are labelled STARTS and ENDS underneath,
+  // where a reader can see which is which without parsing a run-on line.
+  const spansDays = Boolean(
+    event.endDate && event.startDate && event.endDate !== event.startDate,
+  );
+  const when = event.startDate
+    ? spansDays
+      ? `${nightLabel(event.startDate)} to ${nightLabel(event.endDate!)}`
+      : nightLabel(event.startDate)
+    : "";
+
 
   const tickets = ticketsLeft(event.ticketsAvailable, true);
 
@@ -75,6 +84,13 @@ export default function EventHero({
         </Box>
       </Box>
 
+      {/* Label above value, not trailing it. "£30 ENTRY" reads as a figure and
+          its unit; "Sat 26 Sep · 09:30 STARTS" buried the one word that said
+          which end of the event you were looking at. */}
+      <Box sx={{ mb: 2 }}>
+        <EventWhen event={event} faction={faction} />
+      </Box>
+
       {facts.length ? (
         <Stack direction="row" spacing={3} useFlexGap
           sx={{ flexWrap: "wrap", alignItems: "baseline", mb: 1 }}>
@@ -93,7 +109,11 @@ export default function EventHero({
         </Stack>
       ) : null}
 
-
+      {/* Where the club runs registration and pairings for this tournament. */}
+      <Box sx={{ mt: 1.5, mb: 1 }}>
+        <BestCoastButton href={event.bestcoastLink} faction={faction} size="medium" />
+      </Box>
     </>
   );
 }
+

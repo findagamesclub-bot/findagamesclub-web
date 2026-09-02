@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/services/auth.service";
 import * as tickets from "@/services/tickets.service";
 import { getBooking } from "@/services/eventBookings.service";
-import { notifyBooked } from "@/services/ticket-notify.service";
+import { notifyBooked, notifyClubBooked } from "@/services/ticket-notify.service";
 
 export type TicketState = { error?: string; notice?: string };
 
@@ -53,6 +53,9 @@ export async function ticketAction(
       profileId: viewer.id,
       fullName: String(data.get("fullName") ?? "") || viewer.full_name,
       email: String(data.get("email") ?? "") || viewer.email,
+      // A request. checkout_event_cart checks it against the tier and the
+      // balance and writes what it allows.
+      redeemPoints: Number(data.get("redeemPoints") ?? 0),
     });
 
     refresh();
@@ -61,7 +64,12 @@ export async function ticketAction(
     // Read back rather than assembling from the cart: the confirmation must say
     // what was actually written, including any line the capacity check trimmed.
     const booking = await getBooking(result.reference);
-    if (booking) await notifyBooked(booking);
+    if (booking) {
+      await notifyBooked(booking);
+      // The club too. A booking the owner never hears about is a place they
+      // cannot plan around and money they cannot chase.
+      await notifyClubBooked(booking);
+    }
 
     // Straight to the confirmation, which is the only place the reference is
     // shown. A notice on the page behind would be lost on the next reload.

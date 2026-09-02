@@ -20,10 +20,24 @@ export type SortOption<S extends string> = { value: S; label: string };
  * same three questions of a list, and two filter bars that drift apart is the
  * thing this codebase keeps having to undo.
  */
+/**
+ * A second axis, when a list is asked two different questions.
+ *
+ * Memberships needs "how do they pay" alongside "where do they stand", and
+ * folding both into the tab row would mean choosing Yearly cleared Lapsed.
+ */
+export type SecondFilter = {
+  label: string;
+  value: string;
+  options: SortOption<string>[];
+  onChange: (value: string) => void;
+};
+
 export default function FilterBar<T extends string, S extends string>({
   query, onQuery, placeholder,
   tabs, filter, onFilter,
   sorts, sort, onSort,
+  second,
 }: {
   query: string;
   onQuery: (value: string) => void;
@@ -34,6 +48,7 @@ export default function FilterBar<T extends string, S extends string>({
   sorts: SortOption<S>[];
   sort: S;
   onSort: (value: S) => void;
+  second?: SecondFilter;
 }) {
   return (
     <Stack spacing={1.5}
@@ -53,6 +68,18 @@ export default function FilterBar<T extends string, S extends string>({
             },
           }}
         />
+        {second ? (
+          <TextField
+            select size="small" label={second.label} value={second.value}
+            onChange={(event) => second.onChange(event.target.value)}
+            sx={{ minWidth: { sm: 170 } }}
+          >
+            {second.options.map((option) => (
+              <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+            ))}
+          </TextField>
+        ) : null}
+
         <TextField
           select size="small" label="Sort" value={sort}
           onChange={(event) => onSort(event.target.value as S)}

@@ -46,6 +46,21 @@ export default async function EmailPreviewPage({ searchParams }: PageProps<"/dev
       billingLabel: "Monthly", price: "£12.00", paidUntil: "30 September 2026", url })
     : which === "tierChanged" ? templates.tierChanged({
       name: "Gulnabi", clubName: club, tierLabel: "Premium Member", url })
+    : which === "lookingForGameForOwner" ? templates.lookingForGameForOwner({
+      clubName: club, memberName: "Gulnabi Afridi", gameTitle: "Horus Heresy",
+      night: "Thu 3 Sep", time: "19:00 - 22:30",
+      notes: "2500 points, Sons of Horus. I can bring terrain for two boards.", url })
+    : which === "gameFound" ? templates.gameFound({
+      name: "Gulnabi", clubName: club, opponentName: "Joe Matthews",
+      gameTitle: "Horus Heresy", night: "Thu 3 Sep", time: "19:00 - 22:30",
+      price: "£4.50", url })
+    : which === "ticketsForOwner" ? templates.ticketsForOwner({
+      clubName: "Didcot Wargames", eventTitle: "Autumn Open", when: "Sat 26 Sep",
+      buyerName: "Sam Whitfield", tickets: "2 tickets", total: "£26.50",
+      reference: "FAGC-SYCMZP", url })
+    : which === "ticketsCancelledForOwner" ? templates.ticketsCancelledForOwner({
+      clubName: "Didcot Wargames", eventTitle: "Autumn Open",
+      buyerName: "Sam Whitfield", tickets: "2 tickets", url })
     : which === "membershipRequested" ? templates.membershipRequested({ name: "Gulnabi", clubName: club, url })
     : which === "membershipApproved" ? templates.membershipApproved({ name: "Gulnabi", clubName: club, tierLabel: "Premium Member", url })
     : which === "membershipDeclined" ? templates.membershipDeclined({ name: "Gulnabi", clubName: club, reason: "We are at capacity until September.", url })
@@ -71,7 +86,8 @@ export default async function EmailPreviewPage({ searchParams }: PageProps<"/dev
           "membershipPaid", "tierChanged",
           "tableBooked", "tablePromoted", "tableCancelled",
           "merchandiseOrdered", "coachingBooked",
-          "ticketsBooked", "ticketsCancelled"].map((t) => (
+          "ticketsBooked", "ticketsCancelled",
+          "ticketsForOwner", "ticketsCancelledForOwner", "gameFound", "lookingForGameForOwner"].map((t) => (
           <a key={t} href={`?t=${t}`} style={{ marginRight: 12 }}>{t}</a>
         ))}
         <strong style={{ marginLeft: 12 }}>{email.subject}</strong>

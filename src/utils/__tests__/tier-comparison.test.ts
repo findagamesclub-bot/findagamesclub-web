@@ -4,7 +4,7 @@ import type { MembershipTier } from "@/types/clubDetail";
 
 const tier = (label: string, isBasic: boolean, benefitValues: Record<string, unknown>): MembershipTier => ({
   key: label.toLowerCase(), label, price: null, priceDuration: "", description: null,
-  isBasic, benefits: [], benefitGroups: [], benefitValues,
+  isBasic, isFree: isBasic, benefits: [], benefitGroups: [], benefitValues,
   billingOptions: [], eventDiscountPercent: 0, reservedCategories: [],
 });
 

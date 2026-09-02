@@ -15,6 +15,7 @@ import { usePagedList } from "@/hooks/usePagedList";
 import { ANY, filterRoster, rosterOptions } from "@/utils/roster-filter";
 import { tokens } from "@/lib/tokens";
 import type { ClubMember } from "@/types/membership";
+import { PER_PAGE } from "@/utils/paging";
 
 /**
  * Narrow the roster to the people worth messaging.
@@ -62,7 +63,7 @@ export default function RosterFilters({
     [cards, shown],
   );
   const top = useRef<HTMLDivElement>(null);
-  const paged = usePagedList(matching, undefined, top);
+  const paged = usePagedList(matching, PER_PAGE.cards, top);
 
   const narrowed = query || game || army || style;
 

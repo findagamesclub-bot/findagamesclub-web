@@ -69,7 +69,7 @@ export default function DashboardPanels({
         caption={overdue.length
           ? `${overdue.length} needs a payment.`
           : pending
-            ? `${pending} application still with the club.`
+            ? `${pending} ${pending === 1 ? "application" : "applications"} still with the club.`
             : undefined}>
         {approved.length || pending ? (
           data.memberships.slice(0, 4).map((m) => (

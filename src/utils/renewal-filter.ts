@@ -1,6 +1,6 @@
 import { standing } from "./membership-billing";
 import type { ClubMember } from "@/types/membership";
-import type { MembershipPayment } from "@/types/payment";
+import type { MembershipPayment, PaymentStanding } from "@/types/payment";
 
 /**
  * A club's memberships, as the owner needs to see them.
@@ -12,9 +12,17 @@ import type { MembershipPayment } from "@/types/payment";
  * ledger disagree the moment anybody corrects a mistake.
  */
 
-export type RenewalFilter =
-  | "all" | "due" | "expiring" | "overdue" | "paid"
-  | "monthly" | "yearly" | "one-off" | "free";
+/** What state a membership is in. */
+export type RenewalFilter = "all" | "due" | "expiring" | "overdue" | "paid";
+
+/**
+ * How the member pays, which is a different question from how they stand.
+ *
+ * These were folded into RenewalFilter, so choosing "Yearly" cleared "Lapsed"
+ * and a club could not ask the one thing it actually wants to know: who on a
+ * monthly plan has lapsed. Two axes, because they are two questions.
+ */
+export type RenewalBilling = "any" | "monthly" | "yearly" | "one-off" | "free";
 
 export type RenewalSort = "soonest" | "name" | "joined";
 
@@ -41,6 +49,13 @@ export type RenewalRow = {
   cadence: string;
   /** What the club last took, for the row to show. */
   lastPrice: string;
+  /**
+   * Carried so the owner can open the same Manage dialog the roster has
+   * without the page fetching every membership's payments a second time. The
+   * money is already loaded to work the row out.
+   */
+  payments: MembershipPayment[];
+  standing: PaymentStanding;
 };
 
 const fold = (value: string) => value.trim().toLowerCase();
@@ -63,9 +78,10 @@ export function toRenewalRow(params: {
   today?: number;
 }): RenewalRow {
   const now = params.today ?? Date.now();
-  const { paidThrough, overdue, settledOneOff } = standing(
+  const paid = standing(
     params.payments, params.member.tierKey, params.member.tierAssignedAt,
   );
+  const { paidThrough, overdue, settledOneOff } = paid;
 
   // Filtered exactly as standing() filters it, tier and assigned-at both. The
   // row was showing the last payment on this tier whether or not it counted,
@@ -94,6 +110,8 @@ export function toRenewalRow(params: {
     settled: settledOneOff,
     cadence: settledOneOff ? "one-off" : fold(latest?.priceDuration ?? ""),
     lastPrice: latest?.price ?? "",
+    payments: params.payments,
+    standing: paid,
   };
 }
 
@@ -109,9 +127,33 @@ function matches(row: RenewalRow, filter: RenewalFilter): boolean {
     case "overdue": return row.overdue;
     case "paid":
       return row.free || row.settled || (row.paidThrough !== null && !row.overdue);
-    case "free": return row.free;
-    default: return row.cadence === filter;
   }
+}
+
+/**
+ * What a club typed, read as one of four things.
+ *
+ * `cadence` comes from the payment's `priceDuration`, which is free text the
+ * club wrote: the live data says "month" and "year", not "monthly" and
+ * "yearly". Matching the filter name against it exactly found nothing, which
+ * is why those two filters never returned a row.
+ */
+function cadenceKind(cadence: string): RenewalBilling | null {
+  const c = fold(cadence);
+  if (!c) return null;
+  if (c.startsWith("month")) return "monthly";
+  if (c.startsWith("year") || c.startsWith("annual")) return "yearly";
+  if (c.startsWith("one") || c.startsWith("once")) return "one-off";
+  return null;
+}
+
+function matchesBilling(row: RenewalRow, billing: RenewalBilling): boolean {
+  if (billing === "any") return true;
+  // A free tier has no cadence to match, and a paid tier is never "free"
+  // however little the club charges, so this is asked first rather than as
+  // another cadence string.
+  if (billing === "free") return row.free;
+  return !row.free && cadenceKind(row.cadence) === billing;
 }
 
 /** Name, tier, price and renewal date, so a club can search however it thinks. */
@@ -125,14 +167,19 @@ function haystack(row: RenewalRow): string {
 
 export function filterRenewals(
   rows: RenewalRow[],
-  { query = "", filter = "all", sort = "soonest" }: {
-    query?: string; filter?: RenewalFilter; sort?: RenewalSort;
+  { query = "", filter = "all", billing = "any", sort = "soonest" }: {
+    query?: string;
+    filter?: RenewalFilter;
+    billing?: RenewalBilling;
+    sort?: RenewalSort;
   },
 ): RenewalRow[] {
   const needle = fold(query);
 
   const kept = rows.filter((row) =>
-    matches(row, filter) && (!needle || haystack(row).includes(needle)));
+    matches(row, filter)
+    && matchesBilling(row, billing)
+    && (!needle || haystack(row).includes(needle)));
 
   return kept.sort((a, b) => {
     if (sort === "name") return a.member.fullName.localeCompare(b.member.fullName);
@@ -153,11 +200,16 @@ export function filterRenewals(
   });
 }
 
-/** How many memberships sit in each tab. */
-export function countRenewals(rows: RenewalRow[]) {
-  const of = (filter: RenewalFilter) => rows.filter((r) => matches(r, filter)).length;
+/**
+ * How many memberships sit in each tab, counted against the billing type in
+ * force. A tab reading "Lapsed 3" while the list shows none is worse than no
+ * count at all, and that is what happens if the counts ignore the other axis.
+ */
+export function countRenewals(rows: RenewalRow[], billing: RenewalBilling = "any") {
+  const pool = rows.filter((r) => matchesBilling(r, billing));
+  const of = (filter: RenewalFilter) => pool.filter((r) => matches(r, filter)).length;
   return {
-    all: rows.length,
+    all: pool.length,
     due: of("due"),
     expiring: of("expiring"),
     overdue: of("overdue"),

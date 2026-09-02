@@ -42,10 +42,10 @@ export async function findEvents(params: { from?: string; to?: string; limit?: n
     .select(
       `id, legacy_id, title, summary, start_date, start_time, end_date, end_time, event_type,
        event_types, formats, facilities,
-       price, round_count, tickets_available,
+       price, round_count, tickets_available, bestcoast_link,
        venue_name, venue_address, venue_postcode, featured_games,
        club_event_ticket_types(price),
-       clubs!inner(slug, name, city, logo_url, status, latitude, longitude,
+       clubs!inner(slug, name, city, logo_url, status, latitude, longitude, ages,
                    club_images(src, alt, position),
                    club_formats(formats(label))),
        club_event_results(rank, placement, member_name, army)`,
@@ -119,4 +119,45 @@ export async function findClubEventsPage(
   const { data, error, count } = await query;
   if (error) throw new Error(`Failed to load club events: ${error.message}`);
   return { rows: data ?? [], total: count ?? 0 };
+}
+
+/**
+ * Add or correct one placing on an event.
+ *
+ * A function, not an update: club_event_results is select-only for
+ * `authenticated` (0009), and the army column will carry an Army Builder
+ * snapshot that a form must merge into rather than overwrite.
+ */
+export async function saveEventPlacing(params: {
+  eventId: number;
+  placingId: number | null;
+  rank: number;
+  name: string;
+  profileId: string | null;
+  faction: string;
+  detachment: string;
+}) {
+  const supabase = await createClient();
+  const { error } = await (supabase as unknown as {
+    rpc(name: string, args: Record<string, unknown>): Promise<{ error: { message: string } | null }>;
+  }).rpc("save_event_placing", {
+    p_event: params.eventId,
+    p_placing: params.placingId,
+    p_rank: params.rank,
+    p_name: params.name,
+    p_profile: params.profileId,
+    p_faction: params.faction,
+    p_detachment: params.detachment,
+  });
+
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteEventPlacing(eventId: number, placingId: number) {
+  const supabase = await createClient();
+  const { error } = await (supabase as unknown as {
+    rpc(name: string, args: Record<string, unknown>): Promise<{ error: { message: string } | null }>;
+  }).rpc("delete_event_placing", { p_event: eventId, p_placing: placingId });
+
+  if (error) throw new Error(error.message);
 }

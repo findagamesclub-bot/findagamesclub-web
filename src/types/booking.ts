@@ -72,6 +72,14 @@ export type Booking = {
   /** True when the viewer is on this booking in any seat. */
   isMine: boolean;
   canCancel: boolean;
+  /**
+   * The opponent is a registered member, so their name comes from their
+   * profile and typing over it here would change nothing.
+   */
+  opponentLinked: boolean;
+  /** The club may correct any booking; the member only their own, and only
+   *  while the night is still ahead. */
+  canEdit: boolean;
 };
 
 /** A night, with everything the calendar needs to draw it. */
@@ -90,6 +98,16 @@ export type CalendarSession = BookableSession & {
   blockedBy: "not-a-member" | "date-clash" | "booking-limit" | "full" | null;
   /** The viewer already has a booking on this date, at any session. */
   viewerBookedThisDate: boolean;
+  /**
+   * Whether an advert may be posted for this night.
+   *
+   * A tier only lets a member advertise a set number of club nights ahead. The
+   * page used to offer "Find an opponent" on every night and let the server
+   * refuse it, which read as a broken feature rather than a rule: a tester
+   * clicked the fourth Thursday, got told it was outside their window, and
+   * logged the whole feature as untestable.
+   */
+  canPostLookingForGame: boolean;
 };
 
 export type BookingCalendar = {

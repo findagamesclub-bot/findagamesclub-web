@@ -43,6 +43,7 @@ function toBooking(row: Row): EventBooking {
     eventDate: event.start_date,
     clubSlug: event.clubs.slug,
     clubName: event.clubs.name,
+    clubId: row.club_id,
     legacyId: event.legacy_id,
     fullName: row.full_name,
     email: row.email,
@@ -83,6 +84,8 @@ export async function getAttendees(eventId: number) {
       tickets: items.reduce((n, i) => n + i.quantity, 0),
       // "2× Standard, 1× Junior" reads better on a door list than a nested list.
       summary: items.map((i) => `${i.quantity}× ${i.label}`).join(", "),
+      // The types on this booking, so the door can filter to one of them.
+      types: [...new Set(items.map((i) => i.label).filter(Boolean))],
     };
   });
 }

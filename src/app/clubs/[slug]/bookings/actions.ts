@@ -5,6 +5,7 @@ import { getCurrentProfile } from "@/services/auth.service";
 import * as bookings from "@/services/bookings.service";
 import * as waitlist from "@/services/waitlist.service";
 import * as lfg from "@/services/lookingForGames.service";
+import { notifyClubOfLookingForGame, notifyGameFound } from "@/services/booking-notify.service";
 import { getClubDetail } from "@/services/clubDetail.service";
 import { getBookingCalendar } from "@/services/bookingCalendar.service";
 
@@ -47,6 +48,19 @@ export async function bookingAction(
         ? `Table ${result.tableIndex + 1} is yours. Your looking-for-a-game post came down.`
         : `Table ${result.tableIndex + 1} is yours.`,
     };
+  }
+
+  if (intent === "edit") {
+    const result = await bookings.editBooking({
+      bookingId: Number(data.get("bookingId")),
+      gameTitle: String(data.get("gameTitle") ?? ""),
+      opponentName: String(data.get("opponentName") ?? ""),
+      notes: String(data.get("notes") ?? ""),
+    });
+
+    refresh();
+    if (!result.ok) return { error: result.error };
+    return { notice: "Booking updated." };
   }
 
   if (intent === "cancel") {
@@ -115,6 +129,22 @@ export async function bookingAction(
 
     refresh();
     if (!result.ok) return { error: result.error };
+
+    // The club too. An advert that never finds an opponent is the one they most
+    // need to see, and by the time it converts nobody needed telling.
+    const night = calendar.sessions.find((s) => s.date === String(data.get("sessionDate") ?? ""));
+    await notifyClubOfLookingForGame({
+      clubId,
+      clubSlug: slug,
+      clubName: club.name,
+      posterId: viewer.id,
+      memberName: viewer.full_name,
+      gameTitle: String(data.get("gameTitle") ?? ""),
+      sessionDate: String(data.get("sessionDate") ?? ""),
+      sessionTime: night?.time ?? "",
+      notes: String(data.get("notes") ?? ""),
+    });
+
     return { notice: "Posted. Members of the club can now take you up on it." };
   }
 
@@ -129,6 +159,10 @@ export async function bookingAction(
     const result = await lfg.acceptPost(Number(data.get("postId")));
     refresh();
     if (!result.ok) return { error: result.error };
+
+    // The table is booked in the poster's name, not the acceptor's, so the
+    // poster is the one who needs telling.
+    await notifyGameFound(result.bookingId, viewer.full_name);
     return { notice: "You are playing. The table is booked." };
   }
 

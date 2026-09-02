@@ -3,7 +3,7 @@ import { betterOffer, clampPercent, memberAmount, priceLines } from "../shop-pri
 import type { MembershipTier } from "@/types/clubDetail";
 
 const tier = (key: string, label: string, percent: number): MembershipTier => ({
-  key, label, price: null, priceDuration: "", description: null, isBasic: key === "basic",
+  key, label, price: null, priceDuration: "", description: null, isBasic: key === "basic", isFree: key === "basic",
   benefits: [], benefitGroups: [], benefitValues: { merchandiseDiscountPercent: percent },
   billingOptions: [], eventDiscountPercent: 0, reservedCategories: [],
 });

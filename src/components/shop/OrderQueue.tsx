@@ -24,6 +24,7 @@ import { orderTotalLabel } from "@/utils/order-total";
 import { messageTime } from "@/utils/dates";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { MerchOrder } from "@/types/clubExtras";
+import { PER_PAGE } from "@/utils/paging";
 
 const STATES: { value: MerchOrder["status"]; label: string; tone: string }[] = [
   { value: "placed", label: "Placed", tone: tokens.brass },
@@ -60,7 +61,7 @@ export default function OrderQueue({
   const top = useRef<HTMLDivElement>(null);
   // Twelve, not the usual page: each order carries its own note log and status
   // control, so a page of them is far taller than a page of cards.
-  const paged = usePagedList(results, 12, top);
+  const paged = usePagedList(results, PER_PAGE.cards, top);
 
   const setStatus = (orderId: number, status: string) => {
     const data = new FormData();

@@ -16,9 +16,21 @@ const MESSAGES: [string, string][] = [
   ["CART_EMPTY", "Add at least one ticket before checking out."],
   ["NOT_SIGNED_IN", "Sign in to book tickets."],
   ["EVENT_NOT_FOUND", "That event no longer exists."],
+  // Raised by the redemption half of checkout_event_cart (0050). Worded as the
+  // table booking desk words them, because it is the same refusal.
+  ["NOT_ENOUGH_POINTS", "You do not have that many points."],
+  ["OVER_REDEMPTION_CAP",
+   "Points cannot cover that much of this order. Lower the number and try again."],
+  ["NO_REDEMPTION",
+   "Loyalty points can only be used by approved members of this club."],
 ];
 
 export function checkoutError(raw: string): string {
   const match = MESSAGES.find(([code]) => raw.includes(code));
-  return match ? match[1] : "Could not complete that booking. Try again.";
+  if (match) return match[1];
+
+  // Anything unrecognised is a bug, not a refusal we planned for. It reached a
+  // member as "try again", and trying again did the same thing forever.
+  console.error("[checkout] unexpected refusal:", raw);
+  return "Could not complete that booking. Try again.";
 }

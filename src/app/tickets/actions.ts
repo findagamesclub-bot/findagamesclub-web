@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/services/auth.service";
 import { cancelEventBooking, getBooking } from "@/services/eventBookings.service";
-import { notifyCancelled } from "@/services/ticket-notify.service";
+import { notifyCancelled, notifyClubCancelled } from "@/services/ticket-notify.service";
 
 export type CancelState = { error?: string; notice?: string };
 
@@ -23,7 +23,12 @@ export async function cancelTicketAction(
   revalidatePath(`/tickets/${result.reference}`);
 
   const booking = await getBooking(result.reference);
-  if (booking) await notifyCancelled(booking);
+  if (booking) {
+    await notifyCancelled(booking);
+    // A place back in the pool is a place the club can resell, and they are the
+    // only party who can act on it.
+    await notifyClubCancelled(booking);
+  }
 
   return { notice: `Booking ${result.reference} cancelled. Your place is back in the pool.` };
 }

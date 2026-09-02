@@ -21,6 +21,7 @@ import { formatPence } from "@/utils/format";
 import { orderTotalLabel } from "@/utils/order-total";
 import { mono, tokens } from "@/lib/tokens";
 import type { OwnerOrder } from "@/services/ownerBookings.service";
+import { PER_PAGE } from "@/utils/paging";
 
 const STATES: Record<string, { label: string; tone: string; wash: string }> = {
   placed: { label: "Placed", tone: "#5c4310", wash: tokens.brassSoft },
@@ -47,7 +48,7 @@ export default function OwnerOrders({ orders }: { orders: OwnerOrder[] }) {
     () => filterClubOrders(orders, { query, filter, sort }) as OwnerOrder[],
     [orders, query, filter, sort]);
   const top = useRef<HTMLDivElement>(null);
-  const paged = usePagedList(results, undefined, top);
+  const paged = usePagedList(results, PER_PAGE.cards, top);
 
   return (
     <Stack spacing={2}>

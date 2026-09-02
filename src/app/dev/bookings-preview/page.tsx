@@ -26,6 +26,7 @@ export default function BookingsPreviewPage() {
     booker: { profileId: String(id), name, isViewer: mine },
     opponent: opponent ? { profileId: null, name: opponent, isViewer: false } : null,
     acceptor: null, source: "member", price: "£5.00", isMine: mine, canCancel: mine,
+    opponentLinked: false, canEdit: mine,
   });
 
   const NAMES = [
@@ -46,6 +47,7 @@ export default function BookingsPreviewPage() {
     isFull: taken.length >= capacity, blockedReason,
     blockedBy: taken.length >= capacity ? ("full" as const) : null,
     viewerBookedThisDate: taken.some((b) => b.isMine),
+    canPostLookingForGame: !taken.some((b) => b.isMine),
   });
 
   const sampleQueue = [

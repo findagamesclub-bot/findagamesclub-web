@@ -12,11 +12,13 @@ import FilterBar from "@/components/account/FilterBar";
 import RenewalRow from "./RenewalRow";
 import {
   countRenewals, filterRenewals,
-  type RenewalFilter, type RenewalRow as Row, type RenewalSort,
+  type RenewalBilling, type RenewalFilter, type RenewalRow as Row, type RenewalSort,
 } from "@/utils/renewal-filter";
-import { tokens } from "@/lib/tokens";
+import { tokens, type Faction } from "@/lib/tokens";
+import type { MembershipTier } from "@/types/clubDetail";
+import { PER_PAGE } from "@/utils/paging";
 
-const PAGE = 25;
+const PAGE = PER_PAGE.cards;
 
 /**
  * The club's memberships, searched and filtered.
@@ -26,17 +28,29 @@ const PAGE = 25;
  * in the browser because a club roster is tens of rows, not thousands, and the
  * whole set is already on the page for the counts.
  */
-export default function RenewalBrowser({ rows }: { rows: Row[] }) {
+export default function RenewalBrowser({
+  rows, slug, tiers, faction,
+}: {
+  rows: Row[];
+  slug: string;
+  tiers: MembershipTier[];
+  faction: Faction;
+}) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<RenewalFilter>("all");
+  const [billing, setBilling] = useState<RenewalBilling>("any");
   const [sort, setSort] = useState<RenewalSort>("soonest");
   const [busy, startReorder] = useTransition();
 
-  const counts = useMemo(() => countRenewals(rows), [rows]);
+  // Counted against the billing type in force, or a tab reads "Lapsed 3" over
+  // an empty list.
+  const counts = useMemo(() => countRenewals(rows, billing), [rows, billing]);
   const results = useMemo(
-    () => filterRenewals(rows, { query, filter, sort }), [rows, query, filter, sort]);
+    () => filterRenewals(rows, { query, filter, billing, sort }),
+    [rows, query, filter, billing, sort]);
   const top = useRef<HTMLDivElement>(null);
   const paged = usePagedList(results, PAGE, top);
+  const narrowed = Boolean(query) || filter !== "all" || billing !== "any";
 
   return (
     <Stack spacing={2}>
@@ -53,6 +67,18 @@ export default function RenewalBrowser({ rows }: { rows: Row[] }) {
         ]}
         filter={filter}
         onFilter={(value) => startReorder(() => setFilter(value))}
+        second={{
+          label: "Billing",
+          value: billing,
+          onChange: (value) => startReorder(() => setBilling(value as RenewalBilling)),
+          options: [
+            { value: "any", label: "Any billing" },
+            { value: "monthly", label: "Monthly" },
+            { value: "yearly", label: "Yearly" },
+            { value: "one-off", label: "One-off" },
+            { value: "free", label: "Free tier" },
+          ],
+        }}
         sorts={[
           { value: "soonest" as const, label: "Needs chasing first" },
           { value: "name" as const, label: "Name" },
@@ -84,7 +110,10 @@ export default function RenewalBrowser({ rows }: { rows: Row[] }) {
                        sm: "repeat(2, minmax(0, 1fr))",
                        lg: "repeat(3, minmax(0, 1fr))",
                      } }}>
-            {paged.shown.map((row) => <RenewalRow key={row.member.membershipId} row={row} />)}
+            {paged.shown.map((row) => (
+              <RenewalRow key={row.member.membershipId} row={row}
+                slug={slug} tiers={tiers} faction={faction} />
+            ))}
           </Box>
 
           <Pager page={paged.page} total={paged.total} noun="memberships"
@@ -92,9 +121,11 @@ export default function RenewalBrowser({ rows }: { rows: Row[] }) {
         </BusyOverlay>
       ) : (
         <EmptyState
-          title={query || filter !== "all" ? "Nothing matches" : "No approved members yet"}
-          description={query || filter !== "all"
-            ? "Clear the search or pick a different tab."
+          title={narrowed ? "Nothing matches" : "No approved members yet"}
+          description={narrowed
+            // Billing is a dropdown that stays set while you change tabs, so
+            // it is the one people forget they are still filtering by.
+            ? "Clear the search, pick a different tab, or set Billing back to any."
             : "Memberships appear here once you have approved somebody."}
         />
       )}

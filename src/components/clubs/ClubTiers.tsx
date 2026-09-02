@@ -25,17 +25,22 @@ export function MembershipTiers({ tiers, slug }: { tiers: MembershipTier[]; slug
               borderRadius: 2, overflow: "hidden", height: "100%",
               backgroundColor: tokens.paper,
               // The paid tier is the one being sold, so it carries the weight.
-              border: `1px solid ${tier.isBasic ? tokens.rule : tokens.brass}`,
-              boxShadow: tier.isBasic ? "none" : "0 2px 14px rgba(184,134,43,0.14)",
+              border: `1px solid ${tier.isFree ? tokens.rule : tokens.brass}`,
+              boxShadow: tier.isFree ? "none" : "0 2px 14px rgba(184,134,43,0.14)",
             }}
           >
             <Stack spacing={0.25} sx={{ px: 2.5, pt: 2.5, pb: 2 }}>
               <Stack direction="row" spacing={1}
                 sx={{ alignItems: "center", justifyContent: "space-between" }}>
                 <Typography variant="h4" sx={{ fontSize: "1.2rem" }}>{tier.label}</Typography>
-                {!tier.isBasic ? (
-                  <Chip size="small" label="Premium"
-                    sx={{ bgcolor: tokens.brass, color: "#fff", fontWeight: 700,
+                {/* Only the free one is badged. A paid card has its price in
+                    large figures directly underneath, so a badge repeating that
+                    it costs money says nothing; and the badge used to read
+                    "Premium" on every paid tier, which put the word Premium on
+                    a card headed "Basic Membership". */}
+                {tier.isFree ? (
+                  <Chip size="small" label="Free"
+                    sx={{ bgcolor: tokens.positive, color: "#fff", fontWeight: 700,
                           fontSize: "0.66rem", height: 22 }} />
                 ) : null}
               </Stack>

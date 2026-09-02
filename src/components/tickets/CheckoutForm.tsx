@@ -9,7 +9,9 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import LockIcon from "@mui/icons-material/Lock";
 import { ticketAction, type TicketState } from "@/app/clubs/[slug]/events/[eventId]/actions";
+import TicketPointsField from "./TicketPointsField";
 import { formatMoney } from "@/utils/format";
+import type { TicketPrice, TicketStanding } from "@/utils/ticket-pricing";
 import { tokens, type Faction } from "@/lib/tokens";
 
 /**
@@ -20,16 +22,22 @@ import { tokens, type Faction } from "@/lib/tokens";
  * because the club needs to know who is coming.
  */
 export default function CheckoutForm({
-  slug, eventKey, eventId, fullName, email, total, currency, faction,
+  slug, eventKey, eventId, fullName, email, currency, faction,
+  standing, price, points, onPoints,
 }: {
   slug: string;
   eventKey: string;
   eventId: number;
   fullName: string;
   email: string;
-  total: number;
   currency: string;
   faction: Faction;
+  /** What they may pay with. The field hides itself when that is nothing. */
+  standing: TicketStanding;
+  /** Priced by the parent, so the button and the order summary cannot disagree. */
+  price: TicketPrice;
+  points: number;
+  onPoints: (value: number) => void;
 }) {
   const [state, submit, busy] = useActionState<TicketState, FormData>(ticketAction, {});
 
@@ -42,6 +50,9 @@ export default function CheckoutForm({
 
       <Stack spacing={2.5}>
         {state.error ? <Alert severity="error">{state.error}</Alert> : null}
+
+        <TicketPointsField standing={standing} price={price}
+          points={points} onPoints={onPoints} />
 
         <Stack spacing={2}>
           <TextField name="fullName" label="Your name" defaultValue={fullName} required fullWidth
@@ -70,7 +81,7 @@ export default function CheckoutForm({
         <Button type="submit" variant="contained" size="large" fullWidth
           loading={busy} loadingPosition="start"
           sx={{ backgroundColor: faction.base, "&:hover": { backgroundColor: faction.deep } }}>
-          Reserve for {formatMoney(total, currency)}
+          Reserve for {formatMoney(price.total, currency)}
         </Button>
       </Stack>
     </Box>

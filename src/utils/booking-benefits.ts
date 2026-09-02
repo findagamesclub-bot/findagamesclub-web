@@ -12,7 +12,15 @@ import type { MembershipBenefits, MembershipSettings } from "@/types/booking";
  *   eventAdvanceDays     = club setting  PLUS tier.priorityEventAdvanceDays
  *   loyaltyRedemptionCap = MAX(club setting, tier's own cap)
  *
- * The rest are taken from the club settings alone; a tier cannot narrow them.
+ * The other three are MAX(club setting, tier's own) for the same reason as the
+ * cap: legacy reads them off the tier and falls back to a global default
+ * (club_store.py:3256, 3659, 3662), which is the same answer wherever a tier
+ * grants more, and a safer one where a tier sets nothing.
+ *
+ * These three used to be taken from the club settings alone, which quietly
+ * threw away what a paid tier had been sold on. Didcot's Premium tier grants 4
+ * upcoming bookings and 2 open looking-for-game posts; members were held to the
+ * club's 2 and 1, while the tier comparison table went on advertising 4 and 2.
  */
 function num(benefits: Record<string, unknown>, key: string): number {
   const n = Number(benefits[key]);
@@ -40,10 +48,14 @@ export function resolveBenefits(
       Math.max(settings.loyaltyRedemptionCapPercent, num(b, "loyaltyRedemptionCapPercent")),
     ),
 
-    // Straight from the club. A paid tier does not get fewer of these.
-    maxUpcomingBookings: settings.upcomingBookingLimit,
-    lookingForGameFutureDates: settings.lookingForGameFutureDates,
-    lookingForGamePostLimit: settings.lookingForGamePostLimit,
+    // A paid tier can grant more of these, and can never grant fewer. Taking
+    // the larger rather than the tier's own also keeps 0 meaning "the tier does
+    // not say", instead of legacy's reading of 0 as unlimited.
+    maxUpcomingBookings: Math.max(settings.upcomingBookingLimit, num(b, "maxUpcomingBookings")),
+    lookingForGameFutureDates: Math.max(
+      settings.lookingForGameFutureDates, num(b, "lookingForGameFutureDates")),
+    lookingForGamePostLimit: Math.max(
+      settings.lookingForGamePostLimit, num(b, "lookingForGamePostLimit")),
 
     bookingDiscountPercent: Math.min(100, num(b, "bookingDiscountPercent")),
     waiveGameBookingFee: b.waiveGameBookingFee === true,

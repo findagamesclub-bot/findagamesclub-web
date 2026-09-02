@@ -1,6 +1,7 @@
 import { describeTierBenefits, groupTierBenefits } from "./tier-benefits";
 import { billingOptions } from "./membership-billing";
 import { formatPrice } from "./format";
+import { amountOf } from "./cart-pricing";
 import { reservedCategories } from "./discussion-categories";
 import type { MembershipTier } from "@/types/clubDetail";
 
@@ -23,6 +24,19 @@ export type TierRow = {
  * describeTierBenefits turns the object into sentences, which loses the number,
  * so the ticket code reads it from here instead of parsing prose back.
  */
+/**
+ * A tier with nothing to pay.
+ *
+ * Blank, "TBC" and "Free" all mean no price, and so does a price that works
+ * out at zero. Everything else is a paid tier however it is labelled.
+ */
+export function isFreeTier(price: string | null | undefined): boolean {
+  const shown = formatPrice(price);
+  if (!shown) return true;
+  if (/free/i.test(shown)) return true;
+  return amountOf(shown) === 0;
+}
+
 export function eventDiscountPercent(benefits: unknown): number {
   if (!benefits || typeof benefits !== "object" || Array.isArray(benefits)) return 0;
   const raw = Number((benefits as Record<string, unknown>).eventDiscountPercent ?? 0);
@@ -44,6 +58,7 @@ export function toMembershipTiers(rows: TierRow[]): MembershipTier[] {
       priceDuration: t.price_duration,
       description: t.description,
       isBasic: t.is_basic,
+      isFree: isFreeTier(t.price),
       // The importer stores the legacy object of typed keys, not a list of
       // sentences. Array.isArray was always false here, so every tier card
       // rendered with no benefits at all.

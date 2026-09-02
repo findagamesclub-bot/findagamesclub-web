@@ -296,3 +296,29 @@ export async function isPlayingOn(clubId: number, profileId: string, sessionDate
   if (error) throw new Error(`Failed to check that night: ${error.message}`);
   return (count ?? 0) > 0;
 }
+
+/**
+ * Correct what is written on a booking.
+ *
+ * A function rather than an update: 0014 grants `authenticated` update on
+ * `status` and `cancel_reason` only, and widening that to reach three text
+ * columns would hand out the row.
+ */
+export async function editBookingDetails(params: {
+  bookingId: number;
+  gameTitle: string;
+  opponentName: string;
+  notes: string;
+}) {
+  const supabase = await createClient();
+  const { error } = await (supabase as unknown as {
+    rpc(name: string, args: Record<string, unknown>): Promise<{ error: { message: string } | null }>;
+  }).rpc("edit_booking_details", {
+    p_booking: params.bookingId,
+    p_game_title: params.gameTitle,
+    p_opponent_name: params.opponentName,
+    p_notes: params.notes,
+  });
+
+  if (error) throw new Error(error.message);
+}

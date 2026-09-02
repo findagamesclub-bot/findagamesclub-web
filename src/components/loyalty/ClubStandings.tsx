@@ -11,6 +11,7 @@ import { usePagedList } from "@/hooks/usePagedList";
 import { tierFor, type LoyaltyTier } from "@/utils/loyalty";
 import { initialsOf } from "@/utils/format";
 import { metalOf, tokens, type Faction } from "@/lib/tokens";
+import { PER_PAGE } from "@/utils/paging";
 
 type Standing = { profileId: string; name: string; available: number; lifetime: number };
 
@@ -22,7 +23,7 @@ type Standing = { profileId: string; name: string; available: number; lifetime: 
  * much the club has issued. Ordered by lifetime, which is the ladder's order.
  */
 /** A ladder page. Long enough to see a run of rungs, short enough to scan. */
-const LADDER_PAGE = 20;
+const LADDER_PAGE = PER_PAGE.rows;
 
 export default function ClubStandings({
   standings, tiers, faction, limit, showFigures = true,
@@ -55,8 +56,10 @@ export default function ClubStandings({
     <Stack spacing={2.5}>
       {showFigures ? (
       <Stack direction="row" spacing={4} useFlexGap sx={{ flexWrap: "wrap", alignItems: "baseline" }}>
+        {/* "members", not "members earning": the board lists everybody who has
+            joined, including the ones still on nothing. */}
         <Figure value={standings.length}
-          label={standings.length === 1 ? "member earning" : "members earning"} />
+          label={standings.length === 1 ? "member" : "members"} />
         <Figure value={issued} label="points issued" />
         <Figure value={unspent} label="unspent" emphasis />
       </Stack>

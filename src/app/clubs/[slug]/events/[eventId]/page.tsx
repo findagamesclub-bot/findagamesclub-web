@@ -9,16 +9,21 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import PlaceIcon from "@mui/icons-material/Place";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import InfoIcon from "@mui/icons-material/Info";
-import GroupsIcon from "@mui/icons-material/Groups";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import TableRestaurantIcon from "@mui/icons-material/TableRestaurant";
 import Section from "@/components/ui/Section";
 import EventPlacings from "@/components/events/EventPlacings";
+import EventPairings from "@/components/events/EventPairings";
+import FacilityChips from "@/components/clubs/FacilityChips";
 import EventHero from "@/components/events/EventHero";
 import { getEventDetail } from "@/services/eventDetail.service";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getMyMembership } from "@/services/memberships.service";
 import { getBuyableTickets } from "@/services/tickets.service";
 import { getAttendees } from "@/services/eventBookings.service";
-import AttendeeList from "@/components/tickets/AttendeeList";
+import { getRoster } from "@/services/memberships.service";
+import { getEventRoster, getEventBoard } from "@/services/eventBoard.service";
+import EventCommunity from "@/components/events/EventCommunity";
 import EventTickets from "@/components/tickets/EventTickets";
 import TicketSalesBoard from "@/components/tickets/TicketSalesBoard";
 import { clubIdentity } from "@/utils/club-identity";
@@ -62,6 +67,21 @@ export default async function EventPage({
   // fetched-and-hidden — RLS would return nothing anyway.
   const attendees = event.canManageClub ? await getAttendees(event.id) : [];
 
+  // Who else is going, and what they are saying. Both are open to anybody
+  // holding a ticket, matching legacy: before a tournament the thing you want
+  // to know is who is turning up.
+  const [roster, threads] = event.canSeePrivate
+    ? await Promise.all([getEventRoster(event.id), getEventBoard(event.id)])
+    : [[], []];
+
+  // Only for the results editor, so a winner can be linked to their profile
+  // and the placing shows on it. Members-only by RLS, and a manager passes.
+  const placingRoster = event.canManageClub
+    ? (await getRoster(event.clubId).catch(() => []))
+        .filter((m) => m.status === "approved")
+        .map((m) => ({ id: m.profileId, name: m.fullName }))
+    : [];
+
   const { faction, monogram } = clubIdentity(event.clubSlug, event.clubName);
   const back = backTarget(query.from, { slug: event.clubSlug, name: event.clubName }, query);
   // Passed on to the door list so its own back link lands where you started.
@@ -97,34 +117,47 @@ export default async function EventPage({
         </Stack>
       ) : null}
 
-      {event.placings.length ? (
-        <Section title="Results" icon={EmojiEventsIcon}>
-          <EventPlacings placings={event.placings} faction={faction} />
+      {/* The same chips the club page and the map use. An event lists its own
+          facilities because a tournament often runs somewhere the club does
+          not usually play. */}
+      {event.facilities.length ? (
+        <Section title="Event facilities" icon={CheckCircleIcon} navLabel="Facilities">
+          <FacilityChips values={event.facilities} />
         </Section>
       ) : null}
 
-      {event.canManageClub ? (
-        <Section title="Who is coming" icon={GroupsIcon}
-          action={
-            attendees.length > 5 ? (
-              <NextLink href={`/clubs/${slug}/events/${eventId}/attendees${trail}`}
-                style={{ textDecoration: "none" }}>
-                <Typography variant="body2"
-                  sx={{ color: tokens.brand, fontWeight: 600 }}>
-                  See all {attendees.length}
-                </Typography>
-              </NextLink>
-            ) : undefined
-          }>
-          {/* Five is enough to know who is coming at a glance. Past that it is
-              a list to search, not to read, and that lives on its own page. */}
-          <AttendeeList attendees={attendees.slice(0, 5)} faction={faction} figures={false} />
-          {attendees.length > 5 ? (
-            <Typography variant="body2" sx={{ color: tokens.inkMuted, mt: 1.5 }}>
-              Showing 5 of {attendees.length}.
-            </Typography>
-          ) : null}
+      {/* The club sees the section even when it is empty, because an empty
+          results section is the prompt to fill it in. Everybody else sees
+          nothing until there is something to see. */}
+      {event.placings.length || event.canManageClub ? (
+        <Section title="Results" icon={EmojiEventsIcon}
+          note={!event.placings.length && event.canManageClub
+            ? "Nobody is on the results yet. Record the winner and any other places you want to show."
+            : undefined}>
+          <EventPlacings
+            placings={event.placings}
+            faction={faction}
+            viewerName={viewer?.full_name ?? null}
+            admin={event.canManageClub
+              ? { slug, eventKey: event.legacyId, eventId: event.id, roster: placingRoster }
+              : undefined}
+          />
         </Section>
+      ) : null}
+
+      {/* What a ticket unlocks, together: the roster and the board. */}
+      {event.canSeePrivate ? (
+        <EventCommunity
+          roster={roster}
+          threads={threads}
+          faction={faction}
+          viewerId={viewer?.id ?? null}
+          canManage={event.canManageClub}
+          slug={slug}
+          eventId={eventId}
+          trail={trail}
+          hasAttendees={attendees.length > 0}
+        />
       ) : null}
 
       {event.venue.name || event.venue.address ? (
@@ -156,9 +189,21 @@ export default async function EventPage({
         </Section>
       ) : null}
 
+      {/* Ticket holders and the club, same gate as the noticeboard below: a
+          draw is only any use to somebody playing in it. */}
+      {event.canSeePrivate && event.pairings.length ? (
+        <Section title="Round pairings" icon={TableRestaurantIcon} navLabel="Pairings">
+          <EventPairings
+            pairings={event.pairings}
+            faction={faction}
+            viewerName={viewer?.full_name ?? null}
+          />
+        </Section>
+      ) : null}
+
       {/* Club-only until tickets exist: legacy hides this from anyone without one. */}
       {event.canSeePrivate && event.infoBoard ? (
-        <Section title="Notes for the day" icon={InfoIcon}>
+        <Section title="Tournament noticeboard" icon={InfoIcon} navLabel="Noticeboard">
           <Typography variant="body1" sx={{ whiteSpace: "pre-line" }}>{event.infoBoard}</Typography>
         </Section>
       ) : null}

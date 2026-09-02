@@ -110,6 +110,7 @@ export default function BookingNight({
           waitlistEnabled={waitlistEnabled}
           myBookingId={mine?.id ?? null}
           canCancelMine={mine?.canCancel ?? false}
+          mine={mine ?? null}
           myQueueEntryId={myQueueEntry?.id ?? null}
           queueLength={queue.length}
           lfgEnabled={lfgEnabled}

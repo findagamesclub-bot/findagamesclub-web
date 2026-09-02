@@ -4,6 +4,8 @@ import { sendEmail } from "@/lib/email/send";
 import * as templates from "@/lib/email/templates";
 import { formatMoney } from "@/utils/format";
 import { nightLabel } from "@/utils/dates";
+import * as memberships from "@/repositories/memberships.repository";
+import { deliver } from "./mail-recipient.service";
 import type { EventBooking } from "@/types/ticket";
 
 /**
@@ -59,4 +61,56 @@ export async function notifyCancelled(booking: EventBooking) {
   } catch {
     // Same reasoning as notifyBooked.
   }
+}
+
+/**
+ * The club, when somebody books or gives back a place.
+ *
+ * Goes to the owner's account address rather than the one typed at checkout,
+ * because this is the club being told about its own event, not a receipt.
+ *
+ * Best effort, after the fact. A booking that could fail because the owner's
+ * mailbox is full would be a worse bug than an owner who has to open the door
+ * list — and the bell notification (0051) tells them either way.
+ */
+async function tellTheClub(
+  booking: EventBooking,
+  make: (url: string) => templates.Email,
+) {
+  try {
+    const club = await memberships.findClubBasics(booking.clubId);
+    if (!club?.owner_id) return;
+    // Nobody is told about their own doing. The trigger applies the same rule.
+    const url = `${siteUrl()}/clubs/${booking.clubSlug}/events/${booking.legacyId}/attendees`;
+    await deliver(club.owner_id, () => make(url));
+  } catch (error) {
+    console.error("club ticket notification failed", { reference: booking.reference, error });
+  }
+}
+
+export async function notifyClubBooked(booking: EventBooking) {
+  await tellTheClub(booking, (url) =>
+    templates.ticketsForOwner({
+      clubName: booking.clubName,
+      eventTitle: booking.eventTitle,
+      when: booking.eventDate ? nightLabel(booking.eventDate) : "",
+      buyerName: booking.fullName || "Someone",
+      tickets: ticketSummary(booking),
+      total: formatMoney(booking.total, booking.currency),
+      reference: booking.reference,
+      url,
+    }),
+  );
+}
+
+export async function notifyClubCancelled(booking: EventBooking) {
+  await tellTheClub(booking, (url) =>
+    templates.ticketsCancelledForOwner({
+      clubName: booking.clubName,
+      eventTitle: booking.eventTitle,
+      buyerName: booking.fullName || "Someone",
+      tickets: ticketSummary(booking),
+      url,
+    }),
+  );
 }

@@ -183,3 +183,47 @@ async function announcePromotion(
     console.error("could not announce a waitlist promotion", { clubSessionId, sessionDate, error });
   }
 }
+
+/** Every refusal edit_booking_details raises, worded for whoever hit it. */
+const EDIT_ERRORS: [string, string][] = [
+  ["BOOKING_NOT_YOURS", "Only the person who booked it or the club can change this."],
+  ["BOOKING_PAST", "That night has been and gone. Ask the club to correct it."],
+  ["BOOKING_CANCELLED", "That booking was cancelled."],
+  ["BOOKING_NOT_FOUND", "That booking is no longer there."],
+  ["BOOKING_GAME_MISSING", "Say which game is being played."],
+];
+
+/**
+ * Fix the game, the opponent's name or the note on a booking.
+ *
+ * The club may correct any booking; the member who made it may fix their own
+ * up to the night. Which of those applies is decided in the database, not
+ * here, because the browser can call the function directly.
+ */
+export async function editBooking(params: {
+  bookingId: number;
+  gameTitle: string;
+  opponentName: string;
+  notes: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  if (!params.gameTitle.trim()) {
+    return { ok: false, error: "Say which game is being played." };
+  }
+
+  try {
+    await repo.editBookingDetails({
+      bookingId: params.bookingId,
+      gameTitle: params.gameTitle.trim(),
+      opponentName: params.opponentName.trim(),
+      notes: params.notes.trim(),
+    });
+    return { ok: true };
+  } catch (error) {
+    const raw = error instanceof Error ? error.message : String(error);
+    const known = EDIT_ERRORS.find(([code]) => raw.includes(code));
+    if (known) return { ok: false, error: known[1] };
+
+    console.error("edit booking failed", { bookingId: params.bookingId, raw });
+    return { ok: false, error: "Could not save that change. Try again." };
+  }
+}

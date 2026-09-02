@@ -5,6 +5,7 @@ import Typography from "@mui/material/Typography";
 import EmptyState from "@/components/ui/EmptyState";
 import ClubSectionHeader from "@/components/clubs/ClubSectionHeader";
 import RivalryTable from "@/components/clubs/RivalryTable";
+import MyRivalries from "@/components/clubs/MyRivalries";
 import { getClubDetail } from "@/services/clubDetail.service";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getMyMembership } from "@/services/memberships.service";
@@ -47,6 +48,7 @@ export default async function ClubRivalriesPage({
 
   const games = rivalries.reduce((total, row) => total + row.played, 0);
   const level = rivalries.filter((row) => row.level && row.played > 1).length;
+  const mutual = rivalries.filter((row) => row.mutual).length;
 
   return (
     <Container maxWidth="md" component="main" sx={{ py: { xs: 4, md: 6 } }}>
@@ -64,15 +66,20 @@ export default async function ClubRivalriesPage({
             value: String(rivalries.length), emphasis: true },
           { label: "games", value: String(games) },
           ...(level ? [{ label: "level", value: String(level) }] : []),
+          // Shown even at zero, unlike the others: "0 mutual" is the answer to
+          // "has anybody named each other back", and hiding it loses the
+          // question as well as the answer.
+          { label: "mutual", value: String(mutual) },
         ]}
       />
 
       {rivalries.length ? (
-        <Stack spacing={2}>
-          <RivalryTable rivalries={rivalries} viewerId={viewer.id} faction={faction} />
+        <Stack spacing={3}>
+          <MyRivalries slug={slug} rivalries={rivalries} viewerId={viewer.id} faction={faction} />
+          <RivalryTable slug={slug} rivalries={rivalries} viewerId={viewer.id} faction={faction} />
           <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-            Built from table bookings with a result on them. Add the score after
-            a game and it counts here.
+            Built from table bookings and competition rounds with a result on
+            them. Add the score after a game and it counts here.
           </Typography>
         </Stack>
       ) : (

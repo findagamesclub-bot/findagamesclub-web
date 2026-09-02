@@ -153,3 +153,137 @@ export function tableBooked(params: {
     footnote: "If you can no longer make it, cancel from the club's booking page so somebody else can have the table.",
   });
 }
+
+/**
+ * To the club, not the buyer.
+ *
+ * A club has always found out about ticket sales by opening the door list and
+ * counting. Merchandise orders, coaching places and table bookings all reach
+ * the owner's inbox; the one thing that takes real money at the door did not.
+ */
+export function ticketsForOwner(params: {
+  clubName: string;
+  eventTitle: string;
+  when: string;
+  buyerName: string;
+  tickets: string;
+  total: string;
+  reference: string;
+  url: string;
+}): Email {
+  return build(`${params.buyerName} booked ${params.eventTitle}`, {
+    previewText: `${params.tickets}. ${params.when}.`,
+    eyebrow: "Tickets booked",
+    heading: `${params.buyerName} is coming`,
+    body: [
+      `${params.buyerName} has booked into ${params.eventTitle} at ${params.clubName}.`,
+      "Nothing has been charged. You settle up with them before the event or on the day, whichever your club does.",
+    ],
+    details: {
+      rows: [
+        { label: "Event", value: params.eventTitle },
+        { label: "When", value: params.when },
+        { label: "Tickets", value: params.tickets },
+        { label: "Reference", value: params.reference },
+      ],
+      total: { label: "Due", value: params.total },
+    },
+    action: { label: "Open the door list", url: params.url },
+  });
+}
+
+/** To the club, when somebody gives a place back. */
+export function ticketsCancelledForOwner(params: {
+  clubName: string;
+  eventTitle: string;
+  buyerName: string;
+  tickets: string;
+  url: string;
+}): Email {
+  return build(`${params.buyerName} cancelled for ${params.eventTitle}`, {
+    previewText: `A place has gone back into the pool at ${params.clubName}.`,
+    eyebrow: "Booking cancelled",
+    heading: `${params.buyerName} has cancelled`,
+    body: [
+      `${params.buyerName} has given back ${params.tickets} for ${params.eventTitle}.`,
+      "Those places are back in the pool and can be sold again.",
+    ],
+    action: { label: "Open the door list", url: params.url },
+  });
+}
+
+/**
+ * Somebody took up an advert, so the poster now has a table.
+ *
+ * The same reasoning as tablePromoted: they are committed to a night, at a
+ * price, against a named opponent, and they were not looking at the site when
+ * it happened. A bell they might not check is not enough on its own.
+ */
+export function gameFound(params: {
+  name?: string;
+  clubName: string;
+  opponentName: string;
+  gameTitle: string;
+  night: string;
+  time: string;
+  price?: string | null;
+  url: string;
+}): Email {
+  return build(`${params.opponentName} took up your game at ${params.clubName}`, {
+    previewText: `${params.gameTitle} on ${params.night}. The table is booked.`,
+    eyebrow: "You have a game",
+    heading: `${params.opponentName} is up for it`,
+    body: [
+      greet(params.name),
+      `${params.opponentName} has taken up your ${params.gameTitle} advert at ${params.clubName}, and a table is booked in your name.`,
+      "You did not have to do anything for this, so if you can no longer make it, please cancel and let somebody else have the table.",
+    ],
+    details: {
+      rows: [
+        { label: "When", value: [params.night, params.time].filter(Boolean).join(", ") },
+        { label: "Playing", value: params.gameTitle },
+        { label: "Opponent", value: params.opponentName },
+      ],
+      ...(params.price ? { total: { label: "Price", value: params.price } } : {}),
+    },
+    action: { label: "See the booking", url: params.url },
+  });
+}
+
+/**
+ * To the club, when a member puts an advert up.
+ *
+ * An advert that never finds an opponent is the one the club most needs to see,
+ * and by the time it converts into a booking nobody needed telling. The notes
+ * are carried because that is where the useful part usually is: the terrain
+ * they need, the fact it is their first game.
+ */
+export function lookingForGameForOwner(params: {
+  clubName: string;
+  memberName: string;
+  gameTitle: string;
+  night: string;
+  time: string;
+  notes?: string | null;
+  url: string;
+}): Email {
+  const body = [
+    `${params.memberName} is looking for an opponent at ${params.clubName}.`,
+  ];
+  if (params.notes?.trim()) body.push(`They said: ${params.notes.trim()}`);
+  body.push("Nothing is needed from you. It is here in case you can put somebody in touch.");
+
+  return build(`${params.memberName} wants a game of ${params.gameTitle}`, {
+    previewText: `${params.gameTitle} on ${params.night}.`,
+    eyebrow: "Looking for a game",
+    heading: `${params.memberName} needs an opponent`,
+    body,
+    details: {
+      rows: [
+        { label: "Playing", value: params.gameTitle },
+        { label: "When", value: [params.night, params.time].filter(Boolean).join(", ") },
+      ],
+    },
+    action: { label: "See the club's nights", url: params.url },
+  });
+}

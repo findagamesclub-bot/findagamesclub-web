@@ -9,6 +9,7 @@ import Pager from "@/components/ui/Pager";
 import { usePagedList } from "@/hooks/usePagedList";
 import { tokens } from "@/lib/tokens";
 import type { LoyaltyEntry } from "@/types/loyalty";
+import { PER_PAGE } from "@/utils/paging";
 
 /**
  * The ledger.
@@ -17,8 +18,12 @@ import type { LoyaltyEntry } from "@/types/loyalty";
  * column you can read down. That column is the whole point of it, and anything
  * in the left margin competes with it.
  */
-/** A ledger page, sized so the running column stays readable in one glance. */
-const LEDGER_PAGE = 15;
+/**
+ * A ledger page. Ten rather than fifteen: it sits in a column beside the
+ * ladder now, and a history that runs on past everything next to it is the
+ * scrolling this page was rearranged to stop.
+ */
+const LEDGER_PAGE = PER_PAGE.rows;
 
 export default function LoyaltyLedger({ entries }: { entries: LoyaltyEntry[] }) {
   const top = useRef<HTMLDivElement>(null);

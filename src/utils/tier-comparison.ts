@@ -86,8 +86,10 @@ export function buildTierComparison(tiers: MembershipTier[]): ComparisonRow[] {
 
   const extras = EXTRAS.map(({ label, read }) => ({
     label,
-    // The basic tier is what nothing buys you, so it never counts as an extra.
-    values: tiers.map((t) => (t.isBasic ? null : read(t.benefitValues ?? {}))),
+    // A free tier is what nothing buys you, so it never counts as an extra.
+    // Keyed on the price rather than on which tier is the default: Didcot's
+    // entry tier costs £10 a month, and every perk it includes was blanked.
+    values: tiers.map((t) => (t.isFree ? null : read(t.benefitValues ?? {}))),
   })).filter((row) => row.values.some(Boolean));
 
   return [...always, ...extras];

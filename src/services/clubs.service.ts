@@ -345,6 +345,18 @@ export async function getFilterOptions() {
 }
 
 /**
+ * The cheapest way into one club, worded as the directory card words it.
+ *
+ * The club page used to read `price_drop_in` on its own, a legacy field three
+ * of the eleven clubs never filled, so Didcot's header showed a dash while its
+ * own card in the directory showed "From £5". One club, two answers.
+ */
+export async function fromPriceFor(clubId: number): Promise<string | null> {
+  const pricing = await tierPricing([{ id: clubId } as repo.ClubRow]);
+  return pricing.label.get(clubId) ?? null;
+}
+
+/**
  * Cheapest membership expressed per month. Yearly prices divide by 12, and a
  * tier with no recognised duration is ignored — same rule the legacy app uses,
  * so the ordering matches.

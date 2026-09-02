@@ -13,6 +13,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import NextLink from "next/link";
 import { reviewMemberAction } from "@/app/clubs/[slug]/membership-actions";
 import { tokens, type Faction } from "@/lib/tokens";
+import TagChip from "./TagChip";
 import type { ClubMember } from "@/types/membership";
 
 function initials(name: string): string {
@@ -45,7 +46,11 @@ export default function PendingRow({
 
   const firstName = member.fullName.split(" ")[0] || "they";
   const meta = [tierLabel, askedLabel ? `asked ${askedLabel}` : null].filter(Boolean).join(" · ");
-  const plays = [...member.games, ...member.armies];
+  // Same rule as the member row: filled for games, outlined for armies.
+  const plays = [
+    ...member.games.map((label) => ({ label, kind: "game" as const })),
+    ...member.armies.map((label) => ({ label, kind: "army" as const })),
+  ];
 
   const hidden = (
     <>
@@ -99,11 +104,7 @@ export default function PendingRow({
           {plays.length ? (
             <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: "wrap" }}>
               {plays.slice(0, 5).map((tag) => (
-                <Box key={tag} sx={{ px: 1, py: 0.3, borderRadius: 0.75, bgcolor: faction.soft,
-                                     color: faction.deep, fontFamily: "var(--font-mono)",
-                                     fontSize: "0.7rem", fontWeight: 600 }}>
-                  {tag}
-                </Box>
+                <TagChip key={tag.label} label={tag.label} faction={faction} kind={tag.kind} />
               ))}
             </Stack>
           ) : (

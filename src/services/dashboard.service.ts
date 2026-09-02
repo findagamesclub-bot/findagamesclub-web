@@ -37,6 +37,8 @@ export type LoyaltyCard = {
   clubSlug: string;
   clubName: string;
   available: number;
+  /** Everything ever earned there. Spending points does not reduce it. */
+  lifetime: number;
   tierLabel: string | null;
   toNext: number | null;
   progress: number;
@@ -112,6 +114,7 @@ export async function getDashboard(profileId: string): Promise<Dashboard> {
           clubSlug: m.club.slug,
           clubName: m.club.name,
           available: wallet.available,
+          lifetime: wallet.lifetime,
           tierLabel: wallet.tier?.label ?? null,
           toNext: wallet.toNext,
           progress: wallet.progress,

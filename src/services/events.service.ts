@@ -9,6 +9,7 @@ import { londonNow } from "@/utils/dates";
 import type { ClubEventSummary } from "@/types/clubDetail";
 import { findOrigin } from "./location.service";
 import { gameKey } from "@/utils/similar-clubs";
+import { searchSuggestions, type SimilarEvent } from "@/utils/similar-events";
 import { haversineMiles } from "@/utils/geo";
 import { splitFacets } from "@/utils/facets";
 import { fold } from "@/utils/text";
@@ -32,7 +33,7 @@ function toSummary(row: Row): EventSummary {
   const club = (row as unknown as {
     clubs: {
       slug: string; name: string; city: string; logo_url: string | null;
-      latitude: number | null; longitude: number | null;
+      latitude: number | null; longitude: number | null; ages: string | null;
       club_images: { src: string; alt: string; position: number }[] | null;
       club_formats: { formats: { label: string } | null }[] | null;
     };
@@ -102,6 +103,8 @@ function toSummary(row: Row): EventSummary {
         : null,
     distanceMiles: null,
     clubFormats: (club.club_formats ?? []).map((f) => f.formats?.label ?? "").filter(Boolean),
+    ages: club.ages,
+    bestcoastLink: row.bestcoast_link,
     image,
     winner: first ? { name: first.member_name, army } : null,
   };
@@ -150,6 +153,9 @@ export async function listEvents(params: EventListFilters = {}): Promise<EventLi
     return {
       events: [], upcomingCount: upcoming.length, pastCount: past.length,
       games: gameLabels(all), options, origin: null, locationUnresolved: true,
+      // A place we could not place is exactly when somebody needs a way on,
+      // so the suggestions come back even though the results did not.
+      suggestions: suggest({ results: [], upcoming, past, when: params.when, game: params.game }),
     };
   }
 
@@ -182,6 +188,41 @@ export async function listEvents(params: EventListFilters = {}): Promise<EventLi
     options,
     origin: origin ? { label: origin.label } : null,
     locationUnresolved: false,
+    suggestions: suggest({ results: events, upcoming, past, when: params.when,
+                           game: params.game, origin }),
+  };
+}
+
+/**
+ * What to put under "More events you might like".
+ *
+ * First choice is the same half of the calendar the reader is in, minus what
+ * they have already seen: offering a tournament that ran in April to somebody
+ * browsing what is coming up is not a recommendation.
+ *
+ * When that comes back empty the reader has seen every event on that side of
+ * today, which happens on a small directory and stops happening the moment
+ * there is more than a page of them. Rather than an empty space where the
+ * client was promised a section, the other half answers, and the page says so
+ * instead of passing off last April as something to go to.
+ */
+function suggest(params: {
+  results: EventSummary[];
+  upcoming: EventSummary[];
+  past: EventSummary[];
+  when?: string;
+  game?: string | null;
+  origin?: { latitude: number; longitude: number; label: string } | null;
+}): { items: SimilarEvent[]; basis: "more" | "history" } {
+  const { results, upcoming, past, when, game, origin } = params;
+  const [here, elsewhere] = when === "past" ? [past, upcoming] : [upcoming, past];
+
+  const more = searchSuggestions({ results, pool: here, game, origin });
+  if (more.length) return { items: more, basis: "more" };
+
+  return {
+    items: searchSuggestions({ results, pool: elsewhere, game, origin }),
+    basis: "history",
   };
 }
 

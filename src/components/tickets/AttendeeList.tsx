@@ -1,26 +1,18 @@
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import AttendeeRow from "./AttendeeRow";
 import { formatMoney } from "@/utils/format";
-import { initialsOf } from "@/utils/format";
+import { filterAttendees, type Attendee } from "@/utils/attendee-filter";
 import { tokens, type Faction } from "@/lib/tokens";
 
-type Attendee = {
-  id: number;
-  reference: string;
-  fullName: string;
-  email: string;
-  total: number;
-  currency: string;
-  tickets: number;
-  summary: string;
-};
-
 /**
- * The door list, for the club.
+ * The door list, short.
  *
- * Sorted by name rather than by when they booked: on the day this gets read
- * by somebody looking up the person standing in front of them.
+ * The preview on the event page. DoorList is the same list with the search,
+ * the ticket type tabs and the paging, for the page whose whole job is this.
+ * Both draw the row from AttendeeRow, so a change to what a booking shows
+ * lands in both rather than in whichever one somebody remembered.
  */
 export default function AttendeeList({
   attendees, faction, figures = true,
@@ -38,7 +30,9 @@ export default function AttendeeList({
     );
   }
 
-  const sorted = [...attendees].sort((a, b) => a.fullName.localeCompare(b.fullName));
+  // Sorted by name, the same default as the full list: on the day this is read
+  // by somebody looking up the person standing in front of them.
+  const sorted = filterAttendees(attendees, {});
   const seats = sorted.reduce((n, a) => n + a.tickets, 0);
   const takings = sorted.reduce((n, a) => n + a.total, 0);
   const currency = sorted[0]?.currency ?? "GBP";
@@ -53,44 +47,10 @@ export default function AttendeeList({
         </Stack>
       ) : null}
 
-      <Box sx={{ border: `1px solid ${tokens.rule}`, borderRadius: 1.5, overflow: "hidden" }}>
+      <Box sx={{ border: `1px solid ${tokens.rule}`, borderRadius: 1.5, overflow: "hidden",
+                 "& > *:not(:first-of-type)": { borderTop: `1px solid ${tokens.rule}` } }}>
         {sorted.map((a, i) => (
-          <Stack key={a.id} direction={{ xs: "column", sm: "row" }} spacing={{ xs: 0.75, sm: 2 }}
-            sx={{ px: 2, py: 1.5, alignItems: { sm: "center" }, justifyContent: "space-between",
-                  borderTop: i === 0 ? "none" : `1px solid ${tokens.rule}`,
-                  backgroundColor: i % 2 ? tokens.surface : tokens.paper }}>
-            <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", minWidth: 0 }}>
-              <Box sx={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0,
-                         display: "grid", placeItems: "center",
-                         backgroundColor: faction.soft, color: faction.deep }}>
-                <Typography sx={{ fontFamily: "var(--font-display)", fontWeight: 700,
-                                  fontSize: "0.78rem" }}>
-                  {initialsOf(a.fullName)}
-                </Typography>
-              </Box>
-              <Stack spacing={0} sx={{ minWidth: 0 }}>
-                <Typography variant="subtitle2" sx={{ fontFamily: "var(--font-display)" }}>
-                  {a.fullName}
-                </Typography>
-                <Typography variant="body2" sx={{ color: tokens.inkMuted, overflow: "hidden",
-                                                  textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {a.email}
-                </Typography>
-              </Stack>
-            </Stack>
-
-            <Stack direction="row" spacing={2}
-              sx={{ alignItems: "baseline", flexShrink: 0, pl: { xs: 6, sm: 0 } }}>
-              <Typography variant="body2" sx={{ color: tokens.inkMuted }}>{a.summary}</Typography>
-              <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem",
-                                letterSpacing: "0.06em", color: tokens.inkMuted }}>
-                {a.reference}
-              </Typography>
-              <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.9rem", fontWeight: 600 }}>
-                {formatMoney(a.total, a.currency)}
-              </Typography>
-            </Stack>
-          </Stack>
+          <AttendeeRow key={a.id} attendee={a} faction={faction} striped={i % 2 === 1} />
         ))}
       </Box>
     </Stack>

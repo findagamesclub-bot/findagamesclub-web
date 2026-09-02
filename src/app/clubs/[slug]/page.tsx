@@ -34,6 +34,8 @@ import { MembershipTiers, PricingList } from "@/components/clubs/ClubTiers";
 import MembershipPerks from "@/components/members/MembershipPerks";
 import WorkspacePremiumIcon from "@mui/icons-material/WorkspacePremium";
 import Section from "@/components/ui/Section";
+import SectionNav from "@/components/ui/SectionNav";
+import BackToTop from "@/components/ui/BackToTop";
 import StarRating from "@/components/ui/StarRating";
 import InfoIcon from "@mui/icons-material/Info";
 import CasinoIcon from "@mui/icons-material/Casino";
@@ -176,6 +178,10 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
       <ClubHeader club={club} canBook={isMember && (club.tablesAvailable ?? 0) > 0}
         joinedCount={joinedCount} />
 
+      {/* Fifteen sections is a long page, and a reader after the pricing had to
+          scroll past the photos, the map and the activity feed to reach it. */}
+      <SectionNav />
+
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "minmax(0,2fr) minmax(280px,1fr)" }, gap: 4, mt: 4 }}>
         <Stack spacing={0}>
           {/* First thing in the column, because a notice is time-sensitive and
@@ -196,7 +202,7 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
           {/* Legacy gives this a section and a primary button
               (detail.js:927). Ours had a four-character "Book" link inside a
               stat, on a page three thousand pixels long. */}
-          <Section title="Club nights and table booking" icon={EventSeatIcon}>
+          <Section navLabel="Book" title="Club nights and table booking" icon={EventSeatIcon}>
             <ClubNights
               schedule={club.schedule}
               tablesAvailable={club.tablesAvailable}
@@ -220,7 +226,7 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
           </Section>
 
           {club.games.length ? (
-            <Section title="Featured games" icon={CasinoIcon}>
+            <Section navLabel="Games" title="Featured games" icon={CasinoIcon}>
               <GameChips games={club.games} faction={faction} max={club.games.length} />
             </Section>
           ) : null}
@@ -257,7 +263,7 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
           {/* Street level, next to the address, because "what is it near and
               can I park" is the question the sidebar's address cannot answer. */}
           {club.venue.coordinates ? (
-            <Section title="Getting there" icon={PlaceIcon}>
+            <Section navLabel="Find us" title="Getting there" icon={PlaceIcon}>
               <Stack spacing={2}>
                 <VenueMap
                   latitude={club.venue.coordinates.latitude}
@@ -297,7 +303,7 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
           ) : null}
 
           {upcoming.events.length ? (
-            <Section title="Upcoming events" icon={EventIcon}
+            <Section navLabel="Events" title="Upcoming events" icon={EventIcon}
               action={
                 past.total ? (
                   <NextLink href={`/clubs/${club.slug}/events`} style={{ textDecoration: "none" }}>
@@ -312,11 +318,27 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
             </Section>
           ) : null}
 
+          {past.events.length ? (
+            <Section navLabel="Past events" title="Past events" icon={EventIcon}
+              action={
+                past.total > 3 ? (
+                  <NextLink href={`/clubs/${club.slug}/events`} style={{ textDecoration: "none" }}>
+                    <Typography variant="body2" sx={{ color: tokens.brand, fontWeight: 600 }}>
+                      See all {past.total}
+                    </Typography>
+                  </NextLink>
+                ) : undefined
+              }>
+              <ClubEventList events={past.events} clubSlug={club.slug}
+                clubVenue={{ name: club.venue.name, postcode: club.venue.postcode }} />
+            </Section>
+          ) : null}
+
           {/* Legacy gives leagues and campaigns their own block on the club
               page (detail.js:411). It is how a club shows it plays seriously,
               so it sits with the events rather than below the fold. */}
           {competitions.featured.length ? (
-            <Section title="Leagues and campaigns" icon={MilitaryTechIcon}
+            <Section navLabel="Leagues" title="Leagues and campaigns" icon={MilitaryTechIcon}
               note={`How ${club.name} runs its competitive play, and who is winning.`}>
               <ClubCompetitions overview={competitions} slug={club.slug} faction={faction} />
             </Section>
@@ -325,7 +347,7 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
           {/* The tier you are actually on, not all six. Legacy shows the same
               block only to a member with a tier (detail.js:5317). */}
           {myTier && myTier.benefitGroups.length ? (
-            <Section title="Your membership perks" icon={WorkspacePremiumIcon}>
+            <Section navLabel="Your perks" title="Your membership perks" icon={WorkspacePremiumIcon}>
               <MembershipPerks
                 groups={myTier.benefitGroups}
                 tierLabel={myTier.label}
@@ -350,7 +372,7 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
           ) : null}
 
           {/* Legacy's activity feed, in the same place and gated the same way. */}
-          <Section title="Recent activity" icon={TimelineIcon}>
+          <Section navLabel="Activity" title="Recent activity" icon={TimelineIcon}>
             <ClubActivity
               items={activity}
               clubName={club.name}
@@ -364,6 +386,7 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
               non-member learns the scheme exists and what joining is worth. */}
           {programme ? (
             <Section
+              navLabel="Loyalty"
               title="Loyalty leaderboard"
               icon={CardGiftcardIcon}
               action={
@@ -431,21 +454,6 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
             />
           </Section>
 
-          {past.events.length ? (
-            <Section title="Past events" icon={EventIcon}
-              action={
-                past.total > 3 ? (
-                  <NextLink href={`/clubs/${club.slug}/events`} style={{ textDecoration: "none" }}>
-                    <Typography variant="body2" sx={{ color: tokens.brand, fontWeight: 600 }}>
-                      See all {past.total}
-                    </Typography>
-                  </NextLink>
-                ) : undefined
-              }>
-              <ClubEventList events={past.events} clubSlug={club.slug}
-                clubVenue={{ name: club.venue.name, postcode: club.venue.postcode }} />
-            </Section>
-          ) : null}
         </Stack>
 
         <Stack spacing={3} sx={{ mt: 7 }} id="join">
@@ -473,6 +481,7 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
           <ClubSidebar club={club} />
         </Stack>
       </Box>
+      <BackToTop />
     </Container>
   );
 }

@@ -8,6 +8,12 @@ const BOOKING_COLUMNS =
   "id, reference, event_id, club_id, full_name, email, status, currency, " +
   "subtotal, tier_discount_amount, total, created_at";
 
+// The two loyalty columns 0050 adds are deliberately not selected yet:
+// `src/types/database.ts` predates the migration, and PostgREST types the
+// select from the literal, so naming them turns three well-typed queries into
+// error types. Add them here, and the email line below, once the types are
+// regenerated.
+
 /** One booking with its lines and enough of the event to name it. */
 export async function findBooking(reference: string) {
   const supabase = await createClient();

@@ -18,7 +18,7 @@ function check(name: string, actual: unknown, expected: unknown) {
 
 const tier = (key: string, label: string): MembershipTier => ({
   key, label, price: null, priceDuration: "", description: null,
-  isBasic: key === "basic", benefits: [], benefitGroups: [], benefitValues: {}, billingOptions: [], eventDiscountPercent: 0, reservedCategories: [],
+  isBasic: key === "basic", isFree: key === "basic", benefits: [], benefitGroups: [], benefitValues: {}, billingOptions: [], eventDiscountPercent: 0, reservedCategories: [],
 });
 
 const tiers = [tier("basic", "Basic Membership"), tier("premium-membership", "Premium Membership")];

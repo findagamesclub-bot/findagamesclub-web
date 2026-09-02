@@ -7,6 +7,8 @@ import { isLocked, safeDeployment, toConfirmation, type ConfirmationState }
 import * as repo from "@/repositories/games.repository";
 import { londonToday } from "./bookingCalendar.service";
 import { suggestOpponents, winRate, type Suggestion } from "@/utils/opponent-finder";
+import { intensityOf, type Intensity } from "@/utils/rivalry-intensity";
+import { canonicalGame } from "@/utils/game-label";
 
 export type MyGame = {
   id: number;
@@ -94,7 +96,7 @@ export async function getMyGames(profileId: string, page = 1): Promise<MyGame[]>
       },
       date: row.session_date,
       time: row.session_time,
-      title: row.game_title || "Table booking",
+      title: row.game_title ? canonicalGame(row.game_title) : "Table booking",
       opponentId: other.id,
       opponentName: other.name?.trim() || "an opponent",
       myScore,
@@ -256,13 +258,22 @@ export async function removeResult(bookingId: number): Promise<{ ok: boolean; er
 
 export type Rivalry = {
   key: string;
-  one: { id: string; name: string; wins: number };
-  two: { id: string; name: string; wins: number };
+  one: { id: string; name: string; wins: number; score: number; average: number | null };
+  two: { id: string; name: string; wins: number; score: number; average: number | null };
   played: number;
   draws: number;
   lastPlayed: string | null;
   /** Nobody ahead. Legacy calls these the ones worth watching. */
   level: boolean;
+  /** "3-1-2", from the first member's side. */
+  record: string;
+  /** Points between them across every game. Positive means the first is ahead. */
+  differential: number;
+  /** Both named the other, rather than one nominating the other. */
+  mutual: boolean;
+  nominations: number;
+  /** Legacy's heat rating: close, frequent and recent scores highest. */
+  intensity: Intensity;
 };
 
 /**
@@ -277,13 +288,141 @@ export async function getClubRivalries(clubId: number): Promise<Rivalry[]> {
 
   return rows.map((row) => ({
     key: `${row.member_one}:${row.member_two}`,
-    one: { id: row.member_one, name: row.member_one_name, wins: row.wins_one },
-    two: { id: row.member_two, name: row.member_two_name, wins: row.wins_two },
+    one: {
+      id: row.member_one, name: row.member_one_name, wins: row.wins_one,
+      score: row.score_one,
+      average: row.played ? Math.round((row.score_one / row.played) * 10) / 10 : null,
+    },
+    two: {
+      id: row.member_two, name: row.member_two_name, wins: row.wins_two,
+      score: row.score_two,
+      average: row.played ? Math.round((row.score_two / row.played) * 10) / 10 : null,
+    },
     played: row.played,
     draws: row.draws,
     lastPlayed: row.last_played,
     level: row.wins_one === row.wins_two,
+    record: `${row.wins_one}-${row.draws}-${row.wins_two}`,
+    differential: row.score_one - row.score_two,
+    mutual: row.mutual,
+    nominations: row.nominations,
+    intensity: intensityOf(row.played, row.score_one - row.score_two, row.last_played),
   }));
+}
+
+export type RivalryMatch = {
+  bookingId: number;
+  /** A table booking or a competition round. Both count towards the record. */
+  source: string;
+  date: string | null;
+  game: string;
+  /** The competition it belonged to, or "Club game booking" for a casual one. */
+  competition: string;
+  scoreOne: number;
+  scoreTwo: number;
+  /** From the first member's side, which is the side every figure here takes. */
+  outcome: "won" | "lost" | "drew";
+};
+
+export type Breakdown = {
+  label: string;
+  played: number;
+  wins: number;
+  draws: number;
+  losses: number;
+};
+
+export type RivalryMeeting = {
+  bookingId: number;
+  date: string;
+  time: string;
+  label: string;
+  game: string;
+  bookedBy: string;
+  notes: string;
+};
+
+export type RivalryDetail = {
+  rivalry: Rivalry;
+  matches: RivalryMatch[];
+  /** Per game system, so "he only beats me at Kill Team" is answerable. */
+  breakdown: Breakdown[];
+  /** Per competition, so "he only beats me in the league" is too. */
+  byCompetition: Breakdown[];
+  /** Booked and not yet played. The one part of this page that looks ahead. */
+  upcoming: RivalryMeeting[];
+};
+
+/**
+ * One rivalry, in full.
+ *
+ * Legacy has a page per pair (/clubs/<slug>/rivalries/<pair>) with the match
+ * list and a breakdown by game. The leaderboard row answers who is ahead; this
+ * answers where, and when it turned.
+ */
+export async function getRivalryDetail(
+  clubId: number,
+  key: string,
+): Promise<RivalryDetail | null> {
+  const [one, two] = key.split(":");
+  if (!one || !two) return null;
+
+  const all = await getClubRivalries(clubId);
+  // Found in the leaderboard rather than queried again: the pair is only a
+  // rivalry if it appears there, so this refuses an invented pair for free.
+  const rivalry = all.find((r) => r.key === key);
+  if (!rivalry) return null;
+
+  const [rows, meetings] = await Promise.all([
+    repo.findRivalryMatches(clubId, one, two),
+    repo.findRivalryUpcoming(clubId, one, two),
+  ]);
+
+  const matches: RivalryMatch[] = rows.map((row) => ({
+    bookingId: row.booking_id,
+    source: row.source,
+    date: row.session_date,
+    game: canonicalGame(row.game_title),
+    competition: row.competition,
+    scoreOne: row.score_one,
+    scoreTwo: row.score_two,
+    outcome: row.score_one > row.score_two ? "won"
+      : row.score_one < row.score_two ? "lost" : "drew",
+  }));
+
+  return {
+    rivalry,
+    matches,
+    breakdown: tally(matches, (m) => m.game),
+    byCompetition: tally(matches, (m) => m.competition),
+    upcoming: meetings.map((row) => ({
+      bookingId: row.booking_id,
+      date: row.session_date,
+      time: row.session_time,
+      label: row.session_label,
+      game: canonicalGame(row.game_title),
+      bookedBy: row.booked_by_name,
+      notes: row.notes,
+    })),
+  };
+}
+
+/** The same count twice over, once per game system and once per competition. */
+function tally(matches: RivalryMatch[], key: (m: RivalryMatch) => string): Breakdown[] {
+  const held = new Map<string, Breakdown>();
+
+  for (const m of matches) {
+    const label = key(m);
+    const row = held.get(label) ?? { label, played: 0, wins: 0, draws: 0, losses: 0 };
+    row.played += 1;
+    if (m.outcome === "won") row.wins += 1;
+    else if (m.outcome === "lost") row.losses += 1;
+    else row.draws += 1;
+    held.set(label, row);
+  }
+
+  return [...held.values()].sort((a, b) => b.played - a.played
+    || a.label.localeCompare(b.label));
 }
 
 export type OpponentFinder = {

@@ -14,7 +14,17 @@ export type MembershipTier = {
   price: string | null;
   priceDuration: string;
   description: string | null;
+  /**
+   * The tier somebody lands on by joining. Not the same as free: Didcot's
+   * "Basic Membership" costs £10 a month.
+   */
   isBasic: boolean;
+  /**
+   * Nothing to pay. Read from the price, because that is the only thing that
+   * decides it. Treating the default tier as the free one showed a club with
+   * two paid tiers as having one, and hid every perk the cheaper one includes.
+   */
+  isFree: boolean;
   benefits: string[];
   /**
    * The same perks under Savings / Access / Tools. Computed here for the same

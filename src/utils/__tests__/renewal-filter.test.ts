@@ -89,8 +89,19 @@ assert.equal(counts.due + counts.paid, 7, "every membership is either owing or n
 const ids = (r: RenewalRow[]) => r.map((x) => x.member.membershipId);
 assert.deepEqual(ids(filterRenewals(rows, { filter: "overdue" })), [3]);
 assert.deepEqual(ids(filterRenewals(rows, { filter: "expiring" })), [2]);
-assert.deepEqual(ids(filterRenewals(rows, { filter: "one-off" })), [5, 7]);
-assert.deepEqual(ids(filterRenewals(rows, { filter: "free" })), [6]);
+assert.deepEqual(ids(filterRenewals(rows, { billing: "one-off" })), [5, 7]);
+assert.deepEqual(ids(filterRenewals(rows, { billing: "free" })), [6]);
+
+// The two axes are independent, which is the whole point of splitting them:
+// "who on a monthly plan has lapsed" was unaskable while one control did both.
+assert.deepEqual(ids(filterRenewals(rows, { filter: "overdue", billing: "monthly" })), [3]);
+assert.deepEqual(ids(filterRenewals(rows, { filter: "overdue", billing: "yearly" })), []);
+// A free tier is never a cadence, however the ledger reads.
+assert.deepEqual(ids(filterRenewals(rows, { billing: "monthly" })).includes(6), false);
+
+// Counts follow the billing choice, or a tab says 3 over an empty list.
+assert.equal(countRenewals(rows, "free").all, 1);
+assert.equal(countRenewals(rows, "free").overdue, 0);
 
 // Soonest puts whoever needs chasing first: never paid, then lapsed, then by
 // how little time is left, and free tiers last.

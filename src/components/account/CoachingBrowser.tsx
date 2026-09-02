@@ -16,8 +16,9 @@ import {
 } from "@/utils/coaching-filter";
 import { tokens } from "@/lib/tokens";
 import type { MyCoaching } from "@/services/myActivity.service";
+import { PER_PAGE } from "@/utils/paging";
 
-const PAGE = 12;
+const PAGE = PER_PAGE.cards;
 
 /** Search, filter and sort over the member's coaching, then a grid. */
 export default function CoachingBrowser({ sessions }: { sessions: MyCoaching[] }) {

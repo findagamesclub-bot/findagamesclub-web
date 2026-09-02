@@ -1,5 +1,3 @@
-// server-links-ok: only ever rendered from EventMap, which is a client
-// component, so `component={NextLink}` never crosses the server boundary here.
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
@@ -8,22 +6,31 @@ import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import EventIcon from "@mui/icons-material/Event";
+import { milesLabel } from "@/utils/geo";
 import { tokens } from "@/lib/tokens";
 import { clubIdentity } from "@/utils/club-identity";
 import { nightLabel } from "@/utils/dates";
 import type { SimilarEvent } from "@/utils/similar-events";
 
 /**
- * "More events you might like", under the map.
+ * "More events you might like".
  *
  * The same card as SimilarClubs, so the two views read as one product. Ranked
  * by shared games first and distance second, and the reason each card is here
  * is on it: a recommendation you cannot see the reason for is just a second
  * copy of the list.
+ *
+ * Rendered from the map, which is a Client Component, and from the bottom of
+ * the search page, which is a Server Component. That second caller is why the
+ * button below is wrapped in a plain next/link rather than using MUI's
+ * `component` prop: passing NextLink into a client component across the server
+ * boundary is not serializable, and takes the whole page down with it.
  */
-export default function SimilarEvents({ items, trail = "" }: {
+export default function SimilarEvents({ items, trail = "", lede }: {
   items: SimilarEvent[];
   trail?: string;
+  /** Why these are here, which differs between the map and the search page. */
+  lede?: string;
 }) {
   if (!items.length) return null;
 
@@ -37,7 +44,7 @@ export default function SimilarEvents({ items, trail = "" }: {
         More events you might like
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
-        Closest matches from this search, by the games they share.
+        {lede ?? "Closest matches from this search, by the games they share."}
       </Typography>
 
       <Box sx={{ display: "grid", gap: 2,
@@ -89,23 +96,25 @@ export default function SimilarEvents({ items, trail = "" }: {
                 ))}
                 {typeof miles === "number" ? (
                   <Chip size="small" variant="outlined"
-                    label={miles < 1 ? "under a mile" : `${miles.toFixed(0)} mi away`}
+                    label={milesLabel(miles)}
                     sx={{ borderColor: tokens.rule, fontSize: "0.72rem" }} />
                 ) : null}
               </Stack>
 
-              <Button
-                component={NextLink}
+              <NextLink
                 href={`/clubs/${event.club.slug}/events/${event.legacyId}${trail}`}
-                variant="outlined"
-                size="small"
-                endIcon={<ArrowForwardIcon />}
-                sx={{ alignSelf: "flex-start", mt: "auto", color: tokens.ink,
-                      borderColor: tokens.rule,
-                      "&:hover": { borderColor: faction.base, color: faction.deep } }}
+                style={{ textDecoration: "none", marginTop: "auto", alignSelf: "flex-start" }}
               >
-                View event
-              </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  endIcon={<ArrowForwardIcon />}
+                  sx={{ color: tokens.ink, borderColor: tokens.rule,
+                        "&:hover": { borderColor: faction.base, color: faction.deep } }}
+                >
+                  View event
+                </Button>
+              </NextLink>
             </Stack>
           );
         })}

@@ -2,8 +2,10 @@ import "server-only";
 
 import * as repo from "@/repositories/bookings.repository";
 import { benefitsFromRow } from "@/utils/booking-benefits";
+import * as extras from "@/repositories/clubExtras.repository";
 import { addDays, bookableSessions, generateSessions } from "@/utils/booking-sessions";
 import { formatPrice } from "@/utils/format";
+import { canonicalGame } from "@/utils/game-label";
 import type {
   Booking, BookingCalendar, CalendarSession, ClubScheduleSlot,
 } from "@/types/booking";
@@ -60,7 +62,7 @@ function toBooking(row: BookingRow, viewerId: string | null, canManage: boolean,
     clubSessionId: r.club_session_id,
     date: r.session_date,
     tableIndex: r.table_index,
-    gameTitle: r.game_title,
+    gameTitle: canonicalGame(r.game_title),
     notes: r.notes,
     booker: person(r.booker, viewerId) ?? {
       profileId: r.booked_by,
@@ -74,6 +76,10 @@ function toBooking(row: BookingRow, viewerId: string | null, canManage: boolean,
     isMine,
     // Members may cancel only before the day itself; a manager any time.
     canCancel: canManage || (isMine && r.session_date > today),
+    opponentLinked: r.opponent_profile_id !== null,
+    // Mirrors edit_booking_details (0057). The member who booked it, not
+    // whoever is sitting opposite: the booking is theirs to describe.
+    canEdit: canManage || (r.booked_by === viewerId && r.session_date > today),
   };
 }
 
@@ -90,13 +96,20 @@ export async function getBookingCalendar(params: {
 }): Promise<BookingCalendar> {
   const today = londonToday();
 
-  const [schedule, bookingSettings, membershipSettings] = await Promise.all([
+  const [schedule, bookingSettings, membershipSettings, tier] = await Promise.all([
     repo.findSchedule(params.clubId),
     repo.findBookingSettings(params.clubId),
     repo.findMembershipSettings(params.clubId),
+    // The viewer's tier, which used to be passed as null here. Every allowance
+    // on this page then came from the club's floor, so a Premium member sold
+    // four upcoming bookings was held to the club's two and told it was their
+    // tier that said so.
+    params.viewerId && params.isMember
+      ? extras.findMemberTier(params.clubId, params.viewerId).catch(() => null)
+      : Promise.resolve(null),
   ]);
 
-  const benefits = benefitsFromRow(null, membershipSettings);
+  const benefits = benefitsFromRow(tier?.benefits ?? null, membershipSettings);
 
   const settings = bookingSettings
     ? {
@@ -147,6 +160,18 @@ export async function getBookingCalendar(params: {
   const capped =
     benefits.maxUpcomingBookings > 0 && viewerUpcoming >= benefits.maxUpcomingBookings;
 
+  // The nights an advert may name: the first N distinct ones, counted the same
+  // way createPost counts them so the button and the rule cannot disagree.
+  const postableNights = new Set<string>();
+  if (benefits.lookingForGameFutureDates > 0) {
+    for (const s of sessions) {
+      if (postableNights.size >= benefits.lookingForGameFutureDates) break;
+      postableNights.add(s.date);
+    }
+  } else {
+    for (const s of sessions) postableNights.add(s.date);
+  }
+
   const calendar: CalendarSession[] = sessions.map((s) => {
     const sessionBookings = bySession.get(`${s.clubSessionId}:${s.date}`) ?? [];
     const tablesLeft = Math.max(params.capacity - sessionBookings.length, 0);
@@ -178,6 +203,9 @@ export async function getBookingCalendar(params: {
       blockedReason,
       blockedBy,
       viewerBookedThisDate: bookedThisDate,
+      // Not on a night they are already playing: taking up an advert books a
+      // table in the poster's name, and they cannot have two that evening.
+      canPostLookingForGame: postableNights.has(s.date) && !bookedThisDate,
     };
   });
 

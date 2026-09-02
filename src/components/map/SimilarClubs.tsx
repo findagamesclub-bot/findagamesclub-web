@@ -8,6 +8,7 @@ import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ScheduleIcon from "@mui/icons-material/Schedule";
+import { milesLabel } from "@/utils/geo";
 import { tokens } from "@/lib/tokens";
 import { clubIdentity } from "@/utils/club-identity";
 import type { SimilarClub } from "@/utils/similar-clubs";
@@ -84,7 +85,7 @@ export default function SimilarClubs({ items }: { items: SimilarClub[] }) {
                 ))}
                 {typeof miles === "number" ? (
                   <Chip size="small" variant="outlined"
-                    label={miles < 1 ? "under a mile" : `${miles.toFixed(0)} mi away`}
+                    label={milesLabel(miles)}
                     sx={{ borderColor: tokens.rule, fontSize: "0.72rem" }} />
                 ) : null}
               </Stack>

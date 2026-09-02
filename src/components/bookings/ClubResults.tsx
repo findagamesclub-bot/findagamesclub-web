@@ -13,6 +13,7 @@ import { confirmationLabel, deploymentLabel } from "@/utils/result-meta";
 import { nightLabel } from "@/utils/dates";
 import { mono, tokens, type Faction } from "@/lib/tokens";
 import type { ClubResult } from "@/services/clubResults.service";
+import { PER_PAGE } from "@/utils/paging";
 
 /**
  * Games played at this club, for the club.
@@ -31,7 +32,7 @@ export default function ClubResults({
 }) {
   const [chosen, setChosen] = useState<ClubResult | null>(null);
   const top = useRef<HTMLDivElement>(null);
-  const paged = usePagedList(results, 20, top);
+  const paged = usePagedList(results, PER_PAGE.rows, top);
   const disputed = results.filter((r) => r.confirmation === "disputed").length;
   const unscored = results.filter((r) => !r.recorded).length;
 

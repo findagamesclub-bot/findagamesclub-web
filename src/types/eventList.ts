@@ -1,3 +1,4 @@
+import type { SimilarEvent } from "@/utils/similar-events";
 /** One event in the directory-wide list. */
 export type EventSummary = {
   id: number;
@@ -36,6 +37,13 @@ export type EventSummary = {
   distanceMiles: number | null;
   /** The club's formats, since an event inherits its club's kind of play. */
   clubFormats: string[];
+  /**
+   * Who the event is open to: "18+", "All ages". The club's door policy, since
+   * events carry no age of their own and it is that hall's rule that decides.
+   */
+  ages: string | null;
+  /** Best Coast Pairings listing, where the club runs its tournament on it. */
+  bestcoastLink: string | null;
   /** The club's own artwork; events carry no images of their own. */
   image: { src: string; alt: string } | null;
   /**
@@ -66,4 +74,16 @@ export type EventListResult = {
   origin: { label: string } | null;
   /** A place we could not place. Saying so beats silently ignoring it. */
   locationUnresolved: boolean;
+  /**
+   * "More events you might like", for the bottom of the search.
+   *
+   * Worked out here rather than on the page because this is where the real
+   * coordinates of the searched place live, and where the unfiltered set is
+   * already in hand. It costs no extra query.
+   *
+   * `basis` says which pool answered, because the two need different wording.
+   * "more" is what else is on; "history" is the fallback for a reader who has
+   * genuinely seen everything, which only happens on a small directory.
+   */
+  suggestions: { items: SimilarEvent[]; basis: "more" | "history" };
 };

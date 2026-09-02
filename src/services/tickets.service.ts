@@ -5,8 +5,9 @@ import { ticketBlockedReason } from "@/utils/ticket-eligibility";
 import { formatPrice } from "@/utils/format";
 import { amountOf, priceCart } from "@/utils/cart-pricing";
 import { checkoutError } from "@/utils/checkout-errors";
-import { toMembershipTiers, type TierRow } from "@/utils/membership-tiers";
-import { getMyMembership } from "./memberships.service";
+import * as extras from "@/repositories/clubExtras.repository";
+import * as loyaltyRepo from "@/repositories/loyalty.repository";
+import type { TicketStanding } from "@/utils/ticket-pricing";
 import type { MembershipTier } from "@/types/clubDetail";
 import type { BuyableTicket, CartLine, EventCart } from "@/types/ticket";
 import type { EventTicketType } from "@/types/event";
@@ -150,6 +151,8 @@ export async function checkout(params: {
   profileId: string;
   fullName: string;
   email: string;
+  /** What the member asked to spend. 0050 has the final say. */
+  redeemPoints?: number;
 }): Promise<{ ok: true; reference: string } | { ok: false; error: string }> {
   const fullName = params.fullName.trim();
   const email = params.email.trim().toLowerCase();
@@ -159,36 +162,62 @@ export async function checkout(params: {
     return { ok: false, error: "Enter a valid email address to complete checkout." };
   }
 
-  // The discount is worked out here, not read off the form. A percentage the
-  // browser could name is a percentage the browser could choose.
-  const event = await repo.findEventClub(params.eventId);
-  if (!event) return { ok: false, error: "That event no longer exists." };
-
-  const club = (event as unknown as {
-    clubs: { id: number; club_membership_tiers: TierRow[] | null };
-  }).clubs;
-
-  const tiers = toMembershipTiers(club.club_membership_tiers ?? []);
-  const membership = await getMyMembership(club.id, params.profileId);
-  const tier =
-    membership.status === "approved"
-      ? tiers.find((t) => t.key === membership.tierKey) ?? null
-      : null;
-
   const reference = makeReference();
 
   try {
+    // The discount, the tier and the redemption are all worked out inside
+    // checkout_event_cart now. A percentage the browser could name is a
+    // percentage the browser could choose, and the same goes for the points.
     await repo.checkout({
       eventId: params.eventId,
       fullName,
       email,
       reference,
-      discountPercent: eventDiscountOf(tier),
-      tierKey: tier?.key ?? null,
-      tierLabel: tier?.label ?? "",
+      redeemPoints: Math.max(0, Math.floor(params.redeemPoints ?? 0)),
     });
     return { ok: true, reference };
   } catch (error) {
     return { ok: false, error: checkoutError(error instanceof Error ? error.message : "") };
   }
+}
+
+/**
+ * What this member may pay for tickets with, for the checkout page.
+ *
+ * Presentation only. checkout_event_cart recomputes every figure from the
+ * club's settings and the member's balance at write time, so nothing assembled
+ * here can change what is charged. It exists so the quote on the page and the
+ * charge in the database agree.
+ *
+ * A stranger to the club gets zeroes across the board, which is how the field
+ * disappears for them rather than refusing after they have typed a number.
+ */
+export async function getTicketStanding(params: {
+  clubId: number;
+  profileId: string;
+  subtotal: number;
+  currency: string;
+  discountPercent: number;
+  tierLabel: string | null;
+}): Promise<TicketStanding> {
+  const [tier, loyalty, points] = await Promise.all([
+    extras.findMemberTier(params.clubId, params.profileId),
+    loyaltyRepo.findSettings(params.clubId),
+    extras.findPointBalance(params.clubId, params.profileId),
+  ]);
+
+  const benefits = tier?.benefits as Record<string, unknown> | undefined;
+
+  return {
+    subtotal: params.subtotal,
+    currency: params.currency,
+    discountPercent: params.discountPercent,
+    tierLabel: params.tierLabel,
+    points,
+    pointValue: loyalty?.enabled && loyalty.point_value !== null
+      ? Number(loyalty.point_value) : null,
+    redemptionCapPercent: Math.max(0, Math.min(100, Math.floor(Number(
+      benefits?.loyaltyRedemptionCapPercent ?? 0,
+    )) || 0)),
+  };
 }

@@ -24,7 +24,8 @@ import BookingPricePanel from "./BookingPricePanel";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { nightLabel } from "@/utils/dates";
 import type { BookingStanding } from "@/utils/booking-pricing";
-import type { CalendarSession } from "@/types/booking";
+import EditBookingDialog from "./EditBookingDialog";
+import type { Booking, CalendarSession } from "@/types/booking";
 
 /**
  * Book or cancel one night.
@@ -35,7 +36,8 @@ import type { CalendarSession } from "@/types/booking";
  */
 export default function BookingActions({
   session, clubId, slug, standing, faction, waitlistEnabled, myBookingId,
-  canCancelMine, myQueueEntryId, queueLength, lfgEnabled, hasOpenPost, roster = [],
+  canCancelMine, mine = null, myQueueEntryId, queueLength, lfgEnabled, hasOpenPost,
+  roster = [],
 }: {
   /** Club members who can be named as the opponent. */
   roster?: { id: string; name: string }[];
@@ -48,6 +50,8 @@ export default function BookingActions({
   waitlistEnabled: boolean;
   myBookingId: number | null;
   canCancelMine: boolean;
+  /** The viewer's own booking on this night, when they have one. */
+  mine?: Booking | null;
   myQueueEntryId: number | null;
   queueLength: number;
   lfgEnabled: boolean;
@@ -103,6 +107,11 @@ export default function BookingActions({
         onClose={() => setDropping(false)}
       />
       <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}>
+        {/* Beside Cancel, not hidden behind it: a wrong game or a mistyped
+            opponent is the common correction, and giving up the table to fix
+            a typo was the only way to do it. */}
+        {mine?.canEdit ? <EditBookingDialog booking={mine} slug={slug} variant="outlined" /> : null}
+
         {myBookingId && canCancelMine ? (
           // Asked for, not fired on click. Giving up a table is not undoable:
           // the waiting list is offered it the moment the row changes. The
@@ -165,8 +174,11 @@ export default function BookingActions({
         )}
 
         {/* Offered beside booking, not instead of it: a member who wants an
-            opponent still needs a table, and the post is how they find one. */}
-        {lfgEnabled && !myBookingId && !hasOpenPost && !session.isFull && !session.blockedReason ? (
+            opponent still needs a table, and the post is how they find one.
+            Only on nights the tier's posting window actually reaches, so the
+            button is never offered for a night the server will refuse. */}
+        {lfgEnabled && session.canPostLookingForGame
+          && !myBookingId && !hasOpenPost && !session.isFull && !session.blockedReason ? (
           <Button variant="text" size="small" startIcon={<HandshakeIcon />}
             onClick={() => { setMode("lfg-post"); setOpened(true); }}
             sx={{ color: tokens.inkMuted }}>

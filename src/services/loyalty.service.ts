@@ -1,6 +1,7 @@
 import "server-only";
 
 import * as repo from "@/repositories/loyalty.repository";
+import * as memberships from "@/repositories/memberships.repository";
 import {
   DEFAULT_ANNIVERSARIES, DEFAULT_MILESTONES, DEFAULT_TIERS, tierFor,
   type Anniversary, type LoyaltyTier,
@@ -127,11 +128,31 @@ type Standing = {
  * query for the club beats one per member card.
  */
 export async function getStandings(clubId: number): Promise<Standing[]> {
-  const rows = await repo.findClubWallets(clubId);
+  const [members, rows] = await Promise.all([
+    memberships.findClubMemberships(clubId, ["approved"]),
+    repo.findClubWallets(clubId),
+  ]);
 
+  // Seeded from the roster, not from the ledger. Built the other way round, a
+  // member who has not earned anything yet simply was not on the board, so a
+  // club with two members showed one and looked broken. Legacy starts from the
+  // approved memberships for the same reason (_build_loyalty_leaderboard).
   const byPerson = new Map<string, Standing>();
+  for (const member of members) {
+    const person = (member as unknown as { profiles: { full_name: string | null } }).profiles;
+    byPerson.set(member.profile_id, {
+      profileId: member.profile_id,
+      name: person?.full_name?.trim() || "Club member",
+      available: 0,
+      lifetime: 0,
+      entries: [] as LoyaltyEntry[],
+    });
+  }
+
   for (const row of rows) {
     const person = (row as unknown as { profiles: { full_name: string | null } }).profiles;
+    // Somebody who earned points here and has since left keeps their standing:
+    // the ledger is a record of what happened, not of who is currently in.
     const held = byPerson.get(row.profile_id) ?? {
       profileId: row.profile_id,
       name: person?.full_name?.trim() || "Club member",
@@ -152,5 +173,8 @@ export async function getStandings(clubId: number): Promise<Standing[]> {
     byPerson.set(row.profile_id, held);
   }
 
-  return [...byPerson.values()].sort((a, b) => b.lifetime - a.lifetime);
+  // Lifetime, then name, so the people on zero sit in a readable order under
+  // the ones who have earned rather than in whatever order the roster arrived.
+  return [...byPerson.values()]
+    .sort((a, b) => b.lifetime - a.lifetime || a.name.localeCompare(b.name));
 }

@@ -7,7 +7,30 @@
  * rather than on an empty page that looks like the data is gone.
  */
 
-export const PAGE_SIZE = 24;
+/**
+ * How many rows a page holds, by how heavy one row is.
+ *
+ * Three sizes rather than a number per list. The right count is not a matter
+ * of taste, it is how much vertical space one item takes: twenty-four member
+ * cards in a two-column grid is twelve rows of tall cards and a scrollbar the
+ * size of a thumbnail, while twenty-four lines of a results table is a screen
+ * and a half and paging any sooner would just be more clicking.
+ *
+ * Nothing goes above twenty. Past that a page stops being something you take
+ * in and becomes something you scroll, which is the thing pagination exists to
+ * prevent.
+ */
+export const PER_PAGE = {
+  /** Tall cards in a grid: members, orders, bookings, memberships. */
+  cards: 12,
+  /** One line each: standings, ledgers, rosters, results, door lists. */
+  rows: 20,
+  /** A block of prose with its own furniture: reviews, board threads. */
+  rich: 8,
+} as const;
+
+/** The default, for a list that has not said which of the three it is. */
+export const PAGE_SIZE: number = PER_PAGE.cards;
 
 /** A page number from a query string. Anything unusable reads as page 1. */
 export function pageFrom(raw: string | string[] | undefined): number {

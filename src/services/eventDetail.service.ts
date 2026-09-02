@@ -96,10 +96,13 @@ function toPairings(rows: Row["club_event_pairings"]): EventPairing[] {
         id: p.id,
         round: p.round,
         label: p.label,
+        // playerOneName is what the imported rows actually carry. Reading
+        // only playerOne mapped every match to two empty strings, which the
+        // filter below then dropped, so a published draw read as no draw.
         matches: matches.map((m) => ({
-          table: (m.table as string) ?? null,
-          playerOne: String(m.playerOne ?? m.player1 ?? ""),
-          playerTwo: String(m.playerTwo ?? m.player2 ?? ""),
+          table: (m.table as string) || null,
+          playerOne: String(m.playerOneName ?? m.playerOne ?? m.player1 ?? ""),
+          playerTwo: String(m.playerTwoName ?? m.playerTwo ?? m.player2 ?? ""),
         })).filter((m) => m.playerOne || m.playerTwo),
       };
     });

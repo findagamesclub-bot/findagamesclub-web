@@ -32,7 +32,9 @@ export default async function MembershipComparisonPage({
     : { id: null, status: "none" as const, tierKey: null, tierAssignedAt: null };
 
   const rows = buildTierComparison(club.membershipTiers);
-  const paid = club.membershipTiers.filter((t) => !t.isBasic).length;
+  // Priced, not "not the default tier". A club whose entry tier costs £10 has
+  // two paid tiers, and this counted one of them.
+  const paid = club.membershipTiers.filter((t) => !t.isFree).length;
 
   return (
     <Container maxWidth="lg" component="main" sx={{ py: { xs: 4, md: 6 } }}>
@@ -44,7 +46,12 @@ export default async function MembershipComparisonPage({
         stats={[
           { label: club.membershipTiers.length === 1 ? "tier" : "tiers",
             value: String(club.membershipTiers.length) },
-          ...(paid ? [{ label: paid === 1 ? "paid tier" : "paid tiers", value: String(paid) }] : []),
+          // Only when it says something the tier count does not. A club whose
+          // tiers are all paid read "2 TIERS · 2 PAID TIERS", which is the same
+          // fact twice.
+          ...(paid && paid !== club.membershipTiers.length
+            ? [{ label: paid === 1 ? "paid tier" : "paid tiers", value: String(paid) }]
+            : []),
           { label: "privileges compared", value: String(rows.length) },
         ]}
         note="Every privilege each tier includes, side by side. Nothing is hidden behind a count."

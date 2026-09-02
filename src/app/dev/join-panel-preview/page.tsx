@@ -14,10 +14,10 @@ export default function JoinPanelPreviewPage() {
   const { faction } = clubIdentity("didcot-wargames-didcot", "Didcot Wargames");
   const tiers: MembershipTier[] = [
     { key: "basic", label: "Basic Membership", price: "£10", priceDuration: "month",
-      description: null, isBasic: true, benefits: [], benefitGroups: [], benefitValues: {}, eventDiscountPercent: 0, reservedCategories: [],
+      description: null, isBasic: true, isFree: false, benefits: [], benefitGroups: [], benefitValues: {}, eventDiscountPercent: 0, reservedCategories: [],
       billingOptions: [{ id: "basic-month", label: "Monthly", price: "£10", cadence: "month" }] },
     { key: "premium-membership", label: "Premium Membership", price: "£15", priceDuration: "month",
-      description: null, isBasic: false, benefits: [], benefitGroups: [], benefitValues: {}, eventDiscountPercent: 10, reservedCategories: [],
+      description: null, isBasic: false, isFree: false, benefits: [], benefitGroups: [], benefitValues: {}, eventDiscountPercent: 10, reservedCategories: [],
       billingOptions: [{ id: "premium-membership-month", label: "Monthly", price: "£15", cadence: "month" }] },
   ];
 

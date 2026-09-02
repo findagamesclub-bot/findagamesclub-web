@@ -7,6 +7,7 @@ import MetalPlate from "@/components/ui/MetalPlate";
 import MemberLoyaltyButton from "@/components/loyalty/MemberLoyaltyButton";
 import type { LoyaltyEntry } from "@/types/loyalty";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import TagChip from "./TagChip";
 import { tokens, type Faction } from "@/lib/tokens";
 import { monthYear } from "@/utils/dates";
 import type { ClubMember } from "@/types/membership";
@@ -42,7 +43,7 @@ export default function MemberCard({
   } | null;
 }) {
   const since = monthYear(member.joinedAt);
-  const plays = [...member.games, ...member.armies];
+
 
   return (
     <Box
@@ -138,31 +139,30 @@ export default function MemberCard({
         ) : null}
 
         {/* The foot of a datasheet lists what the unit brings. Here that is
-            what the person actually turns up to play. */}
+            what the person turns up to play, and what they bring to play it
+            with. Kept apart because the filters above these cards keep them
+            apart: somebody who has just filtered by army could not tell which
+            chip had matched when the two were run together under "PLAYS". */}
         <Box sx={{ borderTop: `1px solid ${tokens.rule}`, pt: 1.25 }}>
-          <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.66rem", letterSpacing: "0.1em",
-                            color: tokens.inkMuted, mb: 0.75 }}>
-            PLAYS
-          </Typography>
-          {plays.length ? (
-            <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: "wrap" }}>
-              {plays.map((tag) => (
-                <Box
-                  key={tag}
-                  sx={{
-                    px: 1, py: 0.35, borderRadius: 0.75,
-                    bgcolor: faction.soft, color: faction.deep,
-                    fontFamily: "var(--font-mono)", fontSize: "0.72rem", fontWeight: 600,
-                  }}
-                >
-                  {tag}
-                </Box>
-              ))}
+          {member.games.length || member.armies.length ? (
+            <Stack spacing={1}>
+              {member.games.length ? (
+                <TagGroup label="PLAYS" tags={member.games} faction={faction} kind="game" />
+              ) : null}
+              {member.armies.length ? (
+                <TagGroup label="ARMIES" tags={member.armies} faction={faction} kind="army" />
+              ) : null}
             </Stack>
           ) : (
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.85rem" }}>
-              Nothing listed yet.
-            </Typography>
+            <>
+              <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.66rem",
+                                letterSpacing: "0.1em", color: tokens.inkMuted, mb: 0.75 }}>
+                PLAYS
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.85rem" }}>
+                Nothing listed yet.
+              </Typography>
+            </>
           )}
         </Box>
 
@@ -186,5 +186,23 @@ function Figure({ value, label, emphasis }: {
         {label.toUpperCase()}
       </Typography>
     </Stack>
+  );
+}
+
+function TagGroup({ label, tags, faction, kind }: {
+  label: string; tags: string[]; faction: Faction; kind: "game" | "army";
+}) {
+  return (
+    <Box>
+      <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.66rem",
+                        letterSpacing: "0.1em", color: tokens.inkMuted, mb: 0.75 }}>
+        {label}
+      </Typography>
+      <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: "wrap" }}>
+        {tags.map((tag) => (
+          <TagChip key={tag} label={tag} faction={faction} kind={kind} />
+        ))}
+      </Stack>
+    </Box>
   );
 }
