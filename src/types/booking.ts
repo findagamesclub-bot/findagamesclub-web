@@ -127,6 +127,14 @@ export type BookingCalendar = {
   } | null;
   capacity: number;
   sessions: CalendarSession[];
+  /**
+   * The nights this viewer could actually book, oldest first, each date once.
+   *
+   * The looking-for-a-game window is counted in these rather than in calendar
+   * nights, so the button and the server rule have to read the same list or
+   * they disagree the moment a night fills up.
+   */
+  bookableDates: string[];
   /** How many future bookings the viewer already holds here. */
   viewerUpcoming: number;
   viewerCanBook: boolean;

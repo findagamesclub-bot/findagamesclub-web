@@ -6,6 +6,7 @@ import * as extras from "@/repositories/clubExtras.repository";
 import { addDays, bookableSessions, generateSessions } from "@/utils/booking-sessions";
 import { formatPrice } from "@/utils/format";
 import { canonicalGame } from "@/utils/game-label";
+import { postingWindow } from "@/utils/lfg-window";
 import type {
   Booking, BookingCalendar, CalendarSession, ClubScheduleSlot,
 } from "@/types/booking";
@@ -160,19 +161,9 @@ export async function getBookingCalendar(params: {
   const capped =
     benefits.maxUpcomingBookings > 0 && viewerUpcoming >= benefits.maxUpcomingBookings;
 
-  // The nights an advert may name: the first N distinct ones, counted the same
-  // way createPost counts them so the button and the rule cannot disagree.
-  const postableNights = new Set<string>();
-  if (benefits.lookingForGameFutureDates > 0) {
-    for (const s of sessions) {
-      if (postableNights.size >= benefits.lookingForGameFutureDates) break;
-      postableNights.add(s.date);
-    }
-  } else {
-    for (const s of sessions) postableNights.add(s.date);
-  }
-
-  const calendar: CalendarSession[] = sessions.map((s) => {
+  // Worked out first, because the advert window below is counted in these and
+  // not in calendar nights.
+  const graded = sessions.map((s) => {
     const sessionBookings = bySession.get(`${s.clubSessionId}:${s.date}`) ?? [];
     const tablesLeft = Math.max(params.capacity - sessionBookings.length, 0);
     const bookedThisDate = viewerDates.has(s.date);
@@ -194,20 +185,34 @@ export async function getBookingCalendar(params: {
       : blockedBy === "full" ? "No tables are left for that session."
       : null;
 
-    return {
-      ...s,
-      capacity: params.capacity,
-      bookings: sessionBookings,
-      tablesLeft,
-      isFull: tablesLeft <= 0,
-      blockedReason,
-      blockedBy,
-      viewerBookedThisDate: bookedThisDate,
-      // Not on a night they are already playing: taking up an advert books a
-      // table in the poster's name, and they cannot have two that evening.
-      canPostLookingForGame: postableNights.has(s.date) && !bookedThisDate,
-    };
+    return { s, sessionBookings, tablesLeft, bookedThisDate, blockedBy, blockedReason };
   });
+
+  // Nights this member could actually book. The window below is counted in
+  // these rather than in calendar nights; postingWindow says why.
+  const bookableDates: string[] = [];
+  for (const g of graded) {
+    if (g.blockedReason) continue;
+    if (!bookableDates.includes(g.s.date)) bookableDates.push(g.s.date);
+  }
+
+  const postableNights = new Set<string>(
+    postingWindow(bookableDates, benefits.lookingForGameFutureDates),
+  );
+
+  const calendar: CalendarSession[] = graded.map((g) => ({
+    ...g.s,
+    capacity: params.capacity,
+    bookings: g.sessionBookings,
+    tablesLeft: g.tablesLeft,
+    isFull: g.tablesLeft <= 0,
+    blockedReason: g.blockedReason,
+    blockedBy: g.blockedBy,
+    viewerBookedThisDate: g.bookedThisDate,
+    // Not on a night they are already playing: taking up an advert books a
+    // table in the poster's name, and they cannot have two that evening.
+    canPostLookingForGame: postableNights.has(g.s.date) && !g.bookedThisDate,
+  }));
 
   return {
     clubId: params.clubId,
@@ -216,6 +221,7 @@ export async function getBookingCalendar(params: {
     settings,
     capacity: params.capacity,
     sessions: calendar,
+    bookableDates,
     viewerUpcoming,
     viewerCanBook: Boolean(settings) && params.capacity > 0 && params.isMember,
     benefits,

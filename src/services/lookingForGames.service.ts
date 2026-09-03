@@ -3,6 +3,7 @@ import "server-only";
 import * as repo from "@/repositories/lookingForGames.repository";
 import { isPlayingOn } from "@/repositories/bookings.repository";
 import type { MembershipBenefits } from "@/types/booking";
+import { postingWindow } from "@/utils/lfg-window";
 
 /**
  * Looking for games.
@@ -88,18 +89,14 @@ export async function createPost(params: {
     }
   }
 
-  const window = params.benefits.lookingForGameFutureDates;
-  if (window > 0) {
-    // Distinct nights, in order — a club with two sessions on one evening must
-    // not have that evening count twice against the window.
-    const nights: string[] = [];
-    for (const d of params.bookableDates) if (!nights.includes(d)) nights.push(d);
-    if (!nights.slice(0, window).includes(params.sessionDate)) {
-      return {
-        ok: false as const,
-        error: "That club night is outside your current looking-for-game posting window.",
-      };
-    }
+  // The same rule the button draws itself from, so a night the page offers is
+  // never a night this refuses.
+  const allowed = postingWindow(params.bookableDates, params.benefits.lookingForGameFutureDates);
+  if (!allowed.includes(params.sessionDate)) {
+    return {
+      ok: false as const,
+      error: "That club night is outside your current looking-for-game posting window.",
+    };
   }
 
   try {

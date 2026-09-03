@@ -131,7 +131,11 @@ export async function bookingAction(
       gameTitle: String(data.get("gameTitle") ?? ""),
       notes: String(data.get("notes") ?? ""),
       benefits: calendar.benefits,
-      bookableDates: calendar.sessions.map((s) => s.date),
+      // The calendar's own list, not every night on it. Mapping the sessions
+      // straight through put full nights into a parameter called
+      // bookableDates, so a full evening ate one of the member's window slots
+      // here as well as on the button.
+      bookableDates: calendar.bookableDates,
     });
 
     refresh();
