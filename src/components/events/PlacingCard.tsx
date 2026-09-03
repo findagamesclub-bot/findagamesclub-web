@@ -104,7 +104,7 @@ export default function PlacingCard({
                     ) : null}
                   </Stack>
                   <Box sx={{ display: "grid",
-                             gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0,1fr))" },
+                             gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0,1fr))" },
                              columnGap: 2 }}>
                     {p.army.list.units.map((u) => (
                       <Stack key={u.name} direction="row" spacing={1}

@@ -161,3 +161,19 @@ export async function deleteEventPlacing(eventId: number, placingId: number) {
 
   if (error) throw new Error(error.message);
 }
+
+/**
+ * Set or clear an event's Best Coast Pairings link.
+ *
+ * A function for one column rather than a write grant on club_events: the row
+ * also carries prices, capacities and dates, and a member must not be able to
+ * reach any of those.
+ */
+export async function setEventBestcoastLink(eventId: number, url: string) {
+  const supabase = await createClient();
+  const { error } = await (supabase as unknown as {
+    rpc(name: string, args: Record<string, unknown>): Promise<{ error: { message: string } | null }>;
+  }).rpc("set_event_bestcoast_link", { p_event: eventId, p_url: url });
+
+  if (error) throw new Error(error.message);
+}

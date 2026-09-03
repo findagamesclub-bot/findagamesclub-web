@@ -93,7 +93,7 @@ export default function GameBrowser({
         <BusyOverlay busy={busy} variant="dim" label="Updating games">
           <Box ref={top} sx={{ display: "grid", gap: 2.5, alignItems: "start",
                      gridTemplateColumns: {
-                       xs: "1fr",
+                       xs: "minmax(0, 1fr)",
                        md: "repeat(2, minmax(0, 1fr))",
                        xl: "repeat(3, minmax(0, 1fr))",
                      } }}>

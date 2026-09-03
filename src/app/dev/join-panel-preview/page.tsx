@@ -68,7 +68,7 @@ export default function JoinPanelPreviewPage() {
     <Container maxWidth="lg" component="main" sx={{ py: 5 }}>
       <Typography variant="h1" sx={{ fontSize: "2rem", mb: 3 }}>Join panel states</Typography>
       <Box sx={{ display: "grid", gap: 3,
-                 gridTemplateColumns: { xs: "1fr", sm: "repeat(2,1fr)", lg: "repeat(3,1fr)" } }}>
+                 gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))", lg: "repeat(3, minmax(0, 1fr))" } }}>
         {states.map((s) => (
           <Box key={s.title}>
             <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.7rem", letterSpacing: "0.1em",

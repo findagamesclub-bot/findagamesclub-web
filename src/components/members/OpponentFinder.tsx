@@ -127,7 +127,7 @@ export default function OpponentFinder({
 
           {expanded ? (
             <Box sx={{ display: "grid", gap: 1.5,
-                       gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" } }}>
+                       gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "repeat(2, minmax(0, 1fr))" } }}>
               {rest.map((suggestion) => (
                 <Card key={suggestion.id} suggestion={suggestion} faction={faction}
                   best={false} />

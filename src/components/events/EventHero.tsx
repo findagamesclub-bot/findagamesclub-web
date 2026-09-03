@@ -6,16 +6,19 @@ import ClubArt from "@/components/clubs/ClubArt";
 import { nightLabel } from "@/utils/dates";
 import EventWhen from "./EventWhen";
 import BestCoastButton from "./BestCoastButton";
+import BestCoastLinkEditor from "./BestCoastLinkEditor";
 import { ticketsLeft } from "@/utils/tickets-left";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { ClubEventDetail } from "@/types/event";
 
 /** The event's own hero: art, standing, headline, and the figures under it. */
 export default function EventHero({
-  event, faction,
+  event, faction, admin,
 }: {
   event: ClubEventDetail;
   faction: Faction;
+  /** Present only for the club, and only to set the Best Coast link. */
+  admin?: { slug: string; eventKey: string };
 }) {
   // Over the artwork this stays a glance: the day, and the second day when
   // there is one. The exact times are labelled STARTS and ENDS underneath,
@@ -109,10 +112,24 @@ export default function EventHero({
         </Stack>
       ) : null}
 
-      {/* Where the club runs registration and pairings for this tournament. */}
-      <Box sx={{ mt: 1.5, mb: 1 }}>
+      {/* Where the club runs registration and pairings for this tournament,
+          and, for the club itself, the way to set it. The control sits beside
+          the button it fills rather than on a settings screen somewhere: an
+          organiser looking at an event with no link should not have to go and
+          find where links are kept. */}
+      <Stack direction="row" spacing={1.5} useFlexGap
+        sx={{ flexWrap: "wrap", alignItems: "center", mt: 1.5, mb: 1 }}>
         <BestCoastButton href={event.bestcoastLink} faction={faction} size="medium" />
-      </Box>
+        {admin ? (
+          <BestCoastLinkEditor
+            current={event.bestcoastLink}
+            faction={faction}
+            slug={admin.slug}
+            eventKey={admin.eventKey}
+            eventId={event.id}
+          />
+        ) : null}
+      </Stack>
     </>
   );
 }

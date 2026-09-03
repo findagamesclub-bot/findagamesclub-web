@@ -8,10 +8,20 @@ html {
   height: 100%;
 }
 
+/*
+ * clip, not hidden. Setting one axis to `hidden` computes the other to `auto`,
+ * which makes the body a scroll container — and that silently breaks
+ * `position: sticky` for everything inside it. The section nav on the club and
+ * event pages was sticky in its own CSS and had never once stuck.
+ *
+ * `clip` prevents the same horizontal overflow without creating a scroll
+ * container, which is what was actually wanted here: the point is that the
+ * page cannot be dragged sideways, not that it scrolls sideways silently.
+ */
 html,
 body {
   max-width: 100vw;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {

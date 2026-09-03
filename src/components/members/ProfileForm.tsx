@@ -41,7 +41,7 @@ export default function ProfileForm({ draft }: { draft: ProfileDraft }) {
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1fr) minmax(0, 1fr)" },
+            gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "minmax(0, 1fr) minmax(0, 1fr)" },
             gap: 2.5,
             width: "100%",
             alignItems: "start",
@@ -108,7 +108,7 @@ export default function ProfileForm({ draft }: { draft: ProfileDraft }) {
                 </Typography>
                 <Box sx={{ display: "grid", gap: 2,
                            gridTemplateColumns: {
-                             xs: "1fr",
+                             xs: "minmax(0, 1fr)",
                              sm: "repeat(2, minmax(0, 1fr))",
                              lg: "repeat(3, minmax(0, 1fr))",
                            } }}>

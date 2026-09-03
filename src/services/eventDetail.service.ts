@@ -87,6 +87,13 @@ function toTickets(rows: Row["club_event_ticket_types"]): EventTicketType[] {
     }));
 }
 
+/** "78 - 15", or null until a round has actually been played. */
+function pairScore(one: unknown, two: unknown): string | null {
+  const a = String(one ?? "").trim();
+  const b = String(two ?? "").trim();
+  return a && b ? `${a} - ${b}` : null;
+}
+
 function toPairings(rows: Row["club_event_pairings"]): EventPairing[] {
   return [...(rows ?? [])]
     .sort((a, b) => (a.round ?? 0) - (b.round ?? 0))
@@ -103,6 +110,9 @@ function toPairings(rows: Row["club_event_pairings"]): EventPairing[] {
           table: (m.table as string) || null,
           playerOne: String(m.playerOneName ?? m.playerOne ?? m.player1 ?? ""),
           playerTwo: String(m.playerTwoName ?? m.playerTwo ?? m.player2 ?? ""),
+          // Both or neither. One score on its own is half a result and reads
+          // as a walkover that nobody recorded.
+          score: pairScore(m.playerOneScore, m.playerTwoScore),
         })).filter((m) => m.playerOne || m.playerTwo),
       };
     });

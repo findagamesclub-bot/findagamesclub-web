@@ -48,3 +48,5 @@ next-env.d.ts
 
 # MCP server config — local tooling, not pushed
 .mcp.json
+
+.mobile-session.json

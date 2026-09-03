@@ -51,11 +51,18 @@ export async function bookingAction(
   }
 
   if (intent === "edit") {
+    // Sent only by the club's own form. A member's form omits it, and the
+    // database refuses the fields from anybody who cannot manage the club, so
+    // a forged field buys nothing.
+    const setPeople = data.get("setPeople") === "1";
     const result = await bookings.editBooking({
       bookingId: Number(data.get("bookingId")),
       gameTitle: String(data.get("gameTitle") ?? ""),
       opponentName: String(data.get("opponentName") ?? ""),
       notes: String(data.get("notes") ?? ""),
+      setPeople,
+      bookedBy: setPeople ? String(data.get("bookedBy") ?? "") || null : null,
+      opponentId: setPeople ? String(data.get("opponentId") ?? "") || null : null,
     });
 
     refresh();

@@ -309,6 +309,16 @@ export async function editBookingDetails(params: {
   gameTitle: string;
   opponentName: string;
   notes: string;
+  /**
+   * Whether the two seats are being set as well as the text.
+   *
+   * A null opponent has to mean "nobody is linked", which is a real thing to
+   * save, so it cannot also mean "leave the people alone". Hence a flag rather
+   * than reading intent out of the nulls.
+   */
+  setPeople?: boolean;
+  bookedBy?: string | null;
+  opponentId?: string | null;
 }) {
   const supabase = await createClient();
   const { error } = await (supabase as unknown as {
@@ -318,6 +328,9 @@ export async function editBookingDetails(params: {
     p_game_title: params.gameTitle,
     p_opponent_name: params.opponentName,
     p_notes: params.notes,
+    p_set_people: params.setPeople ?? false,
+    p_booked_by: params.bookedBy ?? null,
+    p_opponent_id: params.opponentId ?? null,
   });
 
   if (error) throw new Error(error.message);

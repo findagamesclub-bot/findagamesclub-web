@@ -12,6 +12,7 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import BookingPeopleFields, { type Person } from "./BookingPeopleFields";
 import SubmitButton from "@/components/ui/SubmitButton";
 import { useActionToast } from "@/components/ui/Toaster";
 import { bookingAction, type BookingState } from "@/app/clubs/[slug]/bookings/actions";
@@ -23,18 +24,31 @@ import type { Booking } from "@/types/booking";
  * Correcting what is written on a booking.
  *
  * A dialog rather than editing in place: the row it sits in is one line of a
- * table list, and three fields opened inside it would push every table below
- * it down the page. The same shape as Manage member and the result editor, so
- * a club owner is not learning a third way to change something.
+ * table list, and the fields opened inside it would push every table below it
+ * down the page. The same shape as Manage member and the result editor, so a
+ * club owner is not learning a third way to change something.
+ *
+ * The club gets two extra controls: who the table is booked for and who they
+ * are playing. A table gets handed over on the night, somebody is entered
+ * against the wrong name, or a guest who has since joined should be linked to
+ * their account, and cancelling and rebooking loses the table number and
+ * offers the slot to the waiting list on the way past.
  */
 export default function EditBookingDialog({
-  booking, slug, variant = "text",
+  booking, slug, variant = "text", people,
 }: {
   booking: Booking;
   slug: string;
   /** A row of a list wants a quiet control; a card of its own wants a button. */
   variant?: "text" | "outlined";
+  /**
+   * The club's approved members. Passed only from the club's own view of a
+   * night, which is what turns the two seats into pickers. A member editing
+   * their own booking gets none, and the database refuses the fields anyway.
+   */
+  people?: Person[];
 }) {
+  const canSetPeople = Boolean(people?.length);
   const [open, setOpen] = useState(false);
   const fullScreen = useMediaQuery("(max-width:600px)");
   const [state, submit, busy] = useActionState<BookingState, FormData>(bookingAction, {});
@@ -73,7 +87,7 @@ export default function EditBookingDialog({
       <Dialog open={showing} onClose={() => setOpen(false)} fullWidth maxWidth="sm"
         fullScreen={fullScreen}>
         <DialogTitle sx={{ pb: 0.5 }}>
-          <Typography variant="h4" sx={{ fontSize: "1.15rem" }}>Edit this booking</Typography>
+          <Typography variant="h4" component="span" sx={{ fontSize: "1.15rem" }}>Edit this booking</Typography>
           <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem",
                             letterSpacing: "0.06em", color: tokens.inkMuted, mt: 0.5 }}>
             {`${nightLabel(booking.date).toUpperCase()} · TABLE ${booking.tableIndex + 1}`}
@@ -91,15 +105,19 @@ export default function EditBookingDialog({
                 slotProps={{ htmlInput: { maxLength: 120 } }}
               />
 
-              <TextField
-                name="opponentName" label="Opponent" fullWidth
-                defaultValue={booking.opponent?.name ?? ""}
-                disabled={booking.opponentLinked}
-                slotProps={{ htmlInput: { maxLength: 120 } }}
-                helperText={booking.opponentLinked
-                  ? "This opponent is a club member, so their name comes from their profile."
-                  : "Leave empty if the table is still open to anybody."}
-              />
+              {canSetPeople ? (
+                <BookingPeopleFields booking={booking} people={people!} />
+              ) : (
+                <TextField
+                  name="opponentName" label="Opponent" fullWidth
+                  defaultValue={booking.opponent?.name ?? ""}
+                  disabled={booking.opponentLinked}
+                  slotProps={{ htmlInput: { maxLength: 120 } }}
+                  helperText={booking.opponentLinked
+                    ? "This opponent is a club member, so their name comes from their profile."
+                    : "Leave empty if the table is still open to anybody."}
+                />
+              )}
 
               <TextField
                 name="notes" label="Notes" fullWidth multiline minRows={3}

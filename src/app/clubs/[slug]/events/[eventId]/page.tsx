@@ -13,6 +13,8 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import TableRestaurantIcon from "@mui/icons-material/TableRestaurant";
 import Section from "@/components/ui/Section";
 import EventPlacings from "@/components/events/EventPlacings";
+import EventNoticeboard from "@/components/events/EventNoticeboard";
+import SectionNav from "@/components/ui/SectionNav";
 import EventPairings from "@/components/events/EventPairings";
 import FacilityChips from "@/components/clubs/FacilityChips";
 import EventHero from "@/components/events/EventHero";
@@ -99,10 +101,19 @@ export default async function EventPage({
         </Stack>
       </NextLink>
 
-      <EventHero event={event} faction={faction} />
+      <EventHero event={event} faction={faction}
+        admin={event.canManageClub ? { slug, eventKey: eventId } : undefined} />
+
+      {/* The navLabels on the sections below were written for this and had
+          nothing reading them. A tournament page runs to seven sections, and
+          the noticeboard being first in the source is only half the answer to
+          the club's worry that it gets missed: a shortcut to it from the top
+          is the other half. Hides itself under three sections, so a thin event
+          page does not grow a bar with two things on it. */}
+      <SectionNav />
 
       <Box sx={{ display: "grid", gap: 4, mt: 1,
-                 gridTemplateColumns: { xs: "1fr", md: "minmax(0,2fr) minmax(300px,1fr)" } }}>
+                 gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "minmax(0,2fr) minmax(300px,1fr)" } }}>
         <Box sx={{ minWidth: 0 }}>
       {event.summary ? (
         <Typography variant="body1" sx={{ mt: 3, maxWidth: 680 }}>{event.summary}</Typography>
@@ -117,19 +128,27 @@ export default async function EventPage({
         </Stack>
       ) : null}
 
-      {/* The same chips the club page and the map use. An event lists its own
-          facilities because a tournament often runs somewhere the club does
-          not usually play. */}
-      {event.facilities.length ? (
-        <Section title="Event facilities" icon={CheckCircleIcon} navLabel="Facilities">
-          <FacilityChips values={event.facilities} />
+      {/* First, not last. The club feared it would be missed at the bottom and
+          they were right: it sat under the map and the draw. It is the one
+          block where the club is telling ticket holders something with a
+          deadline on it, so it opens the page for the people it is addressed
+          to. A visitor without a ticket never sees it and loses nothing.
+
+          Same gate as the roster, the board and the draw: legacy hides all of
+          it from anybody without a ticket. */}
+      {event.canSeePrivate && event.infoBoard ? (
+        <Section title="Tournament noticeboard" icon={InfoIcon} navLabel="Noticeboard">
+          <EventNoticeboard text={event.infoBoard} faction={faction} />
         </Section>
       ) : null}
 
       {/* The club sees the section even when it is empty, because an empty
-          results section is the prompt to fill it in. Everybody else sees
-          nothing until there is something to see. */}
-      {event.placings.length || event.canManageClub ? (
+          results section is the prompt to fill it in — but only once the event
+          has actually been played. Standings on a tournament nobody has turned
+          up to yet is a section asking to be filled in with results that do
+          not exist. Everybody else sees nothing until there is something to
+          see. */}
+      {event.placings.length || (event.canManageClub && event.hasEnded) ? (
         <Section title="Results" icon={EmojiEventsIcon}
           note={!event.placings.length && event.canManageClub
             ? "Nobody is on the results yet. Record the winner and any other places you want to show."
@@ -141,6 +160,18 @@ export default async function EventPage({
             admin={event.canManageClub
               ? { slug, eventKey: event.legacyId, eventId: event.id, roster: placingRoster }
               : undefined}
+          />
+        </Section>
+      ) : null}
+
+      {/* Ticket holders and the club, same gate as the noticeboard above: a
+          draw is only any use to somebody playing in it. */}
+      {event.canSeePrivate && event.pairings.length ? (
+        <Section title="Round pairings" icon={TableRestaurantIcon} navLabel="Pairings">
+          <EventPairings
+            pairings={event.pairings}
+            faction={faction}
+            viewerName={viewer?.full_name ?? null}
           />
         </Section>
       ) : null}
@@ -158,6 +189,15 @@ export default async function EventPage({
           trail={trail}
           hasAttendees={attendees.length > 0}
         />
+      ) : null}
+
+      {/* The same chips the club page and the map use. An event lists its own
+          facilities because a tournament often runs somewhere the club does
+          not usually play. */}
+      {event.facilities.length ? (
+        <Section title="Event facilities" icon={CheckCircleIcon} navLabel="Facilities">
+          <FacilityChips values={event.facilities} />
+        </Section>
       ) : null}
 
       {event.venue.name || event.venue.address ? (
@@ -189,24 +229,6 @@ export default async function EventPage({
         </Section>
       ) : null}
 
-      {/* Ticket holders and the club, same gate as the noticeboard below: a
-          draw is only any use to somebody playing in it. */}
-      {event.canSeePrivate && event.pairings.length ? (
-        <Section title="Round pairings" icon={TableRestaurantIcon} navLabel="Pairings">
-          <EventPairings
-            pairings={event.pairings}
-            faction={faction}
-            viewerName={viewer?.full_name ?? null}
-          />
-        </Section>
-      ) : null}
-
-      {/* Club-only until tickets exist: legacy hides this from anyone without one. */}
-      {event.canSeePrivate && event.infoBoard ? (
-        <Section title="Tournament noticeboard" icon={InfoIcon} navLabel="Noticeboard">
-          <Typography variant="body1" sx={{ whiteSpace: "pre-line" }}>{event.infoBoard}</Typography>
-        </Section>
-      ) : null}
         </Box>
 
         <Stack spacing={3} sx={{ mt: { md: 4 } }}>

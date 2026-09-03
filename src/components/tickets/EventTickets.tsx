@@ -133,7 +133,7 @@ export default function EventTickets({
         <Stack spacing={2.5}>
           {/* Padded, so the notches have room to bite into the ground. */}
           <Box sx={{ display: "grid", gap: 2.5, px: 1.5,
-                     gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "1fr" } }}>
+                     gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))", md: "minmax(0, 1fr)" } }}>
           {tickets.map((t) => (
             <TicketRow key={t.id} ticket={t} faction={faction} busy={busy} signedIn={signedIn}
               onChange={(id, quantity) =>

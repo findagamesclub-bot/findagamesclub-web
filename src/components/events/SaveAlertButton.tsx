@@ -88,7 +88,7 @@ export default function SaveAlertButton({
         fullScreen={fullScreen}>
         <DialogTitle sx={{ pr: 7, pt: 3.5, px: { sm: 3.5 }, pb: 2.5 }}>
           <Stack spacing={0.5}>
-            <Typography variant="h2" sx={{ fontSize: { xs: "1.5rem", sm: "1.8rem" } }}>
+            <Typography variant="h2" component="span" sx={{ fontSize: { xs: "1.5rem", sm: "1.8rem" } }}>
               {title}
             </Typography>
             <Typography variant="body1" sx={{ color: tokens.inkMuted, fontWeight: 400 }}>

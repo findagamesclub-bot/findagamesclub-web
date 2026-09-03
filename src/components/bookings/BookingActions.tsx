@@ -191,7 +191,7 @@ export default function BookingActions({
         <DialogTitle sx={{ pb: 1.5 }}>
           <Stack direction="row" spacing={2} sx={{ alignItems: "flex-start" }}>
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography variant="h4" sx={{ fontSize: "1.15rem" }}>
+              <Typography variant="h4" component="span" sx={{ fontSize: "1.15rem" }}>
                 {mode === "book" ? "Book a table"
                   : mode === "waitlist" ? "Join the waiting list"
                   : "Find an opponent"}

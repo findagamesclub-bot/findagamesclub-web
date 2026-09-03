@@ -69,7 +69,7 @@ export default function PhotoPicker({
 
         {photos.length ? (
           <Box sx={{ display: "grid", gap: 1.5,
-                     gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" } }}>
+                     gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))" } }}>
             {photos.map((photo) => (
               <Stack key={photo.key} spacing={1}>
                 <Box sx={{ position: "relative", borderRadius: 1.5, overflow: "hidden",

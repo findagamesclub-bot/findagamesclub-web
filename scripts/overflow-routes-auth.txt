@@ -1,0 +1,23 @@
+# Signed in. Needs .mobile-session.json (npm run mobile:login).
+/account
+/account/games
+/account/bookings
+/account/memberships
+/account/orders
+/account/coaching
+/account/tickets
+/account/loyalty
+/account/messages
+/account/alerts
+/account/profile
+/my-clubs
+/my-clubs/bookings
+/my-clubs/orders
+/my-clubs/results
+/my-events
+/clubs/didcot-wargames-didcot/bookings
+/clubs/didcot-wargames-didcot/board
+/clubs/didcot-wargames-didcot/members
+/clubs/didcot-wargames-didcot/rivalries
+/clubs/didcot-wargames-didcot/results
+/clubs/didcot-wargames-didcot/events/2026-09-26-autumn-open-test/board

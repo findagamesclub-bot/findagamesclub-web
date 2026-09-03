@@ -32,8 +32,14 @@ import type { QueueEntry } from "@/services/waitlist.service";
  * list a member reads to find a free table would become an admin console.
  */
 export default function ManageNight({
-  session, queue, slug,
-}: { session: CalendarSession; queue: QueueEntry[]; slug: string }) {
+  session, queue, slug, people = [],
+}: {
+  session: CalendarSession;
+  queue: QueueEntry[];
+  slug: string;
+  /** The club's approved members, so a table can be moved between them. */
+  people?: { id: string; name: string }[];
+}) {
   const [opened, setOpen] = useState(false);
   const fullScreen = useMediaQuery("(max-width:600px)");
   const [state, submit, busy] = useActionState<BookingState, FormData>(bookingAction, {});
@@ -84,7 +90,7 @@ export default function ManageNight({
         <DialogTitle sx={{ pb: 1.5 }}>
           <Stack direction="row" spacing={2} sx={{ alignItems: "flex-start" }}>
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography variant="h4" sx={{ fontSize: "1.15rem" }}>Manage this night</Typography>
+              <Typography variant="h4" component="span" sx={{ fontSize: "1.15rem" }}>Manage this night</Typography>
               <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.78rem",
                                 color: tokens.inkMuted, letterSpacing: "0.04em" }}>
                 {nightLabel(session.date).toUpperCase()} · {session.bookings.length} of {session.capacity} taken
@@ -124,7 +130,7 @@ export default function ManageNight({
                           {b.gameTitle}
                         </Typography>
                       </Box>
-                      <EditBookingDialog booking={b} slug={slug} />
+                      <EditBookingDialog booking={b} slug={slug} people={people} />
 
                       {/* Asked for, not fired on click. Taking somebody else's
                           table away is worse than giving up your own: they are

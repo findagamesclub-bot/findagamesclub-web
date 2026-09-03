@@ -85,7 +85,7 @@ export default function GrudgeOverview({
             <Box key={`${m.source}-${m.id}`}
               sx={{ display: "grid", gap: { xs: 0.5, sm: 1.5 }, px: 2, py: 1.5,
                     alignItems: { sm: "baseline" },
-                    gridTemplateColumns: { xs: "1fr", sm: "76px minmax(0, 1fr) 96px 66px" },
+                    gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "76px minmax(0, 1fr) 96px 66px" },
                     borderTop: i === 0 ? "none" : `1px solid ${tokens.rule}`,
                     backgroundColor: i % 2 ? tokens.surface : tokens.paper }}>
               <Typography sx={{ fontFamily: mono, fontSize: "0.72rem", color: tokens.inkMuted }}>

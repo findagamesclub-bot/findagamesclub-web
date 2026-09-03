@@ -40,8 +40,21 @@ export type LoyaltyCard = {
   /** Everything ever earned there. Spending points does not reduce it. */
   lifetime: number;
   tierLabel: string | null;
+  /** Which metal to strike the plate and the progress bar in. */
+  tone: string;
+  /** What they are climbing towards, so the bar says where it ends. */
+  nextLabel: string | null;
   toNext: number | null;
   progress: number;
+  /** What a point is worth in pounds at this club, when the club sets one. */
+  pointValue: number | null;
+  /**
+   * Every rung of this club's ladder, not just the one they are on. A member
+   * cannot see how far a scheme goes from "Platinum" alone, and clubs invent
+   * their own tiers, so the list has to come from the club rather than from a
+   * constant.
+   */
+  tiers: { label: string; pointsRequired: number; tone: string }[];
 };
 
 export type Dashboard = {
@@ -116,8 +129,12 @@ export async function getDashboard(profileId: string): Promise<Dashboard> {
           available: wallet.available,
           lifetime: wallet.lifetime,
           tierLabel: wallet.tier?.label ?? null,
+          tone: wallet.tier?.tone ?? "bronze",
+          nextLabel: wallet.next?.label ?? null,
           toNext: wallet.toNext,
           progress: wallet.progress,
+          pointValue: wallet.pointValue,
+          tiers: programme.tiers,
         };
       }),
     )

@@ -1,0 +1,18 @@
+# Public routes. Authenticated ones need --storage; see the header of
+# check-overflow.mjs.
+/
+/clubs
+/clubs/didcot-wargames-didcot
+/clubs/didcot-wargames-didcot/events/2026-09-26-autumn-open-test
+/clubs/didcot-wargames-didcot/events/2026-04-04-warhammer-40k-rtt
+/clubs/didcot-wargames-didcot/membership
+/clubs/didcot-wargames-didcot/loyalty
+/clubs/didcot-wargames-didcot/coaching
+/clubs/didcot-wargames-didcot/shop
+/clubs/didcot-wargames-didcot/competitions
+/clubs/abingdon-games-club-abingdon
+/events
+/contact
+/privacy-policy
+/terms-of-use
+/auth/sign-in

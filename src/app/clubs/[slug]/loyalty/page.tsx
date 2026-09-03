@@ -106,7 +106,7 @@ export default async function LoyaltyPage({
           longest of the four and the least urgent, so it moves out of the way
           rather than pushing the ladder below fifteen rows of it. */}
       <Box sx={{ display: "grid", gap: { xs: 0, md: 4 }, alignItems: "start",
-                 gridTemplateColumns: { xs: "1fr", md: "minmax(0,1fr) minmax(0,1fr)" } }}>
+                 gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "minmax(0,1fr) minmax(0,1fr)" } }}>
       <Box>
       <Section title="The ladder" icon={MilitaryTechIcon}>
         <TierLadder tiers={programme.tiers} lifetime={wallet?.lifetime ?? 0} />

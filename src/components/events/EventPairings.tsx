@@ -139,9 +139,22 @@ export default function EventPairings({
                             sx={{ minWidth: 0, fontWeight: mine ? 700 : 400 }}>
                             {`${m.playerOne} v ${m.playerTwo}`}
                           </Typography>
-                          {/* Named, not only tinted: a coloured row says
-                              nothing to a reader who cannot see the tint. */}
-                          {mine ? (
+                          {/* The result where there is one, otherwise the
+                              reader's own marker. A played round with no score
+                              on it looks undrawn, which is what it read as
+                              before this: the scores were on the row all along
+                              and were being thrown away on the way out of the
+                              database. */}
+                          {m.score ? (
+                            <Typography sx={{ fontFamily: mono, fontSize: "0.72rem",
+                                              fontWeight: 700, letterSpacing: "0.04em",
+                                              color: mine ? faction.deep : tokens.ink,
+                                              whiteSpace: "nowrap" }}>
+                              {m.score}
+                            </Typography>
+                          ) : mine ? (
+                            // Named, not only tinted: a coloured row says
+                            // nothing to a reader who cannot see the tint.
                             <Typography sx={{ fontFamily: mono, fontSize: "0.64rem",
                                               fontWeight: 700, letterSpacing: "0.1em",
                                               color: faction.deep,

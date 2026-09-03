@@ -3,6 +3,8 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
+import JumpLink from "@/components/ui/JumpLink";
+import LoginIcon from "@mui/icons-material/Login";
 import EventSeatIcon from "@mui/icons-material/EventSeat";
 import LockIcon from "@mui/icons-material/Lock";
 import { mono, tokens, type Faction } from "@/lib/tokens";
@@ -21,6 +23,7 @@ import type { ClubSession } from "@/types/club";
  */
 export default function ClubNights({
   schedule, tablesAvailable, slug, clubName, faction, canBook, signedIn, isMember,
+  pending = false,
 }: {
   schedule: ClubSession[];
   tablesAvailable: number | null;
@@ -30,6 +33,12 @@ export default function ClubNights({
   canBook: boolean;
   signedIn: boolean;
   isMember: boolean;
+  /**
+   * They have already applied. Without this the panel told somebody with a
+   * request in to "Join this club" while the sidebar two inches away said
+   * "Request pending", which is the page arguing with itself.
+   */
+  pending?: boolean;
 }) {
   const takesBookings = (tablesAvailable ?? 0) > 0;
 
@@ -83,21 +92,48 @@ export default function ClubNights({
               <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
                 {isMember
                   ? "Table booking is open to approved members."
-                  : signedIn
-                    ? `Join ${clubName} to book a table.`
-                    : `Sign in and join ${clubName} to book a table.`}
+                  : pending
+                    ? `${clubName} has your request. Booking opens when they approve it.`
+                    : signedIn
+                      ? `Join ${clubName} to book a table.`
+                      : `Sign in and join ${clubName} to book a table.`}
               </Typography>
             </Stack>
           )}
 
+          {/* Signed out, this goes straight to sign-in rather than scrolling
+              to a panel whose only control is the same link: two clicks to
+              reach one door. Signed in, the panel is where the joining
+              actually happens, so the jump earns its place. Somebody who has
+              already applied gets a way to check on it rather than a filled
+              button asking them to do the thing they have done. */}
           {!canBook ? (
-            <NextLink href={`/clubs/${slug}#join`} style={{ textDecoration: "none" }}>
-              <Button variant="contained" size="large"
-                sx={{ minHeight: 48, px: 3, bgcolor: faction.base,
-                      "&:hover": { bgcolor: faction.deep } }}>
-                {signedIn ? "Join this club" : "Sign in and join"}
-              </Button>
-            </NextLink>
+            signedIn ? (
+              <JumpLink targetId="join">
+                <Button
+                  variant={pending ? "outlined" : "contained"}
+                  size="large"
+                  sx={{ minHeight: 48, px: 3,
+                        ...(pending
+                          ? { color: faction.deep, borderColor: faction.base,
+                              "&:hover": { borderColor: faction.deep,
+                                           bgcolor: faction.soft } }
+                          : { bgcolor: faction.base,
+                              "&:hover": { bgcolor: faction.deep } }) }}>
+                  {pending ? "See your request" : "Join this club"}
+                </Button>
+              </JumpLink>
+            ) : (
+              // The same address the sidebar's button uses, so the two agree.
+              <NextLink href={`/auth/sign-in?next=/clubs/${slug}`}
+                style={{ textDecoration: "none" }}>
+                <Button variant="contained" size="large" startIcon={<LoginIcon />}
+                  sx={{ minHeight: 48, px: 3, bgcolor: faction.base,
+                        "&:hover": { bgcolor: faction.deep } }}>
+                  Sign in to join
+                </Button>
+              </NextLink>
+            )
           ) : null}
 
           <Typography sx={{ fontFamily: mono, fontSize: "0.78rem", color: tokens.inkMuted }}>

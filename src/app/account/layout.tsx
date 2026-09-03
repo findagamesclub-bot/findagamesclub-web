@@ -38,7 +38,7 @@ export default async function AccountLayout({ children }: LayoutProps<"/account"
 
       <Container maxWidth="xl" component="main" disableGutters sx={{ px: { xs: 2, md: 3 } }}>
       <Box sx={{ display: "grid", gap: { xs: 2, md: 4 },
-                 gridTemplateColumns: { xs: "1fr", md: "248px minmax(0, 1fr)" },
+                 gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "248px minmax(0, 1fr)" },
                  alignItems: { xs: "start", md: "stretch" },
                  // The shell is exactly the room left under the header, and
                  // each column keeps its own scroll inside it.

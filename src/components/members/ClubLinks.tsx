@@ -49,7 +49,7 @@ export default function ClubLinks({
 
   return (
     <Box sx={{ display: "grid", gap: 1,
-               gridTemplateColumns: links.length > 2 ? "repeat(2, 1fr)" : "1fr" }}>
+               gridTemplateColumns: links.length > 2 ? "repeat(2, minmax(0, 1fr))" : "minmax(0, 1fr)" }}>
       {links.map(({ href, label, Icon }) => (
         <Stack
           key={href}

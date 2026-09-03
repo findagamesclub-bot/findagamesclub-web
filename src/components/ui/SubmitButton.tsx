@@ -37,7 +37,15 @@ export default function SubmitButton({ label, pendingLabel, blocked = false, ...
       disabled={blocked}
       aria-label={pending ? pendingLabel : undefined}
       {...props}
-      sx={{ "&.Mui-disabled": { color: "#FFFFFF", opacity: 0.9 }, ...props.sx }}
+      sx={{
+        // MUI disables the button while it loads, and the default disabled
+        // grey on a contained button is unreadable, so a PENDING button keeps
+        // its white label. A BLOCKED one must not: it is genuinely off, and a
+        // control that looks live and does nothing when pressed is worse than
+        // one that looks off. That gets MUI's own disabled treatment.
+        ...(pending ? { "&.Mui-disabled": { color: "#FFFFFF", opacity: 0.9 } } : {}),
+        ...props.sx,
+      }}
     >
       {label}
     </Button>

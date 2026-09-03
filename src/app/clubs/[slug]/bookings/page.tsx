@@ -50,11 +50,15 @@ export default async function BookingsPage({ params, searchParams }: PageProps<"
   // Who you can name as your opponent. Typing a name records a game against
   // nobody: the head to head has no person to count it against, and the other
   // player never sees it in their own history.
-  const roster = isMember && viewer
+  const everyone = isMember && viewer
     ? (await getRoster(club.id).catch(() => []))
-        .filter((member) => member.profileId !== viewer.id)
         .map((member) => ({ id: member.profileId, name: member.fullName }))
     : [];
+  const roster = viewer ? everyone.filter((member) => member.id !== viewer.id) : [];
+  // The club's edit dialog needs the whole list, itself included: the person
+  // currently on the booking has to be selectable, and an owner who is also a
+  // member can be handed a table like anybody else.
+  const people = canManage ? everyone : [];
 
   const calendar = await getBookingCalendar({
     clubId: club.id,
@@ -194,6 +198,7 @@ export default async function BookingsPage({ params, searchParams }: PageProps<"
                 ) : null}
                 <BookingNight
                   roster={roster}
+                  people={people}
                   session={session}
                   clubId={club.id}
                   slug={club.slug}

@@ -62,7 +62,7 @@ export default function MembershipPerks({
       </Typography>
 
       <Box sx={{ display: "grid", gap: 2,
-                 gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)" } }}>
+                 gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))", md: "repeat(3, minmax(0, 1fr))" } }}>
         {groups.map(({ group, label, items }) => {
           const Icon = ICONS[group as PerkGroup] ?? AutoAwesomeIcon;
           const folds = items.length > FOLD_AFTER;

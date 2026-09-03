@@ -33,7 +33,7 @@ export default function CheckoutPanels({
 
   return (
     <Box sx={{ display: "grid", gap: 4, alignItems: "start",
-               gridTemplateColumns: { xs: "1fr", md: "minmax(0,1.2fr) minmax(320px,1fr)" } }}>
+               gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "minmax(0,1.2fr) minmax(320px,1fr)" } }}>
       <OrderSummary cart={cart} price={price} tierLabel={standing.tierLabel} faction={faction} />
 
       {/* Sticky, so a long order never pushes the one action off screen. */}

@@ -77,7 +77,7 @@ export default function RivalryMeetings({
             <Box key={m.bookingId}
               sx={{ display: "grid", gap: { xs: 0.5, sm: 1.5 }, px: 2, py: 1.5,
                     alignItems: { sm: "baseline" },
-                    gridTemplateColumns: { xs: "1fr", sm: "76px minmax(0, 1fr) auto" },
+                    gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "76px minmax(0, 1fr) auto" },
                     borderTop: `1px solid ${tokens.rule}` }}>
               <Typography sx={{ fontFamily: mono, fontSize: "0.72rem", color: tokens.inkMuted }}>
                 {(shortDate(m.date) ?? "").toUpperCase()}

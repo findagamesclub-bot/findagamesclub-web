@@ -63,7 +63,7 @@ export default function MyPaymentsDialog({
         <DialogTitle sx={{ pb: 1.5 }}>
           <Stack direction="row" spacing={2} sx={{ alignItems: "flex-start" }}>
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography variant="h4" sx={{ fontSize: "1.15rem" }}>Your payments</Typography>
+              <Typography variant="h4" component="span" sx={{ fontSize: "1.15rem" }}>Your payments</Typography>
               <Typography variant="body2" color="text.secondary">
                 {clubName}{tierLabel ? ` · ${tierLabel}` : ""}
               </Typography>

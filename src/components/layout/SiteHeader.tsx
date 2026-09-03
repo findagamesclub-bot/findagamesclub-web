@@ -7,6 +7,7 @@ import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
+import Divider from "@mui/material/Divider";
 import Drawer from "@mui/material/Drawer";
 import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
@@ -19,6 +20,7 @@ import AccountMenu from "./AccountMenu";
 import NotificationBell from "./NotificationBell";
 import BrandMark from "./BrandMark";
 import { headerHeight, tokens } from "@/lib/tokens";
+import { accountLinks } from "./account-links";
 
 export type Viewer = { id: string; fullName: string; email: string; role: string } | null;
 
@@ -190,19 +192,23 @@ export default function SiteHeader({
 
           <Box sx={{ flex: 1 }} />
 
-          <Box sx={{ display: { xs: "none", sm: "block" } }}>
-            {viewer ? (
-              <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-                <NotificationBell viewerId={viewer.id} initialUnread={notifications} />
+          {viewer ? (
+            <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+              {/* Shown at every width, unlike the account menu beside it. A
+                  notification is the one thing in the header that is
+                  time-sensitive, and burying it two taps into a drawer on the
+                  device people actually carry is where it is least use. */}
+              <NotificationBell viewerId={viewer.id} initialUnread={notifications} />
+              <Box sx={{ display: { xs: "none", sm: "block" } }}>
                 <AccountMenu viewer={viewer} unreadMessages={unreadMessages} />
-              </Stack>
-            ) : (
-              <Stack direction="row" spacing={1}>
-                <Button component={Link} href="/auth/sign-in" variant="text">Sign in</Button>
-                <Button component={Link} href="/auth/sign-up" variant="contained">Create account</Button>
-              </Stack>
-            )}
-          </Box>
+              </Box>
+            </Stack>
+          ) : (
+            <Stack direction="row" spacing={1} sx={{ display: { xs: "none", sm: "flex" } }}>
+              <Button component={Link} href="/auth/sign-in" variant="text">Sign in</Button>
+              <Button component={Link} href="/auth/sign-up" variant="contained">Create account</Button>
+            </Stack>
+          )}
 
           <IconButton
             onClick={() => setOpen(true)}
@@ -223,7 +229,40 @@ export default function SiteHeader({
             {renderNav(() => setOpen(false))}
             {viewer ? (
               <>
-                <Typography variant="overline" color="text.secondary">{viewer.fullName}</Typography>
+                <Divider />
+                {/* The same three the desktop menu offers, from the same list.
+                    Signed in on a phone there was no way to reach any of them:
+                    the drawer went straight from the public nav to Sign out. */}
+                <Stack spacing={0.25}>
+                  <Typography variant="overline" color="text.secondary" sx={{ lineHeight: 1.4 }}>
+                    {viewer.fullName || "Your account"}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary"
+                    sx={{ fontSize: "0.82rem", wordBreak: "break-word" }}>
+                    {viewer.email}
+                  </Typography>
+                </Stack>
+                <Stack spacing={1.75}>
+                  {accountLinks(viewer.id).map((link) => (
+                    <Box key={link.href} component={Link} href={link.href}
+                      onClick={() => setOpen(false)}
+                      sx={{ ...linkSx(pathname === link.href), display: "flex",
+                            alignItems: "center", gap: 1, borderBottom: "none",
+                            color: tokens.ink }}>
+                      {link.label}
+                      {link.badge === "messages" && unreadMessages ? (
+                        <Box sx={{ minWidth: 20, height: 20, px: 0.75, borderRadius: 999,
+                                   display: "grid", placeItems: "center",
+                                   backgroundColor: tokens.danger, color: "#fff" }}>
+                          <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.68rem",
+                                            fontWeight: 700, lineHeight: 1 }}>
+                            {unreadMessages}
+                          </Typography>
+                        </Box>
+                      ) : null}
+                    </Box>
+                  ))}
+                </Stack>
                 <Box component="form" action="/auth/sign-out" method="post">
                   <Button type="submit" variant="outlined" fullWidth>Sign out</Button>
                 </Box>

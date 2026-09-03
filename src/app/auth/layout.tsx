@@ -16,7 +16,7 @@ export default function AuthLayout({ children }: LayoutProps<"/auth">) {
     <Box
       sx={{
         display: "grid",
-        gridTemplateColumns: { xs: "1fr", md: "minmax(0, 5fr) minmax(0, 6fr)" },
+        gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "minmax(0, 5fr) minmax(0, 6fr)" },
         minHeight: { md: `calc(100vh - ${headerHeight.md}px)` },
         // The footer keeps a 12-unit top margin to stand off page content. This
         // panel is full-bleed and meets it directly, so that gap reads as a

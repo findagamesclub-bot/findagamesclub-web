@@ -16,7 +16,7 @@ export default function ClubCardSkeleton() {
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
             gap: 2,
             borderTop: `1px solid ${tokens.rule}`,
             borderBottom: `1px solid ${tokens.rule}`,

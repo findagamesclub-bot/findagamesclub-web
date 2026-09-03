@@ -9,6 +9,12 @@ export type Tile = {
   /** The working behind the figure. "44.4%" on its own invites "out of what". */
   note: string;
   emphasis?: boolean;
+  /**
+   * A small graphic under the note. Optional on purpose: a tile whose figure
+   * has nothing to show is better plain than padded out with a chart of one
+   * number.
+   */
+  chart?: React.ReactNode;
 };
 
 /**
@@ -28,7 +34,7 @@ export default function StatTiles({
   return (
     <Box sx={{ display: "grid", gap: 2,
                gridTemplateColumns: {
-                 xs: "1fr", sm: "repeat(2, minmax(0, 1fr))",
+                 xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))",
                  lg: `repeat(${columns}, minmax(0, 1fr))`,
                } }}>
       {tiles.map((t) => (
@@ -47,6 +53,9 @@ export default function StatTiles({
           <Typography variant="body2" sx={{ color: tokens.inkMuted, fontSize: "0.82rem" }}>
             {t.note}
           </Typography>
+          {/* Pushed to the bottom, so the graphics line up across a row even
+              when one tile's note wraps onto a second line. */}
+          {t.chart ? <Box sx={{ pt: 1.25, mt: "auto" }}>{t.chart}</Box> : null}
         </Stack>
       ))}
     </Box>

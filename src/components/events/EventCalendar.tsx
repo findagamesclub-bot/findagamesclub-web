@@ -132,7 +132,7 @@ export default function EventCalendar({
 
       <Box sx={{ borderRadius: 2, overflow: "hidden", border: `1px solid ${tokens.rule}`,
                  bgcolor: tokens.paper }}>
-        <Box sx={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", bgcolor: tokens.surface }}>
+        <Box sx={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", bgcolor: tokens.surface }}>
           {WEEKDAYS.map((d) => (
             <Typography key={d}
               sx={{ fontFamily: mono, fontSize: "0.66rem", letterSpacing: "0.1em",
@@ -143,7 +143,7 @@ export default function EventCalendar({
           ))}
         </Box>
 
-        <Box sx={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
+        <Box sx={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))" }}>
           {cells.map((cell, i) => {
             const onThisDay = byDate.get(cell.date) ?? [];
             const isToday = cell.date === today;

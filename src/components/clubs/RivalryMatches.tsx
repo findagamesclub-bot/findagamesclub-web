@@ -52,7 +52,7 @@ export default function RivalryMatches({
             <Box key={`${m.source}-${m.bookingId}`}
               sx={{ display: "grid", gap: { xs: 0.5, sm: 1.5 }, px: 2, py: 1.5,
                     alignItems: { sm: "baseline" },
-                    gridTemplateColumns: { xs: "1fr", sm: "76px minmax(0, 1fr) 104px 138px" },
+                    gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "76px minmax(0, 1fr) 104px 138px" },
                     borderTop: i === 0 ? "none" : `1px solid ${tokens.rule}`,
                     backgroundColor: i % 2 ? tokens.surface : tokens.paper }}>
               <Typography sx={{ fontFamily: mono, fontSize: "0.72rem", color: tokens.inkMuted }}>

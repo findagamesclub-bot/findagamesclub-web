@@ -24,10 +24,12 @@ import type { LookingForGame } from "@/services/lookingForGames.service";
  */
 export default function BookingNight({
   session, clubId, faction, slug, standing, waitlistEnabled, queue, posts, lfgEnabled,
-  showTime, canManage, roster = [],
+  showTime, canManage, roster = [], people = [],
 }: {
   /** Club members the booker can name as their opponent. */
   roster?: { id: string; name: string }[];
+  /** The full roster, for the club's own edit dialog. Empty for a member. */
+  people?: { id: string; name: string }[];
   session: CalendarSession;
   clubId: number;
   faction: Faction;
@@ -98,7 +100,9 @@ export default function BookingNight({
 
         <Box sx={{ flex: 1, minWidth: 0 }} />
 
-        {canManage ? <ManageNight session={session} queue={queue} slug={slug} /> : null}
+        {canManage
+          ? <ManageNight session={session} queue={queue} slug={slug} people={people} />
+          : null}
 
         <BookingActions
           roster={roster}

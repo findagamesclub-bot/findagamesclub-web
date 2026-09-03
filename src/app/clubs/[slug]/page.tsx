@@ -143,9 +143,11 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
     isMember
       ? getOpenPosts(club.id, londonToday(), addDays(londonToday(), 60), viewer?.id ?? null)
       : Promise.resolve(new Map<string, never[]>()),
-    // Every source is members-only by policy, so this is skipped rather than
-    // fetched-and-hidden. Legacy gates its feed the same way (detail.js:4194).
-    isMember ? getRecentActivity(club.id, club.slug) : Promise.resolve([]),
+    // Fetched for everybody. 0063 decides for itself whether the caller has
+    // earned the names and anonymises the sentences if not, which is what
+    // legacy does (detail.js:4194) and what a visitor sizing up the club
+    // actually needs to see.
+    getRecentActivity(club.id, club.slug),
     // Only to know whether the tile is worth showing; the page itself does the
     // real read. Members only, so a visitor never pays for it.
     isMember ? getClubRivalries(club.id).catch(() => []) : Promise.resolve([]),
@@ -182,8 +184,15 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
           scroll past the photos, the map and the activity feed to reach it. */}
       <SectionNav />
 
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "minmax(0,2fr) minmax(280px,1fr)" }, gap: 4, mt: 4 }}>
-        <Stack spacing={0}>
+      {/* minWidth 0 on the column, or a grid item keeps min-width: auto and
+          cannot shrink below the widest thing inside it. The competition
+          standings table is 460px and scrolls inside its own box, but without
+          this the box never gets the chance: the column grows to 460 instead,
+          and every section in it hangs off the side of a phone. That is the
+          "text goes over the edge" the client reported, and body's overflow-x
+          was hiding it rather than fixing it. */}
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "minmax(0,2fr) minmax(280px,1fr)" }, gap: 4, mt: 4 }}>
+        <Stack spacing={0} sx={{ minWidth: 0 }}>
           {/* First thing in the column, because a notice is time-sensitive and
               the club wrote it to be read before anything else. */}
           {notices.length ? (
@@ -212,6 +221,7 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
               canBook={isMember && (club.tablesAvailable ?? 0) > 0}
               signedIn={Boolean(viewer)}
               isMember={isMember}
+              pending={membership.status === "pending"}
             />
 
             <Box sx={{ mt: 3, pt: 2.5, borderTop: `1px solid ${tokens.rule}` }}>
@@ -456,7 +466,11 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
 
         </Stack>
 
-        <Stack spacing={3} sx={{ mt: 7 }} id="join">
+        {/* scrollMarginTop so #join lands on the panel rather than under the
+            app bar. On a narrow screen this column sits below the page, so the
+            jump is a real one and the landing has to be right. */}
+        <Stack spacing={3} id="join"
+          sx={{ mt: 7, scrollMarginTop: { xs: 84, md: 96 } }}>
           <JoinClubPanel
             clubId={club.id}
             slug={club.slug}

@@ -164,7 +164,7 @@ export default function ClubMapView({ clubs }: { clubs: ClubSummary[] }) {
   return (
     <Box>
     <Box sx={{ display: "grid",
-               gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1.6fr) minmax(300px, 1fr)" },
+               gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "minmax(0, 1.6fr) minmax(300px, 1fr)" },
                gap: 2 }}>
       <Box>
         <MapHint>

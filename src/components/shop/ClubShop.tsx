@@ -69,7 +69,7 @@ export default function ClubShop({
     <Stack spacing={2.5}>
       <BusyOverlay busy={busy} label="Placing your order">
         <Box sx={{ display: "grid", gap: 2,
-                   gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)" } }}>
+                   gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))", md: "repeat(3, minmax(0, 1fr))" } }}>
           {items.map((item) => (
             <MerchCard key={item.id} item={item} faction={faction} monogram={monogram}
               busy={busy} standing={standing} inBag={held.get(item.id) ?? 0}

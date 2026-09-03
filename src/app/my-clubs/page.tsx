@@ -93,9 +93,9 @@ export default async function MyClubsPage() {
                      // clear club with a column of empty paper under one line.
                      alignItems: "start",
                      gridTemplateColumns: {
-                       xs: "1fr",
-                       sm: "repeat(2, 1fr)",
-                       lg: "repeat(3, 1fr)",
+                       xs: "minmax(0, 1fr)",
+                       sm: "repeat(2, minmax(0, 1fr))",
+                       lg: "repeat(3, minmax(0, 1fr))",
                      } }}>
             {ordered.map((club) => <OwnerClubCard key={club.id} club={club} />)}
           </Box>

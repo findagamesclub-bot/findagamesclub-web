@@ -2,72 +2,36 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 
+export type ActivityRow = {
+  id: string;
+  kind: string;
+  at: string;
+  /** Null for a visitor: 0063 anonymises rather than hiding the board. */
+  who: string | null;
+  what: string;
+  /** The second line, where a kind has one worth reading. Null for a visitor. */
+  detail: string | null;
+  /** Whatever the kind needs to build a link: a profile id, an event key, a post id. */
+  ref: string;
+};
+
 /**
- * What has happened at a club lately.
+ * The club's recent activity, from every source at once.
  *
- * Four small queries rather than one union view: they are different tables with
- * different policies, and every one of them is already RLS-guarded the way the
- * feed needs. A member sees their club's activity; anyone else reads nothing,
- * which is the same answer legacy gives by gating the feed on member content.
+ * One function rather than a query per kind. A member cannot read another
+ * member's merchandise order, coaching booking or event ticket, and should
+ * not be able to: the feed needs a name, a time and a line of text, never a
+ * total. 0063 reads past RLS for exactly that much, and decides for itself
+ * whether the caller has earned the names.
  */
-const PERSON = "full_name";
-
-export async function findJoins(clubId: number, limit: number) {
+export async function findActivityFeed(clubId: number, days = 14, limit = 18) {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("club_memberships")
-    .select(`id, joined_at, profile_id, profiles!club_memberships_profile_id_fkey(${PERSON})`)
-    .eq("club_id", clubId)
-    .eq("status", "approved")
-    .not("joined_at", "is", null)
-    .order("joined_at", { ascending: false })
-    .limit(limit);
+  const { data, error } = await (supabase as unknown as {
+    rpc(name: string, args: Record<string, unknown>): Promise<{
+      data: ActivityRow[] | null; error: { message: string } | null;
+    }>;
+  }).rpc("club_activity_feed", { p_club: clubId, p_days: days, p_limit: limit });
 
-  if (error) throw new Error(`Failed to load joins: ${error.message}`);
-  return data ?? [];
-}
-
-export async function findRecentBookings(clubId: number, limit: number) {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("club_bookings")
-    .select(`id, created_at, session_date, game_title, booked_by,
-             profiles!club_bookings_booked_by_fkey(${PERSON})`)
-    .eq("club_id", clubId)
-    .eq("status", "booked")
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  if (error) throw new Error(`Failed to load bookings: ${error.message}`);
-  return data ?? [];
-}
-
-export async function findRecentRivals(clubId: number, limit: number) {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("club_rivals")
-    .select(`id, created_at, profile_id,
-             profiles!club_rivals_profile_id_fkey(${PERSON}),
-             rival:profiles!club_rivals_rival_id_fkey(${PERSON})`)
-    .eq("club_id", clubId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  if (error) throw new Error(`Failed to load rivalries: ${error.message}`);
-  return data ?? [];
-}
-
-export async function findRecentResults(clubId: number, limit: number) {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("club_event_results")
-    .select(`id, rank, placement, member_name, member_profile_id,
-             club_events!inner(id, legacy_id, title, start_date, club_id)`)
-    .eq("club_events.club_id", clubId)
-    .lte("rank", 3)
-    .order("id", { ascending: false })
-    .limit(limit);
-
-  if (error) throw new Error(`Failed to load results: ${error.message}`);
+  if (error) throw new Error(`Failed to load the club's activity: ${error.message}`);
   return data ?? [];
 }

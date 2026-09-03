@@ -77,7 +77,7 @@ export default function GalleryLightbox({
       <Box sx={{
         display: "grid", gap: 1.5,
         gridTemplateColumns: {
-          xs: "1fr",
+          xs: "minmax(0, 1fr)",
           sm: "repeat(2, minmax(0, 1fr))",
           md: "repeat(3, minmax(0, 1fr))",
         },

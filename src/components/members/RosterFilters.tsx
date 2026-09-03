@@ -108,7 +108,7 @@ export default function RosterFilters({
 
         <Box sx={{ display: "grid", gap: 1.5,
                    gridTemplateColumns: {
-                     xs: "1fr", sm: "repeat(2, minmax(0, 1fr))",
+                     xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))",
                      lg: "repeat(3, minmax(0, 1fr))",
                    } }}>
           {dropdown("Games interested in", game, setGame, games, "All games")}
@@ -133,7 +133,7 @@ export default function RosterFilters({
         <BusyOverlay busy={busy} variant="dim" label="Updating members">
           <Box ref={top} sx={{ display: "grid", gap: 2,
                      gridTemplateColumns: {
-                       xs: "1fr", sm: "repeat(2, minmax(0, 1fr))",
+                       xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))",
                        lg: "repeat(3, minmax(0, 1fr))",
                      } }}>
             {paged.shown.map((card) => (

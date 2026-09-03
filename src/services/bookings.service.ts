@@ -191,31 +191,54 @@ const EDIT_ERRORS: [string, string][] = [
   ["BOOKING_CANCELLED", "That booking was cancelled."],
   ["BOOKING_NOT_FOUND", "That booking is no longer there."],
   ["BOOKING_GAME_MISSING", "Say which game is being played."],
+  ["BOOKING_BOOKER_MISSING", "Say who the table is booked for."],
+  ["BOOKING_BOOKER_NOT_MEMBER",
+   "That person is not an approved member of this club, so the table cannot be put in their name."],
+  ["BOOKING_OPPONENT_NOT_MEMBER",
+   "That opponent is not an approved member. Type their name instead to record them as a guest."],
+  ["BOOKING_SAME_PERSON", "The same person cannot hold two seats on one table."],
+  ["BOOKING_DATE_CLASH",
+   "They already have a table that night, and a member can only hold one per club night."],
+  ["BOOKING_POINTS_SPENT",
+   "This table was paid for with loyalty points. Cancel it and book again, so the points go back to the member who spent them."],
 ];
 
 /**
  * Fix the game, the opponent's name or the note on a booking.
  *
- * The club may correct any booking; the member who made it may fix their own
- * up to the night. Which of those applies is decided in the database, not
- * here, because the browser can call the function directly.
+ * The club may correct any booking, including who is on it in either seat;
+ * the member who made it may fix their own text up to the night, and may not
+ * touch the people at all. Which of those applies is decided in the database,
+ * not here, because the browser can call the function directly.
  */
 export async function editBooking(params: {
   bookingId: number;
   gameTitle: string;
   opponentName: string;
   notes: string;
+  /** Only the club sets these; the database refuses them from anybody else. */
+  setPeople?: boolean;
+  bookedBy?: string | null;
+  opponentId?: string | null;
 }): Promise<{ ok: boolean; error?: string }> {
   if (!params.gameTitle.trim()) {
     return { ok: false, error: "Say which game is being played." };
+  }
+  if (params.setPeople && !params.bookedBy) {
+    return { ok: false, error: "Say who the table is booked for." };
   }
 
   try {
     await repo.editBookingDetails({
       bookingId: params.bookingId,
       gameTitle: params.gameTitle.trim(),
-      opponentName: params.opponentName.trim(),
+      // A linked opponent takes their name from their profile, so the text is
+      // only ever the guest case.
+      opponentName: params.opponentId ? "" : params.opponentName.trim(),
       notes: params.notes.trim(),
+      setPeople: params.setPeople,
+      bookedBy: params.bookedBy,
+      opponentId: params.opponentId,
     });
     return { ok: true };
   } catch (error) {

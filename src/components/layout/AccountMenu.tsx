@@ -12,6 +12,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { tokens } from "@/lib/theme";
 import { initialsOf } from "@/utils/format";
+import { accountLinks } from "./account-links";
 import type { Viewer } from "./SiteHeader";
 
 export default function AccountMenu({ viewer, unreadMessages = 0 }:
@@ -45,35 +46,25 @@ export default function AccountMenu({ viewer, unreadMessages = 0 }:
           </Typography>
         </Stack>
         <Divider />
-        {/* The way in. Everything the account holds is one click inside it,
-            so listing those sections here as well only makes two places to
-            keep in step. */}
-        <MenuItem component={Link} href="/account" onClick={() => setAnchor(null)}>
-          Dashboard
-        </MenuItem>
-        {/* Not in the sidebar, and not the same thing as the profile editor:
-            this is the page other members see. */}
-        <MenuItem component={Link} href={`/members/${viewer.id}`} onClick={() => setAnchor(null)}>
-          Your public profile
-        </MenuItem>
-        {/* Kept for its unread count, which is the one thing worth knowing
-            from a page that is nothing to do with the account. */}
-        <MenuItem component={Link} href="/account/messages" onClick={() => setAnchor(null)}>
-          <Stack direction="row" spacing={1.5}
-            sx={{ alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-            <span>Messages</span>
-            {unreadMessages ? (
-              <Box sx={{ minWidth: 20, height: 20, px: 0.75, borderRadius: 999,
-                         display: "grid", placeItems: "center",
-                         backgroundColor: tokens.danger, color: "#fff" }}>
-                <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.68rem",
-                                  fontWeight: 700, lineHeight: 1 }}>
-                  {unreadMessages}
-                </Typography>
-              </Box>
-            ) : null}
-          </Stack>
-        </MenuItem>
+        {accountLinks(viewer.id).map((link) => (
+          <MenuItem key={link.href} component={Link} href={link.href}
+            onClick={() => setAnchor(null)}>
+            {link.badge === "messages" && unreadMessages ? (
+              <Stack direction="row" spacing={1.5}
+                sx={{ alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                <span>{link.label}</span>
+                <Box sx={{ minWidth: 20, height: 20, px: 0.75, borderRadius: 999,
+                           display: "grid", placeItems: "center",
+                           backgroundColor: tokens.danger, color: "#fff" }}>
+                  <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.68rem",
+                                    fontWeight: 700, lineHeight: 1 }}>
+                    {unreadMessages}
+                  </Typography>
+                </Box>
+              </Stack>
+            ) : link.label}
+          </MenuItem>
+        ))}
         <Divider />
         {viewer.role === "admin" ? (
           <MenuItem disabled sx={{ fontSize: "0.95rem" }}>Admin tools · milestone 3</MenuItem>

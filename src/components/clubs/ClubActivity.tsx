@@ -1,29 +1,23 @@
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import NextLink from "next/link";
-import PersonAddIcon from "@mui/icons-material/PersonAddAlt";
-import TableRestaurantIcon from "@mui/icons-material/TableRestaurant";
-import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
-import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import LockIcon from "@mui/icons-material/Lock";
-import { sinceLabel } from "@/utils/dates";
+import ActivityLine from "@/components/clubs/ActivityLine";
+import MonoLabel from "@/components/ui/MonoLabel";
 import { mono, tokens, type Faction } from "@/lib/tokens";
-import type { ActivityItem, ActivityKind } from "@/services/clubActivity.service";
-
-const ICONS: Record<ActivityKind, typeof PersonAddIcon> = {
-  join: PersonAddIcon,
-  booking: TableRestaurantIcon,
-  rival: LocalFireDepartmentIcon,
-  result: EmojiEventsIcon,
-};
+import type { ActivityItem } from "@/services/clubActivity.service";
 
 /**
  * What has happened at the club lately.
  *
- * Legacy's activity feed (detail.js:4194), which is gated on member content
- * there and here. A club page without it reads as a listing; with it, it reads
- * as somewhere people actually go.
+ * Legacy's activity feed (detail.js:4194). It builds this for everybody and
+ * only strips the names for a visitor: "A new member joined the club" rather
+ * than naming them. We showed a padlock instead, so anybody comparing a club
+ * they had not joined found a living board there and an empty one here.
+ *
+ * The anonymised version is also the better answer on its own terms. Somebody
+ * deciding whether this club is worth an evening wants to know it is busy, and
+ * a fortnight of real lines says that in a way a locked panel never can.
  *
  * One line per item and no card per row: this is a list somebody scans, and a
  * feed of six bordered boxes is heavier than what it carries.
@@ -36,39 +30,26 @@ export default function ClubActivity({
   faction: Faction;
   isMember: boolean;
 }) {
-  if (!isMember) {
-    return (
-      <Stack direction="row" spacing={1.25} sx={{ alignItems: "center" }}>
-        <LockIcon sx={{ fontSize: 17, color: tokens.inkMuted, flexShrink: 0 }} />
-        <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-          Members see who has joined, who is booking tables and how {clubName} did at
-          its last events.
-        </Typography>
-      </Stack>
-    );
-  }
-
   if (!items.length) {
     return (
       <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-        Nothing yet. Activity appears here as members join, book tables and play events.
+        {isMember
+          ? "Nothing in the last fortnight. Joining, booking, ordering and playing all show up here."
+          : `Nothing at ${clubName} in the last fortnight.`}
       </Typography>
     );
   }
 
-  // Past six rows the box stops growing and scrolls instead, so a busy club
-  // does not push the rest of the page below the fold. Same treatment as the
-  // photo grid.
-  const scrolls = items.length > 6;
+  // Past five rows the box stops growing and scrolls instead, so a busy club
+  // does not push the rest of the page below the fold. Five rather than six
+  // because a row can now carry a second line. Same treatment as the photos.
+  const scrolls = items.length > 5;
 
   return (
     <Stack spacing={0.875}>
       <Stack direction="row" spacing={1}
         sx={{ justifyContent: "space-between", alignItems: "baseline" }}>
-        <Typography sx={{ fontFamily: mono, fontSize: "0.66rem", letterSpacing: "0.12em",
-                          fontWeight: 700, color: tokens.inkMuted }}>
-          LAST 14 DAYS
-        </Typography>
+        <MonoLabel mb={0}>Last 14 days</MonoLabel>
         {scrolls ? (
           <Typography sx={{ fontFamily: mono, fontSize: "0.66rem", color: tokens.inkMuted }}>
             {items.length} updates, scroll for more
@@ -81,42 +62,24 @@ export default function ClubActivity({
         overflowX: "hidden",
         // A height that lands mid-row, so the cut edge reads as "more below"
         // rather than as the list simply ending.
-        ...(scrolls ? { maxHeight: { xs: 268, md: 300 }, overflowY: "auto" } : {}),
+        ...(scrolls ? { maxHeight: { xs: 300, md: 340 }, overflowY: "auto" } : {}),
       }}>
-      {items.map((item, i) => {
-        const Icon = ICONS[item.kind];
-        const line = (
-          <Stack direction="row" spacing={1.5}
-            sx={{ px: 2, py: 1.4, alignItems: "flex-start",
-                  borderTop: i === 0 ? "none" : `1px solid ${tokens.rule}`,
-                  ...(item.href ? { "&:hover": { backgroundColor: faction.soft } } : {}) }}>
-            <Box sx={{ width: 28, height: 28, borderRadius: 1, flexShrink: 0, mt: 0.125,
-                       display: "grid", placeItems: "center",
-                       backgroundColor: faction.soft, color: faction.deep }}>
-              <Icon sx={{ fontSize: 16 }} />
-            </Box>
-
-            <Typography variant="body2" sx={{ flex: 1, minWidth: 0 }}>
-              <Box component="span" sx={{ fontWeight: 700 }}>{item.who}</Box> {item.what}
-            </Typography>
-
-            <Typography sx={{ fontFamily: mono, fontSize: "0.66rem", letterSpacing: "0.06em",
-                              color: tokens.inkMuted, flexShrink: 0, mt: 0.25 }}>
-              {(sinceLabel(item.at) ?? "").toUpperCase()}
-            </Typography>
-          </Stack>
-        );
-
-        return item.href ? (
-          <NextLink key={item.id} href={item.href}
-            style={{ textDecoration: "none", color: "inherit", display: "block" }}>
-            {line}
-          </NextLink>
-        ) : (
-          <Box key={item.id}>{line}</Box>
-        );
-      })}
+        {items.map((item, i) => (
+          <ActivityLine key={item.id} item={item} faction={faction} first={i === 0} />
+        ))}
       </Box>
+
+      {/* Under the box rather than inside it, so it reads as a note about the
+          list rather than as another thing that happened. */}
+      {!isMember ? (
+        <Stack direction="row" spacing={1}
+          sx={{ alignItems: "center", pt: 0.25 }}>
+          <LockIcon sx={{ fontSize: 15, color: tokens.inkMuted, flexShrink: 0 }} />
+          <Typography variant="body2" sx={{ color: tokens.inkMuted, fontSize: "0.8rem" }}>
+            Members see who did what, and can follow any of it through.
+          </Typography>
+        </Stack>
+      ) : null}
     </Stack>
   );
 }

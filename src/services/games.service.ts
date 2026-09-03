@@ -10,6 +10,16 @@ import { suggestOpponents, winRate, type Suggestion } from "@/utils/opponent-fin
 import { intensityOf, type Intensity } from "@/utils/rivalry-intensity";
 import { canonicalGame } from "@/utils/game-label";
 
+/**
+ * What a game says when nobody is on the other side of it yet.
+ *
+ * Exported because anything that groups games BY opponent has to know this is
+ * a placeholder rather than a person: three unnamed opponents share this
+ * string, and tallying them together invents a record against somebody who
+ * does not exist.
+ */
+export const UNNAMED_OPPONENT = "an opponent";
+
 export type MyGame = {
   id: number;
   club: { slug: string; name: string; logoUrl: string | null };
@@ -98,7 +108,7 @@ export async function getMyGames(profileId: string, page = 1): Promise<MyGame[]>
       time: row.session_time,
       title: row.game_title ? canonicalGame(row.game_title) : "Table booking",
       opponentId: other.id,
-      opponentName: other.name?.trim() || "an opponent",
+      opponentName: other.name?.trim() || UNNAMED_OPPONENT,
       myScore,
       theirScore,
       myArmy: iBooked ? row.booked_by_army : row.opponent_army,

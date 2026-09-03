@@ -50,7 +50,7 @@ export default function CoachingCalendar({
         <BusyOverlay busy={busy} label="Saving">
         <Box sx={{ display: "grid", gap: 2,
                    gridTemplateColumns: {
-                     xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)",
+                     xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))", lg: "repeat(3, minmax(0, 1fr))",
                    } }}>
           {slots.map((slot) => (
             <Box key={slot.id}>

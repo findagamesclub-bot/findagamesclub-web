@@ -17,7 +17,7 @@ export default function EventsLoading() {
       <Skeleton variant="rounded" height={96} sx={{ borderRadius: 2, mb: 3 }} />
       <Box sx={{ display: "grid", gap: 2.5,
                  gridTemplateColumns: {
-                   xs: "1fr", sm: "repeat(2, minmax(0, 1fr))",
+                   xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))",
                    lg: "repeat(3, minmax(0, 1fr))",
                  } }}>
         {[0, 1, 2, 3, 4, 5].map((i) => (

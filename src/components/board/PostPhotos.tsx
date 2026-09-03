@@ -19,7 +19,7 @@ export default function PostPhotos({
     <Box
       sx={{
         mt: 2.5, display: "grid", gap: 1.5,
-        gridTemplateColumns: images.length > 1 ? { xs: "1fr", sm: "repeat(2, 1fr)" } : "1fr",
+        gridTemplateColumns: images.length > 1 ? { xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))" } : "minmax(0, 1fr)",
       }}
     >
       {images.map((image) => (

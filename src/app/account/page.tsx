@@ -4,12 +4,14 @@ import PageHead from "@/components/account/PageHead";
 import DashboardPanels from "@/components/account/DashboardPanels";
 import StatStrip from "@/components/account/StatStrip";
 import MemberStats from "@/components/account/MemberStats";
+import MemberAnalytics from "@/components/account/MemberAnalytics";
 import ScoreTrendChart from "@/components/ui/ScoreTrendChart";
 import Typography from "@mui/material/Typography";
 import { scoreTrend } from "@/utils/member-stats";
 import { mono, tokens } from "@/lib/tokens";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getDashboard } from "@/services/dashboard.service";
+import { londonToday } from "@/services/bookingCalendar.service";
 
 export const metadata = { title: "Your dashboard" };
 
@@ -23,7 +25,6 @@ export default async function AccountPage() {
   const owing = approved.filter((m) => m.standing.overdue);
   const upcomingTickets = data.tickets.filter((t) => t.status !== "cancelled");
   const points = data.loyalty.reduce((n, card) => n + card.available, 0);
-  const lifetimePoints = data.loyalty.reduce((n, card) => n + card.lifetime, 0);
   const played = data.games.filter((game) => game.outcome !== null).length;
   const trend = scoreTrend(data.games);
 
@@ -53,32 +54,32 @@ export default async function AccountPage() {
         />
       </Box>
 
-      {/* The member's own record, worked out from games already held: no new
-          data, and half of it was already on the strip above in a plainer form.
-          The strip stays as the glance; this is the detail behind it. */}
+      {/* Three layers, each answering a different question and none of them
+          repeating another. The strip above is the glance. This is the run
+          they are on. The analytics below are the breakdowns. */}
       <Box sx={{ mt: 3 }}>
-        <SectionLabel>Your record</SectionLabel>
-        <MemberStats
-          games={data.games}
-          points={points}
-          lifetimePoints={lifetimePoints}
-          clubs={approved.length}
-          bookings={data.bookings.length}
-          tickets={upcomingTickets.length}
-        />
+        <SectionLabel>Your form</SectionLabel>
+        <MemberStats games={data.games} />
       </Box>
 
       {trend.length >= 2 ? (
-        <Box sx={{ mt: 3, p: 2, border: `1px solid ${tokens.rule}`, borderRadius: 1.5,
+        <Box sx={{ mt: 2.5, p: 2, border: `1px solid ${tokens.rule}`, borderRadius: 1.5,
                    backgroundColor: tokens.paper }}>
           <SectionLabel>Recent form</SectionLabel>
           <ScoreTrendChart points={trend} />
         </Box>
       ) : null}
 
+      {/* Legacy's six dashboard breakdowns. Every one is worked out from games
+          already loaded for this page, so the whole block costs no query. */}
+      <Box sx={{ mt: 3 }}>
+        <SectionLabel>Your analytics</SectionLabel>
+        <MemberAnalytics games={data.games} loyalty={data.loyalty} today={londonToday()} />
+      </Box>
+
       <Box sx={{ mt: 2.5, display: "grid", gap: 2.5,
                  gridTemplateColumns: {
-                   xs: "1fr",
+                   xs: "minmax(0, 1fr)",
                    md: "repeat(2, minmax(0, 1fr))",
                    xl: "repeat(3, minmax(0, 1fr))",
                  } }}>

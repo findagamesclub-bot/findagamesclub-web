@@ -114,7 +114,7 @@ export default function MemberAdmin({
               {initials(memberName)}
             </Avatar>
             <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography variant="h4" sx={{ fontSize: "1.15rem" }}>{memberName}</Typography>
+              <Typography variant="h4" component="span" sx={{ fontSize: "1.15rem" }}>{memberName}</Typography>
               <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.7rem",
                                 letterSpacing: "0.06em", color: status.colour, fontWeight: 600 }}>
                 {tier ? `${tier.label.toUpperCase()} · ` : ""}{status.text}

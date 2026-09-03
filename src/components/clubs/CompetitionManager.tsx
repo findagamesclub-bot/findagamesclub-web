@@ -35,7 +35,7 @@ export default function CompetitionManager({
 
       {competitions.length ? (
         <Box sx={{ display: "grid", gap: 2, alignItems: "start",
-                   gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))" } }}>
+                   gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))" } }}>
           {competitions.map((competition) => (
             <NextLink key={competition.id}
               href={`/clubs/${slug}/competitions/manage/${competition.id}`}

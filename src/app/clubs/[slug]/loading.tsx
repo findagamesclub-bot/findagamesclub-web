@@ -31,7 +31,7 @@ export default function ClubLoading() {
       </Stack>
 
       <Box sx={{ display: "grid", gap: 4,
-                 gridTemplateColumns: { xs: "1fr", md: "minmax(0,2fr) minmax(280px,1fr)" } }}>
+                 gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "minmax(0,2fr) minmax(280px,1fr)" } }}>
         <Stack spacing={3}>
           {[0, 1, 2].map((i) => (
             <Box key={i}>

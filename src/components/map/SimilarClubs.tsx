@@ -38,7 +38,7 @@ export default function SimilarClubs({ items }: { items: SimilarClub[] }) {
       </Typography>
 
       <Box sx={{ display: "grid", gap: 2,
-                 gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)" } }}>
+                 gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))", md: "repeat(3, minmax(0, 1fr))" } }}>
         {items.map(({ club, sharedGames, miles }) => {
           const { faction, monogram } = clubIdentity(club.slug, club.name);
           return (

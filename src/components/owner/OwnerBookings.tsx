@@ -67,7 +67,7 @@ export default function OwnerBookings({ bookings }: { bookings: OwnerResult[] })
         <BusyOverlay busy={busy} variant="dim" label="Updating bookings">
           <Box ref={top} sx={{ display: "grid", gap: 2, alignItems: "start",
                      gridTemplateColumns: {
-                       xs: "1fr",
+                       xs: "minmax(0, 1fr)",
                        sm: "repeat(2, minmax(0, 1fr))",
                        lg: "repeat(3, minmax(0, 1fr))",
                      } }}>

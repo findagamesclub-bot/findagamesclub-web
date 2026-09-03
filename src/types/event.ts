@@ -41,7 +41,13 @@ export type EventPairing = {
   id: number;
   round: number | null;
   label: string | null;
-  matches: { table: string | null; playerOne: string; playerTwo: string }[];
+  matches: {
+    table: string | null;
+    playerOne: string;
+    playerTwo: string;
+    /** The result, once somebody has entered it. Null while the round is live. */
+    score: string | null;
+  }[];
 };
 
 export type ClubEventDetail = {

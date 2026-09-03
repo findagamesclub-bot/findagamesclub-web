@@ -95,7 +95,7 @@ export default function PlacingEditor({
         <DialogTitle sx={{ pb: 0.5 }}>
           <Stack direction="row" spacing={1.25} sx={{ alignItems: "center" }}>
             <EmojiEventsIcon sx={{ fontSize: 20, color: tokens.brass }} />
-            <Typography variant="h4" sx={{ fontSize: "1.15rem" }}>
+            <Typography variant="h4" component="span" sx={{ fontSize: "1.15rem" }}>
               {placing ? "Edit this result" : "Record a result"}
             </Typography>
           </Stack>
@@ -149,7 +149,7 @@ export default function PlacingEditor({
               />
 
               <Box sx={{ display: "grid", gap: 2.5,
-                         gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" } }}>
+                         gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "minmax(0, 1fr) minmax(0, 1fr)" } }}>
                 <TextField name="faction" label="Faction"
                   defaultValue={placing?.army?.factionLabel ?? ""}
                   slotProps={{ htmlInput: { maxLength: 80 } }} />

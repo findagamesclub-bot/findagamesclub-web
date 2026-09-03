@@ -11,7 +11,7 @@ import type { MembershipTier, PricingModel } from "@/types/clubDetail";
 export function MembershipTiers({ tiers, slug }: { tiers: MembershipTier[]; slug?: string }) {
   return (
     <Box sx={{ display: "grid", gap: 2,
-               gridTemplateColumns: { xs: "1fr", sm: "repeat(auto-fit, minmax(280px, 1fr))" } }}>
+               gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(auto-fit, minmax(280px, 1fr))" } }}>
       {tiers.map((tier) => {
         const saving = yearlySaving(tier.billingOptions);
         const monthly = perMonth(tier.billingOptions);

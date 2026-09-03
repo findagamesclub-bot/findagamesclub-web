@@ -50,7 +50,7 @@ export default function MessagesShell({
     <Box
       sx={{
         display: "grid",
-        gridTemplateColumns: { xs: "1fr", md: "minmax(280px, 330px) 1fr" },
+        gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "minmax(280px, 330px) minmax(0, 1fr)" },
         // Both panes scroll inside themselves, so the shell needs a real
         // height. On a phone that is measured from the viewport — dvh, not vh,
         // because mobile browser chrome collapses on scroll and vh does not
