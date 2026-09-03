@@ -6,9 +6,16 @@ export type RosterEntry = {
   profileId: string | null;
   name: string;
   isMember: boolean;
-  tickets: number;
+  /**
+   * Null for a reader outside the club and the ticket holders. On a finished
+   * event the list itself opens up but the seat counts do not: how many a
+   * person bought is the club's business, and on a past event it answers
+   * nothing anybody asked. Null rather than 0, so the reader is told nothing
+   * rather than told nought.
+   */
+  tickets: number | null;
   /** Separate trips through checkout. Shown only when it is more than one. */
-  bookings: number;
+  bookings: number | null;
 };
 
 /**
@@ -16,7 +23,9 @@ export type RosterEntry = {
  *
  * No email, no booking reference and no money: those are the club's, and the
  * club has its own door list for them. This is the answer to "who else is
- * turning up", which legacy shows to anybody holding a ticket.
+ * turning up", which legacy shows to anybody holding a ticket — and, once the
+ * event is over, to anybody at all, because by then it is "who was there" and
+ * the standings beside it already name them (0065).
  */
 export async function getEventRoster(eventId: number): Promise<RosterEntry[]> {
   const rows = await repo.findEventRoster(eventId).catch(() => []);

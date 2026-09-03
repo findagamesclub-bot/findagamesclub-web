@@ -150,6 +150,12 @@ export async function getEventDetail(
   // only audience for them (_can_access_event_board, club_store.py:16187).
   const myBookings = viewer ? await findMyBookingsForEvent(row.id, viewer.id) : [];
   const canSeePrivate = canManageClub || myBookings.length > 0;
+  // The draw is a record, not a plan. Before the event it belongs to the room;
+  // after it, it is the same public history as the standings underneath it,
+  // and it is what the Best Coast Pairings link on this page opens to the
+  // whole internet anyway (0065). The board is not opened this way: people
+  // wrote in it believing only the room could read it.
+  const ended = hasEnded(row);
 
   // An event can name its own venue; otherwise it happens at the club's.
   const venue = {
@@ -197,7 +203,7 @@ export async function getEventDetail(
     price: formatPrice(row.price ?? ""),
     ticketsAvailable: row.tickets_available,
     bestcoastLink: row.bestcoast_link,
-    hasEnded: hasEnded(row),
+    hasEnded: ended,
 
     venue,
     directionsUrl: directions(venue.name, venue.address, venue.postcode),
@@ -214,6 +220,6 @@ export async function getEventDetail(
 
     canSeePrivate,
     infoBoard: canSeePrivate ? row.info_board : null,
-    pairings: canSeePrivate ? toPairings(row.club_event_pairings) : [],
+    pairings: canSeePrivate || ended ? toPairings(row.club_event_pairings) : [],
   };
 }

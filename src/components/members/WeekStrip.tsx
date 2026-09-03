@@ -1,6 +1,5 @@
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
-import Typography from "@mui/material/Typography";
 import { clubIdentity } from "@/utils/club-identity";
 import { tokens } from "@/lib/tokens";
 
@@ -27,8 +26,9 @@ export default function WeekStrip({
 }) {
   const { faction } = clubIdentity(id, name);
   const free = new Set(available.map((d) => d.toLowerCase()));
-  // Seven cells have to hold one line at 390px, or the week stops reading as a
-  // week. Seven times 40 plus the gaps just fits inside a padded panel.
+  // Seven cells have to hold one line, or the week stops reading as a week.
+  // They share the row and cap at this rather than demanding it: fixed, seven
+  // times 40 plus the gaps overflows a card on a 390px phone.
   const cell = size === "medium" ? { xs: 40, sm: 44 } : { xs: 34, sm: 36 };
 
   return (
@@ -43,9 +43,10 @@ export default function WeekStrip({
             sx={{
               display: "grid",
               placeItems: "center",
-              width: cell,
+              flex: "1 1 0",
+              minWidth: 0,
+              maxWidth: cell,
               height: cell,
-              flexShrink: 0,
               borderRadius: "3px",
               fontFamily: "var(--font-display)",
               fontSize: size === "medium" ? "0.85rem" : "0.75rem",

@@ -28,7 +28,11 @@ export type Stat = {
  * "when" and "how much", and the glyph finds that faster than the word does.
  *
  * `columns` is the caller's job because a card and a full-width page have very
- * different room, and CSS breakpoints can't tell them apart.
+ * different room, and CSS breakpoints can't tell them apart. Two is the most
+ * any of them can afford on a phone, though: four cells across 390px leaves
+ * about eighty pixels each, and "Thu 19:00" came out as "Thu 19:0" with a
+ * lone zero on the line below. So a four-column caller is halved on xs and
+ * gets its four back from 600px up.
  *
  * `dense` puts the label beside the figure instead of above it. Stacked, four
  * stats cost four rows of text, which was most of the height of a club card
@@ -50,8 +54,12 @@ export default function StatLine({
         m: 0,
         display: "grid",
         // Breakpoints track the viewport, not the card, so four columns inside a
-        // 330px card clipped "Tue 18:00" to "Tue …". Callers set this instead.
-        gridTemplateColumns: `repeat(${Math.min(stats.length, columns)}, minmax(0, 1fr))`,
+        // 330px card clipped "Tue 18:00" to "Tue …". Callers set the ceiling;
+        // the floor is the same everywhere, because no cell survives 80px.
+        gridTemplateColumns: {
+          xs: `repeat(${Math.min(stats.length, columns, 2)}, minmax(0, 1fr))`,
+          sm: `repeat(${Math.min(stats.length, columns)}, minmax(0, 1fr))`,
+        },
         columnGap: dense ? 1.5 : { xs: 1.5, sm: 2 },
         rowGap: dense ? 0.5 : { xs: 1.5, sm: 2 },
         borderTop: `1px solid ${tokens.rule}`,
@@ -97,7 +105,11 @@ export default function StatLine({
             </Typography>
             <Box
               component="dd"
-              sx={{ m: 0, display: "flex", alignItems: "center", gap: 0.625, minWidth: 0 }}
+              // Wraps, so a "Book" or "See who" link drops under its figure
+              // rather than squeezing it. The link is the shorter of the two
+              // and was winning the argument.
+              sx={{ m: 0, display: "flex", alignItems: "center", gap: 0.625,
+                    minWidth: 0, flexWrap: "wrap" }}
             >
               {Icon ? (
                 <Icon

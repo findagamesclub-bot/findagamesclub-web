@@ -40,10 +40,8 @@ export async function getBuyableTickets(params: {
   isApprovedMember: boolean;
   viewerTierKey: string | null;
 }): Promise<{ tickets: BuyableTicket[]; cart: EventCart | null }> {
-  const ids = params.ticketTypes.map((t) => t.id);
-
   const [taken, cartRows] = await Promise.all([
-    repo.findTicketsTaken(ids),
+    repo.findTicketsTaken(params.eventId),
     params.viewerId ? repo.findCart(params.eventId, params.viewerId) : Promise.resolve([]),
   ]);
 

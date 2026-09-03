@@ -74,22 +74,29 @@ export async function removeCartLine(ticketTypeId: number, profileId: string) {
 }
 
 /** How many of each ticket type are already reserved. */
-export async function findTicketsTaken(ticketTypeIds: number[]) {
-  if (!ticketTypeIds.length) return new Map<number, number>();
+/**
+ * How many of each ticket type are gone.
+ *
+ * Through a function, because club_event_booking_items is RLS-guarded to your
+ * own bookings: read directly it told the club the truth, told a member about
+ * their own tickets, and told a signed-out visitor that every event was
+ * untouched. 0066 counts past that, and counts nothing else — no names, no
+ * references, no money.
+ */
+export async function findTicketsTaken(eventId: number) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("club_event_booking_items")
-    .select("ticket_type_id, quantity, club_event_bookings!inner(status)")
-    .in("ticket_type_id", ticketTypeIds)
-    .eq("club_event_bookings.status", "reserved");
+  const { data, error } = await (supabase as unknown as {
+    rpc(name: string, args: Record<string, unknown>): Promise<{
+      data: { ticket_type_id: number; taken: number }[] | null;
+      error: { message: string } | null;
+    }>;
+  }).rpc("event_tickets_taken", { p_event: eventId });
 
   if (error) throw new Error(`Failed to count tickets: ${error.message}`);
 
   const taken = new Map<number, number>();
-  for (const row of data ?? []) {
-    taken.set(row.ticket_type_id, (taken.get(row.ticket_type_id) ?? 0) + row.quantity);
-  }
+  for (const row of data ?? []) taken.set(row.ticket_type_id, row.taken);
   return taken;
 }
 

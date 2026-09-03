@@ -34,6 +34,12 @@ export default function WeekPicker({ name, value }: { name: string; value: strin
       <Typography variant="body2" sx={{ color: "text.secondary", fontFamily: "var(--font-display)" }}>
         Nights you are usually free
       </Typography>
+      {/* One line, always. Seven cells at a fixed 40px need 304px and this sits
+          inside a card inside the account column, which on a 390px phone is
+          narrower than that — so Sunday hung off the edge. They share the row
+          instead and cap at the old size, so a wide form looks exactly as it
+          did and a narrow one still reads as a week rather than wrapping into
+          five days and a bit. */}
       <Stack direction="row" spacing={0.5} useFlexGap sx={{ flexWrap: "nowrap" }}>
         {DAYS.map(([day, short]) => {
           const on = selected.includes(day);
@@ -46,9 +52,10 @@ export default function WeekPicker({ name, value }: { name: string; value: strin
               aria-pressed={on}
               aria-label={day}
               sx={{
-                width: { xs: 40, sm: 46 },
+                flex: "1 1 0",
+                minWidth: 0,
+                maxWidth: { xs: 40, sm: 46 },
                 height: { xs: 40, sm: 46 },
-                flexShrink: 0,
                 cursor: "pointer",
                 borderRadius: "3px",
                 fontFamily: "var(--font-display)",

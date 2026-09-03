@@ -466,11 +466,28 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
 
         </Stack>
 
-        {/* scrollMarginTop so #join lands on the panel rather than under the
-            app bar. On a narrow screen this column sits below the page, so the
-            jump is a real one and the landing has to be right. */}
-        <Stack spacing={3} id="join"
-          sx={{ mt: 7, scrollMarginTop: { xs: 84, md: 96 } }}>
+        {/* On a phone this column comes first, not last. It holds where the
+            club meets, when, what is there and how to pay — which is what
+            somebody opening a club page came for, and it was sitting past
+            fifteen sections at the very bottom. Beside the content on a wide
+            screen, where it has always been. */}
+        <Stack spacing={3}
+          sx={{ order: { xs: -1, md: 0 }, minWidth: 0, mt: { xs: 0, md: 7 } }}>
+          {/* Facts above the join panel on a phone, below it on a desktop: the
+              panel earns the top of a narrow column only once you already know
+              what you would be joining. */}
+          <Box sx={{ order: { xs: -1, md: 0 } }}>
+            <ClubSidebar club={club} />
+          </Box>
+
+          {/* Ordered on both sides, not just one: leaving this at the default
+              put the facts card above the join panel on a desktop too, because
+              equal order falls back to the order in the file.
+
+              scrollMarginTop so #join lands on the panel rather than under the
+              app bar. */}
+          <Box id="join"
+            sx={{ order: { xs: 0, md: -1 }, scrollMarginTop: { xs: 84, md: 96 } }}>
           <JoinClubPanel
             clubId={club.id}
             slug={club.slug}
@@ -492,7 +509,7 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
             standing={standing(myPayments, membership.tierKey, membership.tierAssignedAt)}
             payments={myPayments}
           />
-          <ClubSidebar club={club} />
+          </Box>
         </Stack>
       </Box>
       <BackToTop />

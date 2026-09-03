@@ -12,14 +12,23 @@ import type { RosterEntry, BoardPost } from "@/services/eventBoard.service";
 /**
  * What a ticket unlocks: who else is going, and what they are saying.
  *
- * Both together because they answer the same question and share the same gate.
  * The board is summarised here and lives on its own page, the way legacy does
  * it: three titles is enough to know whether it is worth opening.
+ *
+ * They used to share a gate as well as a heading. They no longer do: once an
+ * event is finished the roster is "who was there", which is public history
+ * alongside the standings, while the board stays with the people who wrote in
+ * it. So the board can be left off (0065).
  */
 export default function EventCommunity({
   roster, threads, faction, viewerId, canManage, slug, eventId, trail, hasAttendees,
+  showBoard = true, hasEnded = false,
 }: {
   roster: RosterEntry[];
+  /** Off for a stranger reading a finished event: the record, not the room. */
+  showBoard?: boolean;
+  /** Past tense once the event has been played. */
+  hasEnded?: boolean;
   threads: BoardPost[];
   faction: Faction;
   viewerId: string | null;
@@ -36,7 +45,11 @@ export default function EventCommunity({
     <>
       {/* Names and ticket counts. The email, the reference and the money stay
           on the club's own door list, which is what the link opens. */}
-      <Section title="Who is coming" icon={GroupsIcon} navLabel="Roster"
+      {/* "Who is coming" on a tournament from April is the page not knowing
+          what month it is. Same list, and after the day it is a record of who
+          turned up rather than a plan. */}
+      <Section title={hasEnded ? "Who was there" : "Who is coming"}
+        icon={GroupsIcon} navLabel="Roster"
         action={
           canManage && hasAttendees ? (
             <NextLink href={`/clubs/${slug}/events/${eventId}/attendees${trail}`}
@@ -50,6 +63,7 @@ export default function EventCommunity({
         <EventRoster roster={roster} faction={faction} viewerId={viewerId} />
       </Section>
 
+      {showBoard ? (
       <Section title="Event board" icon={ForumIcon} navLabel="Board"
         note="Questions and notices between everybody going to this event."
         action={
@@ -82,6 +96,7 @@ export default function EventCommunity({
           </Typography>
         )}
       </Section>
+      ) : null}
     </>
   );
 }

@@ -13,12 +13,22 @@ import type { ClubEventDetail } from "@/types/event";
 
 /** The event's own hero: art, standing, headline, and the figures under it. */
 export default function EventHero({
-  event, faction, admin,
+  event, faction, admin, ticketsRemaining,
 }: {
   event: ClubEventDetail;
   faction: Faction;
   /** Present only for the club, and only to set the Best Coast link. */
   admin?: { slug: string; eventKey: string };
+  /**
+   * What is actually left, counted from the ticket types and what has sold.
+   *
+   * `event.ticketsAvailable` is a number the club typed once and nothing ever
+   * decrements, so after four sales the hero read "50 TICKETS LEFT" beside a
+   * sales panel saying "46 LEFT" — two figures for one thing on one screen.
+   * Null when the event sells no typed tickets, and then the club's own number
+   * is the only answer there is.
+   */
+  ticketsRemaining?: number | null;
 }) {
   // Over the artwork this stays a glance: the day, and the second day when
   // there is one. The exact times are labelled STARTS and ENDS underneath,
@@ -33,13 +43,19 @@ export default function EventHero({
     : "";
 
 
-  const tickets = ticketsLeft(event.ticketsAvailable, true);
+  const counted = ticketsRemaining ?? event.ticketsAvailable;
+  const tickets = ticketsLeft(counted, true);
 
   const facts = [
     event.price ? { label: "entry", value: event.price } : null,
     event.roundCount ? { label: "rounds", value: String(event.roundCount) } : null,
-    tickets ? { label: tickets.soldOut ? "tickets" : "tickets left",
-                value: tickets.soldOut ? "None" : String(event.ticketsAvailable) } : null,
+    // Nothing is left of an event that has been played. "50 tickets left"
+    // beside a Finished badge is a number that cannot mean anything, and the
+    // badge has already said what the reader needs.
+    tickets && !event.hasEnded
+      ? { label: tickets.soldOut ? "tickets" : "tickets left",
+          value: tickets.soldOut ? "None" : String(counted) }
+      : null,
   ].filter(Boolean) as { label: string; value: string }[];
 
   return (

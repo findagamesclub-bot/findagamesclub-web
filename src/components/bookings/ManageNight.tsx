@@ -66,8 +66,14 @@ export default function ManageNight({
 
   return (
     <>
+      {/* alignSelf, or the night row stacks into a column on a phone, this
+          stretches to the full width as a flex child, and a text button
+          centres its own label: "Manage night" ended up floating in the middle
+          of the card while the date, the tables and the booking buttons all
+          sat against the left edge. */}
       <Button size="small" variant="text" startIcon={<TuneIcon />} onClick={() => setOpen(true)}
-        sx={{ color: tokens.inkMuted, fontSize: "0.78rem" }}>
+        sx={{ color: tokens.inkMuted, fontSize: "0.78rem",
+              alignSelf: { xs: "flex-start", md: "center" }, ml: { xs: -0.75, md: 0 } }}>
         Manage night
       </Button>
 

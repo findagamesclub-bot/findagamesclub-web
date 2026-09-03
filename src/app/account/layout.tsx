@@ -43,19 +43,21 @@ export default async function AccountLayout({ children }: LayoutProps<"/account"
                  // The shell is exactly the room left under the header, and
                  // each column keeps its own scroll inside it.
                  height: { md: `calc(100dvh - ${headerHeight.md}px)` } }}>
-        {/* Fixed beside the content. On a phone it becomes a scrolling strip
-            above it instead: 248px of navigation beside a 375px page leaves no
-            page. */}
+        {/* Fixed beside the content. On a phone the sidebar is a drawer and
+            all that sits here is the row that opens it, so nothing is capped
+            or scrolled: navigation should cost a row when shut and cover the
+            page when open, not take a screen and a half of it. */}
         <Box sx={{
           minWidth: 0,
           minHeight: 0,
-          maxHeight: { xs: 168, md: "none" },
-          // Its own scroll, for a nav taller than a short screen. A fixed
-          // column that cannot reach its last item is worse than one that moves.
-          overflowY: "auto",
-          py: { xs: 0, md: 3 },
-          pb: { xs: 1.5, md: 3 },
-          borderBottom: { xs: `1px solid ${tokens.rule}`, md: "none" },
+          // Its own scroll on desktop, for a nav taller than a short screen. A
+          // fixed column that cannot reach its last item is worse than one
+          // that moves. On a phone the page scroll is the only one.
+          overflowY: { xs: "visible", md: "auto" },
+          py: { xs: 1.5, md: 3 },
+          // No rule under it on a phone: the trigger already has its own
+          // border, and two lines a few pixels apart read as a mistake.
+          borderBottom: { md: "none" },
           borderRight: { md: `1px solid ${tokens.rule}` },
           pr: { md: 2 },
         }}>

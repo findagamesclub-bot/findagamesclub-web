@@ -72,9 +72,14 @@ export default async function EventPage({
   // Who else is going, and what they are saying. Both are open to anybody
   // holding a ticket, matching legacy: before a tournament the thing you want
   // to know is who is turning up.
-  const [roster, threads] = event.canSeePrivate
-    ? await Promise.all([getEventRoster(event.id), getEventBoard(event.id)])
-    : [[], []];
+  // Two audiences now, not one. The roster opens when the event is over and
+  // becomes "who was there"; the board stays with the people who wrote in it
+  // whatever the date (0065).
+  const canSeeRecord = event.canSeePrivate || event.hasEnded;
+  const [roster, threads] = await Promise.all([
+    canSeeRecord ? getEventRoster(event.id) : Promise.resolve([]),
+    event.canSeePrivate ? getEventBoard(event.id) : Promise.resolve([]),
+  ]);
 
   // Only for the results editor, so a winner can be linked to their profile
   // and the placing shows on it. Members-only by RLS, and a manager passes.
@@ -101,7 +106,14 @@ export default async function EventPage({
         </Stack>
       </NextLink>
 
+      {/* Counted from what has actually sold, not from the figure the club
+          typed when it listed the event. Null where an event sells no typed
+          tickets at all, and the hero falls back to that figure. */}
       <EventHero event={event} faction={faction}
+        ticketsRemaining={tickets.length
+          ? tickets.reduce<number | null>(
+              (n, t) => (n === null || t.remaining === null ? null : n + t.remaining), 0)
+          : null}
         admin={event.canManageClub ? { slug, eventKey: eventId } : undefined} />
 
       {/* The navLabels on the sections below were written for this and had
@@ -164,9 +176,10 @@ export default async function EventPage({
         </Section>
       ) : null}
 
-      {/* Ticket holders and the club, same gate as the noticeboard above: a
+      {/* The service decides who gets these at all: the room before the event,
+          everybody after it: a
           draw is only any use to somebody playing in it. */}
-      {event.canSeePrivate && event.pairings.length ? (
+      {event.pairings.length ? (
         <Section title="Round pairings" icon={TableRestaurantIcon} navLabel="Pairings">
           <EventPairings
             pairings={event.pairings}
@@ -177,8 +190,10 @@ export default async function EventPage({
       ) : null}
 
       {/* What a ticket unlocks, together: the roster and the board. */}
-      {event.canSeePrivate ? (
+      {canSeeRecord ? (
         <EventCommunity
+          showBoard={event.canSeePrivate}
+          hasEnded={event.hasEnded}
           roster={roster}
           threads={threads}
           faction={faction}

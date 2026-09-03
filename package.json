@@ -11,7 +11,8 @@
     "verify": "npm run check:links && tsc --noEmit && next build",
     "check:mobile": "node scripts/check-overflow.mjs",
     "check:mobile:auth": "node scripts/check-overflow.mjs --routes scripts/overflow-routes-auth.txt --storage .mobile-session.json",
-    "mobile:login": "node scripts/mobile-session.mjs"
+    "mobile:login": "node scripts/mobile-session.mjs",
+    "check:mobile:dev": "node scripts/check-overflow.mjs --base http://localhost:3000 --routes scripts/overflow-routes-dev.txt"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

@@ -1,0 +1,12 @@
+# Local-only preview pages. They 404 in production on purpose, so these need a
+# dev server: npm run dev, then npm run check:mobile:dev.
+#
+# They exist so components that normally sit behind a login can be looked at
+# without one — which also means the overflow check can reach them.
+/dev/form-preview
+/dev/members-preview
+/dev/bookings-preview
+/dev/join-panel-preview
+/dev/tickets-preview
+/dev/profile-preview
+/dev/loyalty-preview

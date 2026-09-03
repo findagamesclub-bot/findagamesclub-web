@@ -40,15 +40,20 @@ export default function Section({
         scrollMarginTop: { xs: 132, md: 140 },
       }}
     >
+      {/* Wraps rather than crushes. A long heading and a long action share this
+          row, and on a phone both were folding into two cramped lines beside
+          each other. The spacer takes the rest of the first line, so the
+          action drops to its own. */}
       <Stack
         direction="row"
         spacing={1}
-        sx={{ alignItems: "center", pb: 1, borderBottom: `1px solid ${tokens.rule}` }}
+        sx={{ alignItems: "center", pb: 1, flexWrap: "wrap", rowGap: 0.5,
+              borderBottom: `1px solid ${tokens.rule}` }}
       >
         {Icon ? <Icon aria-hidden sx={{ fontSize: 18, color: tokens.brass }} /> : null}
         <Typography variant="overline" sx={{ color: "text.secondary" }}>{title}</Typography>
         <Box sx={{ flex: 1 }} />
-        {action}
+        <Box sx={{ flexShrink: 0 }}>{action}</Box>
       </Stack>
       {note ? (
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5, mb: 2.5, maxWidth: 620 }}>

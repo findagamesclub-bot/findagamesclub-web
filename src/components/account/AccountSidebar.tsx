@@ -1,181 +1,96 @@
 "use client";
 
+import { useState } from "react";
 import Box from "@mui/material/Box";
-import CircularProgress from "@mui/material/CircularProgress";
+import ButtonBase from "@mui/material/ButtonBase";
+import Drawer from "@mui/material/Drawer";
+import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import NextLink, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
-import DashboardIcon from "@mui/icons-material/SpaceDashboard";
-import PersonIcon from "@mui/icons-material/PersonOutlined";
-import CardMembershipIcon from "@mui/icons-material/CardMembership";
-import LoyaltyIcon from "@mui/icons-material/Loyalty";
-import ConfirmationNumberIcon from "@mui/icons-material/ConfirmationNumber";
-import EventSeatIcon from "@mui/icons-material/EventSeat";
-import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
-import NotificationsIcon from "@mui/icons-material/NotificationsActive";
-import ForumIcon from "@mui/icons-material/ForumOutlined";
-import SchoolIcon from "@mui/icons-material/School";
-import StorefrontIcon from "@mui/icons-material/Storefront";
-import GroupsIcon from "@mui/icons-material/Groups";
-import EventIcon from "@mui/icons-material/Event";
-import type { SvgIconComponent } from "@mui/icons-material";
+import CloseIcon from "@mui/icons-material/Close";
+import MenuOpenIcon from "@mui/icons-material/MenuOpen";
+import AccountNavList from "./AccountNavList";
+import { currentItem } from "./account-nav";
 import { display, mono, tokens } from "@/lib/tokens";
 import type { AccountCounts } from "@/services/dashboard.service";
 
 /**
- * The clicked item, while the section it points at is still coming.
- *
- * Has to be a child of the Link to read its status. It replaces the count
- * rather than sitting beside it, so the row does not change width mid-click.
- */
-function Pending({ fallback }: { fallback: React.ReactNode }) {
-  const { pending } = useLinkStatus();
-  return pending
-    ? <CircularProgress size={14} thickness={5} sx={{ color: tokens.brass, flexShrink: 0 }} />
-    : <>{fallback}</>;
-}
-
-type Item = {
-  label: string;
-  href: string;
-  icon: SvgIconComponent;
-  count?: number;
-  /** Marks a count worth noticing rather than merely reporting. */
-  alert?: boolean;
-};
-
-/**
  * The account's own navigation.
  *
- * A sidebar rather than tabs: ten sections do not fit a strip, and a tab bar
+ * A sidebar rather than tabs: eleven sections do not fit a strip, and a tab bar
  * that scrolls sideways hides half of itself. It also keeps every section
  * inside one shell — tickets used to open a page with no account navigation on
  * it at all, so getting back meant the browser's back button.
  *
- * Every item here goes somewhere. A section that cannot show anything yet is
- * left out rather than greyed: Competitions is read-only until a club can run
- * one through the app, so advertising it only promises an empty page.
+ * On a phone it is a drawer, opened from a row naming the section you are on.
+ * Two earlier attempts were worse and both were the client's to spot: a 168px
+ * box with its own scrollbar showing two and a half of eleven sections, then
+ * an inline list that pushed the page a screen and a half down to make room
+ * for itself. Navigation is not content; it should cost a row when shut and
+ * cover the page when open, which is what the site header's own menu does.
+ *
+ * From the left, where the sidebar lives on a wide screen, rather than from
+ * the right like the header's. They are different navigations and the side
+ * they arrive from says which one you opened.
  */
 export default function AccountSidebar({ counts }: { counts: AccountCounts }) {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
 
-  const groups: { title: string; items: Item[] }[] = [
-    {
-      title: "You",
-      items: [
-        { label: "Overview", href: "/account", icon: DashboardIcon },
-        { label: "Profile", href: "/account/profile", icon: PersonIcon },
-      ],
-    },
-    {
-      title: "Your clubs",
-      items: [
-        { label: "Memberships", href: "/account/memberships",
-          icon: CardMembershipIcon, count: counts.clubs },
-        { label: "Loyalty", href: "/account/loyalty", icon: LoyaltyIcon },
-      ],
-    },
-    {
-      title: "What you have played",
-      items: [
-        { label: "Your games", href: "/account/games", icon: SportsEsportsIcon,
-          count: counts.unrecorded, alert: true },
-      ],
-    },
-    {
-      title: "What you have booked",
-      items: [
-        { label: "Event tickets", href: "/account/tickets",
-          icon: ConfirmationNumberIcon, count: counts.tickets },
-        { label: "Table bookings", href: "/account/bookings",
-          icon: EventSeatIcon, count: counts.bookings },
-        { label: "Coaching", href: "/account/coaching", icon: SchoolIcon,
-          count: counts.coaching },
-        { label: "Merchandise", href: "/account/orders", icon: StorefrontIcon,
-          count: counts.orders },
-      ],
-    },
-    {
-      title: "Keeping in touch",
-      items: [
-        { label: "Messages", href: "/account/messages", icon: ForumIcon,
-          count: counts.unreadMessages, alert: true },
-        { label: "Event alerts", href: "/account/alerts",
-          icon: NotificationsIcon, count: counts.alerts },
-      ],
-    },
-    ...(counts.ownsClubs ? [{
-      title: "Running a club",
-      items: [
-        { label: "My clubs", href: "/my-clubs", icon: GroupsIcon },
-        { label: "My events", href: "/my-events", icon: EventIcon },
-      ],
-    }] : []),
-  ];
+  // Which page the drawer was opened on. Following a link changes the path
+  // while this component stays mounted in the layout, so comparing the two
+  // shuts it on navigation without an effect watching the router.
+  const [openedAt, setOpenedAt] = useState(pathname);
+  const showing = open && openedAt === pathname;
+
+  const here = currentItem(counts, pathname);
+  const Icon = here?.icon;
 
   return (
-    <Stack component="nav" aria-label="Your account" spacing={2.5}>
-      {groups.map((group) => (
-        <Box key={group.title}>
+    <>
+      <ButtonBase
+        onClick={() => { setOpenedAt(pathname); setOpen(true); }}
+        aria-haspopup="dialog"
+        aria-expanded={showing}
+        sx={{ display: { xs: "flex", md: "none" }, width: "100%",
+              justifyContent: "flex-start", gap: 1.25, px: 1.5, py: 1.25,
+              borderRadius: 1.5, border: `1px solid ${tokens.rule}`,
+              backgroundColor: tokens.paper, color: tokens.ink }}>
+        {Icon ? <Icon sx={{ fontSize: 19, color: tokens.brass, flexShrink: 0 }} /> : null}
+        <Typography sx={{ flex: 1, textAlign: "left", fontFamily: display,
+                          fontSize: "0.95rem", fontWeight: 700 }}>
+          {here?.label ?? "Your account"}
+        </Typography>
+        <Typography sx={{ fontFamily: mono, fontSize: "0.62rem", fontWeight: 700,
+                          letterSpacing: "0.1em", color: tokens.inkMuted }}>
+          SECTIONS
+        </Typography>
+        <MenuOpenIcon sx={{ fontSize: 20, color: tokens.inkMuted, flexShrink: 0 }} />
+      </ButtonBase>
+
+      <Drawer
+        anchor="left"
+        open={showing}
+        onClose={() => setOpen(false)}
+        slotProps={{ paper: { sx: { width: 288, px: 2, py: 1.5 } } }}
+      >
+        <Stack direction="row"
+          sx={{ alignItems: "center", justifyContent: "space-between", mb: 1.5 }}>
           <Typography sx={{ fontFamily: mono, fontSize: "0.62rem", fontWeight: 700,
-                            letterSpacing: "0.12em", color: tokens.inkMuted,
-                            px: 1.5, pb: 0.875 }}>
-            {group.title.toUpperCase()}
+                            letterSpacing: "0.12em", color: tokens.inkMuted, pl: 1.5 }}>
+            YOUR ACCOUNT
           </Typography>
+          <IconButton onClick={() => setOpen(false)} aria-label="Close sections">
+            <CloseIcon />
+          </IconButton>
+        </Stack>
+        <AccountNavList counts={counts} onNavigate={() => setOpen(false)} />
+      </Drawer>
 
-          <Stack spacing={0.25}>
-            {group.items.map((item) => {
-              // Exact match for the overview, prefix for the rest: /account
-              // would otherwise light up on every page under it.
-              const on = item.href === "/account"
-                ? pathname === "/account"
-                : pathname.startsWith(item.href);
-              const Icon = item.icon;
-
-              const badge = item.count ? (
-                <Box sx={{ minWidth: 20, px: 0.75, height: 19, borderRadius: 999,
-                           display: "grid", placeItems: "center", flexShrink: 0,
-                           backgroundColor: item.alert ? tokens.danger : tokens.rule,
-                           color: item.alert ? "#fff" : tokens.inkMuted }}>
-                  <Typography sx={{ fontFamily: mono, fontSize: "0.66rem",
-                                    fontWeight: 700, lineHeight: 1 }}>
-                    {item.count}
-                  </Typography>
-                </Box>
-              ) : null;
-
-              const row = (marker: React.ReactNode) => (
-                <Stack direction="row" spacing={1.25}
-                  sx={{
-                    alignItems: "center", px: 1.5, py: 1, borderRadius: 1.5,
-                    color: tokens.ink,
-                    backgroundColor: on ? tokens.brassSoft : "transparent",
-                    cursor: "pointer",
-                    "&:hover": { backgroundColor: on ? tokens.brassSoft : tokens.surface },
-                  }}>
-                  <Icon sx={{ fontSize: 19, flexShrink: 0,
-                              color: on ? tokens.brass : "inherit" }} />
-                  <Typography sx={{ flex: 1, fontFamily: display, fontSize: "0.95rem",
-                                    letterSpacing: "0.005em",
-                                    fontWeight: on ? 700 : 500 }}>
-                    {item.label}
-                  </Typography>
-
-                  {marker}
-                </Stack>
-              );
-
-              return (
-                <NextLink key={item.label} href={item.href}
-                  style={{ textDecoration: "none", color: "inherit" }}>
-                  {row(<Pending fallback={badge} />)}
-                </NextLink>
-              );
-            })}
-          </Stack>
-        </Box>
-      ))}
-    </Stack>
+      <Box sx={{ display: { xs: "none", md: "block" } }}>
+        <AccountNavList counts={counts} />
+      </Box>
+    </>
   );
 }

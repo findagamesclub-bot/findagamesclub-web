@@ -73,8 +73,8 @@ export default function ClubStandings({
           return (
             <NextLink key={person.profileId} href={`/members/${person.profileId}`}
               style={{ textDecoration: "none", color: "inherit" }}>
-              <Stack direction="row" spacing={2}
-                sx={{ px: 2, py: 1.5, alignItems: "center",
+              <Stack direction="row" spacing={{ xs: 1.25, sm: 2 }}
+                sx={{ px: { xs: 1.5, sm: 2 }, py: 1.5, alignItems: "center",
                       borderTop: i === 0 ? "none" : `1px solid ${tokens.rule}`,
                       "&:hover": { backgroundColor: metal.soft } }}>
                 {/* The rank, spelled out. The order implied it, but a league
@@ -94,13 +94,29 @@ export default function ClubStandings({
                   </Typography>
                 </Box>
 
-                <Typography variant="subtitle2"
-                  sx={{ flex: 1, minWidth: 0, fontFamily: "var(--font-display)" }}>
-                  {person.name}
-                </Typography>
+                {/* Name and plate together, side by side where there is room
+                    and stacked where there is not. In one row the name was
+                    given `flex: 1, minWidth: 0` against a rank, an avatar, a
+                    plate and two figures, which on a phone left it about forty
+                    pixels: the words then overflowed their own box and ran
+                    underneath the plate. */}
+                <Stack direction={{ xs: "column", sm: "row" }}
+                  spacing={{ xs: 0.75, sm: 2 }}
+                  sx={{ flex: 1, minWidth: 0, alignItems: { sm: "center" } }}>
+                  <Typography variant="subtitle2"
+                    sx={{ flex: { sm: 1 }, minWidth: 0,
+                          fontFamily: "var(--font-display)",
+                          // A single long name has nowhere to break otherwise,
+                          // and one word wider than its box overflows it.
+                          overflowWrap: "anywhere" }}>
+                    {person.name}
+                  </Typography>
 
-                <MetalPlate label={standing.tier?.label ?? "Bronze"}
-                  tone={standing.tier?.tone ?? "bronze"} size="small" />
+                  <Box sx={{ flexShrink: 0, alignSelf: { xs: "flex-start", sm: "auto" } }}>
+                    <MetalPlate label={standing.tier?.label ?? "Bronze"}
+                      tone={standing.tier?.tone ?? "bronze"} size="small" />
+                  </Box>
+                </Stack>
 
                 <Stack spacing={0} sx={{ alignItems: "flex-end", flexShrink: 0, minWidth: 68 }}>
                   <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.95rem",

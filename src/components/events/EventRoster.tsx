@@ -47,13 +47,17 @@ export default function EventRoster({
 
   const top = useRef<HTMLDivElement>(null);
   const paged = usePagedList(results, PAGE, top);
-  const seats = roster.reduce((n, r) => n + r.tickets, 0);
+  // Null once the event is past and the reader is outside the club, so the
+  // header counts people instead of seats.
+  const seats = roster.reduce<number | null>(
+    (n, r) => (n === null || r.tickets === null ? null : n + r.tickets), 0);
 
   return (
     <Stack spacing={2}>
       <Typography sx={{ fontFamily: mono, fontSize: "0.7rem", letterSpacing: "0.06em",
                         color: tokens.inkMuted }}>
-        {`${roster.length} ${roster.length === 1 ? "PLAYER" : "PLAYERS"} · ${seats} ${seats === 1 ? "TICKET" : "TICKETS"} RESERVED`}
+        {`${roster.length} ${roster.length === 1 ? "PLAYER" : "PLAYERS"}`}
+        {seats === null ? "" : ` · ${seats} ${seats === 1 ? "TICKET" : "TICKETS"} RESERVED`}
       </Typography>
 
       {roster.length > SEARCHABLE ? (
@@ -109,20 +113,27 @@ export default function EventRoster({
                     ) : null}
                   </Stack>
 
-                  <Typography sx={{ fontFamily: mono, fontSize: "0.72rem",
-                                    fontVariantNumeric: "tabular-nums",
-                                    color: tokens.inkMuted, flexShrink: 0 }}>
-                    {`${r.tickets} ${r.tickets === 1 ? "ticket" : "tickets"}`}
-                  </Typography>
+                  {r.tickets === null ? null : (
+                    <Typography sx={{ fontFamily: mono, fontSize: "0.72rem",
+                                      fontVariantNumeric: "tabular-nums",
+                                      color: tokens.inkMuted, flexShrink: 0 }}>
+                      {`${r.tickets} ${r.tickets === 1 ? "ticket" : "tickets"}`}
+                    </Typography>
+                  )}
                 </Box>
               );
             })}
           </Box>
 
-          <Box sx={{ mt: 2 }}>
-            <Pager page={paged.page} total={paged.total} noun="players"
-              size={PAGE} onChange={paged.goTo} />
-          </Box>
+          {/* Only once there is a page to turn. On a shorter list the pager
+              prints "4 players", which the caption above the list has already
+              said, and the section then counted itself twice. */}
+          {paged.total > PAGE ? (
+            <Box sx={{ mt: 2 }}>
+              <Pager page={paged.page} total={paged.total} noun="players"
+                size={PAGE} onChange={paged.goTo} />
+            </Box>
+          ) : null}
         </BusyOverlay>
       ) : needle ? (
         <EmptyState title="Nobody by that name"
