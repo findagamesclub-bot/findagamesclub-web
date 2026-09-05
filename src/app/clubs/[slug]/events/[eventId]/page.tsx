@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import Box from "@mui/material/Box";
-import Chip from "@mui/material/Chip";
 import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -14,6 +13,7 @@ import TableRestaurantIcon from "@mui/icons-material/TableRestaurant";
 import Section from "@/components/ui/Section";
 import EventPlacings from "@/components/events/EventPlacings";
 import EventNoticeboard from "@/components/events/EventNoticeboard";
+import EventTags from "@/components/events/EventTags";
 import SectionNav from "@/components/ui/SectionNav";
 import EventPairings from "@/components/events/EventPairings";
 import FacilityChips from "@/components/clubs/FacilityChips";
@@ -131,14 +131,12 @@ export default async function EventPage({
         <Typography variant="body1" sx={{ mt: 3, maxWidth: 680 }}>{event.summary}</Typography>
       ) : null}
 
-      {event.featuredGames.length ? (
-        <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: "wrap", mt: 2.5 }}>
-          {event.featuredGames.map((g) => (
-            <Chip key={g} size="small" label={g} variant="outlined"
-              sx={{ borderColor: tokens.rule }} />
-          ))}
-        </Stack>
-      ) : null}
+      {/* The games were shown as bare chips and the format and event type were
+          not shown at all, though both are stored and the directory filters
+          events by format. Somebody could search for a wargaming event and
+          find no mention of wargaming on the event they opened. */}
+      <EventTags formats={event.formats} types={event.eventTypes}
+        games={event.featuredGames} faction={faction} />
 
       {/* First, not last. The club feared it would be missed at the bottom and
           they were right: it sat under the map and the draw. It is the one
