@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import EmptyState from "@/components/ui/EmptyState";
-import PageHead from "@/components/account/PageHead";
+import PageHead from "@/components/ui/PageHead";
 import OrderBrowser from "@/components/account/OrderBrowser";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getMyOrders } from "@/services/myActivity.service";

@@ -12,6 +12,8 @@ import { usePathname } from "next/navigation";
 import { clubIdentity } from "@/utils/club-identity";
 import { initialsOf } from "@/utils/format";
 import { sinceLabel } from "@/utils/dates";
+import VerifiedIcon from "@mui/icons-material/VerifiedUser";
+import { SITE_CLUB } from "@/utils/message-rail";
 import { fold } from "@/utils/text";
 import { tokens } from "@/lib/tokens";
 import type { RailEntry } from "@/types/message";
@@ -27,7 +29,16 @@ import type { RailEntry } from "@/types/message";
  */
 const SEARCH_FROM = 8;
 
-export default function ThreadList({ entries }: { entries: RailEntry[] }) {
+export default function ThreadList({
+  entries, base = "/account/messages",
+  emptyHint = "Join a club and its members appear here.",
+}: {
+  entries: RailEntry[];
+  /** Where these conversations live. */
+  base?: string;
+  /** What to say when there is nobody to message. */
+  emptyHint?: string;
+}) {
   const pathname = usePathname();
   const [term, setTerm] = useState("");
 
@@ -44,7 +55,7 @@ export default function ThreadList({ entries }: { entries: RailEntry[] }) {
       <Stack spacing={1} sx={{ px: 2.5, py: 4, textAlign: "center" }}>
         <Typography variant="subtitle2">Nobody to talk to yet</Typography>
         <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-          Join a club and its members appear here.
+          {emptyHint}
         </Typography>
       </Stack>
     );
@@ -73,7 +84,9 @@ export default function ThreadList({ entries }: { entries: RailEntry[] }) {
 
       {shown.map((entry, i) => {
         const { faction } = clubIdentity(entry.clubSlug, entry.clubName);
-        const href = `/account/messages/${entry.clubId}/${entry.personId}`;
+        // The site talking to a member: the person and the club are one name.
+        const official = entry.clubId === SITE_CLUB && entry.personName === entry.clubName;
+        const href = `${base}/${entry.clubId}/${entry.personId}`;
         const open = pathname === href;
 
         return (
@@ -110,12 +123,21 @@ export default function ThreadList({ entries }: { entries: RailEntry[] }) {
               <Stack spacing={0.15} sx={{ flex: 1, minWidth: 0 }}>
                 <Stack direction="row" spacing={1}
                   sx={{ alignItems: "baseline", justifyContent: "space-between" }}>
-                  <Typography
-                    sx={{ fontFamily: "var(--font-display)", fontSize: "0.92rem",
-                          fontWeight: entry.unread ? 700 : 600, lineHeight: 1.3,
-                          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {entry.personName}
-                  </Typography>
+                  <Stack direction="row" spacing={0.5}
+                    sx={{ alignItems: "center", minWidth: 0 }}>
+                    {/* The mark moves up beside the name when the site is the
+                        one you are talking to, because the line below would
+                        then be its name a second time. */}
+                    {official ? (
+                      <VerifiedIcon sx={{ fontSize: 14, color: tokens.brand, flexShrink: 0 }} />
+                    ) : null}
+                    <Typography
+                      sx={{ fontFamily: "var(--font-display)", fontSize: "0.92rem",
+                            fontWeight: entry.unread ? 700 : 600, lineHeight: 1.3,
+                            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {entry.personName}
+                    </Typography>
+                  </Stack>
                   {entry.latestAt ? (
                     <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.62rem",
                                       color: tokens.inkMuted, flexShrink: 0 }}>
@@ -124,12 +146,26 @@ export default function ThreadList({ entries }: { entries: RailEntry[] }) {
                   ) : null}
                 </Stack>
 
-                <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.6rem",
-                                  letterSpacing: "0.08em", color: faction.deep,
-                                  overflow: "hidden", textOverflow: "ellipsis",
-                                  whiteSpace: "nowrap" }}>
-                  {entry.clubName.toUpperCase()}
-                </Typography>
+                {/* A club's thread wears the club's colour. One from the site
+                    wears the site's, with a mark, because "is this really from
+                    them" is the first question anybody asks of an official
+                    message. Dropped entirely when it would only repeat the
+                    name above it. */}
+                <Stack direction="row" spacing={0.5}
+                  sx={{ alignItems: "center", display: official ? "none" : "flex" }}>
+                  {entry.clubId === SITE_CLUB ? (
+                    <VerifiedIcon sx={{ fontSize: 13, color: tokens.brand, flexShrink: 0 }} />
+                  ) : null}
+                  <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.6rem",
+                                    letterSpacing: "0.08em",
+                                    fontWeight: entry.clubId === SITE_CLUB ? 700 : 400,
+                                    color: entry.clubId === SITE_CLUB
+                                      ? tokens.brand : faction.deep,
+                                    overflow: "hidden", textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap" }}>
+                    {entry.clubName.toUpperCase()}
+                  </Typography>
+                </Stack>
 
                 <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
                   <Typography variant="body2"

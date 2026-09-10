@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Container from "@mui/material/Container";
-import PageHead from "@/components/account/PageHead";
+import PageHead from "@/components/ui/PageHead";
 import ScoreQueue from "@/components/owner/ScoreQueue";
 import BackLink from "@/components/ui/BackLink";
 import { getCurrentProfile } from "@/services/auth.service";

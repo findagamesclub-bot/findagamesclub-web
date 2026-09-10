@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Box from "@mui/material/Box";
 import EmptyState from "@/components/ui/EmptyState";
-import PageHead from "@/components/account/PageHead";
+import PageHead from "@/components/ui/PageHead";
 import MyTickets from "@/components/tickets/MyTickets";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getMyBookings } from "@/services/eventBookings.service";

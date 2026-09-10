@@ -10,7 +10,7 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { useActionToast } from "@/components/ui/Toaster";
 import { acceptSuggestionsAction, linkPersonAction, type LinkState }
-  from "@/app/clubs/[slug]/results/actions";
+  from "@/app/clubs/[slug]/(console)/manage/results/actions";
 import { display, mono, tokens, type Faction } from "@/lib/tokens";
 import type { UnlinkedPerson } from "@/services/memberRecords.service";
 

@@ -2,8 +2,8 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 
-const SENDER = "sender:profiles!club_messages_sender_id_fkey(id, full_name)";
-const RECIPIENT = "recipient:profiles!club_messages_recipient_id_fkey(id, full_name)";
+const SENDER = "sender:profiles!club_messages_sender_id_fkey(id, full_name, role)";
+const RECIPIENT = "recipient:profiles!club_messages_recipient_id_fkey(id, full_name, role)";
 
 /**
  * Direct messages.
@@ -20,7 +20,7 @@ export async function findMyMessages(limit = 500) {
     .select(
       `id, club_id, sender_id, recipient_id, content, created_at, pair_low, pair_high,
        ${SENDER}, ${RECIPIENT},
-       clubs!inner(id, slug, name)`,
+       clubs(id, slug, name)`,
     )
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -30,16 +30,18 @@ export async function findMyMessages(limit = 500) {
 }
 
 /** One conversation, oldest first, which is how a conversation reads. */
-export async function findThread(clubId: number, low: string, high: string) {
+export async function findThread(clubId: number | null, low: string, high: string) {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const query = supabase
     .from("club_messages")
     .select(
       `id, club_id, sender_id, recipient_id, content, created_at,
        ${SENDER}, ${RECIPIENT},
-       clubs!inner(id, slug, name)`,
-    )
-    .eq("club_id", clubId)
+       clubs(id, slug, name)`,
+    );
+  // eq() cannot express "is null", so the club is filtered either way here.
+  const scoped = clubId === null ? query.is("club_id", null) : query.eq("club_id", clubId);
+  const { data, error } = await scoped
     .eq("pair_low", low)
     .eq("pair_high", high)
     .order("created_at", { ascending: true })
@@ -59,11 +61,15 @@ export async function findReadMarks() {
   return data ?? [];
 }
 
-export async function insertMessage(clubId: number, recipientId: string, content: string) {
+export async function insertMessage(
+  clubId: number | null, recipientId: string, content: string,
+) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("club_messages")
-    .insert({ club_id: clubId, recipient_id: recipientId, content })
+    // club_id is nullable since 0075; the generated types catch up when
+    // database.ts is regenerated.
+    .insert({ club_id: clubId, recipient_id: recipientId, content } as never)
     .select("id")
     .maybeSingle();
 
@@ -80,14 +86,16 @@ export async function insertMessage(clubId: number, recipientId: string, content
  * ticket cart and the poll vote, and for the same reason: the grants allow
  * updating only `read_at`, which an upsert's DO UPDATE would overrun.
  */
-export async function markRead(clubId: number, low: string, high: string) {
+export async function markRead(clubId: number | null, low: string, high: string) {
   const supabase = await createClient();
   const now = new Date().toISOString();
 
-  const { data, error } = await supabase
+  const marks = supabase
     .from("club_message_reads")
-    .update({ read_at: now })
-    .eq("club_id", clubId)
+    .update({ read_at: now });
+  const scoped = clubId === null ? marks.is("club_id", null) : marks.eq("club_id", clubId);
+
+  const { data, error } = await scoped
     .eq("pair_low", low)
     .eq("pair_high", high)
     .select("id")
@@ -98,7 +106,7 @@ export async function markRead(clubId: number, low: string, high: string) {
 
   const { error: insertError } = await supabase
     .from("club_message_reads")
-    .insert({ club_id: clubId, pair_low: low, pair_high: high, read_at: now });
+    .insert({ club_id: clubId, pair_low: low, pair_high: high, read_at: now } as never);
 
   // A second tab marked it read first. The watermark is already where we
   // wanted it, so this is not a failure.
@@ -138,5 +146,26 @@ export async function findContacts(profileId: string) {
     .neq("profile_id", profileId);
 
   if (error) throw new Error(`Failed to load club members: ${error.message}`);
+  return data ?? [];
+}
+
+export type AdminContactRow = { id: string; full_name: string | null; email: string };
+
+/**
+ * Every account an admin may write to, which is every account.
+ *
+ * A definer function rather than a query: nothing ties an admin to these
+ * people, so no policy would return them, and the address lives in auth.users
+ * where no policy reaches at all.
+ */
+export async function findAdminContacts(query: string): Promise<AdminContactRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await (supabase as unknown as {
+    rpc(name: string, args: Record<string, unknown>): Promise<{
+      data: AdminContactRow[] | null; error: { message: string } | null;
+    }>;
+  }).rpc("admin_message_contacts", { p_query: query });
+
+  if (error) throw new Error(`Failed to search accounts: ${error.message}`);
   return data ?? [];
 }

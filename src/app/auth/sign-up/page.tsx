@@ -1,31 +1,43 @@
 import Link from "next/link";
 import Container from "@mui/material/Container";
-import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import AuthForm from "@/components/auth/AuthForm";
+import AuthField from "@/components/auth/AuthField";
 import PasswordFields from "@/components/auth/PasswordFields";
 import { signUpAction } from "../actions";
 
 export const metadata = { title: "Create an account" };
 
-export default function SignUpPage() {
+export default async function SignUpPage({ searchParams }: PageProps<"/auth/sign-up">) {
+  const params = await searchParams;
+  const next = Array.isArray(params.next) ? params.next[0] : params.next;
+  // Somebody sent here by an invitation is not browsing. Saying why they are
+  // filling this in is the difference between finishing it and leaving.
+  const invited = Boolean(next?.startsWith("/team/invites/"));
+
   return (
     <Container maxWidth="sm" component="main" sx={{ py: { xs: 5, md: 8 } }}>
       <AuthForm
-        eyebrow="Join"
+        eyebrow={invited ? "One step first" : "Join"}
         heading="Create an account"
-        intro="You need an account to join a club, book a table or enter an event."
+        intro={invited
+          ? "Make an account with the address the invitation was sent to, and it will be waiting when you confirm."
+          : "You need an account to join a club, book a table or enter an event."}
         submitLabel="Create account"
         pendingLabel="Creating account"
         action={signUpAction}
         footer={
           <Typography variant="body2" color="text.secondary">
-            Already have one? <Link href="/auth/sign-in">Sign in</Link>
+            Already have one?{" "}
+            <Link href={next ? `/auth/sign-in?next=${encodeURIComponent(next)}` : "/auth/sign-in"}>
+              Sign in
+            </Link>
           </Typography>
         }
       >
-        <TextField name="fullName" label="Your name" required autoComplete="name" fullWidth />
-        <TextField name="email" type="email" label="Email" required autoComplete="email" fullWidth />
+        {next ? <input type="hidden" name="next" value={next} /> : null}
+        <AuthField name="fullName" label="Your name" required autoComplete="name" fullWidth />
+        <AuthField name="email" type="email" label="Email" required autoComplete="email" fullWidth />
         <PasswordFields />
       </AuthForm>
     </Container>

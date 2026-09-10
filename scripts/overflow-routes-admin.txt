@@ -1,0 +1,13 @@
+# The admin console. Needs .mobile-session-admin.json, saved while signed in as
+# an admin: every route here redirects home for anybody else, so a run with a
+# member's session measures the directory and reports clean without ever
+# having drawn the console.
+#
+#   npm run mobile:login:admin
+#   npm run check:mobile:admin
+/admin
+/admin/accounts
+/admin/notifications
+/admin/messages
+/admin/profile
+/admin/profile/edit

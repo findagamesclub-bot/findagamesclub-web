@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Box from "@mui/material/Box";
 import EmptyState from "@/components/ui/EmptyState";
-import PageHead from "@/components/account/PageHead";
+import PageHead from "@/components/ui/PageHead";
 import AlertList from "@/components/account/AlertList";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getMyAlerts } from "@/services/eventAlerts.service";

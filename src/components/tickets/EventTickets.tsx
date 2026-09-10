@@ -13,7 +13,7 @@ import TicketRow from "./TicketRow";
 import BusyOverlay from "@/components/ui/BusyOverlay";
 import LinkProgress from "@/components/ui/LinkProgress";
 import TicketCart from "./TicketCart";
-import { ticketAction, type TicketState } from "@/app/clubs/[slug]/events/[eventId]/actions";
+import { ticketAction, type TicketState } from "@/app/clubs/[slug]/(console)/events/[eventId]/actions";
 import { formatMoney } from "@/utils/format";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { BuyableTicket, EventCart } from "@/types/ticket";

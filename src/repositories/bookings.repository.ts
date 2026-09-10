@@ -32,6 +32,28 @@ export async function findBookings(clubId: number, fromDate: string, toDate: str
 }
 
 /**
+ * Just the dates a club's tables were booked on.
+ *
+ * Deliberately not findBookings(): that carries every column and three joins
+ * to profiles, which is right for a calendar and wasteful for a count. A busy
+ * club's year is a few thousand rows, and the overview needs one field of
+ * each.
+ */
+export async function findBookingDates(clubId: number, fromDate: string, toDate: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("club_bookings")
+    .select("session_date")
+    .eq("club_id", clubId)
+    .eq("status", "booked")
+    .gte("session_date", fromDate)
+    .lte("session_date", toDate);
+
+  if (error) throw new Error(`Failed to count bookings: ${error.message}`);
+  return (data ?? []).map((row) => row.session_date);
+}
+
+/**
  * How many future bookings one person holds at a club.
  *
  * Counts participation, not authorship: legacy's cap counts you whether you
@@ -174,6 +196,35 @@ export async function findPlayedBookings(clubId: number, before: string, limit =
  * waiting on me", which is a different question and the one legacy puts in its
  * Score Approvals section.
  */
+/**
+ * Games at these clubs that the club has not ruled on.
+ *
+ * The full played-bookings query carries four joins so a card can name both
+ * players. This only has to be counted, so it asks for what a count needs.
+ */
+export async function findGamesAwaitingRuling(clubIds: number[], before: string) {
+  if (!clubIds.length) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("club_bookings")
+    .select("id, club_id, session_date, game_title, result_at")
+    .in("club_id", clubIds)
+    .eq("status", "booked")
+    .lte("session_date", before)
+    .not("booked_by_score", "is", null)
+    .in("result_confirmation", ["submitted", "disputed"])
+    .order("session_date", { ascending: true })
+    // result_at and result_confirmation are on the table but not yet in the
+    // generated types. Delete the cast once database.ts is regenerated.
+    .overrideTypes<{
+      id: number; club_id: number; session_date: string;
+      game_title: string | null; result_at: string | null;
+    }[]>();
+
+  if (error) throw new Error(`Failed to count games awaiting a ruling: ${error.message}`);
+  return data ?? [];
+}
+
 export async function findPlayedBookingsForClubs(
   clubIds: number[], before: string, limit = 200,
 ) {

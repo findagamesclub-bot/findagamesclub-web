@@ -179,7 +179,7 @@ export default function JoinClubPanel({
         {manages && unmatchedResults ? (
           <Button
             component={NextLink}
-            href={`/clubs/${slug}/results`}
+            href={`/clubs/${slug}/manage/results`}
             variant="outlined"
             fullWidth
             startIcon={

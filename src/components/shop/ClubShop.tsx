@@ -12,7 +12,7 @@ import BagDrawer from "./BagDrawer";
 import MerchCard from "./MerchCard";
 import BusyOverlay from "@/components/ui/BusyOverlay";
 import { useMerchBag } from "@/hooks/useMerchBag";
-import { shopAction, type ShopState } from "@/app/clubs/[slug]/shop/actions";
+import { shopAction, type ShopState } from "@/app/clubs/[slug]/(console)/shop/actions";
 import { priceBag } from "@/utils/merch-bag";
 import { formatPence } from "@/utils/format";
 import { tokens, type Faction } from "@/lib/tokens";

@@ -13,13 +13,23 @@ export async function messageAction(_prev: MessageState, data: FormData): Promis
 
   const clubId = Number(data.get("clubId"));
   const personId = String(data.get("personId") ?? "");
-  if (!clubId || !personId) return { error: "Something went wrong. Reload and try again." };
+  // Not `!clubId`: a message from the site carries club 0, and zero is falsy.
+  if (!Number.isFinite(clubId) || clubId < 0 || !personId) {
+    return { error: "Something went wrong. Reload and try again." };
+  }
 
   const result = await messages.send(clubId, personId, String(data.get("content") ?? ""));
 
-  revalidatePath("/account/messages");
-  revalidatePath(`/account/messages/${clubId}/${personId}`);
+  // Both shells draw the same conversation, and an admin sending from the
+  // console must not leave the member area holding a stale copy of it.
+  for (const base of ["/account/messages", "/admin/messages"]) {
+    revalidatePath(base);
+    revalidatePath(`${base}/${clubId}/${personId}`);
+  }
   if (!result.ok) return { error: result.error };
 
-  return { notice: "Sent." };
+  // No toast on success. The message appearing in the thread is the
+  // confirmation, and a banner saying so is one more thing to dismiss on a
+  // page somebody is going to send five of.
+  return {};
 }

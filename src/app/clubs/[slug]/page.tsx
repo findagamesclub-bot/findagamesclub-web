@@ -5,6 +5,7 @@ import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import ClubHeader from "@/components/clubs/ClubHeader";
+import ManageStrip from "@/components/ui/ManageStrip";
 import ClubGallery from "@/components/clubs/ClubGallery";
 import GameChips from "@/components/clubs/GameChips";
 import ClubSidebar from "@/components/clubs/ClubSidebar";
@@ -52,6 +53,7 @@ import Button from "@mui/material/Button";
 import PlaceIcon from "@mui/icons-material/Place";
 import DirectionsIcon from "@mui/icons-material/Directions";
 import { getCurrentProfile } from "@/services/auth.service";
+import { getClubAccess } from "@/services/clubAccess.service";
 import { getJoinedCount, getMyMembership, getPendingRequests, getRoster } from "@/services/memberships.service";
 import { getPayments, standing } from "@/services/payments.service";
 import JoinClubPanel from "@/components/members/JoinClubPanel";
@@ -80,7 +82,8 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
   const { faction, monogram } = clubIdentity(club.slug, club.name);
 
   const viewer = await getCurrentProfile();
-  const canManage = Boolean(viewer && (club.ownerId === viewer.id || viewer.role === "admin"));
+  const access = await getClubAccess(club.id, viewer);
+  const canManage = access.canManage;
 
   // Only the sections this club actually runs get a tile in the panel.
   const [programme, shopItems, coachingOn, joinedCount, upcoming, past, reviewTotal] =
@@ -179,6 +182,18 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
     <Container maxWidth="lg" component="main" sx={{ py: { xs: 4, md: 6 } }}>
       <ClubHeader club={club} canBook={isMember && (club.tablesAvailable ?? 0) > 0}
         joinedCount={joinedCount} />
+
+      {/* Anybody on the team gets the way in from the page they manage. A
+          helper sees the console; only a manager sees the listing behind it. */}
+      {access.role ? (
+        <ManageStrip links={[
+          { label: "Manage club", href: `/clubs/${club.slug}/manage` },
+          ...(access.can("members.manage")
+            ? [{ label: "Members", href: `/clubs/${club.slug}/members` }] : []),
+          ...(access.can("results.manage")
+            ? [{ label: "Scores", href: `/clubs/${club.slug}/manage/results` }] : []),
+        ]} />
+      ) : null}
 
       {/* Fifteen sections is a long page, and a reader after the pricing had to
           scroll past the photos, the map and the activity feed to reach it. */}

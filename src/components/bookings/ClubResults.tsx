@@ -79,9 +79,13 @@ export default function ClubResults({
             // wearing the highlight the unscored ones needed.
             sx={{ px: 2, py: 1.5, borderRadius: 1.5, cursor: "pointer",
                   alignItems: { sm: "center" },
+                  // Anything the club still has to answer takes the edge: a
+                  // game with no score, and a submitted one waiting on a
+                  // ruling. The page says four are waiting on you, so four
+                  // rows have to look like it.
                   border: `1px solid ${
                     result.confirmation === "disputed" ? tokens.danger
-                      : !result.recorded ? tokens.brass
+                      : needsClub(result) ? tokens.brass
                       : tokens.rule}`,
                   backgroundColor: tokens.paper,
                   "&:hover": { borderColor: faction.base } }}>
@@ -109,13 +113,20 @@ export default function ClubResults({
                 : "ADD A SCORE"}
             </Typography>
 
-            {result.recorded && result.confirmation !== "submitted" ? (
-              <Chip size="small" label={confirmationLabel(result.confirmation)}
+            {/* Submitted used to show nothing, because from a player's view it
+                is the ordinary state. On the club's own page it means the
+                opposite: it is the one thing waiting on them. */}
+            {result.recorded ? (
+              <Chip size="small"
+                label={result.confirmation === "submitted"
+                  ? "Waiting on you"
+                  : confirmationLabel(result.confirmation)}
                 icon={result.locked ? <LockIcon sx={{ fontSize: 13 }} /> : undefined}
+                // Brass only where the club still has to act. A settled game
+                // is a record, and wearing the same colour as the queue made
+                // eight rows look like eight jobs.
                 sx={{ fontSize: "0.66rem", height: 22, flexShrink: 0,
-                      backgroundColor: result.confirmation === "disputed"
-                        ? "#FBE9E7" : tokens.brassSoft,
-                      color: result.confirmation === "disputed" ? "#8a2f22" : "#5c4310",
+                      ...chipTone(result),
                       "& .MuiChip-icon": { color: "inherit" } }} />
             ) : null}
           </Stack>
@@ -129,4 +140,18 @@ export default function ClubResults({
         onClose={() => setChosen(null)} />
     </>
   );
+}
+
+/** A game the club still has to answer: no score at all, or one nobody ruled. */
+function needsClub(result: ClubResult): boolean {
+  return !result.recorded || result.confirmation === "submitted";
+}
+
+/** Red where players disagree, brass where the club owes an answer, quiet once settled. */
+function chipTone(result: ClubResult) {
+  if (result.confirmation === "disputed") {
+    return { backgroundColor: "#FBE9E7", color: "#8a2f22" };
+  }
+  if (needsClub(result)) return { backgroundColor: tokens.brassSoft, color: "#5c4310" };
+  return { backgroundColor: tokens.surface, color: tokens.inkMuted };
 }

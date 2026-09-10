@@ -17,8 +17,8 @@ import EventBusyIcon from "@mui/icons-material/EventBusy";
 import HowToRegIcon from "@mui/icons-material/HowToReg";
 import TuneIcon from "@mui/icons-material/Tune";
 import EditBookingDialog from "./EditBookingDialog";
-import { bookingAction, type BookingState } from "@/app/clubs/[slug]/bookings/actions";
-import { tokens } from "@/lib/tokens";
+import { bookingAction, type BookingState } from "@/app/clubs/[slug]/(console)/bookings/actions";
+import { tokens, type Faction } from "@/lib/tokens";
 import { nightLabel } from "@/utils/dates";
 import type { Booking, CalendarSession } from "@/types/booking";
 import type { QueueEntry } from "@/services/waitlist.service";
@@ -32,11 +32,13 @@ import type { QueueEntry } from "@/services/waitlist.service";
  * list a member reads to find a free table would become an admin console.
  */
 export default function ManageNight({
-  session, queue, slug, people = [],
+  session, queue, slug, faction, people = [],
 }: {
   session: CalendarSession;
   queue: QueueEntry[];
   slug: string;
+  /** The club's colour, so the dialogs it opens match every other club action. */
+  faction: Faction;
   /** The club's approved members, so a table can be moved between them. */
   people?: { id: string; name: string }[];
 }) {
@@ -136,7 +138,7 @@ export default function ManageNight({
                           {b.gameTitle}
                         </Typography>
                       </Box>
-                      <EditBookingDialog booking={b} slug={slug} people={people} />
+                      <EditBookingDialog faction={faction} booking={b} slug={slug} people={people} />
 
                       {/* Asked for, not fired on click. Taking somebody else's
                           table away is worse than giving up your own: they are
@@ -186,7 +188,10 @@ export default function ManageNight({
                           <input type="hidden" name="intent" value="promote" />
                           <input type="hidden" name="slug" value={slug} />
                           <input type="hidden" name="entryId" value={q.id} />
-                          <Button type="submit" size="small" variant="outlined" disabled={busy}
+                          {/* loading rather than disabled alone: a button that
+                              only greys out says nothing is happening. */}
+                          <Button type="submit" size="small" variant="outlined"
+                            loading={busy} loadingPosition="start"
                             startIcon={<HowToRegIcon />}
                             sx={{ flexShrink: 0, color: tokens.ink, borderColor: tokens.rule,
                                   "&:hover": { borderColor: tokens.positive, color: tokens.positive } }}>

@@ -1,3 +1,4 @@
+import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -28,9 +29,19 @@ export default function MemberProfileView({
   context,
   records,
   trackers,
+  editHref = "/account/profile",
+  embedded = false,
 }: {
   profile: MemberProfile;
   isSelf?: boolean;
+  /** Where "Edit profile" goes. A console keeps its own people inside itself. */
+  editHref?: string;
+  /**
+   * Drawn inside a shell that already owns the page width and the `main`
+   * element. Without this the console would nest a second `main` and cap the
+   * column at `lg` inside a column that is already narrower than that.
+   */
+  embedded?: boolean;
   /** Shared clubs and the reader's record against them. */
   context?: MemberContext;
   /** League finishes, podiums and the badges they earn. */
@@ -54,13 +65,18 @@ export default function MemberProfileView({
     Boolean(context?.events.length) ||
     Boolean(trackers?.length);
 
+  const Shell = embedded ? Box : Container;
+
   return (
-    <Container maxWidth="lg" component="main" sx={{ py: { xs: 3, md: 5 } }}>
+    <Shell
+      {...(embedded ? {} : { maxWidth: "lg" as const, component: "main" as const })}
+      sx={embedded ? undefined : { py: { xs: 3, md: 5 } }}
+    >
       <Stack spacing={2.5}>
         <MemberBanner profile={profile} action={
             isSelf ? (
               <LinkButton
-                href="/account/profile"
+                href={editHref}
                 variant="outlined"
                 sx={{
                   color: "#FFFFFF",
@@ -102,7 +118,10 @@ export default function MemberProfileView({
         )}
       </Stack>
 
-      <BackToTop />
-    </Container>
+      {/* Reads window scroll, and inside the console the column scrolls, not
+          the window. It would never appear, and if it did it would take the
+          wrong thing back to the top. */}
+      {embedded ? null : <BackToTop />}
+    </Shell>
   );
 }

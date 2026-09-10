@@ -11,7 +11,7 @@ import SchoolIcon from "@mui/icons-material/School";
 import StorefrontIcon from "@mui/icons-material/Storefront";
 import GroupsIcon from "@mui/icons-material/Groups";
 import EventIcon from "@mui/icons-material/Event";
-import type { SvgIconComponent } from "@mui/icons-material";
+import type { NavGroup } from "@/components/ui/side-nav";
 import type { AccountCounts } from "@/services/dashboard.service";
 
 /**
@@ -20,28 +20,13 @@ import type { AccountCounts } from "@/services/dashboard.service";
  * Separate from the components because three of them need it: the list itself,
  * the drawer that holds the list on a phone, and the button that opens the
  * drawer, which has to name the section you are already on.
- *
- * Every item here goes somewhere. A section that cannot show anything yet is
- * left out rather than greyed: Competitions is read-only until a club can run
- * one through the app, so advertising it only promises an empty page.
  */
-export type NavItem = {
-  label: string;
-  href: string;
-  icon: SvgIconComponent;
-  count?: number;
-  /** Marks a count worth noticing rather than merely reporting. */
-  alert?: boolean;
-};
-
-export type NavGroup = { title: string; items: NavItem[] };
-
 export function accountGroups(counts: AccountCounts): NavGroup[] {
   return [
     {
       title: "You",
       items: [
-        { label: "Overview", href: "/account", icon: DashboardIcon },
+        { label: "Overview", href: "/account", icon: DashboardIcon, exact: true },
         { label: "Profile", href: "/account/profile", icon: PersonIcon },
       ],
     },
@@ -90,16 +75,4 @@ export function accountGroups(counts: AccountCounts): NavGroup[] {
       ],
     }] : []),
   ];
-}
-
-/**
- * Exact match for the overview, prefix for the rest: /account would otherwise
- * light up on every page under it.
- */
-export function isOn(href: string, pathname: string): boolean {
-  return href === "/account" ? pathname === "/account" : pathname.startsWith(href);
-}
-
-export function currentItem(counts: AccountCounts, pathname: string): NavItem | undefined {
-  return accountGroups(counts).flatMap((g) => g.items).find((item) => isOn(item.href, pathname));
 }

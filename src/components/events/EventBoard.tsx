@@ -14,7 +14,7 @@ import { usePagedList } from "@/hooks/usePagedList";
 import { useLiveEventBoard } from "@/hooks/useLiveEventBoard";
 import { useActionToast } from "@/components/ui/Toaster";
 import { eventBoardAction, type BoardState }
-  from "@/app/clubs/[slug]/events/[eventId]/board/actions";
+  from "@/app/clubs/[slug]/(console)/events/[eventId]/board/actions";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { BoardPost } from "@/services/eventBoard.service";
 import { PER_PAGE } from "@/utils/paging";

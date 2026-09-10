@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import EmptyState from "@/components/ui/EmptyState";
-import PageHead from "@/components/account/PageHead";
+import PageHead from "@/components/ui/PageHead";
 import TableBookingRow from "@/components/account/TableBookingRow";
 import CrossLink from "@/components/account/CrossLink";
 import { getCurrentProfile } from "@/services/auth.service";

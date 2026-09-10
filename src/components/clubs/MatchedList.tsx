@@ -7,7 +7,7 @@ import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { useActionToast } from "@/components/ui/Toaster";
-import { linkNameAction, type LinkState } from "@/app/clubs/[slug]/results/actions";
+import { linkNameAction, type LinkState } from "@/app/clubs/[slug]/(console)/manage/results/actions";
 import { display, mono, tokens } from "@/lib/tokens";
 import type { MatchedName } from "@/services/memberRecords.service";
 

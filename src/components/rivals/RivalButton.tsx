@@ -1,6 +1,7 @@
 "use client";
 
 import { startTransition, useActionState } from "react";
+import { useActionToast } from "@/components/ui/Toaster";
 import Button from "@mui/material/Button";
 import Tooltip from "@mui/material/Tooltip";
 import SportsKabaddiIcon from "@mui/icons-material/SportsKabaddi";
@@ -26,7 +27,10 @@ export default function RivalButton({
   mutual: boolean;
   faction: Faction;
 }) {
-  const [, submit, busy] = useActionState<RivalState, FormData>(rivalAction, {});
+  const [state, submit, busy] = useActionState<RivalState, FormData>(rivalAction, {});
+  // Naming a rival changed a row and said nothing about it, so the only way to
+  // know it worked was to look for the name somewhere else on the page.
+  useActionToast(state);
 
   const send = () => {
     const data = new FormData();

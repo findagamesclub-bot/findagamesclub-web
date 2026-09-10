@@ -6,6 +6,8 @@ export type NotificationRow = {
   id: number;
   kind: string;
   title: string;
+  /** The sender's standing, on the small line under the title. Often empty. */
+  meta: string;
   body: string;
   href: string;
   created_at: string;
@@ -45,7 +47,7 @@ const table = async (): Promise<Root> => {
   return (supabase as unknown as { from(name: string): Root }).from("notifications");
 };
 
-const COLUMNS = "id, kind, title, body, href, created_at, read_at";
+const COLUMNS = "id, kind, title, meta, body, href, created_at, read_at";
 
 /** The badge. One indexed count, no rows read. */
 export async function countUnread(profileId: string): Promise<number> {
@@ -84,7 +86,10 @@ export async function markOneRead(profileId: string, id: number) {
   const { error } = await (await table())
     .update({ read_at: new Date().toISOString() })
     .eq("profile_id", profileId)
-    .eq("id", id);
+    .eq("id", id)
+    // Only if it is still unread. Re-reading one that is already read would
+    // otherwise write a row, and every write on this table wakes the badges.
+    .is("read_at", null);
 
   if (error) throw new Error(`Failed to mark that read: ${error.message}`);
 }

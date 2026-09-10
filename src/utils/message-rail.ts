@@ -1,3 +1,6 @@
+/** The club id a message from the site carries. See messages.service. */
+export const SITE_CLUB = 0;
+
 import type { Contact, MessageThread, RailEntry } from "@/types/message";
 
 /**

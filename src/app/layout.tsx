@@ -4,6 +4,7 @@ import { AppRouterCacheProvider } from "@mui/material-nextjs/v14-appRouter";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import SiteHeader from "@/components/layout/SiteHeader";
+import { manageLink } from "@/components/layout/account-links";
 import Toaster from "@/components/ui/Toaster";
 import { getUnreadCount } from "@/services/messages.service";
 import { getUnreadCount as getUnreadNotifications } from "@/services/notifications.service";
@@ -49,6 +50,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 unreadMessages={unread}
                 ownerTasks={ownerTasks}
                 ownsClubs={owned.length > 0}
+                manage={manageLink(owned)}
                 notifications={notifications}
               />
               <Box sx={{ flex: 1 }}>{children}</Box>

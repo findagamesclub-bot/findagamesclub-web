@@ -8,7 +8,7 @@ import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import LockIcon from "@mui/icons-material/Lock";
-import { ticketAction, type TicketState } from "@/app/clubs/[slug]/events/[eventId]/actions";
+import { ticketAction, type TicketState } from "@/app/clubs/[slug]/(console)/events/[eventId]/actions";
 import TicketPointsField from "./TicketPointsField";
 import { formatMoney } from "@/utils/format";
 import type { TicketPrice, TicketStanding } from "@/utils/ticket-pricing";

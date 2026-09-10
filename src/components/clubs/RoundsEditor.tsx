@@ -15,7 +15,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { useActionToast } from "@/components/ui/Toaster";
 import { competitionAction, type CompetitionState }
-  from "@/app/clubs/[slug]/competitions/actions";
+  from "@/app/clubs/[slug]/(console)/competitions/actions";
 import { shortDate } from "@/utils/dates";
 import { mono, tokens, type Faction } from "@/lib/tokens";
 import type { CompetitionUpdate } from "@/types/competition";

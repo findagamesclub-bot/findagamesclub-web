@@ -10,6 +10,7 @@ import { getCurrentProfile } from "@/services/auth.service";
 import { getOwnerInbox } from "@/services/ownerInbox.service";
 import { getOwnedOrders, getScoreQueue } from "@/services/ownerBookings.service";
 import { countUnanswered } from "@/utils/club-order-filter";
+import { clubAccess } from "@/utils/club-access";
 import { tokens } from "@/lib/tokens";
 
 export const metadata = { title: "My clubs" };
@@ -30,6 +31,11 @@ export default async function MyClubsPage() {
   const ordersWaiting = countUnanswered(await getOwnedOrders(viewer.id));
   const clear = clubs.filter((c) => c.tasks.length === 0).length;
 
+  // A helper cannot read an order, so the shop link would open an empty page
+  // and report nothing waiting when there is. Offer only what they can act on.
+  const anywhere = (capability: Parameters<ReturnType<typeof clubAccess>["can"]>[0]) =>
+    clubs.some((club) => clubAccess(club.role).can(capability));
+
   // Clubs with something outstanding come first: the point of the page is what
   // needs doing, not an alphabetical list of what you own.
   const ordered = [...clubs].sort((a, b) => b.tasks.length - a.tasks.length);
@@ -38,6 +44,7 @@ export default async function MyClubsPage() {
     { label: tasks.length === 1 ? "thing waiting" : "things waiting",
       value: tasks.length, emphasis: true },
     { label: "joins", value: tasks.filter((t) => t.kind === "join").length },
+    { label: "rulings", value: tasks.filter((t) => t.kind === "score").length },
     { label: "tier requests", value: tasks.filter((t) => t.kind === "tier").length },
     { label: "orders", value: tasks.filter((t) => t.kind === "order").length },
     { label: "coaching", value: tasks.filter((t) => t.kind === "coaching").length },
@@ -81,11 +88,17 @@ export default async function MyClubsPage() {
               had to open four pages to answer "is anybody playing this week"
               or "what is waiting on me to settle". */}
           <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: "wrap", mb: 3 }}>
-            <WorkspaceLink href="/my-clubs/bookings" label="All table bookings" />
-            <WorkspaceLink href="/my-clubs/results" label="Score approvals"
-              count={openResults} />
-            <WorkspaceLink href="/my-clubs/orders" label="Merchandise orders"
-              count={ordersWaiting} />
+            {anywhere("bookings.manage") ? (
+              <WorkspaceLink href="/my-clubs/bookings" label="All table bookings" />
+            ) : null}
+            {anywhere("results.manage") ? (
+              <WorkspaceLink href="/my-clubs/results" label="Score approvals"
+                count={openResults} />
+            ) : null}
+            {anywhere("shop.manage") ? (
+              <WorkspaceLink href="/my-clubs/orders" label="Merchandise orders"
+                count={ordersWaiting} />
+            ) : null}
           </Stack>
 
           <Box sx={{ display: "grid", gap: 2,
@@ -103,8 +116,8 @@ export default async function MyClubsPage() {
       ) : (
         <Box sx={{ mt: 3 }}>
           <EmptyState
-            title="You do not run a club"
-            description="Clubs you own appear here, with anything waiting on you across all of them."
+            title="You are not on a club's team"
+            description="Clubs you run, or help run, appear here with anything waiting on you across all of them."
             action={{ label: "Browse the directory", href: "/clubs" }}
           />
         </Box>

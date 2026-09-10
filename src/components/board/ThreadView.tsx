@@ -13,7 +13,7 @@ import PollBars from "./PollBars";
 import PostPhotos from "./PostPhotos";
 import ReplyRow, { type PendingReply } from "./ReplyRow";
 import SubmitButton from "@/components/ui/SubmitButton";
-import { boardAction, type BoardState } from "@/app/clubs/[slug]/board/actions";
+import { boardAction, type BoardState } from "@/app/clubs/[slug]/(console)/board/actions";
 import { initialsOf } from "@/utils/format";
 import { messageTime } from "@/utils/dates";
 import { tokens, type Faction } from "@/lib/tokens";

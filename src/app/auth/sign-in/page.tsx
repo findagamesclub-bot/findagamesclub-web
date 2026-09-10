@@ -5,6 +5,7 @@ import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import AuthForm from "@/components/auth/AuthForm";
+import AuthField from "@/components/auth/AuthField";
 import { signInAction } from "../actions";
 
 export const metadata = { title: "Sign in" };
@@ -36,13 +37,13 @@ export default async function SignInPage({ searchParams }: PageProps<"/auth/sign
                 <Link href="/auth/forgot-password">Forgotten your password?</Link>
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                No account yet? <Link href="/auth/sign-up">Create one</Link>
+                No account yet? <Link href={next ? `/auth/sign-up?next=${encodeURIComponent(next)}` : "/auth/sign-up"}>Create one</Link>
               </Typography>
             </Stack>
           }
         >
           {next ? <input type="hidden" name="next" value={next} /> : null}
-          <TextField name="email" type="email" label="Email" required autoComplete="email" fullWidth />
+          <AuthField name="email" type="email" label="Email" required autoComplete="email" fullWidth />
           <TextField name="password" type="password" label="Password" required autoComplete="current-password" fullWidth />
         </AuthForm>
       </Stack>

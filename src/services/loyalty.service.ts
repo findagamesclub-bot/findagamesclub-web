@@ -1,5 +1,7 @@
 import "server-only";
 
+import { countByMonth } from "@/utils/club-pulse";
+
 import * as repo from "@/repositories/loyalty.repository";
 import * as memberships from "@/repositories/memberships.repository";
 import {
@@ -177,4 +179,34 @@ export async function getStandings(clubId: number): Promise<Standing[]> {
   // the ones who have earned rather than in whatever order the roster arrived.
   return [...byPerson.values()]
     .sort((a, b) => b.lifetime - a.lifetime || a.name.localeCompare(b.name));
+}
+
+/**
+ * Points issued against points spent, month by month.
+ *
+ * Issued is the lifetime column, which only ever goes up. Spending shows only
+ * in the available column, as a negative, which is why the two counters exist
+ * at all: redeeming must not demote anybody.
+ */
+export async function getLoyaltyFlow(clubId: number, today: string) {
+  const start = new Date(Date.UTC(
+    Number(today.slice(0, 4)) - 1, Number(today.slice(5, 7)) - 1, 1,
+  )).toISOString().slice(0, 10);
+
+  const rows = await repo.findLedgerMovements(clubId, start).catch(() => []);
+  const months = countByMonth(rows.map((r) => r.created_at), today);
+
+  const issued = new Map<string, number>();
+  const spent = new Map<string, number>();
+  for (const row of rows) {
+    const key = String(row.created_at).slice(0, 7);
+    if (row.lifetime_delta > 0) issued.set(key, (issued.get(key) ?? 0) + row.lifetime_delta);
+    if (row.available_delta < 0) spent.set(key, (spent.get(key) ?? 0) - row.available_delta);
+  }
+
+  return months.map((m) => ({
+    label: m.label,
+    issued: issued.get(m.key) ?? 0,
+    spent: spent.get(m.key) ?? 0,
+  }));
 }

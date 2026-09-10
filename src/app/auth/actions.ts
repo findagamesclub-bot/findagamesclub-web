@@ -5,18 +5,43 @@ import * as auth from "@/services/auth.service";
 
 /** Server actions behind the auth forms. Each returns a message the form shows. */
 
-export type FormState = { error?: string; notice?: string };
+export type FormState = {
+  error?: string;
+  notice?: string;
+  /** A way out, shown under the error when retrying cannot help. */
+  help?: { label: string; href: string };
+  /**
+   * What they had typed, so a rejected form comes back filled in.
+   *
+   * React resets an uncontrolled form once its action returns, which wiped
+   * every plain field while the password survived in its own state. Somebody
+   * told their password was too short lost their name and address and kept
+   * the one thing they had to change.
+   *
+   * Passwords are not carried here: they come back on their own because that
+   * component holds them, and putting them through the server and into the
+   * markup to achieve the same thing would be worse.
+   */
+  values?: { fullName?: string; email?: string };
+};
 
 const email = (data: FormData) => String(data.get("email") ?? "").trim().toLowerCase();
 const password = (data: FormData) => String(data.get("password") ?? "");
 
 export async function signUpAction(_prev: FormState, data: FormData): Promise<FormState> {
   const fullName = String(data.get("fullName") ?? "").trim();
-  if (!fullName) return { error: "Enter your name." };
-  if (password(data) !== String(data.get("confirm") ?? "")) return { error: "Those passwords do not match." };
+  const typed = { fullName, email: email(data) };
 
-  const result = await auth.signUp({ email: email(data), password: password(data), fullName });
-  if (!result.ok) return { error: result.error };
+  if (!fullName) return { error: "Enter your name.", values: typed };
+  if (password(data) !== String(data.get("confirm") ?? "")) {
+    return { error: "Those passwords do not match.", values: typed };
+  }
+
+  const result = await auth.signUp({
+    email: email(data), password: password(data), fullName,
+    next: safeNext(data.get("next")) === "/clubs" ? undefined : safeNext(data.get("next")),
+  });
+  if (!result.ok) return { error: result.error, values: typed };
 
   redirect(`/auth/check-email?to=${encodeURIComponent(email(data))}`);
 }
@@ -35,8 +60,19 @@ function safeNext(raw: FormDataEntryValue | null): string {
 
 export async function signInAction(_prev: FormState, data: FormData): Promise<FormState> {
   const result = await auth.signIn(email(data), password(data));
-  if (!result.ok) return { error: result.error };
-  redirect(safeNext(data.get("next")));
+  if (!result.ok) {
+    return { error: result.error, help: result.help, values: { email: email(data) } };
+  }
+
+  // Somebody who asked for a particular page gets it. An admin who just signed
+  // in gets their console: the directory is what a visitor lands on, and an
+  // admin signing in is at work.
+  const asked = data.get("next");
+  if (!asked) {
+    const viewer = await auth.getCurrentProfile();
+    if (viewer?.role === "admin") redirect("/admin");
+  }
+  redirect(safeNext(asked));
 }
 
 export async function forgotPasswordAction(_prev: FormState, data: FormData): Promise<FormState> {

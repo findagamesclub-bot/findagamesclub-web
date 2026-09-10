@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useActionToast } from "@/components/ui/Toaster";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -8,7 +8,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import HandshakeIcon from "@mui/icons-material/Handshake";
 import CloseIcon from "@mui/icons-material/Close";
-import { bookingAction, type BookingState } from "@/app/clubs/[slug]/bookings/actions";
+import { bookingAction, type BookingState } from "@/app/clubs/[slug]/(console)/bookings/actions";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { LookingForGame } from "@/services/lookingForGames.service";
 
@@ -28,7 +28,26 @@ export default function LookingForGames({
   faction: Faction;
   canPlay: boolean;
 }) {
-  const [state, submit, busy] = useActionState<BookingState, FormData>(bookingAction, {});
+  /**
+   * Which post is working.
+   *
+   * One action serves every row, so `busy` is true for all of them: answering
+   * one post put a spinner on every other post's button. The spinner has to
+   * say which one.
+   */
+  const [running, setRunning] = useState<string | null>(null);
+
+  const [state, submit, busy] = useActionState<BookingState, FormData>(
+    async (prev, data) => {
+      setRunning(String(data.get("postId") ?? ""));
+      try {
+        return await bookingAction(prev, data);
+      } finally {
+        setRunning(null);
+      }
+    },
+    {},
+  );
   useActionToast(state);
 
   // Legacy: "No one is currently looking for a game on the upcoming club
@@ -72,7 +91,9 @@ export default function LookingForGames({
                 <input type="hidden" name="slug" value={slug} />
                 <input type="hidden" name="postId" value={post.id} />
                 <Button type="submit" variant="outlined" size="small"
-                  loading={busy} loadingPosition="start" startIcon={<CloseIcon />}
+                  loading={running === String(post.id)} loadingPosition="start"
+                  disabled={busy && running !== String(post.id)}
+                  startIcon={<CloseIcon />}
                   sx={{ bgcolor: tokens.paper, color: tokens.ink, borderColor: tokens.rule,
                         "&:hover": { bgcolor: tokens.paper, color: tokens.danger,
                                      borderColor: tokens.danger } }}>
@@ -85,7 +106,9 @@ export default function LookingForGames({
                 <input type="hidden" name="slug" value={slug} />
                 <input type="hidden" name="postId" value={post.id} />
                 <Button type="submit" variant="contained" size="small"
-                  loading={busy} loadingPosition="start" startIcon={<HandshakeIcon />}
+                  loading={running === String(post.id)} loadingPosition="start"
+                  disabled={busy && running !== String(post.id)}
+                  startIcon={<HandshakeIcon />}
                   sx={{ bgcolor: faction.base, color: "#FFFFFF",
                         "&:hover": { bgcolor: faction.deep } }}>
                   I&rsquo;ll play

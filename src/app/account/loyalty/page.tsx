@@ -6,7 +6,7 @@ import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import EmptyState from "@/components/ui/EmptyState";
-import PageHead from "@/components/account/PageHead";
+import PageHead from "@/components/ui/PageHead";
 import ClubLogo from "@/components/clubs/ClubLogo";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getDashboard } from "@/services/dashboard.service";

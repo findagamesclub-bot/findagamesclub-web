@@ -6,6 +6,8 @@ export type Notification = {
   id: number;
   kind: string;
   title: string;
+  /** Who the sender is to the reader: "OWNER · DIDCOT WARGAMES". Often empty. */
+  meta: string;
   body: string;
   href: string;
   createdAt: string;
@@ -40,6 +42,7 @@ export async function getNotifications(profileId: string): Promise<Notification[
       id: row.id,
       kind: row.kind,
       title: row.title,
+      meta: row.meta ?? "",
       body: row.body,
       href: row.href,
       createdAt: row.created_at,

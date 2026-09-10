@@ -18,7 +18,7 @@ import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import SubmitButton from "@/components/ui/SubmitButton";
 import { useActionToast } from "@/components/ui/Toaster";
 import { placingAction, type PlacingState }
-  from "@/app/clubs/[slug]/events/[eventId]/placing-actions";
+  from "@/app/clubs/[slug]/(console)/events/[eventId]/placing-actions";
 import { tokens } from "@/lib/tokens";
 import type { EventPlacing } from "@/types/event";
 

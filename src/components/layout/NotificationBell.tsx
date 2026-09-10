@@ -14,6 +14,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import NotificationsIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import ForumIcon from "@mui/icons-material/ForumOutlined";
+import VerifiedIcon from "@mui/icons-material/VerifiedUser";
 import PersonAddIcon from "@mui/icons-material/PersonAddAlt";
 import CardMembershipIcon from "@mui/icons-material/CardMembership";
 import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
@@ -26,6 +27,7 @@ import TableRestaurantIcon from "@mui/icons-material/TableRestaurant";
 import EventBusyIcon from "@mui/icons-material/EventBusy";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import type { SvgIconComponent } from "@mui/icons-material";
+import { notificationHref } from "@/utils/notification-href";
 import {
   loadNotificationsAction, readAllAction, readOneAction,
 } from "@/app/notification-actions";
@@ -36,6 +38,8 @@ import type { Notification } from "@/services/notifications.service";
 
 const ICONS: Record<string, SvgIconComponent> = {
   message: ForumIcon,
+  // From the site rather than from a member.
+  site_message: VerifiedIcon,
   join_request: PersonAddIcon,
   membership: CardMembershipIcon,
   tier: CardMembershipIcon,
@@ -65,10 +69,12 @@ const ICONS: Record<string, SvgIconComponent> = {
  * signed-in person, and a list nobody looks at is a query nobody needed.
  */
 export default function NotificationBell({
-  viewerId, initialUnread,
+  viewerId, initialUnread, isAdmin = false,
 }: {
   viewerId: string;
   initialUnread: number;
+  /** Decides which messages shell a message notice opens in. */
+  isAdmin?: boolean;
 }) {
   const router = useRouter();
   const [anchor, setAnchor] = useState<null | HTMLElement>(null);
@@ -144,7 +150,10 @@ export default function NotificationBell({
       setDelta((n) => n - 1);
       startAction(() => { void readOneAction(item.id); });
     }
-    if (item.href) router.push(item.href);
+    // Corrected on the way out rather than trusted: the link was written
+    // before we knew what the reader would be by the time they clicked it.
+    const href = notificationHref(item.href, isAdmin);
+    if (href) router.push(href);
   };
 
   const clearAll = () => {
@@ -196,18 +205,38 @@ export default function NotificationBell({
                 <MenuItem key={item.id} onClick={() => openItem(item)}
                   sx={{ alignItems: "flex-start", gap: 1.5, py: 1.25,
                         whiteSpace: "normal",
-                        backgroundColor: item.read ? "transparent" : tokens.brassSoft }}>
+                        // Only unread rows are tinted, in the colour of where
+                        // they came from. A read one keeping the site's blue
+                        // made dealing with it look like not dealing with it,
+                        // and the icon beside it already says who wrote it.
+                        backgroundColor: item.read
+                          ? "transparent"
+                          : fromSite(item) ? tokens.brandSoft : tokens.brassSoft }}>
                   <Box sx={{ width: 30, height: 30, borderRadius: 1, flexShrink: 0, mt: 0.25,
                              display: "grid", placeItems: "center",
-                             backgroundColor: tokens.surface, color: tokens.brass }}>
+                             backgroundColor: fromSite(item) ? tokens.brandSoft : tokens.surface,
+                             color: fromSite(item) ? tokens.brand : tokens.brass }}>
                     <Icon sx={{ fontSize: 16 }} />
                   </Box>
                   <Box sx={{ minWidth: 0, flex: 1 }}>
                     <Typography variant="body2" sx={{ fontWeight: item.read ? 500 : 700 }}>
                       {item.title}
                     </Typography>
+                    {/* Who wrote it. The same line, in the same shorthand, as
+                        the notifications page and the messages rail. */}
+                    {item.meta ? (
+                      <Typography sx={{ fontFamily: mono, fontSize: "0.6rem", fontWeight: 700,
+                                        letterSpacing: "0.1em",
+                                        color: fromSite(item) ? tokens.brand : tokens.brass }}>
+                        {item.meta}
+                      </Typography>
+                    ) : null}
                     {item.body ? (
-                      <Typography sx={{ fontSize: "0.8rem", color: tokens.inkMuted }}>
+                      // Two lines, clamped: the panel is 360 wide and a long
+                      // message would push everything under it off the screen.
+                      <Typography sx={{ fontSize: "0.8rem", color: tokens.inkMuted,
+                                        display: "-webkit-box", WebkitBoxOrient: "vertical",
+                                        WebkitLineClamp: 2, overflow: "hidden" }}>
                         {item.body}
                       </Typography>
                     ) : null}
@@ -229,4 +258,9 @@ export default function NotificationBell({
       </Menu>
     </>
   );
+}
+
+/** From FindAGamesClub rather than from a member or a club. */
+function fromSite(item: { kind: string }): boolean {
+  return item.kind === "site_message";
 }

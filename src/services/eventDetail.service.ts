@@ -5,6 +5,7 @@ import { findMyBookingsForEvent } from "@/repositories/eventBookings.repository"
 import { toMembershipTiers } from "@/utils/membership-tiers";
 import { formatPrice } from "@/utils/format";
 import { geocodeUk } from "./geocode.service";
+import { getClubAccess } from "./clubAccess.service";
 import type {
   ClubEventDetail, EventPairing, EventPlacing, EventTicketType, ResultArmy,
 } from "@/types/event";
@@ -142,9 +143,8 @@ export async function getEventDetail(
     };
   }).clubs;
 
-  const canManageClub = Boolean(
-    viewer && (club.owner_id === viewer.id || viewer.role === "admin"),
-  );
+  // Anybody who runs the club, which since Milestone 3 includes managers.
+  const canManageClub = (await getClubAccess(club.id, viewer)).canManage;
 
   // A ticket buys you the board, the notices and the draw — the club is not the
   // only audience for them (_can_access_event_board, club_store.py:16187).

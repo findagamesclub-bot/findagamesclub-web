@@ -13,14 +13,31 @@ import { createClient } from "@/lib/supabase/server";
  */
 export async function findOwnedClubs(profileId: string) {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("clubs")
-    .select("id, slug, name, city")
-    .eq("owner_id", profileId)
-    .order("name");
+  // Read through club_team rather than clubs.owner_id, so a manager and a
+  // helper reach this page too. The role comes with the row, because what is
+  // waiting at a club depends on what the reader is allowed to answer.
+  const { data, error } = await (supabase as unknown as {
+    from(n: string): {
+      select(c: string): {
+        eq(col: string, v: string): Promise<{
+          data: {
+            role: string;
+            clubs: { id: number; slug: string; name: string; city: string | null } | null;
+          }[] | null;
+          error: { message: string } | null;
+        }>;
+      };
+    };
+  })
+    .from("club_team")
+    .select("role, clubs!inner(id, slug, name, city)")
+    .eq("profile_id", profileId);
 
   if (error) throw new Error(`Failed to load your clubs: ${error.message}`);
-  return data ?? [];
+
+  return (data ?? [])
+    .flatMap((row) => (row.clubs ? [{ ...row.clubs, role: row.role }] : []))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function findPendingByClub(clubIds: number[]) {

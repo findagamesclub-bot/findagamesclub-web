@@ -1,14 +1,14 @@
 import { redirect } from "next/navigation";
 import Box from "@mui/material/Box";
-import PageHead from "@/components/account/PageHead";
+import PageHead from "@/components/ui/PageHead";
 import DashboardPanels from "@/components/account/DashboardPanels";
-import StatStrip from "@/components/account/StatStrip";
+import StatStrip from "@/components/ui/StatStrip";
 import MemberStats from "@/components/account/MemberStats";
 import MemberAnalytics from "@/components/account/MemberAnalytics";
 import ScoreTrendChart from "@/components/ui/ScoreTrendChart";
-import Typography from "@mui/material/Typography";
+import MonoLabel from "@/components/ui/MonoLabel";
 import { scoreTrend } from "@/utils/member-stats";
-import { mono, tokens } from "@/lib/tokens";
+import { tokens } from "@/lib/tokens";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getDashboard } from "@/services/dashboard.service";
 import { londonToday } from "@/services/bookingCalendar.service";
@@ -58,14 +58,14 @@ export default async function AccountPage() {
           repeating another. The strip above is the glance. This is the run
           they are on. The analytics below are the breakdowns. */}
       <Box sx={{ mt: 3 }}>
-        <SectionLabel>Your form</SectionLabel>
+        <MonoLabel>Your form</MonoLabel>
         <MemberStats games={data.games} />
       </Box>
 
       {trend.length >= 2 ? (
         <Box sx={{ mt: 2.5, p: 2, border: `1px solid ${tokens.rule}`, borderRadius: 1.5,
                    backgroundColor: tokens.paper }}>
-          <SectionLabel>Recent form</SectionLabel>
+          <MonoLabel>Recent form</MonoLabel>
           <ScoreTrendChart points={trend} />
         </Box>
       ) : null}
@@ -73,7 +73,7 @@ export default async function AccountPage() {
       {/* Legacy's six dashboard breakdowns. Every one is worked out from games
           already loaded for this page, so the whole block costs no query. */}
       <Box sx={{ mt: 3 }}>
-        <SectionLabel>Your analytics</SectionLabel>
+        <MonoLabel>Your analytics</MonoLabel>
         <MemberAnalytics games={data.games} loyalty={data.loyalty} today={londonToday()} />
       </Box>
 
@@ -86,14 +86,5 @@ export default async function AccountPage() {
         <DashboardPanels data={data} pending={pending.length} />
       </Box>
     </>
-  );
-}
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <Typography sx={{ fontFamily: mono, fontSize: "0.66rem", fontWeight: 700,
-                      letterSpacing: "0.12em", color: tokens.inkMuted, mb: 1.25 }}>
-      {String(children).toUpperCase()}
-    </Typography>
   );
 }

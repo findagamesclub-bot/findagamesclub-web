@@ -15,9 +15,9 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import BookingPeopleFields, { type Person } from "./BookingPeopleFields";
 import SubmitButton from "@/components/ui/SubmitButton";
 import { useActionToast } from "@/components/ui/Toaster";
-import { bookingAction, type BookingState } from "@/app/clubs/[slug]/bookings/actions";
+import { bookingAction, type BookingState } from "@/app/clubs/[slug]/(console)/bookings/actions";
 import { nightLabel } from "@/utils/dates";
-import { tokens } from "@/lib/tokens";
+import { tokens, type Faction } from "@/lib/tokens";
 import type { Booking } from "@/types/booking";
 
 /**
@@ -35,10 +35,12 @@ import type { Booking } from "@/types/booking";
  * offers the slot to the waiting list on the way past.
  */
 export default function EditBookingDialog({
-  booking, slug, variant = "text", people,
+  booking, slug, faction, variant = "text", people,
 }: {
   booking: Booking;
   slug: string;
+  /** The club's colour, so the save button matches every other club action. */
+  faction: Faction;
   /** A row of a list wants a quiet control; a card of its own wants a button. */
   variant?: "text" | "outlined";
   /**
@@ -130,7 +132,10 @@ export default function EditBookingDialog({
 
           <DialogActions sx={{ px: 3, py: 2 }}>
             <Button onClick={() => setOpen(false)} disabled={busy}>Cancel</Button>
+            {/* The club's colour, like every other action on the club's own
+                surfaces. It was the one dialog here that came out brand blue. */}
             <SubmitButton label="Save changes" pendingLabel="Saving the booking"
+              sx={{ bgcolor: faction.base, "&:hover": { bgcolor: faction.deep } }}
               size="medium" />
           </DialogActions>
         </form>

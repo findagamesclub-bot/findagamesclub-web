@@ -27,11 +27,22 @@ const PLAY_STYLES = [
   "Casual", "Competitive", "Narrative", "Painting and hobby", "Teaching newcomers",
 ] as const;
 
-export default function ProfileForm({ draft }: { draft: ProfileDraft }) {
+export default function ProfileForm({
+  draft, done,
+}: {
+  draft: ProfileDraft;
+  /**
+   * Where to land after saving. The admin console draws this form in its own
+   * right-hand column, and sending them to the public profile afterwards would
+   * put them outside the console they were working in.
+   */
+  done?: string;
+}) {
   const [state, formAction] = useActionState<ProfileFormState, FormData>(saveProfileAction, {});
 
   return (
     <form action={formAction}>
+      {done ? <input type="hidden" name="done" value={done} /> : null}
       <Stack spacing={2.5}>
         {state.error ? <Alert severity="error">{state.error}</Alert> : null}
 

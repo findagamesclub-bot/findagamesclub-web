@@ -17,7 +17,7 @@ import TableRestaurantIcon from "@mui/icons-material/TableRestaurant";
 import EventBusyIcon from "@mui/icons-material/EventBusy";
 import HourglassTopIcon from "@mui/icons-material/HourglassTop";
 import HandshakeIcon from "@mui/icons-material/Handshake";
-import { bookingAction, type BookingState } from "@/app/clubs/[slug]/bookings/actions";
+import { bookingAction, type BookingState } from "@/app/clubs/[slug]/(console)/bookings/actions";
 import { useActionToast } from "@/components/ui/Toaster";
 import { tokens, type Faction } from "@/lib/tokens";
 import BookingPricePanel from "./BookingPricePanel";
@@ -110,7 +110,7 @@ export default function BookingActions({
         {/* Beside Cancel, not hidden behind it: a wrong game or a mistyped
             opponent is the common correction, and giving up the table to fix
             a typo was the only way to do it. */}
-        {mine?.canEdit ? <EditBookingDialog booking={mine} slug={slug} variant="outlined" /> : null}
+        {mine?.canEdit ? <EditBookingDialog faction={faction} booking={mine} slug={slug} variant="outlined" /> : null}
 
         {myBookingId && canCancelMine ? (
           // Asked for, not fired on click. Giving up a table is not undoable:

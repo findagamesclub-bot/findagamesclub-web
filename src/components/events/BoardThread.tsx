@@ -12,7 +12,7 @@ import SubmitButton from "@/components/ui/SubmitButton";
 import { sinceLabel } from "@/utils/dates";
 import { mono, tokens, type Faction } from "@/lib/tokens";
 import type { BoardState }
-  from "@/app/clubs/[slug]/events/[eventId]/board/actions";
+  from "@/app/clubs/[slug]/(console)/events/[eventId]/board/actions";
 import type { BoardPost } from "@/services/eventBoard.service";
 
 /**

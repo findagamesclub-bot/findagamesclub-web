@@ -2,10 +2,12 @@ import "server-only";
 
 import * as repo from "@/repositories/ownerInbox.repository";
 import { countApprovedByClub } from "@/repositories/memberships.repository";
+import { findGamesAwaitingRuling } from "@/repositories/bookings.repository";
 import { londonToday } from "./bookingCalendar.service";
 import { getClubRenewals } from "./renewals.service";
 import { countRenewals } from "@/utils/renewal-filter";
 import { toMembershipTiers } from "@/utils/membership-tiers";
+import { clubAccess, toClubRole, type Capability, type ClubRole } from "@/utils/club-access";
 
 /**
  * The owner's list of things to do.
@@ -17,7 +19,7 @@ import { toMembershipTiers } from "@/utils/membership-tiers";
  */
 
 export type OwnerTask = {
-  kind: "join" | "tier" | "order" | "coaching";
+  kind: "join" | "tier" | "order" | "coaching" | "score";
   id: number;
   personName: string;
   detail: string;
@@ -30,6 +32,8 @@ export type OwnerClub = {
   slug: string;
   name: string;
   city: string | null;
+  /** What the reader is here as. A helper's card offers a helper's links. */
+  role: ClubRole;
   /** Approved members, so the card can offer the roster with a figure on it. */
   memberCount: number;
   /** Which sections this club actually runs, for the links on the card. */
@@ -81,7 +85,8 @@ export async function getOwnerInbox(profileId: string): Promise<OwnerClub[]> {
   if (!clubs.length) return [];
 
   const ids = clubs.map((c) => c.id);
-  const [pending, tierRequests, tierLabels, orders, coaching, members, runs, tables, owing] =
+  const [pending, tierRequests, tierLabels, orders, coaching, rulings,
+         members, runs, tables, owing] =
     await Promise.all([
     repo.findPendingByClub(ids),
     // A club with none still gets its inbox.
@@ -89,6 +94,7 @@ export async function getOwnerInbox(profileId: string): Promise<OwnerClub[]> {
     repo.findTierLabelsByClub(ids).catch(() => new Map<string, string>()),
     repo.findOpenOrdersByClub(ids),
     repo.findUnpaidCoachingByClub(ids, londonToday()),
+    findGamesAwaitingRuling(ids, londonToday()).catch(() => []),
     countApprovedByClub(ids),
     repo.findSectionsByClub(ids),
     repo.findUpcomingTablesByClub(ids, londonToday()).catch(() => new Map<number, number>()),
@@ -98,7 +104,14 @@ export async function getOwnerInbox(profileId: string): Promise<OwnerClub[]> {
   const bySlug = new Map(clubs.map((c) => [c.id, c.slug]));
   const tasks = new Map<number, OwnerTask[]>(clubs.map((c) => [c.id, []]));
 
+  // A helper cannot approve a member or answer an order, so counting those at
+  // them would be a badge they can never clear.
+  const can = new Map(clubs.map((c) => [c.id, clubAccess(toClubRole(c.role))]));
+  const may = (clubId: number, capability: Capability) =>
+    can.get(clubId)?.can(capability) ?? false;
+
   for (const row of pending) {
+    if (!may(row.club_id, "members.manage")) continue;
     const person = (row as unknown as { profiles: Person }).profiles;
     tasks.get(row.club_id)?.push({
       kind: "join",
@@ -111,6 +124,7 @@ export async function getOwnerInbox(profileId: string): Promise<OwnerClub[]> {
   }
 
   for (const row of tierRequests) {
+    if (!may(row.club_id, "members.manage")) continue;
     const person = (row as unknown as { profiles: Person }).profiles;
     const label = tierLabels.get(`${row.club_id}:${row.requested_tier_key}`)
       ?? row.requested_tier_key
@@ -126,6 +140,7 @@ export async function getOwnerInbox(profileId: string): Promise<OwnerClub[]> {
   }
 
   for (const row of orders) {
+    if (!may(row.club_id, "shop.manage")) continue;
     const person = (row as unknown as { profiles: Person }).profiles;
     tasks.get(row.club_id)?.push({
       kind: "order",
@@ -137,11 +152,27 @@ export async function getOwnerInbox(profileId: string): Promise<OwnerClub[]> {
     });
   }
 
+  // Rulings were missing entirely, so the header badge said two things were
+  // waiting where the console said six, and a helper whose whole job is
+  // scoring games had no badge at all.
+  for (const row of rulings) {
+    if (!may(row.club_id, "results.manage")) continue;
+    tasks.get(row.club_id)?.push({
+      kind: "score",
+      id: row.id,
+      personName: row.game_title?.trim() || "A game",
+      detail: "needs a ruling",
+      at: row.result_at ?? row.session_date,
+      href: `/clubs/${bySlug.get(row.club_id)}/manage/scores`,
+    });
+  }
+
   for (const row of coaching) {
     const r = row as unknown as {
       profiles: Person;
       club_coaching_slots: { club_id: number; title: string };
     };
+    if (!may(r.club_coaching_slots.club_id, "coaching.manage")) continue;
     tasks.get(r.club_coaching_slots.club_id)?.push({
       kind: "coaching",
       id: row.id,
@@ -157,10 +188,11 @@ export async function getOwnerInbox(profileId: string): Promise<OwnerClub[]> {
     slug: club.slug,
     name: club.name,
     city: club.city,
+    role: toClubRole(club.role) ?? "helper",
     memberCount: members.get(club.id) ?? 0,
     runs: runs.get(club.id) ?? { board: false, kit: false, coaching: false, loyalty: false, events: false },
     upcomingTables: tables.get(club.id) ?? 0,
-    membershipsOwing: owing.get(club.id) ?? 0,
+    membershipsOwing: may(club.id, "members.manage") ? owing.get(club.id) ?? 0 : 0,
     // Oldest first: somebody who applied a week ago has waited longest.
     tasks: (tasks.get(club.id) ?? []).sort((a, b) => a.at.localeCompare(b.at)),
   }));

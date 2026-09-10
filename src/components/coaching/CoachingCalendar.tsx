@@ -8,7 +8,7 @@ import Typography from "@mui/material/Typography";
 import SlotCard from "./SlotCard";
 import BusyOverlay from "@/components/ui/BusyOverlay";
 import NewSlotForm from "./NewSlotForm";
-import { coachingAction, type CoachingState } from "@/app/clubs/[slug]/coaching/actions";
+import { coachingAction, type CoachingState } from "@/app/clubs/[slug]/(console)/coaching/actions";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { CoachingSlot } from "@/types/clubExtras";
 

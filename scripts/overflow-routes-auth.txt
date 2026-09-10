@@ -19,5 +19,16 @@
 /clubs/didcot-wargames-didcot/board
 /clubs/didcot-wargames-didcot/members
 /clubs/didcot-wargames-didcot/rivalries
-/clubs/didcot-wargames-didcot/results
 /clubs/didcot-wargames-didcot/events/2026-09-26-autumn-open-test/board
+/clubs/didcot-wargames-didcot/manage
+/clubs/didcot-wargames-didcot/manage/team
+/clubs/didcot-wargames-didcot/manage/results
+/notifications
+/team/invites
+/clubs/didcot-wargames-didcot/manage/scores
+/clubs/didcot-wargames-didcot/members/renewals
+/clubs/didcot-wargames-didcot/events
+/clubs/didcot-wargames-didcot/competitions
+/clubs/didcot-wargames-didcot/shop
+/clubs/didcot-wargames-didcot/loyalty
+/clubs/didcot-wargames-didcot/coaching

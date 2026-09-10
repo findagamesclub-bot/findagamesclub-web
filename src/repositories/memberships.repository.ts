@@ -48,6 +48,24 @@ export async function findClubMemberships(clubId: number, statuses: string[]) {
   return data ?? [];
 }
 
+/**
+ * When each approved member joined and which tier they hold.
+ *
+ * The roster query brings a profile with every row so cards can be drawn. The
+ * overview counts, so it asks for two columns.
+ */
+export async function findMembershipPulse(clubId: number) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("club_memberships")
+    .select("joined_at, tier_key")
+    .eq("club_id", clubId)
+    .eq("status", "approved");
+
+  if (error) throw new Error(`Failed to load memberships: ${error.message}`);
+  return data ?? [];
+}
+
 export async function insertMembershipRequest(
   clubId: number,
   profileId: string,

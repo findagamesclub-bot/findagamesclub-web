@@ -17,7 +17,7 @@ import {
   type ClubOrderFilter, type ClubOrderSort,
 } from "@/utils/club-order-filter";
 import Counter from "@/components/ui/Counter";
-import { shopAction, type ShopState } from "@/app/clubs/[slug]/shop/actions";
+import { shopAction, type ShopState } from "@/app/clubs/[slug]/(console)/shop/actions";
 import { formatMoney, initialsOf } from "@/utils/format";
 import { needsQuote } from "@/utils/merch-bag";
 import { orderTotalLabel } from "@/utils/order-total";

@@ -43,6 +43,29 @@ export async function findPosts(params: {
   return { rows: data ?? [], total: count ?? 0 };
 }
 
+/**
+ * When each thread was started, for the board's own year.
+ *
+ * The board is paged, so the posts a page holds say nothing about the months
+ * either side of them. One column, no joins, removed threads left out.
+ */
+export async function findPostDates(clubId: number, fromDate: string) {
+  const supabase = await createClient();
+  // last_activity_at is on the table but not yet in the generated types, so
+  // the select is narrowed by hand. Delete the cast once database.ts is
+  // regenerated.
+  const { data, error } = await supabase
+    .from("club_discussion_posts")
+    .select("created_at, last_activity_at")
+    .eq("club_id", clubId)
+    .is("removed_at", null)
+    .gte("created_at", fromDate)
+    .overrideTypes<{ created_at: string; last_activity_at: string | null }[]>();
+
+  if (error) throw new Error(`Failed to count threads: ${error.message}`);
+  return data ?? [];
+}
+
 export async function findPost(postId: number) {
   const supabase = await createClient();
   const { data, error } = await supabase

@@ -16,7 +16,7 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import SubmitButton from "@/components/ui/SubmitButton";
 import { useActionToast } from "@/components/ui/Toaster";
 import { bestcoastLinkAction, type LinkState }
-  from "@/app/clubs/[slug]/events/[eventId]/link-actions";
+  from "@/app/clubs/[slug]/(console)/events/[eventId]/link-actions";
 import { tokens, type Faction } from "@/lib/tokens";
 
 /**

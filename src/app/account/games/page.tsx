@@ -4,7 +4,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import EmptyState from "@/components/ui/EmptyState";
 import CrossLink from "@/components/account/CrossLink";
-import PageHead from "@/components/account/PageHead";
+import PageHead from "@/components/ui/PageHead";
 import GameBrowser from "@/components/account/GameBrowser";
 import RivalTable from "@/components/account/RivalTable";
 import { getCurrentProfile } from "@/services/auth.service";

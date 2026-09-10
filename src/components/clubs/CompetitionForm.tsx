@@ -11,7 +11,7 @@ import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import { useActionToast } from "@/components/ui/Toaster";
 import { competitionAction, type CompetitionState }
-  from "@/app/clubs/[slug]/competitions/actions";
+  from "@/app/clubs/[slug]/(console)/competitions/actions";
 import { COMPETITION_STATUSES, COMPETITION_TYPES } from "@/utils/competition-meta";
 import type { ManagedCompetition } from "@/services/competitions.service";
 import type { Faction } from "@/lib/tokens";

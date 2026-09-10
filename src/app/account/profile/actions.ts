@@ -34,8 +34,15 @@ export async function saveProfileAction(
 
   if (!result.ok) return { error: result.error };
 
+  // Where to land. A path on this site and nothing else: an absolute URL in a
+  // form field would turn saving a profile into an open redirect.
+  const asked = text("done");
+  const done = /^\/(?!\/)[\w\-./]*$/.test(asked) ? asked : `/members/${viewer.id}`;
+
   // The profile page is server rendered, so it would otherwise show the old
-  // values straight after saving.
+  // values straight after saving. Both, because the console draws the same
+  // profile at its own address.
   revalidatePath(`/members/${viewer.id}`);
-  redirect(`/members/${viewer.id}`);
+  if (done !== `/members/${viewer.id}`) revalidatePath(done);
+  redirect(done);
 }

@@ -12,6 +12,8 @@ import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SendIcon from "@mui/icons-material/Send";
+import VerifiedIcon from "@mui/icons-material/VerifiedUser";
+import { SITE_CLUB } from "@/utils/message-rail";
 import { messageAction, type MessageState } from "@/app/account/messages/actions";
 import { initialsOf } from "@/utils/format";
 import { sinceLabel } from "@/utils/dates";
@@ -20,11 +22,17 @@ import type { Conversation as Thread } from "@/types/message";
 
 /** One conversation: fixed head, scrolling history, composer pinned below. */
 export default function Conversation({
-  conversation, faction,
+  conversation, faction, base = "/account/messages",
 }: {
+  /** Where these conversations live. */
+  base?: string;
   conversation: Thread;
   faction: Faction;
 }) {
+  // The site talking to a member: the person and the club are one name, so it
+  // is printed once.
+  const official = conversation.clubId === SITE_CLUB
+    && conversation.personName === conversation.clubName;
   const [state, submit] = useActionState<MessageState, FormData>(messageAction, {});
   useActionToast(state);
   const foot = useRef<HTMLDivElement>(null);
@@ -43,7 +51,7 @@ export default function Conversation({
         sx={{ px: { xs: 1.5, md: 2.5 }, py: 1.5, alignItems: "center", flexShrink: 0,
               borderBottom: `1px solid ${tokens.rule}`, backgroundColor: tokens.surface }}>
         {/* Only on a phone, where the rail is not on screen to go back to. */}
-        <IconButton component={NextLink} href="/account/messages" aria-label="All messages"
+        <IconButton component={NextLink} href={base} aria-label="All messages"
           sx={{ display: { md: "none" }, ml: -0.5 }}>
           <ArrowBackIcon sx={{ fontSize: 20 }} />
         </IconButton>
@@ -57,17 +65,37 @@ export default function Conversation({
         </Box>
 
         <Stack spacing={0} sx={{ minWidth: 0 }}>
-          <Typography variant="h2" sx={{ fontSize: "1.05rem", lineHeight: 1.25,
-                                         overflow: "hidden", textOverflow: "ellipsis",
-                                         whiteSpace: "nowrap" }}>
-            {conversation.personName}
-          </Typography>
-          <Typography component={NextLink} href={`/clubs/${conversation.clubSlug}`}
-            sx={{ fontFamily: "var(--font-mono)", fontSize: "0.62rem", letterSpacing: "0.08em",
-                  color: faction.deep, textDecoration: "none",
-                  "&:hover": { textDecoration: "underline" } }}>
-            {conversation.clubName.toUpperCase()}
-          </Typography>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center", minWidth: 0 }}>
+            {/* Beside the name when the site is who you are talking to: the
+                line below would otherwise be the same name again. */}
+            {official ? (
+              <VerifiedIcon sx={{ fontSize: 16, color: tokens.brand, flexShrink: 0 }} />
+            ) : null}
+            <Typography variant="h2" sx={{ fontSize: "1.05rem", lineHeight: 1.25,
+                                           overflow: "hidden", textOverflow: "ellipsis",
+                                           whiteSpace: "nowrap" }}>
+              {conversation.personName}
+            </Typography>
+          </Stack>
+          {/* A site message belongs to no club, so there is nowhere for this
+              to link: it used to point at /clubs/ with an empty slug. */}
+          {official ? null : conversation.clubId === SITE_CLUB ? (
+            <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+              <VerifiedIcon sx={{ fontSize: 14, color: tokens.brand, flexShrink: 0 }} />
+              <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.62rem",
+                                letterSpacing: "0.08em", fontWeight: 700,
+                                color: tokens.brand }}>
+                {conversation.clubName.toUpperCase()}
+              </Typography>
+            </Stack>
+          ) : (
+            <Typography component={NextLink} href={`/clubs/${conversation.clubSlug}`}
+              sx={{ fontFamily: "var(--font-mono)", fontSize: "0.62rem", letterSpacing: "0.08em",
+                    color: faction.deep, textDecoration: "none",
+                    "&:hover": { textDecoration: "underline" } }}>
+              {conversation.clubName.toUpperCase()}
+            </Typography>
+          )}
         </Stack>
       </Stack>
 

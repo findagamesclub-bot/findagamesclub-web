@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import PageHead from "@/components/account/PageHead";
+import PageHead from "@/components/ui/PageHead";
 import ProfileForm from "@/components/members/ProfileForm";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getOwnDraft } from "@/services/profiles.service";

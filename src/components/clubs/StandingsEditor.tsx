@@ -16,7 +16,7 @@ import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useActionToast } from "@/components/ui/Toaster";
 import { competitionAction, type CompetitionState }
-  from "@/app/clubs/[slug]/competitions/actions";
+  from "@/app/clubs/[slug]/(console)/competitions/actions";
 import { playedFrom } from "@/utils/competition-meta";
 import { mono, tokens, type Faction } from "@/lib/tokens";
 import type { CompetitionStanding } from "@/types/competition";

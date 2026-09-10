@@ -12,12 +12,14 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { tokens } from "@/lib/theme";
 import { initialsOf } from "@/utils/format";
-import { accountLinks } from "./account-links";
+import SignOutConfirm from "./SignOutConfirm";
+import { accountLinks, type ManageLink } from "./account-links";
 import type { Viewer } from "./SiteHeader";
 
-export default function AccountMenu({ viewer, unreadMessages = 0 }:
-  { viewer: NonNullable<Viewer>; unreadMessages?: number }) {
+export default function AccountMenu({ viewer, unreadMessages = 0, manage = null }:
+  { viewer: NonNullable<Viewer>; unreadMessages?: number; manage?: ManageLink }) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const [asking, setAsking] = useState(false);
 
   return (
     <>
@@ -46,7 +48,7 @@ export default function AccountMenu({ viewer, unreadMessages = 0 }:
           </Typography>
         </Stack>
         <Divider />
-        {accountLinks(viewer.id).map((link) => (
+        {accountLinks(viewer.id, manage, viewer.role === "admin").map((link) => (
           <MenuItem key={link.href} component={Link} href={link.href}
             onClick={() => setAnchor(null)}>
             {link.badge === "messages" && unreadMessages ? (
@@ -66,16 +68,15 @@ export default function AccountMenu({ viewer, unreadMessages = 0 }:
           </MenuItem>
         ))}
         <Divider />
-        {viewer.role === "admin" ? (
-          <MenuItem disabled sx={{ fontSize: "0.95rem" }}>Admin tools · milestone 3</MenuItem>
-        ) : null}
-        {/* MenuItem's own `action` prop is a ref, so the form wraps it instead. */}
-        <Box component="form" action="/auth/sign-out" method="post">
-          <MenuItem component="button" type="submit" sx={{ width: "100%" }}>
-            Sign out
-          </MenuItem>
-        </Box>
+        {/* Closes the menu first: the dialog cannot live inside it, because a
+            closed MUI menu unmounts its children. */}
+        <MenuItem onClick={() => { setAnchor(null); setAsking(true); }}
+          sx={{ width: "100%" }}>
+          Sign out
+        </MenuItem>
       </Menu>
+
+      <SignOutConfirm open={asking} onClose={() => setAsking(false)} />
     </>
   );
 }

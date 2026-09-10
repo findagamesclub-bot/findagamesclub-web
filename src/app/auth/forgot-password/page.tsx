@@ -1,8 +1,8 @@
 import Link from "next/link";
 import Container from "@mui/material/Container";
-import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import AuthForm from "@/components/auth/AuthForm";
+import AuthField from "@/components/auth/AuthField";
 import { forgotPasswordAction } from "../actions";
 
 export const metadata = { title: "Reset your password" };
@@ -23,7 +23,7 @@ export default function ForgotPasswordPage() {
           </Typography>
         }
       >
-        <TextField name="email" type="email" label="Email" required autoComplete="email" fullWidth />
+        <AuthField name="email" type="email" label="Email" required autoComplete="email" fullWidth />
       </AuthForm>
     </Container>
   );

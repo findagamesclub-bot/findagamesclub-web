@@ -7,6 +7,8 @@ import ErrorOutlineIcon from "@mui/icons-material/ErrorOutlineOutlined";
 import { sinceLabel } from "@/utils/dates";
 import { matGrid, tokens } from "@/lib/tokens";
 import { clubIdentity } from "@/utils/club-identity";
+import LinkButton from "@/components/ui/LinkButton";
+import { clubAccess } from "@/utils/club-access";
 import { FROM_MY_CLUBS } from "@/utils/back-link";
 import type { OwnerClub } from "@/services/ownerInbox.service";
 
@@ -20,6 +22,9 @@ import type { OwnerClub } from "@/services/ownerInbox.service";
  */
 export default function OwnerClubCard({ club }: { club: OwnerClub }) {
   const { faction, monogram } = clubIdentity(club.slug, club.name);
+  // A helper's card offers a helper's links. Showing them Memberships would be
+  // a chip that opens a page they cannot act on.
+  const access = clubAccess(club.role);
   const waiting = club.tasks.length;
   // The one that has been waiting longest, which is the fact an owner acts on.
   const oldest = club.tasks
@@ -134,43 +139,67 @@ export default function OwnerClubCard({ club }: { club: OwnerClub }) {
       <Stack direction="row" spacing={0.5} useFlexGap
         sx={{ mt: "auto", px: 1.25, py: 1.25, flexWrap: "wrap",
               borderTop: `1px solid ${tokens.rule}`, backgroundColor: tokens.surface }}>
-        <CardLink href={`/clubs/${club.slug}/members${FROM_MY_CLUBS}`} faction={faction}
-          lead urgent count={countOf("join") + countOf("tier")}>
-          {club.memberCount} {club.memberCount === 1 ? "member" : "members"}
-        </CardLink>
+        <LinkButton
+          href={`/clubs/${club.slug}/manage`}
+          variant="outlined"
+          size="small"
+          sx={{ alignSelf: "center", flexShrink: 0, mr: 0.5,
+                borderColor: faction.base, color: faction.deep,
+                "&:hover": { borderColor: faction.deep, backgroundColor: faction.soft } }}
+        >
+          Manage club
+        </LinkButton>
+        {access.can("members.manage") ? (
+          <CardLink href={`/clubs/${club.slug}/members${FROM_MY_CLUBS}`} faction={faction}
+            urgent count={countOf("join") + countOf("tier")}>
+            {club.memberCount} {club.memberCount === 1 ? "member" : "members"}
+          </CardLink>
+        ) : null}
         {/* Money owed is the club's own view of its roster, so it sits next to
             the member count rather than inside it. */}
-        <CardLink href={`/clubs/${club.slug}/members/renewals${FROM_MY_CLUBS}`} faction={faction}
-          urgent count={club.membershipsOwing}>
-          Memberships
-        </CardLink>
+        {access.can("members.manage") ? (
+          <CardLink href={`/clubs/${club.slug}/members/renewals${FROM_MY_CLUBS}`} faction={faction}
+            urgent count={club.membershipsOwing}>
+            Memberships
+          </CardLink>
+        ) : null}
         {/* Tables booked from today on. Deliberately not `urgent`: a booking
             asks nothing of the club, so it never turns the count red or adds to
             "things waiting". It is here because an owner wants to know at a
             glance whether anybody is turning up. */}
-        {club.upcomingTables ? (
+        {/* Games the club has not ruled on. Urgent, because two players are
+            waiting on somebody here to settle it. */}
+        {access.can("results.manage") && countOf("score") ? (
+          <CardLink href={`/clubs/${club.slug}/manage/scores`} faction={faction}
+            urgent count={countOf("score")}>
+            Scores
+          </CardLink>
+        ) : null}
+        {club.upcomingTables && access.can("bookings.manage") ? (
           <CardLink href={`/clubs/${club.slug}/bookings${FROM_MY_CLUBS}`} faction={faction}>
             {club.upcomingTables} {club.upcomingTables === 1 ? "table" : "tables"}
           </CardLink>
         ) : null}
-        {club.runs.events ? (
+        {club.runs.events && access.can("events.manage") ? (
           <CardLink href={`/clubs/${club.slug}/events${FROM_MY_CLUBS}`} faction={faction}>Events</CardLink>
         ) : null}
-        {club.runs.board ? (
+        {club.runs.board && access.can("board.moderate") ? (
           <CardLink href={`/clubs/${club.slug}/board${FROM_MY_CLUBS}`} faction={faction}>Board</CardLink>
         ) : null}
-        {club.runs.kit ? (
+        {club.runs.kit && access.can("shop.manage") ? (
           <CardLink href={`/clubs/${club.slug}/shop${FROM_MY_CLUBS}`} faction={faction}
             count={countOf("order")}>Kit</CardLink>
         ) : null}
         {/* Always shown, unlike the others: a club with no competitions has no
             public page for them, so this is the only way in to set the first
             one up. */}
-        <CardLink href={`/clubs/${club.slug}/competitions/manage${FROM_MY_CLUBS}`}
-          faction={faction}>
-          Competitions
-        </CardLink>
-        {club.runs.coaching ? (
+        {access.can("competitions.manage") ? (
+          <CardLink href={`/clubs/${club.slug}/competitions/manage${FROM_MY_CLUBS}`}
+            faction={faction}>
+            Competitions
+          </CardLink>
+        ) : null}
+        {club.runs.coaching && access.can("coaching.manage") ? (
           <CardLink href={`/clubs/${club.slug}/coaching${FROM_MY_CLUBS}`} faction={faction}
             count={countOf("coaching")}>Coaching</CardLink>
         ) : null}

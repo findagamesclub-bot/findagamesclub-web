@@ -53,3 +53,22 @@ export async function findClubWallets(clubId: number) {
   if (error) throw new Error(`Failed to load loyalty standings: ${error.message}`);
   return data ?? [];
 }
+
+/**
+ * Every points movement at a club, dated.
+ *
+ * The standings say where each member stands today. This says how the club got
+ * there, which is the question an owner asks when deciding whether the scheme
+ * is doing anything. Three columns, no joins.
+ */
+export async function findLedgerMovements(clubId: number, fromDate: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("club_loyalty_transactions")
+    .select("created_at, available_delta, lifetime_delta")
+    .eq("club_id", clubId)
+    .gte("created_at", fromDate);
+
+  if (error) throw new Error(`Failed to load the ledger: ${error.message}`);
+  return data ?? [];
+}

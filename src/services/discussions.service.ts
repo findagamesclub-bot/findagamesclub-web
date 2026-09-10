@@ -1,5 +1,7 @@
 import "server-only";
 
+import { countByMonth } from "@/utils/club-pulse";
+
 import * as repo from "@/repositories/discussions.repository";
 import { parsePoll, tally, type Poll } from "@/utils/poll";
 import { toPostImages } from "@/utils/post-images";
@@ -168,5 +170,24 @@ export async function getThread(postId: number, viewer: Viewer): Promise<BoardTh
     clubSlug: r.clubs.slug,
     clubName: r.clubs.name,
     replies,
+  };
+}
+
+/**
+ * The board's own year: threads started, and months that saw a reply.
+ *
+ * A board can look busy on page one and have been silent since spring. The
+ * paged list cannot show that, and it is the thing an owner most wants to
+ * know before deciding whether the board is worth pushing.
+ */
+export async function getBoardPulse(clubId: number, today: string) {
+  const start = new Date(Date.UTC(
+    Number(today.slice(0, 4)) - 1, Number(today.slice(5, 7)) - 1, 1,
+  )).toISOString().slice(0, 10);
+
+  const rows = await repo.findPostDates(clubId, start).catch(() => []);
+  return {
+    started: countByMonth(rows.map((r) => r.created_at), today),
+    active: countByMonth(rows.map((r) => r.last_activity_at), today),
   };
 }

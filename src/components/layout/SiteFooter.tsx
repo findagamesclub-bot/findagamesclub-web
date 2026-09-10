@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SignOutTextButton from "./SignOutTextButton";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
@@ -73,11 +74,8 @@ export default function SiteFooter({ signedIn = false }: { signedIn?: boolean })
             </Column>
             <Column title="Account">
               {signedIn ? (
-                <Box component="form" action="/auth/sign-out" method="post">
-                  <Box component="button" type="submit" sx={{ ...LINK, background: "none", border: 0, p: 0, cursor: "pointer", font: "inherit" }}>
-                    Sign out
-                  </Box>
-                </Box>
+                <SignOutTextButton sx={{ ...LINK, background: "none", border: 0, p: 0,
+                                     cursor: "pointer", font: "inherit" }} />
               ) : (
                 <>
                   <Link href="/auth/sign-in" style={LINK}>Sign in</Link>

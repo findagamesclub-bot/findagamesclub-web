@@ -19,7 +19,7 @@ import LockIcon from "@mui/icons-material/Lock";
 import PollIcon from "@mui/icons-material/Poll";
 import PhotoPicker from "./PhotoPicker";
 import { usePostPhotos } from "@/hooks/usePostPhotos";
-import { boardAction, type BoardState } from "@/app/clubs/[slug]/board/actions";
+import { boardAction, type BoardState } from "@/app/clubs/[slug]/(console)/board/actions";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { CategoryOption } from "@/utils/discussion-categories";
 

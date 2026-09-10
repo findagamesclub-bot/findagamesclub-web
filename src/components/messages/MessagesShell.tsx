@@ -23,15 +23,22 @@ import type { Contact, MessageThread } from "@/types/message";
  * coming back is instant and the unread marks are already current.
  */
 export default function MessagesShell({
-  threads, contacts, viewerId, children,
+  threads, contacts, viewerId, children, base = "/account/messages", emptyHint, onSearch, searchLabel,
 }: {
+  /** Where these conversations live: the account area, or the admin console. */
+  base?: string;
+  /** What to say when there is nobody to message. */
+  emptyHint?: string;
+  /** Asks the server who matches, instead of filtering the contact list. */
+  onSearch?: (query: string) => Promise<Contact[]>;
+  searchLabel?: string;
   threads: MessageThread[];
   contacts: Contact[];
   viewerId: string;
   children: ReactNode;
 }) {
   const pathname = usePathname();
-  const inThread = pathname !== "/account/messages";
+  const inThread = pathname !== base;
 
   // Conversations only. Every member of every club used to be in this list,
   // which is fine at two members and unreadable at two hundred: the person you
@@ -93,7 +100,7 @@ export default function MessagesShell({
 
         <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
           {entries.length ? (
-            <ThreadList entries={entries} />
+            <ThreadList base={base} emptyHint={emptyHint} entries={entries} />
           ) : (
             <Stack spacing={1.25} sx={{ px: 2.5, py: 4, alignItems: "flex-start" }}>
               <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
@@ -107,7 +114,8 @@ export default function MessagesShell({
           )}
         </Box>
 
-        <NewMessageDialog contacts={contacts} open={picking}
+        <NewMessageDialog base={base} emptyHint={emptyHint}
+        onSearch={onSearch} searchLabel={searchLabel} contacts={contacts} open={picking}
           onClose={() => setPicking(false)} />
       </Stack>
 

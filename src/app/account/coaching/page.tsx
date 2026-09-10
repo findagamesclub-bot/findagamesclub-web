@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import EmptyState from "@/components/ui/EmptyState";
-import PageHead from "@/components/account/PageHead";
+import PageHead from "@/components/ui/PageHead";
 import Stack from "@mui/material/Stack";
 import CoachingBrowser from "@/components/account/CoachingBrowser";
 import OpenCoaching from "@/components/account/OpenCoaching";

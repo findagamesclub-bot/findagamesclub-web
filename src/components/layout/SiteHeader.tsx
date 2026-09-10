@@ -18,9 +18,11 @@ import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
 import AccountMenu from "./AccountMenu";
 import NotificationBell from "./NotificationBell";
+import SignOutConfirm from "./SignOutConfirm";
+import { useUnreadCounts } from "@/hooks/useUnreadCounts";
 import BrandMark from "./BrandMark";
 import { headerHeight, tokens } from "@/lib/tokens";
-import { accountLinks } from "./account-links";
+import { accountLinks, type ManageLink } from "./account-links";
 
 export type Viewer = { id: string; fullName: string; email: string; role: string } | null;
 
@@ -41,6 +43,8 @@ type NavItem = {
   owns?: RegExp;
   /** Hidden from people who run no club, rather than shown and empty. */
   ownerOnly?: boolean;
+  /** The admin console. Everybody else does not need to know it is there. */
+  adminOnly?: boolean;
 };
 
 const NAV: NavItem[] = [
@@ -48,7 +52,11 @@ const NAV: NavItem[] = [
   { label: "Events", href: "/events", owns: /\/events(\/|$)/ },
   { label: "Map", href: "/clubs?view=map" },
   { label: "Meta Tracker", milestone: 3 },
-  { label: "My Clubs", href: "/my-clubs", ownerOnly: true },
+  { label: "My Clubs", href: "/my-clubs", ownerOnly: true,
+    // The console lives under a club's own path, so on path alone it lights
+    // Directory. It is the club you run, and My Clubs is where you came from.
+    owns: /\/clubs\/[^/]+\/manage(\/|$)/ },
+  { label: "Admin", href: "/admin", adminOnly: true },
 ];
 
 const linkSx = (active: boolean) => ({
@@ -94,13 +102,21 @@ function ComingSoon({ label, milestone }: { label: string; milestone: number }) 
 
 export default function SiteHeader({
   viewer, unreadMessages = 0, ownerTasks = 0, ownsClubs = false, notifications = 0,
+  manage = null,
 }: {
   viewer: Viewer; unreadMessages?: number; ownerTasks?: number;
   ownsClubs?: boolean; notifications?: number;
+  /** Straight into the console, or to the hub when there is a choice to make. */
+  manage?: ManageLink;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
+  const [asking, setAsking] = useState(false);
+  // Both badges change while the header sits there, and the header is on every
+  // page. Same source as the console rail, so the two never disagree.
+  const live = useUnreadCounts(viewer?.id ?? null,
+    { notifications, messages: unreadMessages });
   /**
    * Directory and Map share the /clubs path and differ only by ?view=map, so a
    * path-only check lit Directory on both. Compare the query too, and only the
@@ -130,7 +146,12 @@ export default function SiteHeader({
     NAV
       // My Clubs is meaningless to somebody who runs none, so it is absent
       // rather than present and permanently empty.
-      .filter((item) => !item.ownerOnly || ownsClubs)
+      //
+      // An admin gets no header nav at all. Their console is the whole job and
+      // its rail carries every part of it, notifications and messages
+      // included. A row of visitor tabs above it is only ways to leave.
+      .filter((item) => viewer?.role !== "admin"
+        && (!item.ownerOnly || ownsClubs) && !item.adminOnly)
       .map((item) =>
         item.href ? (
           <Box
@@ -157,6 +178,7 @@ export default function SiteHeader({
       );
 
   return (
+    <>
     <AppBar>
       <Container maxWidth="lg">
         <Toolbar disableGutters sx={{ gap: 2, minHeight: headerHeight }}>
@@ -198,9 +220,14 @@ export default function SiteHeader({
                   notification is the one thing in the header that is
                   time-sensitive, and burying it two taps into a drawer on the
                   device people actually carry is where it is least use. */}
-              <NotificationBell viewerId={viewer.id} initialUnread={notifications} />
+              {/* Not for an admin: theirs is a row in the console rail, so the
+                  header stays the brand and the account and nothing else. */}
+              {viewer.role === "admin" ? null : (
+                <NotificationBell viewerId={viewer.id} initialUnread={live.notifications}
+                  isAdmin={viewer.role === "admin"} />
+              )}
               <Box sx={{ display: { xs: "none", sm: "block" } }}>
-                <AccountMenu viewer={viewer} unreadMessages={unreadMessages} />
+                <AccountMenu viewer={viewer} unreadMessages={live.messages} manage={manage} />
               </Box>
             </Stack>
           ) : (
@@ -243,29 +270,28 @@ export default function SiteHeader({
                   </Typography>
                 </Stack>
                 <Stack spacing={1.75}>
-                  {accountLinks(viewer.id).map((link) => (
+                  {accountLinks(viewer.id, manage, viewer.role === "admin").map((link) => (
                     <Box key={link.href} component={Link} href={link.href}
                       onClick={() => setOpen(false)}
                       sx={{ ...linkSx(pathname === link.href), display: "flex",
                             alignItems: "center", gap: 1, borderBottom: "none",
                             color: tokens.ink }}>
                       {link.label}
-                      {link.badge === "messages" && unreadMessages ? (
+                      {link.badge === "messages" && live.messages ? (
                         <Box sx={{ minWidth: 20, height: 20, px: 0.75, borderRadius: 999,
                                    display: "grid", placeItems: "center",
                                    backgroundColor: tokens.danger, color: "#fff" }}>
                           <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.68rem",
                                             fontWeight: 700, lineHeight: 1 }}>
-                            {unreadMessages}
+                            {live.messages}
                           </Typography>
                         </Box>
                       ) : null}
                     </Box>
                   ))}
                 </Stack>
-                <Box component="form" action="/auth/sign-out" method="post">
-                  <Button type="submit" variant="outlined" fullWidth>Sign out</Button>
-                </Box>
+                <Button onClick={() => { setOpen(false); setAsking(true); }}
+                  variant="outlined" fullWidth>Sign out</Button>
               </>
             ) : (
               <Stack spacing={1}>
@@ -277,5 +303,9 @@ export default function SiteHeader({
         </Box>
       </Drawer>
     </AppBar>
+
+    {/* Outside the drawer, which unmounts as it closes. */}
+    <SignOutConfirm open={asking} onClose={() => setAsking(false)} />
+    </>
   );
 }
