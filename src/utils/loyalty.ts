@@ -20,6 +20,28 @@ export const DEFAULT_MILESTONES = {
   merchandisePurchase: 0,
 } as const;
 
+/**
+ * The four earning fields, as the club's own editor lists them.
+ *
+ * Here rather than beside the form's action, because a "use server" module may
+ * only export async functions and a constant among them stops the whole page
+ * loading. `satisfies` ties the keys to the defaults above, so a typo is a
+ * compile error rather than a milestone that silently earns nothing.
+ *
+ * One list, because the club's editor and the members' rate card are naming the
+ * same four rules and were using different words for two of them. `category` is
+ * what the ledger writes, which is how the rate card ticks the ones somebody has
+ * actually collected.
+ */
+export const MILESTONE_FIELDS = [
+  { key: "membershipApproved", label: "Joining the club", category: "membership-approved" },
+  { key: "gameBooking", label: "Booking a table", category: "game-booking" },
+  { key: "eventBooking", label: "Booking event tickets", category: "event-booking" },
+  { key: "merchandisePurchase", label: "Ordering merchandise", category: "merchandise-order" },
+] as const satisfies readonly {
+  key: keyof typeof DEFAULT_MILESTONES; label: string; category: string;
+}[];
+
 export const DEFAULT_ANNIVERSARIES: Anniversary[] = [
   { years: 1, points: 20 },
   { years: 2, points: 30 },

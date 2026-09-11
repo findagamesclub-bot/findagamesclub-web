@@ -3,11 +3,18 @@ import "server-only";
 import * as repo from "@/repositories/clubs.repository";
 import { formatMeeting, formatPrice, formatPricingLabel } from "@/utils/format";
 import { toMembershipTiers } from "@/utils/membership-tiers";
+import { clubImageUrl } from "@/utils/club-media";
+import { publicUrl } from "@/lib/supabase/storage";
 import { billingOptions } from "./payments.service";
 import { fromPriceFor } from "./clubs.service";
 import type { ClubDetail } from "@/types/clubDetail";
 
 type Row = Awaited<ReturnType<typeof repo.findClubDetail>>;
+
+type ImageRow = {
+  src: string | null; alt: string | null; position: number | null;
+  storage_path: string | null;
+};
 
 export async function getClubDetail(slug: string): Promise<ClubDetail | null> {
   const row = await repo.findClubDetail(slug);
@@ -104,16 +111,26 @@ function toDetail(row: NonNullable<Row>): ClubDetail {
     paymentMethods: (row.club_payment_methods ?? []).map((p) => p.payment_methods?.label ?? "").filter(Boolean),
     discussionCategories: byPosition(row.club_discussion_categories ?? []).map((d) => d.label),
 
-    images: byPosition(row.club_images ?? []).map((i) => ({ src: i.src, alt: i.alt })),
+    // `storage_path` arrived in 0087 and the generated types predate it. Same
+    // temporary narrowing as elsewhere; delete once database.ts is regenerated.
+    images: byPosition((row.club_images ?? []) as unknown as ImageRow[]).map((i) => ({
+      src: clubImageUrl({ src: i.src, storagePath: i.storage_path }, publicUrl),
+      alt: i.alt ?? "",
+    })),
     socialLinks: byPosition(row.club_social_links ?? []).map((l) => ({ label: l.label, url: l.url })),
     pricingModels: byPosition(row.club_pricing_models ?? []).map((p) => ({
       label: formatPricingLabel(p.label),
       price: formatPrice(p.price),
       notes: p.notes,
     })),
+    // Newest first, then by id. The editor replaces the whole noticeboard in
+    // one insert, so every row it writes shares a timestamp and the sort is a
+    // tie: without the id, "the first one is the one members see everywhere
+    // else" is a promise the order cannot keep.
     announcements: (row.club_announcements ?? [])
-      .map((a) => ({ message: a.message, createdAt: a.created_at }))
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+      .map((a) => ({ id: a.id, message: a.message, createdAt: a.created_at }))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.id - b.id)
+      .map(({ message, createdAt }) => ({ message, createdAt })),
     membershipTiers: toMembershipTiers(row.club_membership_tiers ?? []),
 
 

@@ -51,3 +51,6 @@ next-env.d.ts
 
 .mobile-session.json
 .mobile-session-admin.json
+
+# Schema dump used to reconstruct 0020. Regenerate, do not commit.
+schema.sql

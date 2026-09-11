@@ -44,6 +44,18 @@ export function eventDiscountPercent(benefits: unknown): number {
 }
 
 /**
+ * The tiers a member could ask to move up to.
+ *
+ * Position is the ladder, so anything after theirs in the list is above them.
+ * Somebody on no tier at all is below all of it and is offered the lot.
+ */
+export function higherTiers(
+  tiers: MembershipTier[], tierKey: string | null | undefined,
+): MembershipTier[] {
+  return tiers.slice(tiers.findIndex((tier) => tier.key === tierKey) + 1);
+}
+
+/**
  * Position is the ladder — a tier further down the club's list is higher — so
  * the order this returns is load-bearing, not cosmetic. ticketBlockedReason
  * compares indexes in it.

@@ -6,7 +6,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import NextLink, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
-import { isOn, type NavGroup } from "./side-nav";
+import { currentItem, type NavGroup } from "./side-nav";
 import { display, mono, tokens } from "@/lib/tokens";
 
 /**
@@ -32,6 +32,8 @@ export default function SideNavList({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
+  // One item lights, not every item whose path is a prefix of this one.
+  const here = currentItem(groups, pathname);
 
   return (
     <Stack component="nav" aria-label={ariaLabel} spacing={2.5}>
@@ -45,7 +47,7 @@ export default function SideNavList({
 
           <Stack spacing={0.25}>
             {group.items.map((item) => {
-              const on = isOn(item, pathname);
+              const on = item === here;
               const Icon = item.icon;
 
               const badge = item.count ? (

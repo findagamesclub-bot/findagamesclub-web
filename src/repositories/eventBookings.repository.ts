@@ -4,15 +4,16 @@ import { createClient } from "@/lib/supabase/server";
 
 /** Reading and cancelling bookings. The buying side is tickets.repository. */
 
+// One literal, not a concatenation: PostgREST reads the select string to type
+// the result, and `"a" + "b"` widens to `string`, which quietly gives up on
+// typing the whole query.
 const BOOKING_COLUMNS =
-  "id, reference, event_id, club_id, full_name, email, status, currency, " +
-  "subtotal, tier_discount_amount, total, created_at";
+  `id, reference, event_id, club_id, full_name, email, status, currency,
+   subtotal, tier_discount_amount, total, created_at` as const;
 
-// The two loyalty columns 0050 adds are deliberately not selected yet:
-// `src/types/database.ts` predates the migration, and PostgREST types the
-// select from the literal, so naming them turns three well-typed queries into
-// error types. Add them here, and the email line below, once the types are
-// regenerated.
+// The two loyalty columns 0050 adds are in the generated types now, but still
+// not selected: nothing on a receipt shows points spent yet, and a column
+// nobody reads is a column that goes stale without anybody noticing.
 
 /** One booking with its lines and enough of the event to name it. */
 export async function findBooking(reference: string) {

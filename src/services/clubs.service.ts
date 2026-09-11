@@ -4,6 +4,8 @@ import * as repo from "@/repositories/clubs.repository";
 import { countApprovedPublicByClub } from "@/repositories/memberships.repository";
 import * as taxonomy from "@/repositories/taxonomy.repository";
 import { findOrigin } from "@/services/location.service";
+import { clubImageUrl } from "@/utils/club-media";
+import { publicUrl } from "@/lib/supabase/storage";
 import { formatMeeting } from "@/utils/format";
 import { haversineMiles, parseLocation } from "@/utils/geo";
 import { splitFacets } from "@/utils/facets";
@@ -492,10 +494,21 @@ function groupBy<T extends { club_id: number }>(items: T[]): Map<number, T[]> {
   return map;
 }
 
-/** Lowest `position` wins, since the export preserved the club's own ordering. */
+/**
+ * Lowest `position` wins, since the export preserved the club's own ordering.
+ *
+ * Through the same mapper the club page uses, so a photo uploaded here shows on
+ * the card as well. Reading `src` alone showed nothing for anything not
+ * imported from the old site.
+ */
 function firstImage(row: repo.ClubRow) {
   const images = [...(row.club_images ?? [])].sort((a, b) => a.position - b.position);
-  return images[0] ? { src: images[0].src, alt: images[0].alt } : null;
+  const first = images[0];
+  if (!first) return null;
+  return {
+    src: clubImageUrl({ src: first.src, storagePath: first.storage_path }, publicUrl),
+    alt: first.alt,
+  };
 }
 
 function toSummary(

@@ -12,42 +12,9 @@ export type AlertRow = {
   created_at: string;
 };
 
-/**
- * `src/types/database.ts` is generated from the live schema and does not know
- * this table until 0023 is applied and the types are regenerated. Rather than
- * hand-editing the generated file, the table is described here and the client
- * is narrowed to the calls this repository actually makes.
- *
- * Delete this block after regenerating; the rest of the file needs no change.
- */
-type AlertsTable = {
-  select(columns: string): {
-    eq(column: string, value: string): {
-      order(column: string, options: { ascending: boolean }): Promise<
-        { data: AlertRow[] | null; error: { message: string } | null }
-      >;
-    };
-  };
-  insert(row: { profile_id: string; label: string; filters: AlertFilters }): {
-    select(columns: string): {
-      maybeSingle(): Promise<{ data: AlertRow | null; error: { message: string } | null }>;
-    };
-  };
-  delete(): {
-    eq(column: string, value: number): {
-      eq(column: string, value: string): {
-        select(columns: string): {
-          maybeSingle(): Promise<{ data: { id: number } | null; error: { message: string } | null }>;
-        };
-      };
-    };
-  };
-};
-
-async function alerts(): Promise<AlertsTable> {
+async function alerts() {
   const supabase = await createClient();
-  return (supabase as unknown as { from(table: string): AlertsTable })
-    .from("club_event_alerts");
+  return supabase.from("club_event_alerts");
 }
 
 export async function findMyAlerts(profileId: string) {

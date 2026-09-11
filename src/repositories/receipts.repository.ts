@@ -46,49 +46,51 @@ export type BookingReceipt = {
 };
 
 /**
- * `src/types/database.ts` predates 0038 and 0043 and carries no relationships,
- * so the embeds and `loyalty_points_spent` are unknown to it. Same temporary
- * narrowing as competitions; delete once the types are regenerated.
+ * One receipt row, by id.
+ *
+ * Each of the three is written out rather than sharing a helper that takes the
+ * table as a string: a runtime table name cannot be typed, and these carry the
+ * embeds an email is built from. A receipt that cannot be read is a missing
+ * email, never a failed order, so the caller decides what to do about null.
  */
-type One<T> = { data: T | null; error: { message: string } | null };
-type Reader = {
-  select(columns: string): { eq(column: string, value: number): { maybeSingle(): Promise<One<unknown>> } };
-};
-
-async function readOne<T>(table: string, columns: string, id: number): Promise<T | null> {
+export async function findOrderReceipt(orderId: number): Promise<OrderReceipt | null> {
   const supabase = await createClient();
-  const from = (supabase.from as unknown as (name: string) => Reader)(table);
-  const { data, error } = await from.select(columns).eq("id", id).maybeSingle();
-  // A receipt that cannot be read is a missing email, never a failed order.
+  const { data, error } = await supabase
+    .from("club_merchandise_orders")
+    .select(`id, profile_id, total, loyalty_points_spent,
+             club_merchandise_order_items(name, quantity, price, line_total),
+             clubs(name, slug)`)
+    .eq("id", orderId)
+    .maybeSingle();
+
   if (error) throw new Error(error.message);
-  return (data as T) ?? null;
+  return (data as OrderReceipt | null) ?? null;
 }
 
-export function findOrderReceipt(orderId: number) {
-  return readOne<OrderReceipt>(
-    "club_merchandise_orders",
-    `id, profile_id, total, loyalty_points_spent,
-     club_merchandise_order_items(name, quantity, price, line_total),
-     clubs(name, slug)`,
-    orderId,
-  );
+export async function findCoachingReceipt(bookingId: number): Promise<CoachingReceipt | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("club_coaching_bookings")
+    .select(`id, profile_id,
+             club_coaching_slots(title, slot_date, start_time, end_time, price,
+                                 coaching_type, clubs(name, slug))`)
+    .eq("id", bookingId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return (data as CoachingReceipt | null) ?? null;
 }
 
-export function findCoachingReceipt(bookingId: number) {
-  return readOne<CoachingReceipt>(
-    "club_coaching_bookings",
-    `id, profile_id, club_coaching_slots(title, slot_date, start_time, end_time, price, coaching_type,
-                             clubs(name, slug))`,
-    bookingId,
-  );
-}
+export async function findBookingReceipt(bookingId: number): Promise<BookingReceipt | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("club_bookings")
+    .select(`id, booked_by, table_index, session_date, game_title, opponent_name,
+             total_price, price_currency, loyalty_points_spent,
+             session_time, clubs(name, slug)`)
+    .eq("id", bookingId)
+    .maybeSingle();
 
-export function findBookingReceipt(bookingId: number) {
-  return readOne<BookingReceipt>(
-    "club_bookings",
-    `id, booked_by, table_index, session_date, game_title, opponent_name,
-     total_price, price_currency, loyalty_points_spent,
-     session_time, clubs(name, slug)`,
-    bookingId,
-  );
+  if (error) throw new Error(error.message);
+  return (data as BookingReceipt | null) ?? null;
 }

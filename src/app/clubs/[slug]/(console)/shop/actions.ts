@@ -36,14 +36,21 @@ export async function shopAction(_prev: ShopState, data: FormData): Promise<Shop
     // Lines arrive as JSON rather than parallel fields: a bag is a list, and
     // two getAll() arrays that have to line up by index is a bug waiting for
     // the day one of them is empty.
-    let lines: { itemId: number; quantity: number }[] = [];
+    let lines: { itemId: number; variantId: number | null; quantity: number }[] = [];
     try {
       const raw: unknown = JSON.parse(String(data.get("lines") ?? "[]"));
       if (Array.isArray(raw)) {
-        lines = raw.map((l) => ({
-          itemId: Number((l as { itemId?: unknown }).itemId),
-          quantity: Number((l as { quantity?: unknown }).quantity),
-        }));
+        lines = raw.map((l) => {
+          const line = l as { itemId?: unknown; variantId?: unknown; quantity?: unknown };
+          const variant = Number(line.variantId);
+          return {
+            itemId: Number(line.itemId),
+            // Null for an item with no sizes. The database resolves that to the
+            // item's only variant, and refuses it when there is more than one.
+            variantId: Number.isFinite(variant) && variant > 0 ? variant : null,
+            quantity: Number(line.quantity),
+          };
+        });
       }
     } catch {
       return { error: "Something went wrong with your bag. Reload and try again." };

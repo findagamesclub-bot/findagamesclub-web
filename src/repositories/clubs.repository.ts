@@ -1,13 +1,19 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { CLUB_MEDIA, isClubMediaPath } from "@/utils/club-media";
 import type { Tables } from "@/types/database";
 
 /** The only place that queries the clubs tables. Returns rows; the service maps them. */
 
 /** Cards show the club's first image, so the list carries it too. */
 export type ClubRow = Tables<"clubs"> & {
-  club_images?: { src: string; alt: string; position: number }[];
+  club_images?: {
+    src: string; alt: string; position: number;
+    /** Set for anything uploaded here; the legacy rows carry `src` instead. */
+    storage_path?: string | null;
+  }[];
   club_social_links?: { label: string; url: string; position: number }[];
 };
 
@@ -15,7 +21,7 @@ const LIST_COLUMNS =
   "id, slug, name, city, neighbourhood, summary, spotlight, status, logo_url, " +
   "tables_available, member_count, ages, price_drop_in, legacy_created_at, search_haystack, " +
   "venue_postcode, venue_postcode_district, venue_postcode_area, " +
-  "latitude, longitude, club_images(src, alt, position), " +
+  "latitude, longitude, club_images(src, alt, position, storage_path), " +
   "club_social_links(label, url, position)";
 
 export type ClubSort = "relevance" | "name" | "members" | "city";
@@ -243,10 +249,10 @@ export async function findClubDetail(slug: string) {
     .select(
       `*,
        club_sessions(day, time, label, position),
-       club_images(src, alt, position),
+       club_images(src, alt, position, storage_path),
        club_social_links(label, url, position),
        club_pricing_models(label, price, notes, position),
-       club_announcements(message, created_at),
+       club_announcements(id, message, created_at),
        club_membership_tiers(tier_key, label, price, price_duration, description, is_basic, position, benefits, billing_options),
        club_membership_settings(*),
        club_formats(formats(slug, label)),
@@ -276,4 +282,192 @@ export async function findClubRoster(clubId: number) {
     .from("club_members").select("name, initials").eq("club_id", clubId).order("position");
   if (error) return [];
   return data ?? [];
+}
+
+/**
+ * Save the club's own columns.
+ *
+ * The zero-row trap: a write RLS filters out affects nothing and returns no
+ * error, so this proves it touched a row rather than trusting `error` to be
+ * null. `club_can(id, 'listing.edit')` is what decides, and a helper reaching
+ * this gets `NOT_PERMITTED` rather than a quiet success.
+ *
+ * Coordinates, slug and status are not here and never will be: the trigger on
+ * this table flags a moved club for re-geocoding instead.
+ */
+export async function updateClubProfile(clubId: number, patch: {
+  name: string;
+  city: string;
+  neighbourhood: string | null;
+  summary: string | null;
+  description: string | null;
+  venue_name: string | null;
+  venue_address: string | null;
+  venue_postcode: string | null;
+  website_url: string | null;
+  contact_email: string | null;
+  ages: string | null;
+  member_count: number | null;
+  tables_available: number | null;
+}) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("clubs")
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq("id", clubId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("NOT_PERMITTED");
+  return data;
+}
+
+/** What the listing editor needs to fill its own fields in. */
+export async function findClubForEditing(clubId: number) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("clubs")
+    .select(`id, slug, name, city, neighbourhood, summary, description, venue_name,
+             venue_address, venue_postcode, website_url, contact_email, contact_phone,
+             ages, member_count, tables_available, geocode_stale`)
+    .eq("id", clubId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+/**
+ * Replace a club's photos.
+ *
+ * Delete then insert, because order is a column and the editor's whole answer
+ * is an order. The rows carry either a `storage_path` for a file we hold or a
+ * legacy `src` for one imported from the old site, and one mapper resolves
+ * whichever is set.
+ */
+export async function replaceClubImages(clubId: number, rows: {
+  storage_path: string | null; src: string; alt: string;
+}[]) {
+  const supabase = await createClient();
+
+  const { error: cleared } = await supabase.from("club_images").delete().eq("club_id", clubId);
+  if (cleared) throw new Error(cleared.message);
+  if (!rows.length) return;
+
+  const { error } = await supabase.from("club_images").insert(
+    rows.map((row, index) => ({ club_id: clubId, ...row, position: index })),
+  );
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * Delete the files behind photos a club has just taken off its listing.
+ *
+ * Through the caller's own client, so the storage policy decides, and only
+ * after the rows that pointed at them are gone. A path that is already gone
+ * is the outcome we wanted, so it is not an error.
+ */
+export async function removeClubMedia(clubId: number, paths: string[]) {
+  const mine = paths.filter((path) => isClubMediaPath(path, clubId));
+  if (!mine.length) return;
+
+  const supabase = await createClient();
+  const { error } = await supabase.storage.from(CLUB_MEDIA).remove(mine);
+  if (error) throw new Error(error.message);
+}
+
+/** Replace a club's social links, in the order the networks are listed. */
+export async function replaceClubSocialLinks(clubId: number, rows: {
+  label: string; url: string;
+}[]) {
+  const supabase = await createClient();
+
+  const { error: cleared } = await supabase.from("club_social_links").delete().eq("club_id", clubId);
+  if (cleared) throw new Error(cleared.message);
+  if (!rows.length) return;
+
+  const { error } = await supabase.from("club_social_links").insert(
+    rows.map((row, index) => ({ club_id: clubId, ...row, position: index })),
+  );
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * Replace a club's noticeboard.
+ *
+ * Delete then insert: the notices are a list in an order, and legacy derives
+ * the club's single `announcement` field from the first of them.
+ */
+export async function replaceClubAnnouncements(clubId: number, messages: string[]) {
+  const supabase = await createClient();
+
+  const { error: cleared } = await supabase
+    .from("club_announcements").delete().eq("club_id", clubId);
+  if (cleared) throw new Error(cleared.message);
+  if (!messages.length) return;
+
+  const { error } = await supabase.from("club_announcements").insert(
+    messages.map((message) => ({ club_id: clubId, message })),
+  );
+  if (error) throw new Error(error.message);
+}
+
+/** Replace the drop-in prices. `price` and `notes` are NOT NULL with empty defaults. */
+export async function replaceClubPricingModels(clubId: number, rows: {
+  label: string; price: string; notes: string;
+}[]) {
+  const supabase = await createClient();
+
+  const { error: cleared } = await supabase
+    .from("club_pricing_models").delete().eq("club_id", clubId);
+  if (cleared) throw new Error(cleared.message);
+  if (!rows.length) return;
+
+  const { error } = await supabase.from("club_pricing_models").insert(
+    rows.map((row, index) => ({ club_id: clubId, ...row, position: index })),
+  );
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * Switch the points programme on or off.
+ *
+ * Update then insert, never upsert: PostgREST puts every payload column into
+ * `ON CONFLICT DO UPDATE`, `club_id` included, and update on `club_id` is
+ * withheld on purpose so a settings row cannot be moved to another club.
+ */
+export async function setLoyaltyEnabled(clubId: number, enabled: boolean) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("club_loyalty_settings")
+    .update({ enabled }).eq("club_id", clubId).select("club_id").maybeSingle();
+  if (error) throw new Error(error.message);
+  if (data) return;
+
+  const { error: failed } = await supabase
+    .from("club_loyalty_settings").insert({ club_id: clubId, enabled });
+  if (failed && failed.code !== "23505") throw new Error(failed.message);
+}
+
+/**
+ * Put a club on the map, and clear the flag that said it had moved.
+ *
+ * Through the service-role client because `latitude`, `longitude` and
+ * `geocode_stale` are in no grant: a browser that could write them could pin a
+ * club anywhere, and one that could clear the flag could move and then lie
+ * about having moved.
+ */
+export async function placeClub(
+  clubId: number, latitude: number, longitude: number, label: string | null,
+) {
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("clubs")
+    .update({
+      latitude, longitude, coordinates_label: label, geocode_stale: false,
+    } as never)
+    .eq("id", clubId);
+  if (error) throw new Error(error.message);
 }

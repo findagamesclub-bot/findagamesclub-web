@@ -67,6 +67,17 @@ export async function getShop(params: {
       price: formatPrice(row.price ?? ""),
       stock: row.stock,
       soldOut: row.stock <= 0,
+      // Retired sizes are dropped rather than shown greyed: a club that has
+      // stopped doing smalls should not have to explain that on every card.
+      variants: (row.club_merchandise_variants ?? [])
+        .filter((variant) => variant.active)
+        .sort((a, b) => a.position - b.position)
+        .map((variant) => ({
+          id: variant.id,
+          label: variant.label ?? "",
+          stock: variant.stock,
+          soldOut: variant.stock <= 0,
+        })),
       blockedReason: ticketBlockedReason({
         audience: row.minimum_tier_key ? "members" : "all",
         minimumTierKey: row.minimum_tier_key,

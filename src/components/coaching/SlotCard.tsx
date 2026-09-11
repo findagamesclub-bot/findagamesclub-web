@@ -6,6 +6,7 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import NextLink from "next/link";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import Counter from "@/components/ui/Counter";
 import { nightLabel } from "@/utils/dates";
@@ -20,10 +21,20 @@ import type { CoachingSlot } from "@/types/clubExtras";
  * the date — the date is already the head, and what a member chooses between
  * is a one-to-one and a group session.
  */
+/**
+ * Names on a card, before it stops being a card.
+ *
+ * A session takes up to fifty places. Every one of them on here would make a
+ * column of names in a three-column grid, so the card shows the first three
+ * and the whole list lives on the Bookings tab, where it can be searched.
+ */
+const NAMES_ON_CARD = 3;
+
 export default function SlotCard({
-  slot, faction, busy, canManage, onBook, onCancel, onPaid, onStatus,
+  slot, slug, faction, busy, canManage, onBook, onCancel, onPaid, onStatus,
 }: {
   slot: CoachingSlot;
+  slug: string;
   faction: Faction;
   busy: boolean;
   canManage: boolean;
@@ -95,11 +106,22 @@ export default function SlotCard({
               : full ? "FULL"
               : `${slot.spacesLeft} OF ${slot.capacity} LEFT`}
           </Typography>
+
+          {/* Where the member stands on their own place. The club marks it paid
+              from its own list, and this is the only way the person who handed
+              over the money ever finds out it was recorded. */}
+          {slot.mine ? (
+            <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.68rem",
+                              letterSpacing: "0.08em", fontWeight: 700,
+                              color: slot.mine.paid ? tokens.positive : tokens.brass }}>
+              {slot.mine.paid ? "YOUR PLACE · PAID" : "YOUR PLACE · TO PAY"}
+            </Typography>
+          ) : null}
         </Stack>
 
         {canManage && slot.attendees.length ? (
           <Stack spacing={0.5} sx={{ pt: 1.25, mt: 0.5, borderTop: `1px solid ${tokens.rule}` }}>
-            {slot.attendees.map((a) => (
+            {slot.attendees.slice(0, NAMES_ON_CARD).map((a) => (
               <Stack key={a.id} direction="row" spacing={1.5}
                 sx={{ alignItems: "center", justifyContent: "space-between" }}>
                 <Typography variant="body2" noWrap>{a.name}</Typography>
@@ -111,6 +133,24 @@ export default function SlotCard({
                 </Button>
               </Stack>
             ))}
+
+            {/* What is not on the card, and the only part of it that is work:
+                how many of the rest have not paid. */}
+            {slot.attendees.length > NAMES_ON_CARD ? (
+              <NextLink href={`/clubs/${slug}/manage/coaching?tab=bookings`}
+                style={{ textDecoration: "none" }}>
+                <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.66rem",
+                                  letterSpacing: "0.06em", fontWeight: 700, pt: 0.5,
+                                  color: tokens.brand }}>
+                  {`+${slot.attendees.length - NAMES_ON_CARD} MORE`}
+                  {(() => {
+                    const owing = slot.attendees.slice(NAMES_ON_CARD)
+                      .filter((a) => !a.paid).length;
+                    return owing ? ` · ${owing} TO PAY` : "";
+                  })()}
+                </Typography>
+              </NextLink>
+            ) : null}
           </Stack>
         ) : null}
       </Stack>

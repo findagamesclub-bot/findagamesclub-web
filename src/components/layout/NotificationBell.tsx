@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Badge from "@mui/material/Badge";
 import Box from "@mui/material/Box";
@@ -90,7 +90,13 @@ export default function NotificationBell({
   const unread = Math.max(0, initialUnread + delta);
   const [items, setItems] = useState<Notification[] | null>(null);
   const [loading, setLoading] = useState(false);
+  // Whether the panel is on screen, for the realtime handler to read. A ref
+  // rather than the state itself: the handler is created once, and reading
+  // `anchor` there would close over the value it had when the socket opened.
+  const showing = useRef(false);
   const [, startAction] = useTransition();
+
+  useEffect(() => { showing.current = anchor !== null; }, [anchor]);
 
   const open = useCallback(async (element: HTMLElement) => {
     setAnchor(element);
@@ -126,11 +132,11 @@ export default function NotificationBell({
           },
           () => {
             setDelta((n) => n + 1);
-            // Only refetch the list if somebody is looking at it.
-            setItems((current) => {
-              if (current) void loadNotificationsAction().then(setItems);
-              return current;
-            });
+            // Only refetch the list if somebody is looking at it. Reading the
+            // ref rather than asking for the current state inside an updater:
+            // React runs updaters during render, and a server action called
+            // from one sets state on the router mid-render.
+            if (showing.current) void loadNotificationsAction().then(setItems);
           },
         )
         .subscribe();

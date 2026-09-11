@@ -18,6 +18,12 @@ export type NavItem = {
   /** Marks a count worth noticing rather than merely reporting. */
   alert?: boolean;
   /**
+   * The path this item is current for, when the section is wider than the page
+   * it opens on. The listing editor points at step one and owns all five, so
+   * without this its entry goes dark the moment you move to step two.
+   */
+  owns?: string;
+  /**
    * Lights only on this exact path. The section root would otherwise light up
    * on every page beneath it, so both it and the child would look current.
    */
@@ -26,18 +32,27 @@ export type NavItem = {
 
 export type NavGroup = { title: string; items: NavItem[] };
 
+/** Where the item's section starts, which is not always where it points. */
+const rootOf = (item: NavItem) => item.owns ?? item.href;
+
 export function isOn(item: NavItem, pathname: string): boolean {
+  const root = rootOf(item);
   return item.exact
     ? pathname === item.href
-    : pathname === item.href || pathname.startsWith(`${item.href}/`);
+    : pathname === root || pathname.startsWith(`${root}/`);
 }
 
-/** The section being looked at, which is what the phone trigger names. */
+/**
+ * The section being looked at: the one item to light, and what the phone
+ * trigger names.
+ *
+ * The most specific match wins, because several can match at once. Renewals
+ * lives under Members, so its page lit both of them and neither looked
+ * current.
+ */
 export function currentItem(groups: NavGroup[], pathname: string): NavItem | undefined {
   const all = groups.flatMap((g) => g.items);
-  // Longest href first, so /manage/events/new picks Events rather than the
-  // console root that also matches it.
   return [...all]
-    .sort((a, b) => b.href.length - a.href.length)
+    .sort((a, b) => rootOf(b).length - rootOf(a).length)
     .find((item) => isOn(item, pathname));
 }

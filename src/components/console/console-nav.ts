@@ -1,6 +1,7 @@
 import DashboardIcon from "@mui/icons-material/SpaceDashboard";
 import GroupsIcon from "@mui/icons-material/Groups";
 import BadgeIcon from "@mui/icons-material/AssignmentInd";
+import EditIcon from "@mui/icons-material/EditNote";
 import EventSeatIcon from "@mui/icons-material/EventSeat";
 import ScoreboardIcon from "@mui/icons-material/Scoreboard";
 import LinkIcon from "@mui/icons-material/AddLink";
@@ -34,6 +35,8 @@ export type ConsoleCounts = {
   renewalsDue?: number;
   /** Imported results still carrying a name rather than an account. */
   unmatchedResults?: number;
+  /** Coaching places taken and not yet paid for. */
+  coachingToPay?: number;
 };
 
 export function consoleGroups(
@@ -49,6 +52,11 @@ export function consoleGroups(
         // capability any of them holds rather than on one of its own.
         { label: "Overview", href: at("/manage"), icon: DashboardIcon,
           exact: true, needs: "bookings.manage" },
+        // The club's own page, in five steps. Above Team because editing the
+        // listing is the job an owner opens the console for most.
+        // Points at step one and stays lit across all five.
+        { label: "Listing", href: at("/manage/listing/profile"),
+          owns: at("/manage/listing"), icon: EditIcon, needs: "listing.edit" },
         { label: "Team", href: at("/manage/team"), icon: BadgeIcon,
           needs: "team.manage" },
       ],
@@ -81,8 +89,10 @@ export function consoleGroups(
         // the night's work; deciding who somebody is, is not.
         { label: "Match old results", href: at("/manage/results"), icon: LinkIcon,
           count: counts.unmatchedResults, needs: "members.manage" },
-        { label: "Coaching", href: at("/coaching"), icon: SchoolIcon,
-          needs: "coaching.manage" },
+        // Sessions, who has booked them, and the switch. The count is what is
+        // still owed: a booking is not work, being unpaid is.
+        { label: "Coaching", href: at("/manage/coaching"), icon: SchoolIcon,
+          count: counts.coachingToPay, alert: true, needs: "coaching.manage" },
       ],
     },
     {
@@ -99,9 +109,15 @@ export function consoleGroups(
       items: [
         { label: "Board", href: at("/board"), icon: ForumIcon,
           needs: "board.moderate" },
-        { label: "Shop", href: at("/shop"), icon: StorefrontIcon,
+        // What the club sells, the sizes left, and the orders waiting. The
+        // count sits here because this is now the page that answers them:
+        // while the queue lived on the club's own shop page, this badge sent
+        // people somewhere they could do nothing about it.
+        { label: "Shop", href: at("/manage/shop"), icon: StorefrontIcon,
           count: counts.ordersWaiting, alert: true, needs: "shop.manage" },
-        { label: "Loyalty", href: at("/loyalty"), icon: LoyaltyIcon,
+        // The programme's settings. What members have earned is on the club's
+        // own loyalty page, which this links out to.
+        { label: "Loyalty", href: at("/manage/loyalty"), icon: LoyaltyIcon,
           needs: "members.manage" },
       ],
     },

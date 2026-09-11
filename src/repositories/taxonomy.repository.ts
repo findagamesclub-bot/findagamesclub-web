@@ -43,3 +43,24 @@ export async function findMeetingDays() {
   const days = new Set((data ?? []).map((r) => r.day).filter(Boolean));
   return DAY_ORDER.filter((d) => days.has(d));
 }
+
+/**
+ * Replace what a club plays, offers or takes.
+ *
+ * Through `save_club_taxonomy` rather than by writing the tables: the
+ * vocabulary is shared by every club, so a club that could insert into it
+ * directly could rename "Warhammer 40,000" for all of them. The function finds
+ * or creates each label, then swaps the club's links for exactly this set, so
+ * the caller has to send the whole list and never a partial one.
+ */
+export async function replaceClubTaxonomy(
+  clubId: number,
+  kind: "formats" | "games" | "facilities" | "payment_methods",
+  labels: string[],
+) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .rpc("save_club_taxonomy", { p_club: clubId, p_kind: kind, p_labels: labels });
+
+  if (error) throw new Error(error.message);
+}

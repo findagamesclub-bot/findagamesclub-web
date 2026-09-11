@@ -46,7 +46,15 @@ export default function ClubShop({
   const [points, setPoints] = useState(0);
 
   const bag = priceBag({ lines: bagStore.lines, items, standing, points });
-  const held = new Map(bagStore.lines.map((line) => [line.itemId, line.quantity]));
+
+  // Per item AND per size. Keyed on the item alone, a bag holding two sizes of
+  // one shirt kept only the last, and the card's plus and bin then acted on a
+  // line that was not there.
+  const held = new Map<number, { variantId: number | null; quantity: number }[]>();
+  for (const line of bagStore.lines) {
+    held.set(line.itemId, [...(held.get(line.itemId) ?? []),
+      { variantId: line.variantId, quantity: line.quantity }]);
+  }
 
   const checkout = () => {
     const data = new FormData();
@@ -72,9 +80,10 @@ export default function ClubShop({
                    gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))", md: "repeat(3, minmax(0, 1fr))" } }}>
           {items.map((item) => (
             <MerchCard key={item.id} item={item} faction={faction} monogram={monogram}
-              busy={busy} standing={standing} inBag={held.get(item.id) ?? 0}
-              onAdd={() => bagStore.add(item.id, 1)}
-              onQuantity={(quantity) => bagStore.setQuantity(item.id, quantity)} />
+              busy={busy} standing={standing} inBag={held.get(item.id) ?? []}
+              onAdd={(variantId) => bagStore.add(item.id, 1, variantId)}
+              onQuantity={(quantity, variantId) =>
+                bagStore.setQuantity(item.id, quantity, variantId)} />
           ))}
         </Box>
       </BusyOverlay>

@@ -9,6 +9,7 @@ import Typography from "@mui/material/Typography";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import { useActionToast } from "@/components/ui/Toaster";
 import { requestTierAction, type UpgradeState } from "@/app/account/memberships/actions";
+import { higherTiers } from "@/utils/membership-tiers";
 import { mono, tokens } from "@/lib/tokens";
 import type { MyClubMembership } from "@/services/myMemberships.service";
 
@@ -24,10 +25,9 @@ export default function UpgradeRequest({ membership }: { membership: MyClubMembe
   useActionToast(state);
 
   // Only tiers above the one they hold. Offering a downgrade beside an upgrade
-  // in the same list is how somebody picks the wrong one.
-  const mine = membership.tiers.find((tier) => tier.key === membership.tierKey) ?? null;
-  const minePosition = mine ? membership.tiers.indexOf(mine) : -1;
-  const higher = membership.tiers.filter((_, i) => i > minePosition);
+  // in the same list is how somebody picks the wrong one. The browser asks the
+  // same question to decide whether this card gets a footer at all.
+  const higher = higherTiers(membership.tiers, membership.tierKey);
 
   const [wanted, setWanted] = useState(higher[0]?.key ?? "");
 
@@ -54,8 +54,9 @@ export default function UpgradeRequest({ membership }: { membership: MyClubMembe
     );
   }
 
-  // Nothing to offer, so no footer at all. "This is the top tier" in a strip
-  // of its own reads as an action the card is inviting, and it is not one.
+  // Nothing to offer. The browser keeps the footer off the card entirely, and
+  // this is the second half of that: "this is the top tier" in a strip of its
+  // own reads as an action the card is inviting, and it is not one.
   if (!higher.length) return null;
 
   return (

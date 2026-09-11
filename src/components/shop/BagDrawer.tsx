@@ -11,11 +11,14 @@ import RemoveIcon from "@mui/icons-material/Remove";
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import BagSummary from "./BagSummary";
 import { formatPence } from "@/utils/format";
-import { MAX_PER_LINE, type BagTotal } from "@/utils/merch-bag";
+import { stockNote, MAX_PER_LINE, type BagTotal } from "@/utils/merch-bag";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { ShopStanding } from "@/types/clubExtras";
 
 /** The bag, and everything that comes off the price before you pay it. */
+/** "Club t shirt, size L", for a screen reader that cannot see the row. */
+const said = (label: string) => (label ? `, size ${label}` : "");
+
 export default function BagDrawer({
   open, onClose, bag, standing, faction, busy,
   points, onPoints, notes, onNotes,
@@ -31,8 +34,8 @@ export default function BagDrawer({
   onPoints: (value: number) => void;
   notes: string;
   onNotes: (value: string) => void;
-  onQuantity: (itemId: number, quantity: number) => void;
-  onRemove: (itemId: number) => void;
+  onQuantity: (itemId: number, quantity: number, variantId: number | null) => void;
+  onRemove: (itemId: number, variantId: number | null) => void;
   onCheckout: () => void;
 }) {
   return (
@@ -58,19 +61,39 @@ export default function BagDrawer({
           ) : null}
 
           {bag.lines.map((line) => (
-            <Stack key={line.itemId} spacing={0.75}
+            <Stack key={`${line.itemId}:${line.variantId ?? ""}`} spacing={0.75}
               sx={{ pb: 1.5, borderBottom: `1px solid ${tokens.rule}` }}>
               <Stack direction="row" spacing={1.5}
                 sx={{ alignItems: "flex-start", justifyContent: "space-between" }}>
                 <Box sx={{ minWidth: 0 }}>
                   <Typography variant="subtitle2">{line.name}</Typography>
+                  {/* Two sizes of the same shirt are two lines, and without
+                      this they were two identical rows. */}
+                  {line.variantLabel ? (
+                    <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.66rem",
+                                      fontWeight: 700, letterSpacing: "0.08em",
+                                      color: tokens.inkMuted }}>
+                      {line.variantLabel.toUpperCase()}
+                    </Typography>
+                  ) : null}
                   {/* What one costs, so a line total of £40.50 is arithmetic
                       the reader can follow rather than a number to trust. */}
+                  {/* What one costs, and what is left of it. The plus goes
+                      dead at the stock or at twenty, and a dead button with no
+                      reason beside it reads as a broken page. */}
                   <Typography variant="caption" sx={{ color: tokens.inkMuted }}>
                     {line.quoted
                       ? `${line.quantity} × price on request`
                       : `${line.quantity} × ${formatPence(
                           Math.max(line.unitAmount - line.unitDiscount, 0))}`}
+                    {" · "}
+                    <Box component="span"
+                      sx={{ fontFamily: "var(--font-mono)", fontSize: "0.9em",
+                            fontWeight: stockNote(line.quantity, line.stock).warn ? 700 : 400,
+                            color: stockNote(line.quantity, line.stock).warn
+                              ? tokens.brass : tokens.inkMuted }}>
+                      {stockNote(line.quantity, line.stock).text}
+                    </Box>
                   </Typography>
                 </Box>
                 {/* Never £0. The club has not named a price, which is not the
@@ -89,9 +112,10 @@ export default function BagDrawer({
                 <Stack direction="row"
                   sx={{ alignItems: "center", border: `1px solid ${tokens.rule}`,
                         borderRadius: 999 }}>
-                  <IconButton size="small" aria-label={`One fewer ${line.name}`}
+                  <IconButton size="small"
+                    aria-label={`One fewer ${line.name}${said(line.variantLabel)}`}
                     disabled={line.quantity <= 1}
-                    onClick={() => onQuantity(line.itemId, line.quantity - 1)}>
+                    onClick={() => onQuantity(line.itemId, line.quantity - 1, line.variantId)}>
                     <RemoveIcon sx={{ fontSize: 17 }} />
                   </IconButton>
                   <Box sx={{ minWidth: 28, textAlign: "center" }}>
@@ -99,15 +123,17 @@ export default function BagDrawer({
                       {line.quantity}
                     </Typography>
                   </Box>
-                  <IconButton size="small" aria-label={`One more ${line.name}`}
+                  <IconButton size="small"
+                    aria-label={`One more ${line.name}${said(line.variantLabel)}`}
                     disabled={line.quantity >= Math.min(MAX_PER_LINE, line.stock)}
-                    onClick={() => onQuantity(line.itemId, line.quantity + 1)}>
+                    onClick={() => onQuantity(line.itemId, line.quantity + 1, line.variantId)}>
                     <AddIcon sx={{ fontSize: 17 }} />
                   </IconButton>
                 </Stack>
 
-                <IconButton size="small" aria-label={`Remove ${line.name}`}
-                  onClick={() => onRemove(line.itemId)}>
+                <IconButton size="small"
+                  aria-label={`Remove ${line.name}${said(line.variantLabel)}`}
+                  onClick={() => onRemove(line.itemId, line.variantId)}>
                   <DeleteOutlinedIcon sx={{ fontSize: 19, color: tokens.inkMuted }} />
                 </IconButton>
               </Stack>

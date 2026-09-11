@@ -5,7 +5,7 @@ import { countByMonth } from "@/utils/club-pulse";
 import * as repo from "@/repositories/loyalty.repository";
 import * as memberships from "@/repositories/memberships.repository";
 import {
-  DEFAULT_ANNIVERSARIES, DEFAULT_MILESTONES, DEFAULT_TIERS, tierFor,
+  DEFAULT_ANNIVERSARIES, DEFAULT_MILESTONES, DEFAULT_TIERS, MILESTONE_FIELDS, tierFor,
   type Anniversary, type LoyaltyTier,
 } from "@/utils/loyalty";
 import type { LoyaltyEntry, LoyaltyProgramme, LoyaltyWallet } from "@/types/loyalty";
@@ -17,14 +17,6 @@ import type { LoyaltyEntry, LoyaltyProgramme, LoyaltyWallet } from "@/types/loya
  * missed by a code path that forgot to call it. This reads the ledger and
  * works out what it means.
  */
-
-/** The benefits key, what to call it, and the ledger category it writes. */
-const MILESTONES: { key: string; label: string; category: string }[] = [
-  { key: "membershipApproved", label: "Joining the club", category: "membership-approved" },
-  { key: "gameBooking", label: "Booking a table", category: "game-booking" },
-  { key: "eventBooking", label: "Booking event tickets", category: "event-booking" },
-  { key: "merchandisePurchase", label: "Ordering merchandise", category: "merchandise-order" },
-];
 
 function toTiers(raw: unknown): LoyaltyTier[] {
   if (!Array.isArray(raw) || !raw.length) return DEFAULT_TIERS;
@@ -59,7 +51,7 @@ function toMilestones(raw: unknown): { label: string; points: number; category: 
       ? (raw as Record<string, unknown>)
       : { ...DEFAULT_MILESTONES };
 
-  return MILESTONES
+  return MILESTONE_FIELDS
     .map((m) => ({ label: m.label, category: m.category, points: Number(source[m.key] ?? 0) || 0 }))
     // A milestone worth nothing is not a milestone; showing "0 points" reads
     // as a broken programme rather than one the club chose not to use.

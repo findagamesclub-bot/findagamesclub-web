@@ -48,11 +48,24 @@ export async function dropRival(rivalRowId: number) {
 
 // --- merchandise -----------------------------------------------------------
 
-export async function findMerchandise(clubId: number) {
+export type MerchRow = {
+  id: number; legacy_id: string; name: string;
+  category: string | null; description: string | null;
+  image_src: string | null; image_alt: string | null;
+  price: string | null; stock: number;
+  minimum_tier_key: string | null; active: boolean; position: number;
+  club_merchandise_variants: {
+    id: number; label: string; stock: number; active: boolean; position: number;
+  }[];
+};
+
+export async function findMerchandise(clubId: number): Promise<MerchRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("club_merchandise_items")
-    .select("id, legacy_id, name, category, description, image_src, image_alt, price, stock, minimum_tier_key, active, position")
+    .select(`id, legacy_id, name, category, description, image_src, image_alt, price,
+             stock, minimum_tier_key, active, position,
+             club_merchandise_variants(id, label, stock, active, position)`)
     .eq("club_id", clubId)
     .order("position");
 
@@ -110,11 +123,11 @@ export async function placeOrder(params: {
  * A whole bag in one order.
  *
  * Same reasoning as placeOrder above, times the number of lines: stock is
- * locked and decremented per item, and the tier discount and the points are
+ * locked and decremented per size, and the tier discount and the points are
  * recomputed from the club's own settings rather than trusted from the form.
  */
 export async function placeCartOrder(params: {
-  lines: { itemId: number; quantity: number }[];
+  lines: { itemId: number; variantId: number | null; quantity: number }[];
   notes: string;
   redeemPoints: number;
 }) {
@@ -186,6 +199,27 @@ export async function findSlots(clubId: number, from: string) {
 
   if (error) throw new Error(`Failed to load coaching slots: ${error.message}`);
   return data ?? [];
+}
+
+/**
+ * Bookings the club has not been paid for.
+ *
+ * Not filtered by date: a session that has happened and was never paid for is
+ * exactly the work this number is meant to surface. Cancelled sessions and
+ * cancelled bookings are out, because nobody owes for those.
+ */
+export async function countCoachingToPay(clubId: number): Promise<number> {
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("club_coaching_bookings")
+    .select("id, club_coaching_slots!inner(club_id, status)", { count: "exact", head: true })
+    .eq("club_coaching_slots.club_id", clubId)
+    .neq("club_coaching_slots.status", "cancelled")
+    .eq("status", "booked")
+    .eq("payment_status", "unpaid");
+
+  if (error) throw new Error(`Failed to count coaching payments: ${error.message}`);
+  return count ?? 0;
 }
 
 export async function bookSlot(slotId: number) {

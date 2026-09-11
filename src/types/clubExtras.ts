@@ -19,6 +19,22 @@ export type MerchItem = {
   soldOut: boolean;
   /** Null when anyone may order. Otherwise the tier that would open it. */
   blockedReason: string | null;
+  /**
+   * Sizes, or colourways, or whatever the club calls them.
+   *
+   * Every item has at least one. An item with a single variant whose label is
+   * empty has no sizes at all, and the shop shows no picker for it, which is
+   * every item that existed before sizes were added.
+   */
+  variants: MerchVariant[];
+};
+
+export type MerchVariant = {
+  id: number;
+  /** Empty for an item that is not sized. */
+  label: string;
+  stock: number;
+  soldOut: boolean;
 };
 
 /** What the viewer's tier does to merchandise, and what they can pay with. */

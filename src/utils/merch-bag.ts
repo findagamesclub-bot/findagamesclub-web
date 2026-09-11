@@ -3,10 +3,26 @@ import { clampPercent } from "./shop-pricing";
 import type { MerchItem, ShopStanding } from "@/types/clubExtras";
 
 /** One line in the bag. Quantity only; everything else is priced from the item. */
-export type BagLine = { itemId: number; quantity: number };
+/**
+ * One line in the bag.
+ *
+ * Keyed on the item *and* the size: two sizes of the same shirt are two lines,
+ * and adding a medium must not bump the small already in there. `variantId` is
+ * null for an item that has no sizes, which is every item that existed before
+ * they were added.
+ */
+export type BagLine = { itemId: number; variantId: number | null; quantity: number };
+
+/** Two lines are the same line when they name the same item and the same size. */
+const sameLine = (line: BagLine, itemId: number, variantId: number | null) =>
+  line.itemId === itemId && (line.variantId ?? null) === (variantId ?? null);
 
 export type PricedLine = {
   itemId: number;
+  /** The size, and null for an item that does not come in sizes. */
+  variantId: number | null;
+  /** Empty for an item that does not come in sizes. */
+  variantLabel: string;
   name: string;
   quantity: number;
   /** What one costs before the tier discount. */
@@ -76,21 +92,30 @@ export function priceBag(params: {
     const quoted = needsQuote(item.price);
     const unitDiscount = Math.round(unitAmount * percent) / 100;
 
+    // What is left is the size's, not the item's: a shirt with forty larges
+    // and no smalls has plenty in stock and none of what this line is for.
+    const variant = item.variants.find((v) => v.id === line.variantId) ?? null;
+    const stock = variant && variant.label ? variant.stock : item.stock;
+    const soldOut = variant && variant.label ? variant.soldOut : item.soldOut;
+    const named = variant?.label ? ` (${variant.label})` : "";
+
     return [{
       itemId: item.id,
+      variantId: line.variantId,
+      variantLabel: variant?.label ?? "",
       name: item.name,
       quantity,
       unitAmount,
       unitDiscount,
       lineTotal: pennies(Math.max(unitAmount - unitDiscount, 0) * quantity),
       quoted,
-      stock: item.stock,
-      problem: item.soldOut
-        ? "Sold out since you added it"
+      stock,
+      problem: soldOut
+        ? `Sold out since you added it${named}`
         : item.blockedReason
           ? item.blockedReason
-          : quantity > item.stock
-            ? `Only ${item.stock} left`
+          : quantity > stock
+            ? `Only ${stock} left${named}`
             : null,
     }];
   });
@@ -122,21 +147,46 @@ export function priceBag(params: {
   };
 }
 
-/** Add, or bump the quantity if it is already in there. */
-export function addLine(lines: BagLine[], itemId: number, quantity = 1): BagLine[] {
-  const held = lines.find((l) => l.itemId === itemId);
-  if (!held) return [...lines, { itemId, quantity: clampQuantity(quantity) }];
+/**
+ * What is left of this line, and whether the club has run out of room.
+ *
+ * The plus button goes dead at whichever comes first, the stock or the twenty
+ * a person may take in one go. A button that stops working without saying why
+ * reads as a broken page, so the line says which of the two it hit.
+ */
+export function stockNote(quantity: number, stock: number): {
+  text: string; warn: boolean;
+} {
+  if (quantity >= stock) return { text: `${stock} left`, warn: true };
+  if (quantity >= MAX_PER_LINE) {
+    return { text: `${MAX_PER_LINE} at a time`, warn: true };
+  }
+  return { text: `${stock} left`, warn: false };
+}
+
+/** Add, or bump the quantity if that size is already in there. */
+export function addLine(
+  lines: BagLine[], itemId: number, quantity = 1, variantId: number | null = null,
+): BagLine[] {
+  const held = lines.find((l) => sameLine(l, itemId, variantId));
+  if (!held) return [...lines, { itemId, variantId, quantity: clampQuantity(quantity) }];
   return lines.map((l) =>
-    l.itemId === itemId ? { ...l, quantity: clampQuantity(l.quantity + quantity) } : l);
+    sameLine(l, itemId, variantId)
+      ? { ...l, quantity: clampQuantity(l.quantity + quantity) } : l);
 }
 
-export function setQuantity(lines: BagLine[], itemId: number, quantity: number): BagLine[] {
-  if (quantity < 1) return lines.filter((l) => l.itemId !== itemId);
-  return lines.map((l) => (l.itemId === itemId ? { ...l, quantity: clampQuantity(quantity) } : l));
+export function setQuantity(
+  lines: BagLine[], itemId: number, quantity: number, variantId: number | null = null,
+): BagLine[] {
+  if (quantity < 1) return lines.filter((l) => !sameLine(l, itemId, variantId));
+  return lines.map((l) =>
+    sameLine(l, itemId, variantId) ? { ...l, quantity: clampQuantity(quantity) } : l);
 }
 
-export function removeLine(lines: BagLine[], itemId: number): BagLine[] {
-  return lines.filter((l) => l.itemId !== itemId);
+export function removeLine(
+  lines: BagLine[], itemId: number, variantId: number | null = null,
+): BagLine[] {
+  return lines.filter((l) => !sameLine(l, itemId, variantId));
 }
 
 /**
@@ -151,9 +201,19 @@ export function reviveBag(raw: unknown, items: MerchItem[]): BagLine[] {
 
   return raw.flatMap((entry) => {
     if (!entry || typeof entry !== "object") return [];
-    const { itemId, quantity } = entry as { itemId?: unknown; quantity?: unknown };
+    const { itemId, quantity, variantId } =
+      entry as { itemId?: unknown; quantity?: unknown; variantId?: unknown };
     const id = Number(itemId);
-    return live.has(id) ? [{ itemId: id, quantity: clampQuantity(Number(quantity)) }] : [];
+    if (!live.has(id)) return [];
+
+    // A size the club has since retired drops back to no size, which the
+    // checkout accepts only when the item has exactly one left. Otherwise it
+    // asks for a size again rather than quietly picking one.
+    const sizes = items.find((item) => item.id === id)?.variants ?? [];
+    const wanted = Number(variantId);
+    const size = sizes.some((v) => v.id === wanted) ? wanted : null;
+
+    return [{ itemId: id, variantId: size, quantity: clampQuantity(Number(quantity)) }];
   });
 }
 

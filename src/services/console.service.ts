@@ -6,6 +6,7 @@ import { londonToday } from "./bookingCalendar.service";
 import { getClubResults } from "./clubResults.service";
 import { getUnlinkedNames } from "./memberRecords.service";
 import { getOrders } from "./clubExtras.service";
+import { countCoachingToPay } from "@/repositories/clubExtras.repository";
 import { getClubRenewals } from "./renewals.service";
 import { countRenewals } from "@/utils/renewal-filter";
 import type { ConsoleCounts } from "@/components/console/console-nav";
@@ -26,7 +27,7 @@ import type { MembershipTier } from "@/types/clubDetail";
  */
 
 export type ConsoleTask = {
-  kind: "join" | "score" | "order" | "renewal";
+  kind: "join" | "score" | "order" | "coaching" | "renewal";
   count: number;
   label: string;
   href: string;
@@ -35,7 +36,8 @@ export type ConsoleTask = {
 export async function getConsoleCounts(
   clubId: number, access: ClubAccess,
 ): Promise<ConsoleCounts> {
-  const [joinRequests, scoresWaiting, ordersWaiting, unmatchedResults] = await Promise.all([
+  const [joinRequests, scoresWaiting, ordersWaiting, unmatchedResults,
+         coachingToPay] = await Promise.all([
     access.can("members.manage")
       ? getPendingRequests(clubId).then((r) => r.length).catch(() => 0)
       : Promise.resolve(0),
@@ -48,9 +50,12 @@ export async function getConsoleCounts(
     access.can("members.manage")
       ? getUnlinkedNames(clubId).then((r) => r.length).catch(() => 0)
       : Promise.resolve(0),
+    access.can("coaching.manage")
+      ? countCoachingToPay(clubId).catch(() => 0)
+      : Promise.resolve(0),
   ]);
 
-  return { joinRequests, scoresWaiting, ordersWaiting, unmatchedResults };
+  return { joinRequests, scoresWaiting, ordersWaiting, unmatchedResults, coachingToPay };
 }
 
 /**
@@ -98,7 +103,15 @@ export async function getConsoleTasks(
     tasks.push({
       kind: "order", count: counts.ordersWaiting,
       label: counts.ordersWaiting === 1 ? "order to answer" : "orders to answer",
-      href: at("/shop"),
+      href: at("/manage/shop?tab=orders"),
+    });
+  }
+  if (counts.coachingToPay) {
+    tasks.push({
+      kind: "coaching", count: counts.coachingToPay,
+      label: counts.coachingToPay === 1
+        ? "coaching place to be paid for" : "coaching places to be paid for",
+      href: at("/manage/coaching?tab=bookings"),
     });
   }
 

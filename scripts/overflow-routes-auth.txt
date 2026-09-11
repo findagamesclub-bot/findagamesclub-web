@@ -32,3 +32,14 @@
 /clubs/didcot-wargames-didcot/shop
 /clubs/didcot-wargames-didcot/loyalty
 /clubs/didcot-wargames-didcot/coaching
+/clubs/didcot-wargames-didcot/manage/listing/profile
+/clubs/didcot-wargames-didcot/manage/listing/content
+/clubs/didcot-wargames-didcot/manage/listing/pricing
+/clubs/didcot-wargames-didcot/manage/listing/schedule
+/clubs/didcot-wargames-didcot/manage/listing/review
+/clubs/didcot-wargames-didcot/manage/coaching
+/clubs/didcot-wargames-didcot/manage/coaching?tab=bookings
+/clubs/didcot-wargames-didcot/manage/coaching?tab=settings
+/clubs/didcot-wargames-didcot/manage/loyalty
+/clubs/didcot-wargames-didcot/manage/shop
+/clubs/didcot-wargames-didcot/manage/shop?tab=orders

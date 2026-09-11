@@ -10,3 +10,6 @@
 /dev/tickets-preview
 /dev/profile-preview
 /dev/loyalty-preview
+/dev/listing-health-preview
+/dev/shop-editor-preview
+/dev/shop-preview

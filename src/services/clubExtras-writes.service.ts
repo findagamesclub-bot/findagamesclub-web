@@ -39,6 +39,7 @@ export async function unmarkRival(rivalRowId: number): Promise<Result> {
 const ORDER_ERRORS: [string, string][] = [
   ["NOT_ENOUGH_STOCK", "There are not that many left. Lower the quantity and try again."],
   ["SOLD_OUT", "That has sold out."],
+  ["VARIANT_REQUIRED", "Choose a size before adding that to your bag."],
   ["NO_MERCH_ACCESS", "Your membership tier does not include merchandise."],
   ["TIER_TOO_LOW", "That item is for a higher membership tier."],
   ["MEMBERS_ONLY", "Only approved members of this club can order kit."],
@@ -71,13 +72,17 @@ export async function orderMerch(params: {
 
 /** The whole bag, as one order. */
 export async function orderBag(params: {
-  lines: { itemId: number; quantity: number }[];
+  lines: { itemId: number; variantId: number | null; quantity: number }[];
   notes: string;
   redeemPoints: number;
 }): Promise<Result> {
   const lines = params.lines
     .filter((l) => Number.isFinite(l.itemId) && l.quantity > 0)
-    .map((l) => ({ itemId: l.itemId, quantity: Math.max(1, Math.min(20, Math.floor(l.quantity))) }));
+    .map((l) => ({
+      itemId: l.itemId,
+      variantId: l.variantId ?? null,
+      quantity: Math.max(1, Math.min(20, Math.floor(l.quantity))),
+    }));
 
   if (!lines.length) return { ok: false, error: "Your bag is empty." };
 

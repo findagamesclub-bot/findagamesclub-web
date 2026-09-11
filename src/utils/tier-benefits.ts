@@ -25,25 +25,44 @@ export type PerkGroup = "savings" | "access" | "tools";
 type Rule = {
   key: string;
   group: PerkGroup;
+  /** How the editor asks for it: a percentage, a number, or a switch. */
+  kind: PerkKind;
+  /** What the editor calls it. The rendered sentence is for members. */
+  label: string;
   /** Returns the sentence to show, or null when this perk is not switched on. */
   render: (value: unknown) => string | null;
 };
 
+export type PerkKind = "percent" | "count" | "flag";
+
+/** One perk, as a form needs to ask about it. */
+export type PerkField = { key: string; group: PerkGroup; kind: PerkKind; label: string };
+
 const num = (value: unknown): number => (typeof value === "number" ? value : Number(value) || 0);
 const on = (value: unknown): boolean => value === true || value === "true";
 
+/**
+ * Two audiences, two wordings. `render` is the sentence a member reads on a
+ * tier card ("10% off table bookings"); `label` is what the club is asked for
+ * when setting it ("Off table bookings"). Deriving one from the other reads
+ * badly the moment the number is in the middle of the sentence.
+ */
+const EDITOR_LABELS: Record<string, string> = {"bookingDiscountPercent": "Off table bookings", "eventDiscountPercent": "Off event tickets", "merchandiseDiscountPercent": "Off merchandise", "coachingDiscountPercent": "Off coaching", "waiveGameBookingFee": "No table booking fee", "maxUpcomingBookings": "Bookings they can hold at once", "extraAdvanceBookingDates": "Extra days they can book ahead", "priorityEventAdvanceDays": "Days they get event tickets early", "lookingForGamePostLimit": "Looking-for-a-game posts at once", "lookingForGameFutureDates": "Extra days they can post ahead", "bonusMembershipApprovalPoints": "Bonus points for joining", "bonusGameBookingPoints": "Bonus points per booking", "bonusEventBookingPoints": "Bonus points per event", "bonusAnniversaryPoints": "Bonus points each year", "premiumTicketAccess": "Member-only event tickets", "priorityLeagueAccess": "Priority league entry", "merchandiseAccess": "Club merchandise", "coachingBookingAccess": "Book coaching sessions", "listCoachingAccess": "Offer coaching to others", "rivalryToolsAccess": "Rivalry tracking", "priorityOpponentFinderPlacement": "Listed first when finding opponents"};
+
+const labelFor = (key: string) => EDITOR_LABELS[key] ?? key;
+
 const percent = (key: string, group: PerkGroup, text: (n: number) => string): Rule => ({
-  key, group,
+  key, group, kind: "percent", label: labelFor(key),
   render: (v) => (num(v) > 0 ? text(num(v)) : null),
 });
 
 const count = (key: string, group: PerkGroup, text: (n: number) => string): Rule => ({
-  key, group,
+  key, group, kind: "count", label: labelFor(key),
   render: (v) => (num(v) > 0 ? text(num(v)) : null),
 });
 
 const flag = (key: string, group: PerkGroup, text: string): Rule => ({
-  key, group,
+  key, group, kind: "flag", label: labelFor(key),
   render: (v) => (on(v) ? text : null),
 });
 
@@ -70,6 +89,7 @@ const RULES: Rule[] = [
   count("lookingForGameFutureDates", "access", (n) => `Post ${n} ${n === 1 ? "day" : "days"} further ahead`),
 
   { key: "loyaltyEarnMultiplier", group: "savings",
+    kind: "count", label: "Loyalty points multiplier",
     render: (v) => (num(v) > 1 ? `${num(v)}x loyalty points` : null) },
   count("bonusMembershipApprovalPoints", "savings", (n) => `${n} bonus points when you join`),
   count("bonusGameBookingPoints", "savings", (n) => `${n} bonus points per booking`),
@@ -84,7 +104,10 @@ const RULES: Rule[] = [
   flag("rivalryToolsAccess", "tools", "Rivalry tracking"),
   flag("priorityOpponentFinderPlacement", "tools", "Listed first when finding opponents"),
   {
+    // Not in the editor: which categories a tier reserves is set on the board's
+    // own categories, and a free-text list here would drift from them.
     key: "privateDiscussionCategories", group: "access",
+    kind: "flag", label: "Private boards",
     render: (v) =>
       Array.isArray(v) && v.length > 0 ? `Private boards: ${v.join(", ")}` : null,
   },
@@ -129,3 +152,12 @@ export function groupTierBenefits(
     }))
     .filter((g) => g.items.length > 0);
 }
+
+
+/** Every perk a tier can carry, for the editor that sets them. */
+export const PERK_FIELDS: PerkField[] = RULES
+  // The private boards list is set from the board's categories, not here.
+  .filter((rule) => rule.key !== "privateDiscussionCategories")
+  .map((rule) => ({
+    key: rule.key, group: rule.group, kind: rule.kind, label: rule.label,
+  }));

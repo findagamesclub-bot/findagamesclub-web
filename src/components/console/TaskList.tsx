@@ -6,6 +6,7 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import PersonAddIcon from "@mui/icons-material/PersonAddAlt";
 import ScoreboardIcon from "@mui/icons-material/Scoreboard";
 import StorefrontIcon from "@mui/icons-material/Storefront";
+import SchoolIcon from "@mui/icons-material/School";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import type { SvgIconComponent } from "@mui/icons-material";
 import { display, mono, tokens } from "@/lib/tokens";
@@ -15,6 +16,7 @@ const ICONS: Record<ConsoleTask["kind"], SvgIconComponent> = {
   join: PersonAddIcon,
   score: ScoreboardIcon,
   order: StorefrontIcon,
+  coaching: SchoolIcon,
   renewal: PaymentsIcon,
 };
 

@@ -63,9 +63,13 @@ export function useMerchBag(clubId: number, profileId: string, items: MerchItem[
 
   return {
     lines,
-    add: (itemId: number, quantity = 1) => save(addLine(lines, itemId, quantity)),
-    setQuantity: (itemId: number, quantity: number) => save(setQuantity(lines, itemId, quantity)),
-    remove: (itemId: number) => save(removeLine(lines, itemId)),
+    // `variantId` is the size, and null for an item that has none.
+    add: (itemId: number, quantity = 1, variantId: number | null = null) =>
+      save(addLine(lines, itemId, quantity, variantId)),
+    setQuantity: (itemId: number, quantity: number, variantId: number | null = null) =>
+      save(setQuantity(lines, itemId, quantity, variantId)),
+    remove: (itemId: number, variantId: number | null = null) =>
+      save(removeLine(lines, itemId, variantId)),
     clear: () => save([]),
   };
 }

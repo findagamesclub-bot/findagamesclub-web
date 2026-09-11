@@ -3,14 +3,8 @@ import NextLink from "next/link";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
-import InventoryIcon from "@mui/icons-material/Inventory2Outlined";
-import Section from "@/components/ui/Section";
-import SectionPulse from "@/components/console/SectionPulse";
-import { countByMonth } from "@/utils/club-pulse";
-import { londonToday } from "@/services/bookingCalendar.service";
 import ClubSectionHeader from "@/components/clubs/ClubSectionHeader";
 import ClubShop from "@/components/shop/ClubShop";
-import OrderQueue from "@/components/shop/OrderQueue";
 import { getClubDetail } from "@/services/clubDetail.service";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
@@ -63,8 +57,6 @@ export default async function ShopPage({
 
   const waiting = orders.filter((o) => o.status === "placed").length;
 
-  // Both read from the orders already loaded above, so the charts cost no query.
-  const orderMonths = countByMonth(orders.map((o) => o.createdAt), londonToday());
   const unanswered = orders.filter((o) => o.status === "placed").length;
 
   return (
@@ -97,27 +89,25 @@ export default async function ShopPage({
         <Box sx={{ border: `1px dashed ${tokens.rule}`, borderRadius: 1.5, p: 4,
                    textAlign: "center" }}>
           <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-            Nothing listed yet. Merchandise is set up on the club record.
+            Nothing listed yet. Add what the club sells from Shop in the console.
           </Typography>
         </Box>
       )}
 
-      {canManage ? (
-        <Section title="Orders" icon={InventoryIcon}>
-          <OrderQueue orders={orders} slug={slug} faction={faction} />
-
-          {/* Two orders waiting is fine in a month with thirty and a disaster
-              in a month with two, and the queue above cannot say which. */}
-          <SectionPulse
-            label="Orders over the year"
-            labels={orderMonths.map((m) => m.label)}
-            series={[
-              { name: "Orders placed", color: faction.base,
-                values: orderMonths.map((m) => m.value) },
-            ]}
-            note={`${orders.length} in the last year · ${unanswered} still to answer`}
-          />
-        </Section>
+      {/* The queue moved into the console, beside the items it is about. This
+          page is where members buy; answering an order is the club's work and
+          belongs with the rest of it. */}
+      {canManage && unanswered ? (
+        <Box sx={{ mt: 4 }}>
+          <NextLink href={`/clubs/${slug}/manage/shop?tab=orders`}
+            style={{ textDecoration: "none" }}>
+            <Typography variant="body2" sx={{ color: tokens.brand, fontWeight: 600 }}>
+              {unanswered === 1
+                ? "One order is waiting on you \u203a"
+                : `${unanswered} orders are waiting on you \u203a`}
+            </Typography>
+          </NextLink>
+        </Box>
       ) : null}
     </Container>
   );

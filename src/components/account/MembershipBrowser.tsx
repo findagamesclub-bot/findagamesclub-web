@@ -11,6 +11,7 @@ import { usePagedList } from "@/hooks/usePagedList";
 import FilterBar from "./FilterBar";
 import MembershipCard from "./MembershipCard";
 import UpgradeRequest from "./UpgradeRequest";
+import { higherTiers } from "@/utils/membership-tiers";
 import {
   countNeedingAttention, filterMemberships,
   type MembershipFilter, type MembershipSort,
@@ -123,7 +124,12 @@ export default function MembershipBrowser({
               <MembershipCard
                 key={membership.membershipId}
                 membership={membership}
+                // Only when there is something to put in it. The footer is a
+                // bordered strip, so passing a component that renders nothing
+                // left an empty grey bar on every card at the top of its ladder.
                 action={membership.status === "approved"
+                  && (membership.requestedTierKey
+                      || higherTiers(membership.tiers, membership.tierKey).length > 0)
                   ? <UpgradeRequest membership={membership} />
                   : undefined}
               />

@@ -22,7 +22,17 @@ export function pairOf(a: string, b: string): { low: string; high: string } {
   return a < b ? { low: a, high: b } : { low: b, high: a };
 }
 
-const keyOf = (clubId: number, low: string, high: string) => `${clubId}:${low}:${high}`;
+/**
+ * One thread's key.
+ *
+ * `pair_low` and `pair_high` are generated columns, and Postgres reports every
+ * generated column as nullable, so the generated types call them
+ * `string | null`. They are `least()` and `greatest()` over two NOT NULL
+ * columns and cannot be null. The coalesce is here to satisfy the compiler,
+ * not because it can happen.
+ */
+const keyOf = (clubId: number, low: string | null, high: string | null) =>
+  `${clubId}:${low ?? ""}:${high ?? ""}`;
 
 /**
  * A message from the site rather than from a club.
