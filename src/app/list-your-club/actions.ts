@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/services/auth.service";
+import { carryListingFrom, listingBackTarget } from "@/utils/back-link";
 import {
   cancelListing, deleteListing, restartListing, startListing, submitListing,
 } from "@/services/submissions.service";
@@ -15,7 +16,7 @@ export type ListingFlowState = { error?: string; notice?: string };
  * A redirect rather than a page that says "created". Nothing has been typed
  * yet, so a confirmation would be confirming an empty row.
  */
-export async function startListingAction(): Promise<void> {
+export async function startListingAction(data?: FormData): Promise<void> {
   const viewer = await getCurrentProfile();
   if (!viewer) redirect("/auth/sign-up?next=/list-your-club");
 
@@ -25,7 +26,9 @@ export async function startListingAction(): Promise<void> {
   } catch {
     redirect("/list-your-club?failed=1");
   }
-  redirect(`/list-your-club/${id}/profile`);
+  // The door it was started from, so back leads out of the same one. Filtered
+  // through the allowlist rather than trusted, since this arrives in a form.
+  redirect(`/list-your-club/${id}/profile${carryListingFrom(data?.get("from") as string)}`);
 }
 
 /**
@@ -78,8 +81,9 @@ export async function cancelListingAction(
   revalidatePath("/admin", "layout");
 
   // Back to the list rather than to the account overview: somebody who has just
-  // stopped one of several listings is still looking at the others.
-  redirect("/account/listings");
+  // stopped one of several listings is still looking at the others, and to the
+  // door they came in by rather than whichever of the two was hardcoded.
+  redirect(listingBackTarget(data.get("from") as string).href);
 }
 
 /**
@@ -102,7 +106,8 @@ export async function restartListingAction(
   const result = await restartListing(id);
   if (!result.ok) return { error: result.error };
 
-  redirect(`/list-your-club/${result.draftId}/review`);
+  redirect(`/list-your-club/${result.draftId}/review`
+    + carryListingFrom(data.get("from") as string));
 }
 
 /**
@@ -123,5 +128,5 @@ export async function deleteListingAction(
   const result = await deleteListing(id);
   if (!result.ok) return { error: result.error ?? "Could not delete that. Try again." };
 
-  redirect("/account/listings");
+  redirect(listingBackTarget(data.get("from") as string).href);
 }

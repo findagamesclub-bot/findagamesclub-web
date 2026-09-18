@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -44,6 +44,11 @@ export default function ResultDialog({
 
   const [state, submit, busy] = useActionState<ResultState, FormData>(recordResultAction, {});
   const [clearState, clear, clearing] = useActionState<ResultState, FormData>(clearResultAction, {});
+
+  // Clearing is dispatched from a click rather than through a form action, so
+  // it needs a transition. Without one React warns and `clearing` never flips,
+  // which means the button's spinner never shows.
+  const [, startClear] = useTransition();
   useActionToast(state);
   useActionToast(clearState);
 
@@ -139,7 +144,7 @@ export default function ResultDialog({
                 onClick={() => {
                   const data = new FormData();
                   data.set("bookingId", String(game.id));
-                  clear(data);
+                  startClear(() => clear(data));
                 }}
                 sx={{ color: tokens.danger, mr: "auto" }}>
                 Clear it

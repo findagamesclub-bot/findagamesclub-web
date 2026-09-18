@@ -28,13 +28,18 @@ export type ListingStep = {
  * would make an unfinished listing look broken rather than unfinished.
  */
 export default function ListingSteps({
-  steps, current, base, summary, fraction,
+  steps, current, base, summary, fraction, trail = "",
 }: {
   steps: ListingStep[];
   /** The slug of the step being edited. */
   current: string;
   /** `/clubs/didcot/manage/listing` */
   base: string;
+  /**
+   * The `?from=` trail, carried onto every step so back still knows the way out
+   * after somebody has moved through the builder.
+   */
+  trail?: string;
   summary: string;
   fraction: number;
 }) {
@@ -65,7 +70,7 @@ export default function ListingSteps({
           const done = step.done;
 
           return (
-            <NextLink key={step.slug} href={`${base}/${step.slug}`}
+            <NextLink key={step.slug} href={`${base}/${step.slug}${trail}`}
               style={{ textDecoration: "none", color: "inherit" }}
               aria-current={here ? "step" : undefined}>
               <Stack spacing={0.5}

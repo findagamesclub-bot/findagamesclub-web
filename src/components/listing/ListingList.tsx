@@ -23,6 +23,7 @@ import {
   type ListingFlowState,
 } from "@/app/list-your-club/actions";
 import { ownerCanCancel, ownerCanEdit, ownerCanRestart } from "@/utils/submission-status";
+import { carryListingFrom } from "@/utils/back-link";
 import type { ListingCard } from "@/services/submissions.service";
 import { shortDate } from "@/utils/dates";
 import { mono, tokens } from "@/lib/tokens";
@@ -37,9 +38,15 @@ import { mono, tokens } from "@/lib/tokens";
  * and a draft offers the step it stopped on.
  */
 export default function ListingList({
-  cards, limit,
+  cards, limit, from = "",
 }: {
   cards: ListingCard[];
+  /**
+   * Which page these cards are on, carried into the builder so its back link
+   * leads out of the same door. Two pages show them and back went to whichever
+   * one was hardcoded.
+   */
+  from?: string;
   /**
    * Show at most this many. The page that lists them all leaves it out; a page
    * that only mentions them shows the newest few and links to the rest, so
@@ -64,7 +71,11 @@ export default function ListingList({
   // Dispatched from onSubmit inside a transition, not through the form's
   // `action` prop, which is the house pattern since React 19 resets a form once
   // its action has run.
-  const [, startAgain] = useTransition();
+  // Every dispatch from a click on these cards goes through this. React 19
+  // warns when a useActionState action is called outside one, and the warning
+  // understates it: `isPending` never flips, so the confirm dialog's spinner
+  // never shows and it never closes itself.
+  const [, startAction] = useTransition();
 
   const theme = useTheme();
   const onPhone = useMediaQuery(theme.breakpoints.down("sm"));
@@ -84,6 +95,11 @@ export default function ListingList({
         : tone === "warn" ? tokens.brass : tokens.inkMuted;
 
   const shown = limit ? cards.slice(0, limit) : cards;
+  const trail = carryListingFrom(from);
+
+  // Every form on a card carries the door too, so stopping or deleting one
+  // lands back where they were rather than in the other shell.
+  const withFrom = (data: FormData) => { if (from) data.set("from", from); return data; };
 
   return (
     // A grid, not a column. Each card is a short, self-contained thing and a
@@ -138,7 +154,7 @@ export default function ListingList({
           <Stack direction="row" spacing={1.5}
             sx={{ alignItems: "center", flexWrap: "wrap", pt: 0.25 }} useFlexGap>
             {ownerCanEdit(card.status) ? (
-              <NextLink href={`/list-your-club/${card.id}/${card.lastStep}`}
+              <NextLink href={`/list-your-club/${card.id}/${card.lastStep}${trail}`}
                 style={{ textDecoration: "none" }}>
                 <Button variant="contained" sx={{ alignSelf: "flex-start" }}>
                   {card.status === "changes_requested"
@@ -155,9 +171,9 @@ export default function ListingList({
                 onSubmit={(event) => {
                   event.preventDefault();
                   setRestarting(card.id);
-                  const data = new FormData();
+                  const data = withFrom(new FormData());
                   data.set("draft", String(card.id));
-                  startAgain(() => again(data));
+                  startAction(() => again(data));
                 }}>
                 <SubmitButton
                   label="Start again from this one"
@@ -285,9 +301,10 @@ export default function ListingList({
         destructive
         busy={asking?.bin ? binning : stopping}
         onConfirm={() => {
-          const data = new FormData();
+          const data = withFrom(new FormData());
           data.set("draft", String(asking?.card.id ?? 0));
-          (asking?.bin ? bin : stop)(data);
+          const dispatch = asking?.bin ? bin : stop;
+          startAction(() => dispatch(data));
         }}
       />
     </Box>

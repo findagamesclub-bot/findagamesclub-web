@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -60,6 +60,11 @@ export default function SubmitStep({
   useActionToast(stopState);
 
   const [confirming, setConfirming] = useState(false);
+
+  // Dispatched from the dialog's confirm rather than a form action, so it needs
+  // a transition: without one `stopping` never flips, and that is exactly the
+  // flag the dialog uses to show its spinner and close itself.
+  const [, startStop] = useTransition();
 
   const outstanding = checks.filter((c) => !c.ready);
   const { done, total } = readinessFields(checks);
@@ -167,7 +172,7 @@ export default function SubmitStep({
         onConfirm={() => {
           const data = new FormData();
           data.set("draft", String(draftId));
-          stop(data);
+          startStop(() => stop(data));
         }}
       />
     </Stack>

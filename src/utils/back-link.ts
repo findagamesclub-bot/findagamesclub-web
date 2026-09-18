@@ -110,3 +110,39 @@ export function carryFrom(from: string | string[] | undefined): string {
   const source = fromParam(from);
   return source ? `?from=${source}` : "";
 }
+
+/**
+ * Where back goes inside the listing builder.
+ *
+ * The builder is reachable from two doors that show the same cards:
+ * `/list-your-club`, which is the page for club organisers, and
+ * `/account/listings` inside the account shell. Back was hardcoded to the
+ * second, so somebody who pressed "List a different club" on the first was
+ * dropped into a different shell on the way out.
+ *
+ * Same fixed-list discipline as everything above, and for the same reason: a
+ * path taken from the query string would let any link into the app aim the
+ * back button wherever it liked.
+ */
+export const FROM_LIST_YOUR_CLUB = "list-your-club";
+
+export function listingFrom(from: string | string[] | undefined): string | null {
+  const source = Array.isArray(from) ? from[0] : from;
+  return source === FROM_LIST_YOUR_CLUB ? source : null;
+}
+
+/**
+ * The label is the same either way because it is true of both pages: they
+ * show the same listings. Only the destination changes, which is the part
+ * somebody actually notices.
+ */
+export function listingBackTarget(from: string | string[] | undefined): BackTarget {
+  return listingFrom(from)
+    ? { href: "/list-your-club", label: "Back to your listings" }
+    : { href: "/account/listings", label: "Back to your listings" };
+}
+
+/** Carries the trail to the next step, so back still knows the way out. */
+export function carryListingFrom(from: string | string[] | undefined): string {
+  return listingFrom(from) ? `?from=${FROM_LIST_YOUR_CLUB}` : "";
+}

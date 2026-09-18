@@ -9,6 +9,7 @@ import StorefrontIcon from "@mui/icons-material/Storefront";
 import InsightsIcon from "@mui/icons-material/Insights";
 import LinkButton from "@/components/ui/LinkButton";
 import StartListingButton from "@/components/listing/StartListingButton";
+import { FROM_LIST_YOUR_CLUB } from "@/utils/back-link";
 import ListingList from "@/components/listing/ListingList";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getMyListings } from "@/services/submissions.service";
@@ -72,7 +73,7 @@ export default async function ListYourClubPage() {
 
           {resume ? null : viewer ? (
             <Stack direction="row" spacing={1.5} sx={{ pt: 1, flexWrap: "wrap" }} useFlexGap>
-              <StartListingButton />
+              <StartListingButton from={FROM_LIST_YOUR_CLUB} />
               <LinkButton href="/clubs" variant="outlined">See how clubs look</LinkButton>
             </Stack>
           ) : (
@@ -106,9 +107,10 @@ export default async function ListYourClubPage() {
             where they came to press one button. */}
         {resume ? (
           <Stack spacing={2}>
-            <ListingList cards={mine} limit={SHOW_HERE} />
+            <ListingList cards={mine} limit={SHOW_HERE} from={FROM_LIST_YOUR_CLUB} />
             <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap" }} useFlexGap>
-              <StartListingButton label="List a different club" variant="outlined" />
+              <StartListingButton label="List a different club" variant="outlined"
+                from={FROM_LIST_YOUR_CLUB} />
               {mine.length > SHOW_HERE ? (
                 <LinkButton href="/account/listings" variant="text">
                   {`See all ${mine.length} of your listings`}
@@ -148,7 +150,7 @@ export default async function ListYourClubPage() {
           </Stack>
 
           {resume ? null : viewer ? (
-            <StartListingButton />
+            <StartListingButton from={FROM_LIST_YOUR_CLUB} />
           ) : (
             <LinkButton href="/auth/sign-up?next=/list-your-club" variant="contained" size="large"
               sx={{ alignSelf: "flex-start" }}>

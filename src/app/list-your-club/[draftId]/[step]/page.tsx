@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import Container from "@mui/material/Container";
 import PageHead from "@/components/ui/PageHead";
 import BackLink from "@/components/ui/BackLink";
+import { carryListingFrom, listingBackTarget } from "@/utils/back-link";
 import ListingSteps from "@/components/listing/ListingSteps";
 import ProfileStep from "@/components/listing/ProfileStep";
 import ContentStep from "@/components/listing/ContentStep";
@@ -34,9 +35,14 @@ export const metadata = { title: "List your club" };
  * to the one they were on, and legacy loses the lot.
  */
 export default async function ListingDraftStepPage({
-  params,
+  params, searchParams,
 }: PageProps<"/list-your-club/[draftId]/[step]">) {
   const { draftId, step } = await params;
+  // Which door they came in by. Two pages show these cards, and back used to go
+  // to whichever one was hardcoded rather than the one they were standing on.
+  const { from } = await searchParams;
+  const back = listingBackTarget(from);
+  const trail = carryListingFrom(from);
   if (!isStep(step)) notFound();
 
   const viewer = await getCurrentProfile();
@@ -72,7 +78,7 @@ export default async function ListingDraftStepPage({
           the flow at all, so somebody four steps in had the browser's own back
           button and nothing else. Everything is saved, so leaving costs
           nothing, and the label says where it goes rather than "Back". */}
-      <BackLink href="/account/listings" label="Back to your listings" />
+      <BackLink href={back.href} label={back.label} />
 
       <PageHead
         title="List your club"
@@ -80,6 +86,7 @@ export default async function ListingDraftStepPage({
       />
 
       <ListingSteps
+        trail={trail}
         steps={LISTING_STEPS.map((s) => ({
           ...s,
           status: status[LISTING_STEPS.findIndex((x) => x.slug === s.slug) + 1] ?? "",
