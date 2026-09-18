@@ -17,15 +17,16 @@ import type { BuyableTicket } from "@/types/ticket";
  * is on sale, how each type is going, and the way to the door list.
  */
 export default function TicketSalesBoard({
-  tickets, faction, slug, eventKey, hasEnded, trail = "",
+  tickets, faction, slug, eventId, hasEnded, cancelled,
 }: {
   tickets: BuyableTicket[];
   faction: Faction;
   slug: string;
-  eventKey: string;
+  /** The row id, since the door list lives in the console and addresses by it. */
+  eventId: number;
   hasEnded: boolean;
-  /** Query string that keeps the door list's back link pointing home. */
-  trail?: string;
+  /** Called off, so the figures are a record of what had been reserved. */
+  cancelled: boolean;
 }) {
   const sold = tickets.reduce((n, t) => n + t.sold, 0);
   const takings = tickets.reduce((n, t) => n + t.sold * t.unitAmount, 0);
@@ -85,7 +86,7 @@ export default function TicketSalesBoard({
         </Stack>
 
         {sold ? (
-          <NextLink href={`/clubs/${slug}/events/${eventKey}/attendees${trail}`}
+          <NextLink href={`/clubs/${slug}/manage/events/${eventId}/roster`}
             style={{ textDecoration: "none", display: "block" }}>
             <Stack direction="row" spacing={0.5}
               sx={{ alignItems: "center", px: 2, py: 1.4,
@@ -102,9 +103,11 @@ export default function TicketSalesBoard({
       </Box>
 
       <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-        {hasEnded
-          ? "This event has finished. Figures are the final reserved count."
-          : "Figures count reserved bookings. Payment is taken before the event or on the day."}
+        {cancelled
+          ? "This event was called off. Figures are what had been reserved before you called it off."
+          : hasEnded
+            ? "This event has finished. Figures are the final reserved count."
+            : "Figures count reserved bookings. Payment is taken before the event or on the day."}
       </Typography>
     </Stack>
   );

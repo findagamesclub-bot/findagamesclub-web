@@ -5,6 +5,7 @@ import Typography from "@mui/material/Typography";
 import ClubGrid from "@/components/clubs/ClubGrid";
 import HeroFan from "@/components/home/HeroFan";
 import LinkButton from "@/components/ui/LinkButton";
+import { FOOTER_GAP } from "@/components/layout/SiteFooter";
 import { listClubs } from "@/services/clubs.service";
 import { getCurrentProfile } from "@/services/auth.service";
 import { mono, tokens } from "@/lib/tokens";
@@ -98,6 +99,46 @@ export default async function HomePage() {
             <LinkButton href="/clubs" variant="text">See all {total}</LinkButton>
           </Stack>
           <ClubGrid clubs={clubs.slice(0, 6)} />
+        </Container>
+      </Box>
+
+      {/* The other half of the audience. Everything above this is written for
+          somebody looking for a club; this is the one line on the page for
+          somebody who runs one, and without it the listing flow had no door on
+          the front of the site at all. Last, not first, because the people
+          looking for a club outnumber the people running one. */}
+      <Box sx={{ backgroundColor: tokens.ink, color: "#FFFFFF",
+                 // Flush with the footer. This band already ends the page on a
+                 // dark ground, so the footer's usual breathing room above it
+                 // would leave a pale strip between two dark blocks.
+                 mb: { xs: -FOOTER_GAP.xs, md: -FOOTER_GAP.md } }}>
+        <Container maxWidth="lg" sx={{ py: { xs: 5, md: 7 } }}>
+          <Stack direction={{ xs: "column", md: "row" }}
+            spacing={{ xs: 2.5, md: 5 }}
+            sx={{ alignItems: { md: "center" }, justifyContent: "space-between" }}>
+            <Stack spacing={1.25} sx={{ maxWidth: 560 }}>
+              <Typography sx={{ fontFamily: mono, fontSize: "0.7rem", fontWeight: 700,
+                                letterSpacing: "0.14em", color: tokens.brassOnDark }}>
+                RUN A CLUB?
+              </Typography>
+              <Typography variant="h2" sx={{ fontSize: { xs: "1.7rem", md: "2rem" },
+                                             color: "#FFFFFF" }}>
+                Put yours in the directory
+              </Typography>
+              <Typography variant="body1" sx={{ color: "#B9C9DD" }}>
+                Free to list. Take table bookings, run events and sell tickets,
+                keep your members in one place, and stop halfway if the night
+                gets busy.
+              </Typography>
+            </Stack>
+
+            <LinkButton href="/list-your-club" variant="contained" size="large"
+              sx={{ alignSelf: { xs: "flex-start", md: "center" }, flexShrink: 0,
+                    backgroundColor: tokens.brass, color: "#FFFFFF",
+                    "&:hover": { backgroundColor: "#9C711F" } }}>
+              List your club
+            </LinkButton>
+          </Stack>
         </Container>
       </Box>
     </Box>

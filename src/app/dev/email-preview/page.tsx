@@ -65,6 +65,36 @@ export default async function EmailPreviewPage({ searchParams }: PageProps<"/dev
     : which === "membershipApproved" ? templates.membershipApproved({ name: "Gulnabi", clubName: club, tierLabel: "Premium Member", url })
     : which === "membershipDeclined" ? templates.membershipDeclined({ name: "Gulnabi", clubName: club, reason: "We are at capacity until September.", url })
     : which === "membershipForOwner" ? templates.membershipPendingForOwner({ clubName: club, applicantName: "Gulnabi Afridi", url })
+    : which === "listingReceived" ? templates.listingReceived({
+      name: "Gulnabi", clubName: "Sheffield Steel Wargamers", url })
+    : which === "listingChanges" ? templates.listingChangesRequested({
+      name: "Gulnabi", clubName: "Sheffield Steel Wargamers",
+      note: "Add more time for events", url })
+    : which === "listingApproved" ? templates.listingApproved({
+      name: "Gulnabi", clubName: "Sheffield Steel Wargamers",
+      url, consoleUrl: url })
+    : which === "listingDeclined" ? templates.listingDeclined({
+      name: "Gulnabi", clubName: "Sheffield Steel Wargamers",
+      reason: "This is a shop rather than a club, so it belongs somewhere else.", url })
+    : which === "listingPaused" ? templates.listingPaused({
+      name: "Gulnabi", clubName: "Sheffield Steel Wargamers", url })
+    : which === "listingResumed" ? templates.listingResumed({
+      name: "Gulnabi", clubName: "Sheffield Steel Wargamers", url })
+    : which === "clubPausedAdmin" ? templates.clubPausedAdmin({
+      clubName: "Sheffield Steel Wargamers", city: "Sheffield", url })
+    : which === "clubResumedAdmin" ? templates.clubResumedAdmin({
+      clubName: "Sheffield Steel Wargamers", city: "Sheffield", url })
+    : which === "listingResubmitted" ? templates.listingResubmitted({
+      name: "Gulnabi", clubName: "Sheffield Steel Wargamers", url })
+    : which === "listingResubmittedAdmin" ? templates.listingResubmittedAdmin({
+      clubName: "Sheffield Steel Wargamers", city: "Sheffield",
+      ownerName: "Gulnabi Afridi", url })
+    : which === "listingSubmitted" ? templates.listingSubmittedAdmin({
+      clubName: "Sheffield Steel Wargamers", city: "Sheffield",
+      ownerName: "Gulnabi Afridi", url })
+    : which === "listingWithdrawn" ? templates.listingWithdrawnAdmin({
+      clubName: "Sheffield Steel Wargamers", city: "Sheffield",
+      ownerName: "Gulnabi Afridi", url })
     : which === "reset" ? templates.resetPassword({ name: "Gulnabi", url })
     : which === "welcome" ? templates.welcome({ name: "Gulnabi", url })
     : which === "passwordChanged" ? templates.passwordChanged({ name: "Gulnabi", url })
@@ -87,7 +117,11 @@ export default async function EmailPreviewPage({ searchParams }: PageProps<"/dev
           "tableBooked", "tablePromoted", "tableCancelled",
           "merchandiseOrdered", "coachingBooked",
           "ticketsBooked", "ticketsCancelled",
-          "ticketsForOwner", "ticketsCancelledForOwner", "gameFound", "lookingForGameForOwner"].map((t) => (
+          "ticketsForOwner", "ticketsCancelledForOwner", "gameFound", "lookingForGameForOwner",
+          "listingReceived", "listingChanges", "listingApproved", "listingDeclined",
+          "listingResubmitted", "listingSubmitted", "listingResubmittedAdmin",
+          "listingWithdrawn", "listingPaused", "listingResumed",
+          "clubPausedAdmin", "clubResumedAdmin"].map((t) => (
           <a key={t} href={`?t=${t}`} style={{ marginRight: 12 }}>{t}</a>
         ))}
         <strong style={{ marginLeft: 12 }}>{email.subject}</strong>

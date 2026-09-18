@@ -112,3 +112,25 @@ export function parseProfileStep(form: FormData): Parsed<ProfileStep> {
 
   return Object.keys(errors).length ? { ok: false, errors } : { ok: true, value };
 }
+
+/**
+ * What to put in the toast when fields were refused.
+ *
+ * "Some of that needs another look" is true and useless: it does not say which
+ * of thirteen fields, and the client read the one real message underneath as
+ * ordinary guidance rather than as the reason the save stopped. One problem
+ * gets named outright; several get counted, and the fields carry the detail.
+ */
+export function refusedMessage(
+  errors: FieldErrors | undefined, fallback: string,
+): string {
+  const messages = Object.values(errors ?? {})
+    .map((message) => (message ?? "").trim())
+    .filter(Boolean);
+
+  if (messages.length === 1) return messages[0]!;
+  if (messages.length > 1) {
+    return `${messages.length} things need another look. They are marked below.`;
+  }
+  return fallback;
+}

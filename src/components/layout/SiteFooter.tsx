@@ -31,12 +31,22 @@ function Column({ title, children }: { title: string; children: React.ReactNode 
   );
 }
 
+/**
+ * The breathing room above the footer.
+ *
+ * Right for a page that ends in ordinary content on the pale ground. A section
+ * that ends the page with its own full-bleed background has to cancel it, or
+ * the strip of pale between the two reads as a mistake. Exported so the two
+ * cannot drift apart: negate this rather than guessing the same number twice.
+ */
+export const FOOTER_GAP = { xs: 8, md: 12 } as const;
+
 export default function SiteFooter({ signedIn = false }: { signedIn?: boolean }) {
   return (
     <Box
       component="footer"
       sx={{
-        mt: { xs: 8, md: 12 },
+        mt: FOOTER_GAP,
         backgroundColor: tokens.ink,
         color: "#E8EFF8",
         // A thin brass rule across the top: the boundary reads as intentional
@@ -71,6 +81,13 @@ export default function SiteFooter({ signedIn = false }: { signedIn?: boolean })
           <Stack direction="row" spacing={{ xs: 4, sm: 6 }} useFlexGap sx={{ flexWrap: "wrap" }}>
             <Column title="Browse">
               <Link href="/clubs" style={LINK}>Club directory</Link>
+              <Link href="/events" style={LINK}>Events</Link>
+            </Column>
+            {/* A page nobody can reach is a page nobody visits. Before this the
+                only route to it was the contact page, which is not where
+                somebody who runs a club would think to look. */}
+            <Column title="For clubs">
+              <Link href="/list-your-club" style={LINK}>List your club</Link>
             </Column>
             <Column title="Account">
               {signedIn ? (

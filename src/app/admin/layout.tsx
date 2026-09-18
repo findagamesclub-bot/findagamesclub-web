@@ -6,6 +6,7 @@ import AdminSidebar from "@/components/admin/AdminSidebar";
 import { getUnreadCount as getUnreadNotifications } from "@/services/notifications.service";
 import { getUnreadCount as getUnreadMessages } from "@/services/messages.service";
 import { getCurrentProfile } from "@/services/auth.service";
+import { countWaitingSubmissions } from "@/services/submissionReview.service";
 import { tokens } from "@/lib/tokens";
 
 /**
@@ -27,9 +28,12 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   // The two things addressed to them personally. An admin has no header bell
   // and no visitor tabs, so these counts only exist in the rail. Both caught:
   // a badge is not worth failing the console over.
-  const [unreadNotifications, unreadMessages] = await Promise.all([
+  // One wave, not three. Each of these is a count rather than a list, so the
+  // rail costs one round trip however many rows are behind the numbers.
+  const [unreadNotifications, unreadMessages, waitingSubmissions] = await Promise.all([
     getUnreadNotifications(viewer.id).catch(() => 0),
     getUnreadMessages(viewer.id).catch(() => 0),
+    countWaitingSubmissions().catch(() => 0),
   ]);
 
   return (
@@ -59,7 +63,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
                      py: { xs: 1.5, md: 3 },
                      borderRight: { md: `1px solid ${tokens.rule}` },
                      pr: { md: 2 } }}>
-            <AdminSidebar counts={{ unreadNotifications, unreadMessages }}
+            <AdminSidebar counts={{ unreadNotifications, unreadMessages, waitingSubmissions }}
               viewerId={viewer.id} viewerName={viewer.full_name || "Site admin"} />
           </Box>
 

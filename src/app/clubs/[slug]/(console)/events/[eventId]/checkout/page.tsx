@@ -25,6 +25,11 @@ export default async function CheckoutPage({
   const event = await getEventDetail(slug, eventId, viewer);
   if (!event) notFound();
 
+  // A bookmarked checkout for an event the club has since called off. The
+  // database refuses it anyway, but a form that takes a name and an email
+  // before saying so wastes the buyer's time: the event page explains it.
+  if (event.status === "cancelled") redirect(`/clubs/${slug}/events/${eventId}`);
+
   const membership = await getMyMembership(event.clubId, viewer.id);
   const { cart } = await getBuyableTickets({
     eventId: event.id,

@@ -11,6 +11,7 @@ import SchoolIcon from "@mui/icons-material/School";
 import StorefrontIcon from "@mui/icons-material/Storefront";
 import GroupsIcon from "@mui/icons-material/Groups";
 import EventIcon from "@mui/icons-material/Event";
+import AddClubIcon from "@mui/icons-material/AddBusiness";
 import type { NavGroup } from "@/components/ui/side-nav";
 import type { AccountCounts } from "@/services/dashboard.service";
 
@@ -67,12 +68,19 @@ export function accountGroups(counts: AccountCounts): NavGroup[] {
           icon: NotificationsIcon, count: counts.alerts },
       ],
     },
-    ...(counts.ownsClubs ? [{
+    {
+      // "List your club" is here for everybody, not only for somebody who runs
+      // none. Running one club is the commonest reason to run a second, and the
+      // current app agrees: its Create Listing button is in the top bar whoever
+      // you are. Hiding it from owners was this rail deciding they were done.
       title: "Running a club",
       items: [
-        { label: "My clubs", href: "/my-clubs", icon: GroupsIcon },
-        { label: "My events", href: "/my-events", icon: EventIcon },
+        ...(counts.ownsClubs ? [
+          { label: "My clubs", href: "/my-clubs", icon: GroupsIcon },
+          { label: "My events", href: "/my-events", icon: EventIcon },
+        ] : []),
+        { label: "Club listings", href: "/account/listings", icon: AddClubIcon },
       ],
-    }] : []),
+    },
   ];
 }

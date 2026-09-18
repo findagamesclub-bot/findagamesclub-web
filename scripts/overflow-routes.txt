@@ -16,3 +16,5 @@
 /privacy-policy
 /terms-of-use
 /auth/sign-in
+/list-your-club
+/auth/sign-up

@@ -81,7 +81,9 @@ async function tellTheClub(
     const club = await memberships.findClubBasics(booking.clubId);
     if (!club?.owner_id) return;
     // Nobody is told about their own doing. The trigger applies the same rule.
-    const url = `${siteUrl()}/clubs/${booking.clubSlug}/events/${booking.legacyId}/attendees`;
+    // The console's roster, which is where a club acts on this: mark them
+    // paid, check them in, or give the place back.
+    const url = `${siteUrl()}/clubs/${booking.clubSlug}/manage/events/${booking.eventId}/roster`;
     await deliver(club.owner_id, () => make(url));
   } catch (error) {
     console.error("club ticket notification failed", { reference: booking.reference, error });

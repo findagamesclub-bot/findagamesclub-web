@@ -15,6 +15,8 @@ import {
   findEditableContent, findEditablePricing, findEditableSchedule, findPricingReadiness,
 } from "@/repositories/listingSections.repository";
 import { parseTokens } from "@/utils/listing-draft";
+import { LISTING_STEPS } from "@/utils/listing-steps";
+import type { StepTarget } from "@/components/listing/StepTarget";
 import { readinessSummary, readinessFraction } from "@/utils/listing-readiness";
 
 /**
@@ -24,13 +26,9 @@ import { readinessSummary, readinessFraction } from "@/utils/listing-readiness";
  * wizard held in memory, so a club secretary who stops after two steps on a
  * club night can come back to the one they were on.
  */
-const STEPS = [
-  { slug: "profile", label: "Profile" },
-  { slug: "content", label: "Content" },
-  { slug: "pricing", label: "Pricing" },
-  { slug: "schedule", label: "Schedule" },
-  { slug: "review", label: "Review" },
-] as const;
+// Shared with the public builder, so the two cannot disagree about what step
+// three is called.
+const STEPS = LISTING_STEPS;
 
 export async function generateMetadata({ params }: PageProps<"/clubs/[slug]/manage/listing/[step]">) {
   const { slug } = await params;
@@ -63,7 +61,9 @@ export default async function ListingStepPage({
 
   // Computed from what is saved, never from the form. Legacy reads its own DOM,
   // which is why its checklist is wrong the moment you reload.
-  const { checks, status } = readiness({
+  const target: StepTarget = { kind: "club", slug };
+
+  const { checks, status, done } = readiness({
     name: club.name, city: club.city, summary: club.summary,
     description: club.description, formats: club.formats,
     venueName: club.venue.name, postcode: club.venue.postcode,
@@ -89,6 +89,7 @@ export default async function ListingStepPage({
         steps={STEPS.map((s) => ({
           ...s,
           status: status[STEPS.findIndex((x) => x.slug === s.slug) + 1] ?? "",
+          done: done[STEPS.findIndex((x) => x.slug === s.slug) + 1] ?? false,
         }))}
         current={step}
         base={`/clubs/${slug}/manage/listing`}
@@ -98,7 +99,7 @@ export default async function ListingStepPage({
 
       {step === "profile" ? (
         <ProfileStep
-          slug={slug}
+          target={target}
           values={{
             name: club.name,
             city: club.city,
@@ -120,7 +121,7 @@ export default async function ListingStepPage({
 
       {step === "content" ? (
         <ContentStep
-          slug={slug}
+          target={target}
           clubId={club.id}
           values={{
             games: club.games,
@@ -140,16 +141,21 @@ export default async function ListingStepPage({
       ) : null}
 
       {step === "schedule" && timetable ? (
-        <ScheduleStep slug={slug} nights={timetable.nights} notices={timetable.notices} />
+        <ScheduleStep target={target} nights={timetable.nights} notices={timetable.notices} />
       ) : null}
 
       {step === "pricing" && pricing ? (
-        <PricingStep slug={slug} models={pricing.models} tiers={pricing.tiers}
+        <PricingStep target={target} models={pricing.models} tiers={pricing.tiers}
           loyaltyEnabled={pricing.loyaltyEnabled} />
       ) : null}
 
       {step === "review" ? (
-        <ReviewStep checks={checks} base={`/clubs/${slug}/manage/listing`} clubSlug={slug} />
+        <ReviewStep checks={checks} base={`/clubs/${slug}/manage/listing`} clubSlug={slug}
+          paused={club.status === "paused"}
+          // Owner or admin only. A manager edits the listing; taking the club
+          // out of the directory is not the same kind of act, and the database
+          // refuses them anyway.
+          canPause={access.role === "owner" || access.role === "admin"} />
       ) : null}
     </Container>
   );

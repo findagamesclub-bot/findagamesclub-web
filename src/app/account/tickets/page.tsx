@@ -6,6 +6,7 @@ import MyTickets from "@/components/tickets/MyTickets";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getMyBookings } from "@/services/eventBookings.service";
 import { clubIdentity } from "@/utils/club-identity";
+import { londonToday } from "@/services/bookingCalendar.service";
 
 export const metadata = { title: "Your tickets" };
 
@@ -14,11 +15,6 @@ export default async function MyTicketsPage() {
   if (!viewer) redirect("/auth/sign-in?next=/account/tickets");
 
   const bookings = await getMyBookings(viewer.id);
-
-  // Cancelled ones stay, at the bottom: a booking that vanished is a booking
-  // the member cannot prove they ever made.
-  const live = bookings.filter((b) => b.status !== "cancelled");
-  const past = bookings.filter((b) => b.status === "cancelled");
 
   return (
     // A ticket is read, not scanned in a grid. Held to a column and centred,
@@ -36,9 +32,13 @@ export default async function MyTicketsPage() {
           action={{ label: "Browse events", href: "/events" }}
         />
       ) : (
+        // Cancelled ones stay, under their own tab: a booking that vanished is
+        // a booking the member cannot prove they ever made.
         <MyTickets
-          live={live.map((b) => ({ booking: b, ...clubIdentity(b.clubSlug, b.clubName) }))}
-          past={past.map((b) => ({ booking: b, ...clubIdentity(b.clubSlug, b.clubName) }))}
+          today={londonToday()}
+          entries={bookings.map((b) => ({
+            booking: b, ...clubIdentity(b.clubSlug, b.clubName),
+          }))}
         />
       )}
     </Box>

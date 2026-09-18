@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import FormControlLabel from "@mui/material/FormControlLabel";
@@ -18,6 +18,7 @@ import Panel from "@/components/members/Panel";
 import RemoveRow from "@/components/ui/RemoveRow";
 import TierPerks from "./TierPerks";
 import SubmitButton from "@/components/ui/SubmitButton";
+import StepTargetFields, { type StepTarget } from "./StepTarget";
 import { useActionToast } from "@/components/ui/Toaster";
 import { saveListingStepAction, type ListingState } from
   "@/app/clubs/[slug]/(console)/manage/listing/[step]/actions";
@@ -48,15 +49,33 @@ export type TierRow = {
  * find that out from an error.
  */
 export default function PricingStep({
-  slug, models: initialModels, tiers: initialTiers, loyaltyEnabled,
+  target, models: initialModels, tiers: initialTiers, loyaltyEnabled,
 }: {
-  slug: string;
+  target: StepTarget;
   models: PricingModelRow[];
   tiers: TierRow[];
   loyaltyEnabled: boolean;
 }) {
-  const [state, submit] = useActionState<ListingState, FormData>(saveListingStepAction, {});
+  const [state, submit, saving] = useActionState<ListingState, FormData>(saveListingStepAction, {});
   useActionToast(state);
+
+  /**
+   * Submitted by hand rather than through the form's `action` prop.
+   *
+   * React 19 resets an uncontrolled form once its action has run. That is right
+   * when the save worked and catastrophic when it did not: a refused save
+   * emptied all thirteen fields and then said "some of that needs another look"
+   * about work that was no longer on screen. Dispatching the action ourselves
+   * keeps everything typed exactly where it was.
+   *
+   * The button is told it is busy for the same reason: `useFormStatus` only
+   * reports on a form that submits through `action`.
+   */
+  const send = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    startTransition(() => submit(data));
+  };
   const [models, setModels] = useState(initialModels);
   const [tiers, setTiers] = useState(initialTiers);
   const [basic, setBasic] = useState(initialTiers.find((t) => t.isBasic)?.key ?? "");
@@ -68,16 +87,21 @@ export default function PricingStep({
     setTiers((held) => held.map((t, i) => (i === index ? { ...t, ...patch } : t)));
 
   return (
-    <Box component="form" action={submit}>
-      <input type="hidden" name="slug" value={slug} />
-      <input type="hidden" name="step" value="pricing" />
+    <Box component="form" onSubmit={send}>
+      <StepTargetFields target={target} step="pricing" />
 
       <Stack spacing={2.5}>
         <Panel title="Coming for the evening" icon={PaymentsIcon}>
           <Stack spacing={1.5}>
+            {/* The currency is said once, in words, rather than stamped on the
+                field. A hard "£" in the box is wrong here: this field takes a
+                word as readily as a number, and somebody typing Free got
+                "£Free". Prices are pounds because every club in the directory
+                is UK-based, and a bare figure renders as "£4" on the club page,
+                which nothing on the form used to say. */}
             <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-              What somebody pays who is not a member. Leave it empty if you do
-              not charge.
+              What somebody pays who is not a member, in pounds. Type a figure
+              like 4, or a word like Free. Leave it empty if you do not charge.
             </Typography>
 
             {models.map((model, index) => (
@@ -113,8 +137,9 @@ export default function PricingStep({
         <Panel title="Membership tiers" icon={CardMembershipIcon}>
           <Stack spacing={1.5}>
             <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-              One of these is the tier people land on by joining. Renaming a tier
-              is safe; a tier somebody holds cannot be removed.
+              One of these is the tier people land on by joining, and prices are
+              in pounds. Renaming a tier is safe; a tier somebody holds cannot be
+              removed.
             </Typography>
 
             <RadioGroup value={basic} onChange={(e) => setBasic(e.target.value)}>
@@ -204,7 +229,7 @@ export default function PricingStep({
         <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
           Saving publishes straight away. Members see this on your club page.
         </Typography>
-        <SubmitButton label="Save changes" pendingLabel="Saving" />
+        <SubmitButton label="Save changes" pendingLabel="Saving" pending={saving} />
       </Stack>
     </Box>
   );

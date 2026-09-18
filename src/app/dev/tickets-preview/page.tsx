@@ -5,6 +5,8 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import EventTickets from "@/components/tickets/EventTickets";
 import TicketStub from "@/components/tickets/TicketStub";
+import MyTickets from "@/components/tickets/MyTickets";
+import EventCalledOff from "@/components/events/EventCalledOff";
 import AttendeeList from "@/components/tickets/AttendeeList";
 import { clubIdentity } from "@/utils/club-identity";
 import { tokens } from "@/lib/tokens";
@@ -27,12 +29,21 @@ export default function TicketsPreviewPage() {
       blockedReason: "Premium Membership members only.", inCart: 0 },
     { id: 4, label: "Late entry", price: "£35", unitAmount: 35, remaining: 0, sold: 1,
       soldOut: true, audienceLabel: "One place left on the day", blockedReason: null, inCart: 0 },
+    // One place left and it is already held. The plus has nowhere to go, in
+    // the row and in the drawer, and this is the case the client found by
+    // counting to three on a ticket that had one.
+    { id: 5, label: "Last minute entry", price: "£40", unitAmount: 40, remaining: 1, sold: 0,
+      soldOut: false, audienceLabel: "Open to everyone", blockedReason: null, inCart: 1 },
   ];
 
   const cart: EventCart = {
-    lines: [{ ticketTypeId: 1, label: "Standard entry", price: "£30", unitAmount: 30,
-              quantity: 2, lineTotal: 60 }],
-    subtotal: 60, discountPercent: 5, discountAmount: 3, total: 57,
+    lines: [
+      { ticketTypeId: 1, label: "Standard entry", price: "£30", unitAmount: 30,
+        quantity: 2, lineTotal: 60 },
+      { ticketTypeId: 5, label: "Last minute entry", price: "£40", unitAmount: 40,
+        quantity: 1, lineTotal: 40 },
+    ],
+    subtotal: 100, discountPercent: 5, discountAmount: 5, total: 95,
     currency: "GBP", tierLabel: "Premium Membership",
   };
 
@@ -41,7 +52,10 @@ export default function TicketsPreviewPage() {
     eventDate: "2026-09-26", clubSlug: "didcot-wargames-didcot", clubName: "Didcot Wargames", clubId: 9,
     legacyId: "2026-09-26-autumn-open-test", fullName: "Ada Marchetti",
     email: "ada@example.com", status: "reserved", subtotal: 60, discountAmount: 3,
-    total: 57, currency: "GBP", createdAt: "2026-08-22T10:00:00Z", lines: cart.lines,
+    total: 57, currency: "GBP", createdAt: "2026-08-22T10:00:00Z",
+    paymentStatus: "paid_in_advance", paymentMethod: "Bank transfer",
+    refundStatus: "not_due", cancelReason: "",
+    lines: cart.lines,
   };
 
   const attendees = [
@@ -64,9 +78,54 @@ export default function TicketsPreviewPage() {
         <Section label="The desk, signed in as a Basic member with a cart">
           <EventTickets
             tickets={tickets} cart={cart} faction={faction}
+            // A member with points to spend, so the drawer shows the field.
+            standing={{ subtotal: 60, currency: "GBP", discountPercent: 5,
+                        tierLabel: "Premium Membership", points: 240,
+                        pointValue: 0.05, redemptionCapPercent: 50 }}
+            fullName="Ada Marchetti" email="ada@example.com"
             slug="didcot-wargames-didcot" eventKey="2026-09-26-autumn-open-test"
-            eventId={115} signedIn hasEnded={false} myBookingReference={null}
+            eventId={115} signedIn hasEnded={false} cancelled={false}
+            myBookingReference={null}
           />
+        </Section>
+
+        <Section label="The desk on an event the club called off">
+          <EventTickets
+            tickets={tickets} cart={cart} faction={faction} standing={null}
+            fullName="Ada Marchetti" email="ada@example.com"
+            slug="didcot-wargames-didcot" eventKey="2026-09-26-autumn-open-test"
+            eventId={115} signedIn hasEnded={false} cancelled
+            myBookingReference={null}
+          />
+        </Section>
+
+        <Section label="The called-off banner, as a ticket holder sees it">
+          <EventCalledOff
+            reason="The hall flooded and we cannot get another one this month."
+            bookingReference="FAGC-K7M2QP"
+            bookingCount={1}
+          />
+        </Section>
+
+        <Section label="Your tickets, filtered">
+          {/* Six of them across two clubs and every state, which is what a
+              member with a season behind them actually has. */}
+          <MyTickets today="2026-09-15" entries={[
+            { booking, faction, monogram },
+            { booking: { ...booking, id: 2, reference: "FAGC-WINTER1",
+                         eventTitle: "Didcot Winter Open", eventDate: "2026-11-14",
+                         paymentStatus: "unpaid", total: 38 }, faction, monogram },
+            { booking: { ...booking, id: 3, reference: "FAGC-PAST01",
+                         eventTitle: "Spring Open", eventDate: "2026-04-04",
+                         paymentStatus: "paid_on_the_door" }, faction, monogram },
+            { booking: { ...booking, id: 4, reference: "FAGC-OWED01",
+                         eventTitle: "Summer Open", eventDate: "2026-06-01",
+                         paymentStatus: "unpaid", total: 25 }, faction, monogram },
+            { booking: { ...booking, id: 5, reference: "FAGC-GONE01",
+                         eventTitle: "Painting day", eventDate: "2026-10-01",
+                         status: "cancelled", refundStatus: "due",
+                         cancelReason: "The event was called off" }, faction, monogram },
+          ]} />
         </Section>
 
         <Section label="The confirmation">

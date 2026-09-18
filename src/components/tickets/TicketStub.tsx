@@ -3,6 +3,7 @@ import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { formatMoney } from "@/utils/format";
+import { PAYMENT_LABELS, REFUND_LABELS } from "@/utils/door-list";
 import { nightLabel } from "@/utils/dates";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { EventBooking } from "@/types/ticket";
@@ -23,6 +24,7 @@ export default function TicketStub({
 }) {
   const cancelled = booking.status === "cancelled";
   const count = booking.lines.reduce((n, l) => n + l.quantity, 0);
+  const paid = booking.paymentStatus !== "unpaid";
 
   return (
     <Box
@@ -108,6 +110,13 @@ export default function TicketStub({
                 </Typography>
               </Stack>
             ) : null}
+
+            {/* Why the place went, when the club took it back rather than the
+                member giving it up. A ticket that simply reads "cancelled" is
+                the one people ring the club about. */}
+            {cancelled && booking.cancelReason ? (
+              <Fact label="Why it was cancelled" value={booking.cancelReason} />
+            ) : null}
           </Stack>
         </Box>
 
@@ -137,6 +146,24 @@ export default function TicketStub({
                               textDecoration: cancelled ? "line-through" : "none" }}>
               {formatMoney(booking.total, booking.currency)}
             </Typography>
+
+            {/* What the club has written down, so somebody who paid on the
+                door is not still looking at a ticket that says they owe it.
+                Only once there is something to say: every booking starts
+                unpaid, and stamping "UNPAID" on all of them says nothing. */}
+            {cancelled ? (
+              booking.refundStatus === "not_due" ? null : (
+                <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.66rem",
+                                  letterSpacing: "0.1em", color: tokens.brass, mt: 0.5 }}>
+                  {REFUND_LABELS[booking.refundStatus].toUpperCase()}
+                </Typography>
+              )
+            ) : paid ? (
+              <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.66rem",
+                                letterSpacing: "0.1em", color: tokens.positive, mt: 0.5 }}>
+                {PAYMENT_LABELS[booking.paymentStatus].toUpperCase()}
+              </Typography>
+            ) : null}
           </Box>
         </Stack>
       </Stack>

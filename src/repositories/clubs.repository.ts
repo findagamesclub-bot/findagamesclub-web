@@ -268,7 +268,16 @@ export async function findClubDetail(slug: string) {
     .order("created_at", { referencedTable: "club_reviews", ascending: false })
     .limit(REVIEW_CAP, { referencedTable: "club_reviews" })
     .eq("slug", slug)
-    .eq("status", "active")
+    // Active or paused, and RLS decides which people get the paused one: its
+    // own members and team, nobody else. The filter cannot simply go, because
+    // `pending`, `suspended` and `archived` must still be nothing to everybody.
+    //
+    // It was `.eq("status", "active")` and that was harmless right up until
+    // 0108, since every other non-active state should 404. Pausing is the first
+    // one that has to stay readable for the people already inside it, and this
+    // line quietly overrode the policy that says so: the owner who pressed the
+    // button got Not found on their own club.
+    .in("status", ["active", "paused"])
     .maybeSingle();
 
   if (error) throw new Error(`Failed to load club ${slug}: ${error.message}`);
@@ -469,5 +478,27 @@ export async function placeClub(
       latitude, longitude, coordinates_label: label, geocode_stale: false,
     } as never)
     .eq("id", clubId);
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * Stop the listing, and start it again.
+ *
+ * Through functions rather than an update, because `status` is deliberately
+ * absent from the club's column grants: a club that could name its own status
+ * could approve itself out of `pending`. The functions decide who may, and
+ * refuse with a code the service turns into words.
+ */
+export async function pauseClub(clubId: number) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("pause_club_listing" as never,
+    { p_club: clubId } as never);
+  if (error) throw new Error(error.message);
+}
+
+export async function resumeClub(clubId: number) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("resume_club_listing" as never,
+    { p_club: clubId } as never);
   if (error) throw new Error(error.message);
 }

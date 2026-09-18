@@ -39,3 +39,48 @@ export function priceCart(params: {
     tierLabel: params.tierLabel,
   };
 }
+
+/**
+ * The cart as it will be a moment from now.
+ *
+ * The cart itself lives on the server, which is right: it survives a reload,
+ * follows the buyer to another device, and is the thing checkout actually
+ * charges. What it is not is instant, and a stepper that waits on a round trip
+ * before the number moves feels broken next to the shop's bag.
+ *
+ * So the browser works out the same answer and shows it at once, and the
+ * server's reply replaces it. Both ends price through `priceCart`, so the
+ * figure never jumps when the real one lands.
+ */
+export function changeCartLine(
+  cart: EventCart | null,
+  line: { ticketTypeId: number; label: string; price: string | null; unitAmount: number },
+  quantity: number,
+): EventCart {
+  const current = cart?.lines ?? [];
+  const wanted = Math.max(0, Math.floor(quantity));
+
+  const lines = wanted === 0
+    ? current.filter((l) => l.ticketTypeId !== line.ticketTypeId)
+    : current.some((l) => l.ticketTypeId === line.ticketTypeId)
+      ? current.map((l) => l.ticketTypeId === line.ticketTypeId
+          ? { ...l, quantity: wanted, lineTotal: l.unitAmount * wanted }
+          : l)
+      // A type that is not in the cart yet goes on the end, where the server
+      // puts it too: the rows come back ordered by when they were added.
+      : [...current, {
+          ticketTypeId: line.ticketTypeId,
+          label: line.label,
+          price: line.price,
+          unitAmount: line.unitAmount,
+          quantity: wanted,
+          lineTotal: line.unitAmount * wanted,
+        }];
+
+  return priceCart({
+    lines,
+    discountPercent: cart?.discountPercent ?? 0,
+    tierLabel: cart?.tierLabel ?? null,
+    currency: cart?.currency ?? "GBP",
+  });
+}

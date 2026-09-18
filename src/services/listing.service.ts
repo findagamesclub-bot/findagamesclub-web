@@ -2,10 +2,15 @@ import "server-only";
 
 import * as repo from "@/repositories/clubs.repository";
 import * as taxonomy from "@/repositories/taxonomy.repository";
+import * as notify from "@/services/listing-notify.service";
 import * as sections from "@/repositories/listingSections.repository";
-import { SOCIAL_NETWORKS, normaliseSocialUrl } from "@/utils/social-links";
 import { parseProfileStep, type FieldErrors } from "@/utils/listing-draft";
-import { listingChecks, stepStatus, type ReadinessInput } from "@/utils/listing-readiness";
+import {
+  contentReading, pricingReading, profileColumns, scheduleReading,
+} from "@/utils/listing-payload";
+import {
+  listingChecks, stepDone, stepStatus, type ReadinessInput,
+} from "@/utils/listing-readiness";
 import { geocodeUk } from "./geocode.service";
 
 /**
@@ -21,29 +26,15 @@ export type SaveResult =
   | { ok: true }
   | { ok: false; error?: string; errors?: FieldErrors };
 
-const empty = (value: string) => (value ? value : null);
-
 export async function saveProfileStep(clubId: number, form: FormData): Promise<SaveResult> {
   const parsed = parseProfileStep(form);
   if (!parsed.ok) return { ok: false, errors: parsed.errors };
 
   const v = parsed.value;
   try {
-    await repo.updateClubProfile(clubId, {
-      name: v.name,
-      city: v.city,
-      neighbourhood: empty(v.neighbourhood),
-      summary: empty(v.summary),
-      description: empty(v.description),
-      venue_name: empty(v.venueName),
-      venue_address: empty(v.venueAddress),
-      venue_postcode: empty(v.postcode),
-      website_url: empty(v.website),
-      contact_email: empty(v.contactEmail),
-      ages: empty(v.ages),
-      member_count: v.memberCount,
-      tables_available: v.tablesAvailable,
-    });
+    // The same reading the public builder stores on a submission, so a club
+    // that arrived through the queue and one edited here are shaped identically.
+    await repo.updateClubProfile(clubId, profileColumns(v));
 
     // Formats live in their own table, so they are their own write. Replaced
     // whole rather than merged: the picker sends everything it holds, and a
@@ -81,6 +72,25 @@ function refusal(error: unknown): SaveResult {
   if (message.includes("TOO_MANY_IMAGES")) {
     return { ok: false, error: "Ten photos at most. Remove one and try again." };
   }
+  if (message.includes("CLUB_HAS_LIVE_EVENTS")) {
+    const many = /CLUB_HAS_LIVE_EVENTS \((\d+)\)/.exec(message)?.[1];
+    return {
+      ok: false,
+      error: `${many === "1" ? "An event" : `${many ?? "Some"} events`} coming up `
+        + `${many === "1" ? "has" : "have"} places taken. Call `
+        + `${many === "1" ? "it" : "them"} off first, so the people coming are told, `
+        + "then pause the listing.",
+    };
+  }
+  if (message.includes("CLUB_NOT_LIVE")) {
+    return { ok: false, error: "This listing is not live, so there is nothing to pause." };
+  }
+  if (message.includes("CLUB_NOT_PAUSED")) {
+    return {
+      ok: false,
+      error: "This listing was not paused by you. An admin took it down, so an admin puts it back.",
+    };
+  }
   for (const code of ["SESSION_HAS_BOOKINGS", "TIER_IN_USE", "CATEGORY_HAS_POSTS"]) {
     if (message.includes(code)) {
       const said = message.split(`${code}: `)[1];
@@ -96,8 +106,6 @@ function refusal(error: unknown): SaveResult {
   };
 }
 
-export type PhotoRow = { path: string | null; src: string | null; alt: string };
-
 /**
  * Step 2: what the club plays, what it has, how it takes money, and its photos.
  *
@@ -107,39 +115,16 @@ export type PhotoRow = { path: string | null; src: string | null; alt: string };
  * whose payload carries the whole array every time.
  */
 export async function saveContentStep(clubId: number, form: FormData): Promise<SaveResult> {
-  const labels = (key: string) =>
-    form.getAll(key).map((v) => String(v).trim()).filter(Boolean);
-
-  const photos: PhotoRow[] = form.getAll("photo").flatMap((raw) => {
-    try {
-      const parsed = JSON.parse(String(raw)) as PhotoRow;
-      // A photo still uploading has neither, and saving it would write a row
-      // pointing at nothing.
-      if (!parsed.path && !parsed.src) return [];
-      return [{ path: parsed.path ?? null, src: parsed.src ?? null, alt: String(parsed.alt ?? "") }];
-    } catch { return []; }
-  });
-
-  const links = SOCIAL_NETWORKS.flatMap((network) => {
-    const url = normaliseSocialUrl(String(form.get(`social-${network}`) ?? ""));
-    return url ? [{ label: network, url }] : [];
-  });
-
-  const categories = labels("category").map((label, index) => ({
-    id: String(form.getAll("categoryId")[index] ?? "") || null,
-    label,
-  }));
+  const v = contentReading(form);
 
   try {
-    await taxonomy.replaceClubTaxonomy(clubId, "games", labels("games"));
-    await taxonomy.replaceClubTaxonomy(clubId, "facilities", labels("facilities"));
-    await taxonomy.replaceClubTaxonomy(clubId, "payment_methods", labels("paymentMethods"));
+    await taxonomy.replaceClubTaxonomy(clubId, "games", v.games);
+    await taxonomy.replaceClubTaxonomy(clubId, "facilities", v.facilities);
+    await taxonomy.replaceClubTaxonomy(clubId, "payment_methods", v.payment_methods);
 
-    await repo.replaceClubImages(clubId, photos.map((p) => ({
-      storage_path: p.path, src: p.src ?? "", alt: p.alt,
-    })));
-    await repo.replaceClubSocialLinks(clubId, links);
-    await sections.saveCategories(clubId, categories);
+    await repo.replaceClubImages(clubId, v.images);
+    await repo.replaceClubSocialLinks(clubId, v.social_links);
+    await sections.saveCategories(clubId, v.categories);
   } catch (error) {
     return refusal(error);
   }
@@ -148,7 +133,7 @@ export async function saveContentStep(clubId: number, form: FormData): Promise<S
   // left in the bucket is clutter nobody sees, and reporting the save as failed
   // over it would send somebody back to redo work that is already done.
   try {
-    await repo.removeClubMedia(clubId, form.getAll("removedPhoto").map(String));
+    await repo.removeClubMedia(clubId, v.removed);
   } catch (error) {
     console.error("[listing] photos removed but their files stayed:", error);
   }
@@ -164,26 +149,13 @@ export async function saveContentStep(clubId: number, form: FormData): Promise<S
  * keeps those bookings attached.
  */
 export async function saveScheduleStep(clubId: number, form: FormData): Promise<SaveResult> {
-  const at = (key: string, index: number) => String(form.getAll(key)[index] ?? "").trim();
-
-  const nights = form.getAll("nightDay").map((_, index) => ({
-    id: at("nightId", index) || null,
-    day: at("nightDay", index),
-    time: at("nightTime", index),
-    label: at("nightLabel", index),
-  })).filter((n) => n.day || n.time || n.label);
-
-  const incomplete = nights.find((n) => !n.day || !n.time || !n.label);
-  if (incomplete) {
-    return { ok: false, error: "Every club night needs a day, a time and a name." };
-  }
-
-  const notices = form.getAll("notice")
-    .map((v) => String(v).trim()).filter(Boolean);
+  const read = scheduleReading(form);
+  if (!read.ok) return { ok: false, error: read.error };
 
   try {
-    await sections.saveSchedule(clubId, nights);
-    await repo.replaceClubAnnouncements(clubId, notices);
+    await sections.saveSchedule(clubId, read.value.sessions);
+    await repo.replaceClubAnnouncements(clubId,
+      read.value.announcements.map((a) => a.message));
   } catch (error) {
     return refusal(error);
   }
@@ -200,36 +172,13 @@ export async function saveScheduleStep(clubId: number, form: FormData): Promise<
  * did not carry them would quietly strip every perk the club has set up.
  */
 export async function savePricingStep(clubId: number, form: FormData): Promise<SaveResult> {
-  const at = (key: string, index: number) => String(form.getAll(key)[index] ?? "").trim();
-  const json = (key: string, index: number, fallback: unknown) => {
-    try { return JSON.parse(String(form.getAll(key)[index] ?? "")); } catch { return fallback; }
-  };
-
-  const models = form.getAll("modelLabel").map((_, index) => ({
-    label: at("modelLabel", index),
-    price: at("modelPrice", index),
-    notes: at("modelNotes", index),
-  })).filter((m) => m.label);
-
-  const tiers = form.getAll("tierKey").map((_, index) => ({
-    tier_key: at("tierKey", index),
-    label: at("tierLabel", index),
-    price: at("tierPrice", index),
-    price_duration: at("tierDuration", index),
-    description: at("tierDescription", index),
-    is_basic: at("tierBasic", index) === "yes",
-    benefits: json("tierBenefits", index, {}),
-    billing_options: json("tierBilling", index, []),
-  })).filter((t) => t.tier_key && t.label);
-
-  if (tiers.length && !tiers.some((t) => t.is_basic)) {
-    return { ok: false, error: "One tier has to be the one people join on." };
-  }
+  const read = pricingReading(form);
+  if (!read.ok) return { ok: false, error: read.error };
 
   try {
-    await sections.saveTiers(clubId, tiers);
-    await repo.replaceClubPricingModels(clubId, models);
-    await repo.setLoyaltyEnabled(clubId, String(form.get("loyaltyEnabled") ?? "") === "yes");
+    await sections.saveTiers(clubId, read.value.tiers);
+    await repo.replaceClubPricingModels(clubId, read.value.pricing_models);
+    await repo.setLoyaltyEnabled(clubId, read.value.loyalty.enabled);
   } catch (error) {
     return refusal(error);
   }
@@ -267,5 +216,53 @@ async function placeIfMoved(clubId: number): Promise<void> {
 
 /** What the stepper and the review step read. Computed from saved data. */
 export function readiness(input: ReadinessInput) {
-  return { checks: listingChecks(input), status: stepStatus(input) };
+  return {
+    checks: listingChecks(input),
+    status: stepStatus(input),
+    done: stepDone(input),
+  };
+}
+
+/**
+ * Take the listing out of the directory for a while, and put it back.
+ *
+ * Legacy's own move, copied: `update_club` lets an owner set the listing
+ * inactive and it drops out of the directory. Here it is a function rather than
+ * a column the club can name, because a club that could write its own status
+ * could approve itself out of `pending`.
+ *
+ * Owner or admin only. A manager edits the listing; taking the club off the
+ * directory is not the same kind of act.
+ */
+export async function pauseListing(
+  clubId: number,
+  club?: { name: string; city: string; slug: string; ownerId?: string | null },
+  actorId?: string,
+): Promise<SaveResult> {
+  try {
+    await repo.pauseClub(clubId);
+  } catch (error) {
+    return refusal(error);
+  }
+
+  // Apart from the write and never awaited for a result: a mail failure must
+  // not undo a pause that has already happened. The bell is a trigger, so it
+  // fires whichever path moved the status.
+  if (club) void notify.clubPaused(club, true, actorId);
+  return { ok: true };
+}
+
+export async function resumeListing(
+  clubId: number,
+  club?: { name: string; city: string; slug: string; ownerId?: string | null },
+  actorId?: string,
+): Promise<SaveResult> {
+  try {
+    await repo.resumeClub(clubId);
+  } catch (error) {
+    return refusal(error);
+  }
+
+  if (club) void notify.clubPaused(club, false, actorId);
+  return { ok: true };
 }

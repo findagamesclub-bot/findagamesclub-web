@@ -23,6 +23,28 @@ export async function findCart(eventId: number, profileId: string) {
  * column grants deliberately allow updating only `quantity`: a member may change
  * how many they want, not move somebody's line onto a different event.
  */
+/**
+ * One ticket type's cap, for the service to check a cart line against.
+ *
+ * Pinned to the event as well as the type, so a ticket id from another event
+ * cannot be used to talk this one into accepting a line.
+ */
+export async function findTicketCap(
+  eventId: number, ticketTypeId: number,
+): Promise<{ label: string; quantityAvailable: number | null } | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("club_event_ticket_types")
+    .select("label, quantity_available")
+    .eq("id", ticketTypeId).eq("event_id", eventId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data
+    ? { label: data.label, quantityAvailable: data.quantity_available }
+    : null;
+}
+
 export async function setCartLine(params: {
   eventId: number;
   ticketTypeId: number;

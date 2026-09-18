@@ -13,6 +13,8 @@ import TableRestaurantIcon from "@mui/icons-material/TableRestaurant";
 import Section from "@/components/ui/Section";
 import EventPlacings from "@/components/events/EventPlacings";
 import EventNoticeboard from "@/components/events/EventNoticeboard";
+import EventCalledOff from "@/components/events/EventCalledOff";
+import LockedNote from "@/components/events/LockedNote";
 import EventTags from "@/components/events/EventTags";
 import SectionNav from "@/components/ui/SectionNav";
 import ManageStrip from "@/components/ui/ManageStrip";
@@ -22,7 +24,7 @@ import EventHero from "@/components/events/EventHero";
 import { getEventDetail } from "@/services/eventDetail.service";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getMyMembership } from "@/services/memberships.service";
-import { getBuyableTickets } from "@/services/tickets.service";
+import { getBuyableTickets, getTicketStanding } from "@/services/tickets.service";
 import { getAttendees } from "@/services/eventBookings.service";
 import { getRoster } from "@/services/memberships.service";
 import { getEventRoster, getEventBoard } from "@/services/eventBoard.service";
@@ -66,6 +68,20 @@ export default async function EventPage({
     viewerTierKey: membership?.tierKey ?? null,
   });
 
+  // What the buyer may spend, for the points field in the ticket drawer. Only
+  // worth a query once there is something to spend it on: an event nobody has
+  // added a ticket to has no total for points to come off.
+  const standing = viewer && cart?.lines.length
+    ? await getTicketStanding({
+        clubId: event.clubId,
+        profileId: viewer.id,
+        subtotal: cart.subtotal,
+        currency: cart.currency,
+        discountPercent: cart.discountPercent,
+        tierLabel: cart.tierLabel ?? null,
+      }).catch(() => null)
+    : null;
+
   // Only the club may read booking rows, so this is skipped rather than
   // fetched-and-hidden — RLS would return nothing anyway.
   const attendees = event.canManageClub ? await getAttendees(event.id) : [];
@@ -90,6 +106,7 @@ export default async function EventPage({
         .map((m) => ({ id: m.profileId, name: m.fullName }))
     : [];
 
+  const cancelled = event.status === "cancelled";
   const { faction, monogram } = clubIdentity(event.clubSlug, event.clubName);
   const back = backTarget(query.from, { slug: event.clubSlug, name: event.clubName }, query);
   // Passed on to the door list so its own back link lands where you started.
@@ -107,6 +124,17 @@ export default async function EventPage({
         </Stack>
       </NextLink>
 
+      {/* First thing on the page, above the artwork. Everything under it reads
+          as a live event otherwise, which is exactly what the club saw: a
+          cancelled event still offering its last ticket. */}
+      {cancelled ? (
+        <EventCalledOff
+          reason={event.cancelReason}
+          bookingReference={event.myCancelledReference ?? event.myBookingReference}
+          bookingCount={event.myBookingCount}
+        />
+      ) : null}
+
       {/* Counted from what has actually sold, not from the figure the club
           typed when it listed the event. Null where an event sells no typed
           tickets at all, and the hero falls back to that figure. */}
@@ -118,10 +146,14 @@ export default async function EventPage({
         admin={event.canManageClub ? { slug, eventKey: eventId } : undefined} />
 
       {event.canManageClub ? (
+        // Straight to the three pages that run this event, rather than to the
+        // console's front door: somebody opening their own event page on a
+        // club night is going to the roster or the draw.
         <ManageStrip links={[
-          { label: "Manage club", href: `/clubs/${slug}/manage` },
-          { label: `Roster (${attendees.length})`,
-            href: `/clubs/${slug}/events/${eventId}/attendees` },
+          { label: "Edit event", href: `/clubs/${slug}/manage/events/${event.id}` },
+          { label: "The draw", href: `/clubs/${slug}/manage/events/${event.id}/pairings` },
+          { label: `Who is coming (${attendees.length})`,
+            href: `/clubs/${slug}/manage/events/${event.id}/roster` },
         ]} />
       ) : null}
 
@@ -155,9 +187,27 @@ export default async function EventPage({
 
           Same gate as the roster, the board and the draw: legacy hides all of
           it from anybody without a ticket. */}
-      {event.canSeePrivate && event.infoBoard ? (
+      {/* Either half is enough. An event with notices and no info board used to
+          render nothing at all, because the condition only asked about the
+          board.
+
+          And when there is a board the reader cannot open, say so rather than
+          rendering nothing: hiding it is how somebody deciding whether to book
+          never learns that ticket holders get the timings and the parking.
+          Same call as a blocked ticket, which is shown with its reason. */}
+      {event.hasNoticeboard ? (
         <Section title="Tournament noticeboard" icon={InfoIcon} navLabel="Noticeboard">
-          <EventNoticeboard text={event.infoBoard} faction={faction} />
+          {event.canSeePrivate ? (
+            <EventNoticeboard text={event.infoBoard ?? ""} notices={event.notices}
+              faction={faction} />
+          ) : (
+            <LockedNote
+              title="This part is for people who are coming"
+              body={event.hasEnded
+                ? "The club posted directions, timings and updates here for everybody who had a ticket."
+                : "The club has posted directions, timings and updates here. Book a place and they appear."}
+            />
+          )}
         </Section>
       ) : null}
 
@@ -186,8 +236,10 @@ export default async function EventPage({
       {/* The service decides who gets these at all: the room before the event,
           everybody after it: a
           draw is only any use to somebody playing in it. */}
+      {/* Called what the console calls it, so a member and the club are talking
+          about the same thing. */}
       {event.pairings.length ? (
-        <Section title="Round pairings" icon={TableRestaurantIcon} navLabel="Pairings">
+        <Section title="The draw" icon={TableRestaurantIcon} navLabel="The draw">
           <EventPairings
             pairings={event.pairings}
             faction={faction}
@@ -262,20 +314,24 @@ export default async function EventPage({
               tickets={tickets}
               faction={faction}
               slug={event.clubSlug}
-              eventKey={event.legacyId}
+              eventId={event.id}
               hasEnded={event.hasEnded}
-              trail={trail}
+              cancelled={cancelled}
             />
           ) : event.ticketTypes.length ? (
             <EventTickets
               tickets={tickets}
               cart={cart}
+              standing={standing}
+              fullName={viewer?.full_name ?? ""}
+              email={viewer?.email ?? ""}
               faction={faction}
               slug={event.clubSlug}
               eventKey={event.legacyId}
               eventId={event.id}
               signedIn={Boolean(viewer)}
               hasEnded={event.hasEnded}
+              cancelled={cancelled}
               myBookingReference={event.myBookingReference}
               myBookingCount={event.myBookingCount}
             />

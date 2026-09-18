@@ -63,6 +63,7 @@ function toDetail(row: NonNullable<Row>): ClubDetail {
   return {
     id: row.id,
     ownerId: row.owner_id,
+    status: row.status ?? "active",
     slug: row.slug,
     name: row.name,
     city: row.city,

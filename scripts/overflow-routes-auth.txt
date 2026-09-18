@@ -43,3 +43,6 @@
 /clubs/didcot-wargames-didcot/manage/loyalty
 /clubs/didcot-wargames-didcot/manage/shop
 /clubs/didcot-wargames-didcot/manage/shop?tab=orders
+/clubs/didcot-wargames-didcot/manage/events
+/clubs/didcot-wargames-didcot/manage/events?tab=drafts
+/clubs/didcot-wargames-didcot/manage/events?tab=bookings

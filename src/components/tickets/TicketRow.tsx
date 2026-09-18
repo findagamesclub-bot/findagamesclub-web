@@ -9,6 +9,7 @@ import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
 import LockIcon from "@mui/icons-material/Lock";
 import { tokens, type Faction } from "@/lib/tokens";
+import { canAddMore } from "@/utils/ticket-quantity";
 import type { BuyableTicket } from "@/types/ticket";
 
 /**
@@ -27,20 +28,28 @@ import type { BuyableTicket } from "@/types/ticket";
 const NOTCH = 20;
 
 export default function TicketRow({
-  ticket, faction, busy, signedIn, onChange,
+  ticket, held, faction, signedIn, onChange,
 }: {
   ticket: BuyableTicket;
+  /**
+   * How many are held, read from the cart the buyer is looking at rather than
+   * from `ticket.inCart`. That one is the server's answer and arrives a beat
+   * later, which is a stepper that does not move when it is pressed.
+   */
+  held: number;
   faction: Faction;
-  busy: boolean;
   signedIn: boolean;
   onChange: (ticketTypeId: number, quantity: number) => void;
 }) {
   // Signed out there is nowhere to put a ticket, so no stub offers Add. One
   // prompt under the list is the way in, rather than four buttons that fail.
   const blocked = !signedIn || Boolean(ticket.blockedReason) || ticket.soldOut;
-  const atStock = ticket.remaining !== null && ticket.inCart >= ticket.remaining;
+  // The same rule the drawer and the service use, rather than a third copy of
+  // it. The three disagreeing is how a ticket with one place left counted to
+  // three in the drawer while this stepper was already stopping at one.
+  const atStock = !canAddMore(held, ticket.remaining);
   const low = ticket.remaining !== null && ticket.remaining > 0 && ticket.remaining <= 5;
-  const chosen = ticket.inCart > 0;
+  const chosen = held > 0;
 
   const notch = {
     position: "absolute" as const,
@@ -126,23 +135,26 @@ export default function TicketRow({
             <Stack direction="row" spacing={0}
               sx={{ alignItems: "center", justifyContent: "space-between",
                     border: `1px solid ${faction.base}`, borderRadius: 999, px: 0.5 }}>
-              <IconButton size="small" disabled={busy}
-                onClick={() => onChange(ticket.id, ticket.inCart - 1)}
+              {/* Never disabled while a save is in flight. The number has
+                  already moved, and a control that greys out under the finger
+                  is what made this feel slower than the shop. */}
+              <IconButton size="small"
+                onClick={() => onChange(ticket.id, held - 1)}
                 aria-label={`One fewer ${ticket.label}`}>
                 <RemoveIcon sx={{ fontSize: 18 }} />
               </IconButton>
               <Typography aria-live="polite"
                 sx={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "1rem" }}>
-                {ticket.inCart} in your basket
+                {held} in your basket
               </Typography>
-              <IconButton size="small" disabled={busy || atStock}
-                onClick={() => onChange(ticket.id, ticket.inCart + 1)}
+              <IconButton size="small" disabled={atStock}
+                onClick={() => onChange(ticket.id, held + 1)}
                 aria-label={`One more ${ticket.label}`}>
                 <AddIcon sx={{ fontSize: 18 }} />
               </IconButton>
             </Stack>
           ) : (
-            <Button fullWidth variant="contained" disabled={busy}
+            <Button fullWidth variant="contained"
               startIcon={<AddIcon />}
               onClick={() => onChange(ticket.id, 1)}
               sx={{ backgroundColor: faction.base,

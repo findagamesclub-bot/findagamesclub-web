@@ -4,9 +4,11 @@ import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import ChecklistIcon from "@mui/icons-material/FactCheck";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import PauseIcon from "@mui/icons-material/PauseCircleOutlined";
 import Panel from "@/components/members/Panel";
 import HealthBar from "./HealthBar";
 import HealthCheck from "./HealthCheck";
+import PauseListing from "./PauseListing";
 import { mono, tokens } from "@/lib/tokens";
 import { readinessFields } from "@/utils/listing-readiness";
 import type { Check } from "@/utils/listing-readiness";
@@ -21,12 +23,16 @@ import type { Check } from "@/utils/listing-readiness";
  * whole section.
  */
 export default function ReviewStep({
-  checks, base, clubSlug,
+  checks, base, clubSlug, paused = false, canPause = false,
 }: {
   checks: Check[];
   /** `/clubs/didcot/manage/listing` */
   base: string;
   clubSlug: string;
+  /** The club has taken itself out of the directory. */
+  paused?: boolean;
+  /** Owner or admin. A manager edits the listing but does not delist it. */
+  canPause?: boolean;
 }) {
   const outstanding = checks.filter((c) => !c.ready);
   const { done, total } = readinessFields(checks);
@@ -80,8 +86,11 @@ export default function ReviewStep({
       <Panel title="What people see" icon={VisibilityIcon}>
         <Stack spacing={1.5} sx={{ alignItems: "flex-start" }}>
           <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-            There is no draft and no submission: everything you save is already
-            live. This is your page as it stands.
+            {paused
+              ? "Your listing is out of the directory at the moment, so this page "
+                + "is only reachable by you and your members."
+              : "There is no draft and no submission: everything you save is already "
+                + "live. This is your page as it stands."}
           </Typography>
           <NextLink href={`/clubs/${clubSlug}`} style={{ textDecoration: "none" }}>
             <Typography variant="body2" sx={{ color: tokens.brand, fontWeight: 600 }}>
@@ -90,6 +99,15 @@ export default function ReviewStep({
           </NextLink>
         </Stack>
       </Panel>
+
+      {/* Last, and only for the owner. It is the one thing on this screen that
+          changes whether anybody can find the club at all. */}
+      {canPause ? (
+        <Panel title={paused ? "Your listing is paused" : "Closing for a while"}
+          icon={PauseIcon}>
+          <PauseListing slug={clubSlug} paused={paused} canPause={canPause} />
+        </Panel>
+      ) : null}
     </Stack>
   );
 }

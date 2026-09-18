@@ -1,6 +1,8 @@
 import "server-only";
 
 import * as repo from "@/repositories/eventBookings.repository";
+import { findPaymentStanding, type PaymentStanding }
+  from "@/repositories/eventRoster.repository";
 import { formatPrice } from "@/utils/format";
 import type { CartLine, EventBooking } from "@/types/ticket";
 
@@ -27,7 +29,7 @@ function toLines(items: Row["club_event_booking_items"]): CartLine[] {
     .sort((a, b) => a.label.localeCompare(b.label));
 }
 
-function toBooking(row: Row): EventBooking {
+function toBooking(row: Row, money?: PaymentStanding): EventBooking {
   const event = (row as unknown as {
     club_events: {
       id: number; legacy_id: string; title: string; start_date: string | null;
@@ -53,6 +55,13 @@ function toBooking(row: Row): EventBooking {
     total: Number(row.total ?? 0),
     currency: row.currency ?? "GBP",
     createdAt: row.created_at,
+    // Unpaid is the honest default for a booking whose standing could not be
+    // read: nothing here takes payment, so "not paid yet" is where every
+    // booking starts.
+    paymentStatus: money?.payment_status ?? "unpaid",
+    paymentMethod: money?.payment_method ?? "",
+    refundStatus: money?.refund_status ?? "not_due",
+    cancelReason: money?.cancel_reason ?? "",
     lines: toLines(row.club_event_booking_items),
   };
 }
@@ -60,12 +69,18 @@ function toBooking(row: Row): EventBooking {
 /** One booking by its reference. RLS decides whether the viewer sees it. */
 export async function getBooking(reference: string): Promise<EventBooking | null> {
   const row = await repo.findBooking(reference.trim().toUpperCase());
-  return row ? toBooking(row) : null;
+  if (!row) return null;
+  // Swallowed, because the money is a detail and the ticket is the point: a
+  // reader who can see the booking should still get their reference if this
+  // second read fails.
+  const money = await findPaymentStanding([row.id]).catch(() => new Map());
+  return toBooking(row, money.get(row.id));
 }
 
 export async function getMyBookings(profileId: string): Promise<EventBooking[]> {
   const rows = await repo.findMyBookings(profileId);
-  return rows.map((r) => toBooking(r as Row));
+  const money = await findPaymentStanding(rows.map((r) => r.id)).catch(() => new Map());
+  return rows.map((r) => toBooking(r as Row, money.get(r.id)));
 }
 
 /** Who is coming. Only the club can read these rows. */

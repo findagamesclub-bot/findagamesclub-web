@@ -26,6 +26,12 @@ import EventSeatIcon from "@mui/icons-material/EventSeat";
 import TableRestaurantIcon from "@mui/icons-material/TableRestaurant";
 import EventBusyIcon from "@mui/icons-material/EventBusy";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import PlaylistAddCheckIcon from "@mui/icons-material/PlaylistAddCheck";
+import EditNoteIcon from "@mui/icons-material/EditNote";
+import DomainAddIcon from "@mui/icons-material/DomainAdd";
+import DomainDisabledIcon from "@mui/icons-material/DomainDisabled";
+import UndoIcon from "@mui/icons-material/Undo";
+import PauseIcon from "@mui/icons-material/PauseCircleOutlineOutlined";
 import type { SvgIconComponent } from "@mui/icons-material";
 import { notificationHref } from "@/utils/notification-href";
 import {
@@ -58,6 +64,21 @@ const ICONS: Record<string, SvgIconComponent> = {
   // What the club is told, as opposed to what the players are told.
   table_booked: TableRestaurantIcon,
   booking_cancelled: EventBusyIcon,
+  // Somebody wants their club listed, or has answered what we asked, or has
+  // taken the request back. Six kinds sat on the default bell until now, so a
+  // club going live and a club being turned down looked identical in the list.
+  "club-request": DomainAddIcon,
+  "club-request-updated": PlaylistAddCheckIcon,
+  "club-request-withdrawn": UndoIcon,
+  "listing-changes-needed": EditNoteIcon,
+  "listing-approved": DomainAddIcon,
+  "listing-declined": DomainDisabledIcon,
+  // A club taking itself out of the directory, and putting it back.
+  "club-paused": PauseIcon,
+  "club-resumed": DomainAddIcon,
+  // The same two from the club's side, when somebody else moved it.
+  "listing-paused": PauseIcon,
+  "listing-resumed": DomainAddIcon,
 };
 
 /**

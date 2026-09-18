@@ -36,11 +36,16 @@ export type EventTicketType = {
   minimumTierKey: string | null;
 };
 
-/** A round of the draw. `matches` is the legacy jsonb, shape unenforced. */
+/** A round of the draw, as rows since 0091. */
 export type EventPairing = {
   id: number;
   round: number | null;
   label: string | null;
+  /**
+   * Whether members can see it. A round only reaches this page unpublished
+   * when the reader runs the club, so the marker is for them.
+   */
+  published: boolean;
   matches: {
     table: string | null;
     playerOne: string;
@@ -71,6 +76,14 @@ export type ClubEventDetail = {
   ticketsAvailable: number | null;
   bestcoastLink: string | null;
   hasEnded: boolean;
+  /**
+   * 'published' or 'cancelled'. A draft never reaches a reader who is not the
+   * club, but a called-off event deliberately does: somebody holding a ticket
+   * opens the link in their email and has to be told it is off.
+   */
+  status: string;
+  /** Why the club called it off, in their words. Empty unless cancelled. */
+  cancelReason: string | null;
 
   venue: { name: string | null; address: string | null; postcode: string | null };
   directionsUrl: string | null;
@@ -90,6 +103,12 @@ export type ClubEventDetail = {
   myBookingReference: string | null;
   /** More than one is allowed: somebody can come back and buy again. */
   myBookingCount: number;
+  /**
+   * A place of theirs that was cancelled, usually with the event itself. The
+   * called-off notice reads it so the person who had booked is told their
+   * place went with it, and can open the ticket that says what they are owed.
+   */
+  myCancelledReference: string | null;
 
   /**
    * Legacy hides the info board, notices and pairings from anyone without a
@@ -97,5 +116,18 @@ export type ClubEventDetail = {
    */
   canSeePrivate: boolean;
   infoBoard: string | null;
+  /**
+   * Dated updates from the club, newest first. Gated the same way the info
+   * board is: legacy hands both out only to somebody who can see the event
+   * board (club_store.py:2824).
+   */
+  notices: { id: number; message: string; createdAt: string }[];
+  /**
+   * Whether there is a noticeboard at all, answered regardless of whether this
+   * reader may see it. Without it the page cannot tell "no noticeboard" from
+   * "a noticeboard you have not bought your way into", and it showed nothing
+   * in both cases.
+   */
+  hasNoticeboard: boolean;
   pairings: EventPairing[];
 };

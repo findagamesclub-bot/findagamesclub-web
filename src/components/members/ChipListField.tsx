@@ -13,13 +13,21 @@ import TextField from "@mui/material/TextField";
  * ("Warhammer 40,000") and that has already cost us once.
  */
 export default function ChipListField({
-  name, label, value, placeholder, helperText,
+  name, label, value, placeholder, helperText, error = false,
 }: {
   name: string;
   label: string;
   value: string[];
   placeholder?: string;
   helperText?: string;
+  /**
+   * Whether the helper text is a refusal rather than guidance.
+   *
+   * Without it the message "Add at least one age group before continuing" sat
+   * in the same grey as "All ages, under 18, adults only", so the one field
+   * holding the save up looked exactly like the four that were fine.
+   */
+  error?: boolean;
 }) {
   const [items, setItems] = useState<string[]>(value);
   const [draft, setDraft] = useState("");
@@ -67,6 +75,7 @@ export default function ChipListField({
             // repeats a value the person can already see as a chip.
             placeholder={items.length ? undefined : placeholder}
             helperText={helperText}
+            error={error}
             fullWidth
           />
         )}

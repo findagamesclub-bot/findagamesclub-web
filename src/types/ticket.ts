@@ -1,3 +1,5 @@
+import type { PaymentStatus, RefundStatus } from "@/utils/door-list";
+
 /** A ticket type as the buyer sees it, including whether they may buy it. */
 export type BuyableTicket = {
   id: number;
@@ -53,5 +55,15 @@ export type EventBooking = {
   total: number;
   currency: string;
   createdAt: string;
+  /**
+   * What the club has written down about the money. Nothing here takes
+   * payment, so this is a record of what happened in the room, not a receipt
+   * from a processor.
+   */
+  paymentStatus: PaymentStatus;
+  paymentMethod: string;
+  refundStatus: RefundStatus;
+  /** Why the club took the place back, when it was not the member's doing. */
+  cancelReason: string;
   lines: CartLine[];
 };

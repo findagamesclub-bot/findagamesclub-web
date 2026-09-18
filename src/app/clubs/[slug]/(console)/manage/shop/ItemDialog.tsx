@@ -17,7 +17,7 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import AddPhotoIcon from "@mui/icons-material/AddPhotoAlternate";
 import SubmitButton from "@/components/ui/SubmitButton";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
-import { useItemImage } from "@/hooks/useItemImage";
+import { useClubImage } from "@/hooks/useClubImage";
 import {
   MAX_ITEM_CATEGORY, MAX_ITEM_DESCRIPTION, MAX_ITEM_NAME, MAX_ITEM_PRICE,
 } from "@/utils/shop-item";
@@ -50,7 +50,7 @@ export default function ItemDialog({
 }) {
   const fullScreen = useMediaQuery("(max-width:600px)");
   const picker = useRef<HTMLInputElement>(null);
-  const image = useItemImage(clubId, item?.image?.src ?? "");
+  const image = useClubImage(clubId, "shop", item?.image?.src ?? "");
 
   const [active, setActive] = useState(item?.active ?? true);
   const [tier, setTier] = useState(item?.minimumTierKey ?? "");

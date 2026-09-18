@@ -71,6 +71,13 @@ export function standing(
   payments: MembershipPayment[],
   tierKey: string | null,
   tierAssignedAt: string | null,
+  /**
+   * When "now" is, so a caller that already has a date can hand it over.
+   * The renewals row passed its own `today` and this read the clock anyway,
+   * which let `daysLeft` say a membership had ten days left while `overdue`
+   * said it had lapsed.
+   */
+  now: number = Date.now(),
 ): PaymentStanding {
   const since = tierAssignedAt ? new Date(tierAssignedAt).getTime() : null;
   const current = payments.filter(
@@ -91,7 +98,7 @@ export function standing(
 
   return {
     paidThrough,
-    overdue: Boolean(paidThrough) && new Date(paidThrough!).getTime() < Date.now(),
+    overdue: Boolean(paidThrough) && new Date(paidThrough!).getTime() < now,
     settledOneOff,
   };
 }

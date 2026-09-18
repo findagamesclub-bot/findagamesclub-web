@@ -44,7 +44,11 @@ export default function EventHero({
 
 
   const counted = ticketsRemaining ?? event.ticketsAvailable;
-  const tickets = ticketsLeft(counted, true);
+  // Nothing is left of an event that is not happening. The client called one
+  // off and the hero went on offering the last place, which is the page
+  // arguing with the banner directly above it.
+  const cancelled = event.status === "cancelled";
+  const tickets = cancelled ? null : ticketsLeft(counted, true);
 
   const facts = [
     event.price ? { label: "entry", value: event.price } : null,
@@ -80,7 +84,10 @@ export default function EventHero({
                 sx={{ bgcolor: faction.base, color: "#fff", fontWeight: 700,
                       textTransform: "capitalize" }} />
             ) : null}
-            {event.hasEnded ? (
+            {cancelled ? (
+              <Chip size="small" label="Called off"
+                sx={{ bgcolor: tokens.danger, color: "#fff", fontWeight: 700 }} />
+            ) : event.hasEnded ? (
               <Chip size="small" label="Finished"
                 sx={{ bgcolor: "rgba(255,255,255,.9)", color: tokens.ink, fontWeight: 600 }} />
             ) : tickets ? (

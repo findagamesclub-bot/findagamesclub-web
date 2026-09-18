@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { startTransition, useActionState } from "react";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
@@ -12,6 +12,7 @@ import GroupsIcon from "@mui/icons-material/Groups";
 import Panel from "@/components/members/Panel";
 import ChipListField from "@/components/members/ChipListField";
 import SubmitButton from "@/components/ui/SubmitButton";
+import StepTargetFields, { type StepTarget } from "./StepTarget";
 import { useActionToast } from "@/components/ui/Toaster";
 import { saveListingStepAction, type ListingState } from
   "@/app/clubs/[slug]/(console)/manage/listing/[step]/actions";
@@ -34,19 +35,36 @@ export type ProfileValues = {
  * to open.
  */
 export default function ProfileStep({
-  slug, values,
+  target, values,
 }: {
-  slug: string;
+  target: StepTarget;
   values: ProfileValues;
 }) {
-  const [state, submit] = useActionState<ListingState, FormData>(saveListingStepAction, {});
+  const [state, submit, saving] = useActionState<ListingState, FormData>(saveListingStepAction, {});
   useActionToast(state);
+
+  /**
+   * Submitted by hand rather than through the form's `action` prop.
+   *
+   * React 19 resets an uncontrolled form once its action has run. That is right
+   * when the save worked and catastrophic when it did not: a refused save
+   * emptied all thirteen fields and then said "some of that needs another look"
+   * about work that was no longer on screen. Dispatching the action ourselves
+   * keeps everything typed exactly where it was.
+   *
+   * The button is told it is busy for the same reason: `useFormStatus` only
+   * reports on a form that submits through `action`.
+   */
+  const send = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    startTransition(() => submit(data));
+  };
   const error = (field: string) => state.errors?.[field];
 
   return (
-    <Box component="form" action={submit}>
-      <input type="hidden" name="slug" value={slug} />
-      <input type="hidden" name="step" value="profile" />
+    <Box component="form" onSubmit={send}>
+      <StepTargetFields target={target} step="profile" />
 
       <Box sx={{ display: "grid", gap: 2.5, alignItems: "start",
                  gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "repeat(2, minmax(0, 1fr))" } }}>
@@ -68,6 +86,7 @@ export default function ProfileStep({
               error={Boolean(error("description"))}
               helperText={error("description") ?? "The longer version, on your club page."} />
             <ChipListField name="formats" label="What kind of club is it"
+              error={Boolean(error("formats"))}
               value={values.formats}
               placeholder="Add a format and press Enter"
               helperText={error("formats") ?? "Wargaming, board games, role-playing, and so on."} />
@@ -103,6 +122,7 @@ export default function ProfileStep({
           <Panel title="Who you can take" icon={GroupsIcon}>
             <Stack spacing={2}>
               <ChipListField name="ages" label="Age groups" value={values.ages}
+                error={Boolean(error("ages"))}
                 placeholder="Add an age group and press Enter"
                 helperText={error("ages") ?? "All ages, under 18, adults only, and so on."} />
               <TextField name="memberCount" label="Members" defaultValue={values.memberCount}
@@ -125,7 +145,7 @@ export default function ProfileStep({
         <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
           Saving publishes straight away. Members see this on your club page.
         </Typography>
-        <SubmitButton label="Save changes" pendingLabel="Saving" />
+        <SubmitButton label="Save changes" pendingLabel="Saving" pending={saving} />
       </Stack>
     </Box>
   );

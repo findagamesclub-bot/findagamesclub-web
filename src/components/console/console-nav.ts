@@ -98,7 +98,10 @@ export function consoleGroups(
     {
       title: "Events",
       items: [
-        { label: "Events", href: at("/events"), icon: EventIcon,
+        // The club's own list, not the public one: drafts, the draw and the
+        // door list all hang off it, and none of those exist on /events.
+        // Owns the editor, the pairings and the roster underneath it.
+        { label: "Events", href: at("/manage/events"), icon: EventIcon,
           needs: "events.manage" },
         { label: "Competitions", href: at("/competitions/manage"),
           icon: EmojiEventsIcon, needs: "competitions.manage" },

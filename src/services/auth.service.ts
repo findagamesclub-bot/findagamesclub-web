@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email/send";
 import * as templates from "@/lib/email/templates";
+import { passwordAllowed } from "@/utils/password-strength";
 
 /**
  * Auth flows.
@@ -40,6 +41,12 @@ export async function signUp(params: {
    */
   next?: string;
 }): Promise<AuthResult> {
+  // Checked again here, because a meter in the browser is advice and this is
+  // the rule. Legacy's own length rule plus the floor at Fair, which is the one
+  // thing this stage adds to it.
+  const allowed = passwordAllowed(params.password, params.email);
+  if (!allowed.ok) return { ok: false, error: allowed.message ?? "Choose a stronger password." };
+
   const admin = createAdminClient();
 
   const { data, error } = await admin.auth.admin.generateLink({
@@ -147,8 +154,25 @@ export async function signOut(): Promise<void> {
   await supabase.auth.signOut();
 }
 
+/** The signed-in address, for a form that has no email field of its own. */
+export async function getCurrentUserEmail(): Promise<string> {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getUser();
+  return data.user?.email ?? "";
+}
+
 export async function updatePassword(password: string): Promise<AuthResult> {
   const supabase = await createClient();
+
+  // The same rule the sign-up form is held to, and it has to be the same in
+  // full. Checking without the email let somebody set their password to their
+  // own address on a reset, which sign-up refuses; a reset link is the one
+  // place somebody can quietly land on a weaker password than they started
+  // with. The link signs them in, so the address is there to compare against.
+  const { data: signedIn } = await supabase.auth.getUser();
+  const allowed = passwordAllowed(password, signedIn.user?.email ?? "");
+  if (!allowed.ok) return { ok: false, error: allowed.message ?? "Choose a stronger password." };
+
   const { data, error } = await supabase.auth.updateUser({ password });
   if (error) return { ok: false, error: error.message };
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
@@ -16,6 +16,7 @@ import ChipListField from "@/components/members/ChipListField";
 import PhotoEditor from "./PhotoEditor";
 import RemoveRow from "@/components/ui/RemoveRow";
 import SubmitButton from "@/components/ui/SubmitButton";
+import StepTargetFields, { type StepTarget } from "./StepTarget";
 import { useActionToast } from "@/components/ui/Toaster";
 import { saveListingStepAction, type ListingState } from
   "@/app/clubs/[slug]/(console)/manage/listing/[step]/actions";
@@ -40,20 +41,43 @@ export type ContentValues = {
  * says so.
  */
 export default function ContentStep({
-  slug, clubId, values,
+  target, clubId, values,
 }: {
-  slug: string;
-  clubId: number;
+  target: StepTarget;
+  /**
+   * Null while the club does not exist yet. Photos live under the club's own
+   * folder in Storage, and a listing being written has no folder to put them
+   * in, so the picker waits until it is approved rather than uploading into a
+   * place nothing can later delete from.
+   */
+  clubId: number | null;
   values: ContentValues;
 }) {
-  const [state, submit] = useActionState<ListingState, FormData>(saveListingStepAction, {});
+  const [state, submit, saving] = useActionState<ListingState, FormData>(saveListingStepAction, {});
   useActionToast(state);
+
+  /**
+   * Submitted by hand rather than through the form's `action` prop.
+   *
+   * React 19 resets an uncontrolled form once its action has run. That is right
+   * when the save worked and catastrophic when it did not: a refused save
+   * emptied all thirteen fields and then said "some of that needs another look"
+   * about work that was no longer on screen. Dispatching the action ourselves
+   * keeps everything typed exactly where it was.
+   *
+   * The button is told it is busy for the same reason: `useFormStatus` only
+   * reports on a form that submits through `action`.
+   */
+  const send = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    startTransition(() => submit(data));
+  };
   const [categories, setCategories] = useState(values.categories);
 
   return (
-    <Box component="form" action={submit}>
-      <input type="hidden" name="slug" value={slug} />
-      <input type="hidden" name="step" value="content" />
+    <Box component="form" onSubmit={send}>
+      <StepTargetFields target={target} step="content" />
 
       <Box sx={{ display: "grid", gap: 2.5, alignItems: "start",
                  gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "repeat(2, minmax(0, 1fr))" } }}>
@@ -87,7 +111,14 @@ export default function ContentStep({
 
         <Stack spacing={2.5}>
           <Panel title="Photos" icon={ImageIcon}>
-            <PhotoEditor clubId={clubId} initial={values.photos} />
+            {clubId === null ? (
+              <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
+                Photos are added once your club is live. Everything else here is
+                saved with your listing.
+              </Typography>
+            ) : (
+              <PhotoEditor clubId={clubId} initial={values.photos} />
+            )}
           </Panel>
 
           <Panel title="What the board is for" icon={ForumIcon}>
@@ -133,7 +164,7 @@ export default function ContentStep({
         <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
           Saving publishes straight away. Members see this on your club page.
         </Typography>
-        <SubmitButton label="Save changes" pendingLabel="Saving" />
+        <SubmitButton label="Save changes" pendingLabel="Saving" pending={saving} />
       </Stack>
     </Box>
   );

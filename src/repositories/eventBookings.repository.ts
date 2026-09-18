@@ -93,10 +93,12 @@ export async function findMyBookingsForEvent(eventId: number, profileId: string)
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("club_event_bookings")
-    .select("id, reference, created_at")
+    // Cancelled places come back too. The caller splits them: a live one is
+    // "you are booked in", a cancelled one is how a called-off event tells the
+    // person who had booked that it was their place, not somebody else's.
+    .select("id, reference, status, created_at")
     .eq("event_id", eventId)
     .eq("profile_id", profileId)
-    .eq("status", "reserved")
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(`Failed to check your tickets: ${error.message}`);

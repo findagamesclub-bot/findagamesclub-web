@@ -26,7 +26,7 @@ export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
  */
 export const MAX_EDGE = 1600;
 
-export type MediaKind = "logo" | "photos" | "shop";
+export type MediaKind = "logo" | "photos" | "shop" | "events";
 
 /**
  * `clubs/<club id>/<kind>/<uuid>.<ext>`

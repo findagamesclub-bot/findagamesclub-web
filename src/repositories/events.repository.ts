@@ -1,38 +1,15 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { table, type TableRow } from "@/lib/supabase/table";
 
 /**
- * One event with everything hanging off it.
+ * Event lists.
  *
- * Legacy rebuilds this from four JSON files per request (club_store.py:2493).
- * Here it is one query with three embedded selects, which is the same round
- * trip whether an event has three placings or three hundred.
+ * The one-event query lives next door in `eventDetail.repository.ts`: it reads
+ * columns the generated types do not carry yet, so it is the one that needs the
+ * shim, and keeping it here dragged the shim across every list as well.
  */
-export async function findEvent(clubSlug: string, legacyId: string) {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("club_events")
-    .select(
-      `id, legacy_id, title, summary, start_date, start_time, end_date, end_time,
-       event_type, event_types, formats, featured_games, facilities, round_count,
-       price, tickets_available, venue_name, venue_address, venue_postcode,
-       info_board, bestcoast_link,
-       clubs!inner(id, slug, name, owner_id, venue_name, venue_address, venue_postcode,
-                   latitude, longitude, club_images(src, alt, position),
-                   club_membership_tiers(tier_key, label, price, price_duration, description,
-                                         is_basic, position, benefits, billing_options)),
-       club_event_ticket_types(id, label, price, audience, audience_label, minimum_tier_key, quantity_available, position),
-       club_event_results(id, rank, placement, member_name, member_profile_id, is_member, army),
-       club_event_pairings(id, round, label, matches)`,
-    )
-    .eq("clubs.slug", clubSlug)
-    .eq("legacy_id", legacyId)
-    .maybeSingle();
-
-  if (error) throw new Error(`Failed to load event: ${error.message}`);
-  return data;
-}
 
 /** Events across the whole directory, for the events search mode. */
 export async function findEvents(params: { from?: string; to?: string; limit?: number }) {
@@ -43,14 +20,24 @@ export async function findEvents(params: { from?: string; to?: string; limit?: n
       `id, legacy_id, title, summary, start_date, start_time, end_date, end_time, event_type,
        event_types, formats, facilities,
        price, round_count, tickets_available, bestcoast_link,
-       venue_name, venue_address, venue_postcode, featured_games,
+       venue_name, venue_address, venue_postcode, featured_games, logo_src, logo_alt,
        club_event_ticket_types(price),
        clubs!inner(slug, name, city, logo_url, status, latitude, longitude, ages,
                    club_images(src, alt, position),
                    club_formats(formats(label))),
        club_event_results(rank, placement, member_name, army)`,
     )
-    .eq("clubs.status", "active");
+    .eq("clubs.status", "active")
+    // Published only. A draft belongs to the club writing it, and a called-off
+    // event is not on: listing it as "1 ticket left" beside twenty real ones is
+    // the directory answering "what can I go to" with something nobody can.
+    // Its own page stays readable, so a link in somebody's email still opens
+    // and tells them it was called off.
+    //
+    // Written as `or` rather than `eq` because the column is not in the
+    // generated types until the migrations have been run, and `or` takes a
+    // plain string. Swap it for `.eq("status", "published")` afterwards.
+    .or("status.eq.published");
 
   if (params.from) query = query.gte("start_date", params.from);
   if (params.to) query = query.lte("start_date", params.to);
@@ -63,15 +50,29 @@ export async function findEvents(params: { from?: string; to?: string; limit?: n
   return data ?? [];
 }
 
-/** Every event at a set of clubs, for the list of events somebody runs. */
+/**
+ * Every event at a set of clubs, for the list of events somebody runs.
+ *
+ * Unfiltered on purpose, unlike the public lists: this is the owner's own
+ * record, so a draft they have not finished and an event they called off both
+ * belong on it. `status` comes with them so the row can say which.
+ */
+type OwnedEventRow = Pick<TableRow<"club_events">,
+  "id" | "legacy_id" | "title" | "summary" | "start_date" | "start_time" | "end_date"
+  | "end_time" | "event_type" | "price" | "round_count" | "tickets_available"
+  | "venue_name" | "venue_address" | "venue_postcode" | "club_id"
+> & {
+  status: string;
+  clubs: Pick<TableRow<"clubs">, "id" | "slug" | "name">;
+};
+
 export async function findEventsForClubs(clubIds: number[]) {
   if (!clubIds.length) return [];
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("club_events")
+  const events = await table<OwnedEventRow>("club_events");
+  const { data, error } = await events
     .select(
       `id, legacy_id, title, summary, start_date, start_time, end_date, end_time, event_type,
-       price, round_count, tickets_available,
+       price, round_count, tickets_available, status,
        venue_name, venue_address, venue_postcode, club_id,
        clubs!inner(id, slug, name)`,
     )
@@ -110,9 +111,16 @@ export async function findClubEventsPage(
     )
     .eq("club_id", clubId)
     // An event with no end date is a one-day event, so its start date decides.
+    //
+    // The status test is folded into the same expression rather than added as a
+    // second `or`, because two of those are two query parameters with the same
+    // name and how they combine is not worth relying on. Same reason as
+    // `findEvents` for the string form: `status` is not in the generated types
+    // until the migrations have been run, and the same rule: published only, so
+    // a called-off event leaves the club's list the way it leaves the directory.
     .or(past
-      ? `end_date.lt.${today},and(end_date.is.null,start_date.lt.${today})`
-      : `end_date.gte.${today},and(end_date.is.null,start_date.gte.${today})`)
+      ? `and(status.eq.published,or(end_date.lt.${today},and(end_date.is.null,start_date.lt.${today})))`
+      : `and(status.eq.published,or(end_date.gte.${today},and(end_date.is.null,start_date.gte.${today})))`)
     .order("start_date", { ascending: !past })
     .range(params.from, params.to);
 

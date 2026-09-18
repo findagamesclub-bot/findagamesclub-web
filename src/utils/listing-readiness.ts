@@ -192,6 +192,32 @@ export function readinessFraction(checks: Check[]): number {
  * Step 1 counts thirteen fields, not five: legacy's first step carries the
  * profile, the venue, the contact and the capacity checks between them.
  */
+/**
+ * Whether each step is actually finished.
+ *
+ * Its own answer rather than something read back out of the sentence above.
+ * The stepper used to decide by testing whether the status text ended in the
+ * word "complete", which made "Core details: 0/13 complete" a finished step and
+ * put a tick on an empty listing. A boolean is not a thing to infer from a
+ * sentence that happens to contain it.
+ */
+export function stepDone(input: ReadinessInput): Record<number, boolean> {
+  const checks = listingChecks(input);
+  const by = (key: CheckKey) => checks.find((c) => c.key === key);
+
+  const core = [by("profile"), by("venue"), by("contact"), by("capacity")];
+
+  return {
+    1: core.every((check) => check?.ready === true),
+    2: by("content")?.ready === true,
+    3: by("pricing")?.ready === true,
+    4: by("schedule")?.ready === true,
+    // The last step is the report, not a thing to finish. It ticks when
+    // everything it reports on is done.
+    5: checks.every((check) => check.ready),
+  };
+}
+
 export function stepStatus(input: ReadinessInput): Record<number, string> {
   const checks = listingChecks(input);
   const by = (key: CheckKey) => checks.find((c) => c.key === key);

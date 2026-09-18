@@ -1,9 +1,12 @@
 import "server-only";
 
-import * as repo from "@/repositories/events.repository";
+import { findEvent } from "@/repositories/eventDetail.repository";
 import { findMyBookingsForEvent } from "@/repositories/eventBookings.repository";
+import { findRounds } from "@/repositories/eventPairings.repository";
+import { findNotices } from "@/repositories/eventNotices.repository";
 import { toMembershipTiers } from "@/utils/membership-tiers";
 import { formatPrice } from "@/utils/format";
+import { eventArt } from "@/utils/event-art";
 import { geocodeUk } from "./geocode.service";
 import { getClubAccess } from "./clubAccess.service";
 import type {
@@ -19,7 +22,7 @@ import type {
  * the winning list, which is the thing wargamers actually turn up to read.
  */
 
-type Row = NonNullable<Awaited<ReturnType<typeof repo.findEvent>>>;
+type Row = NonNullable<Awaited<ReturnType<typeof findEvent>>>;
 
 /** Legacy's rule: end date, or start date, plus an end time if there is one. */
 function hasEnded(row: { end_date: string | null; start_date: string | null; end_time: string | null }): boolean {
@@ -95,28 +98,37 @@ function pairScore(one: unknown, two: unknown): string | null {
   return a && b ? `${a} - ${b}` : null;
 }
 
-function toPairings(rows: Row["club_event_pairings"]): EventPairing[] {
-  return [...(rows ?? [])]
-    .sort((a, b) => (a.round ?? 0) - (b.round ?? 0))
-    .map((p) => {
-      const matches = Array.isArray(p.matches) ? (p.matches as Record<string, unknown>[]) : [];
-      return {
-        id: p.id,
-        round: p.round,
-        label: p.label,
-        // playerOneName is what the imported rows actually carry. Reading
-        // only playerOne mapped every match to two empty strings, which the
-        // filter below then dropped, so a published draw read as no draw.
-        matches: matches.map((m) => ({
-          table: (m.table as string) || null,
-          playerOne: String(m.playerOneName ?? m.playerOne ?? m.player1 ?? ""),
-          playerTwo: String(m.playerTwoName ?? m.playerTwo ?? m.player2 ?? ""),
-          // Both or neither. One score on its own is half a result and reads
-          // as a walkover that nobody recorded.
-          score: pairScore(m.playerOneScore, m.playerTwoScore),
-        })).filter((m) => m.playerOne || m.playerTwo),
-      };
-    });
+/**
+ * The draw, as rows.
+ *
+ * A separate query rather than an embed on the event, and only run when the
+ * viewer is allowed to see it: an anonymous visitor to a live event never
+ * needs the tables, so nothing fetches them.
+ *
+ * 0091 turned the `matches` jsonb into rows. Reading the blob is what made
+ * every table a rewrite of the whole round.
+ */
+async function readPairings(eventId: number, forClub: boolean): Promise<EventPairing[]> {
+  const rounds = await findRounds(eventId).catch(() => []);
+  return rounds
+    // A round the club has not finished building belongs to the club. The
+    // policy says the same thing; this is what stops it reaching the page for
+    // somebody the policy does let read it, which a manager is.
+    .filter((round) => round.published || forClub)
+    .map((round) => ({
+      id: round.id,
+      round: round.round,
+      label: round.label || null,
+      published: round.published,
+      matches: round.matches.map((match) => ({
+        table: match.tableLabel || null,
+        playerOne: match.playerOne,
+        playerTwo: match.playerTwo,
+        // Both or neither. One score on its own is half a result and reads as
+        // a walkover that nobody recorded.
+        score: pairScore(match.scoreOne, match.scoreTwo),
+      })).filter((match) => match.playerOne || match.playerTwo),
+    }));
 }
 
 function directions(name: string | null, address: string | null, postcode: string | null) {
@@ -130,7 +142,7 @@ export async function getEventDetail(
   legacyId: string,
   viewer: { id: string; role: string | null } | null,
 ): Promise<ClubEventDetail | null> {
-  const row = await repo.findEvent(clubSlug, legacyId);
+  const row = await findEvent(clubSlug, legacyId);
   if (!row) return null;
 
   const club = (row as unknown as {
@@ -148,7 +160,17 @@ export async function getEventDetail(
 
   // A ticket buys you the board, the notices and the draw — the club is not the
   // only audience for them (_can_access_event_board, club_store.py:16187).
-  const myBookings = viewer ? await findMyBookingsForEvent(row.id, viewer.id) : [];
+  const allMine = viewer ? await findMyBookingsForEvent(row.id, viewer.id) : [];
+  const myBookings = allMine.filter((b) => b.status === "reserved");
+  // Calling an event off cancels the places with it (0092) and putting it back
+  // on deliberately does not restore them (0096), so the person who had booked
+  // has no live booking to find themselves by. This is what lets the notice at
+  // the top of the page speak to them rather than to a passer-by.
+  const myCancelled = allMine.find((b) => b.status === "cancelled") ?? null;
+  // Read for everybody, handed to nobody who has not earned it. Fetching only
+  // when the gate opens would mean the page cannot say there is a board here,
+  // and "nothing" is what a member sees when a club has posted four notices.
+  const notices = await findNotices(row.id).catch(() => []);
   const canSeePrivate = canManageClub || myBookings.length > 0;
   // The draw is a record, not a plan. Before the event it belongs to the room;
   // after it, it is the same public history as the standings underneath it,
@@ -177,9 +199,15 @@ export async function getEventDetail(
     if (placed) coordinates = { latitude: placed.latitude, longitude: placed.longitude };
   }
 
-  const image = [...(club.club_images ?? [])]
+  const clubArt = [...(club.club_images ?? [])]
     .sort((a, b) => a.position - b.position)
     .map((i) => ({ src: i.src, alt: i.alt }))[0] ?? null;
+
+  // The event's own picture when it has one, the club's otherwise. Before
+  // Stage 3 nothing could have its own, so this only ever read the club's and
+  // an uploaded poster went nowhere.
+  const image = eventArt(
+    { logoSrc: row.logo_src, logoAlt: row.logo_alt, title: row.title }, clubArt);
 
   return {
     id: row.id,
@@ -204,6 +232,8 @@ export async function getEventDetail(
     ticketsAvailable: row.tickets_available,
     bestcoastLink: row.bestcoast_link,
     hasEnded: ended,
+    status: row.status,
+    cancelReason: (row.cancel_reason ?? "").trim() || null,
 
     venue,
     directionsUrl: directions(venue.name, venue.address, venue.postcode),
@@ -217,9 +247,12 @@ export async function getEventDetail(
     // The newest, because that is the one somebody just made and is looking for.
     myBookingReference: myBookings[0]?.reference ?? null,
     myBookingCount: myBookings.length,
+    myCancelledReference: myCancelled?.reference ?? null,
 
     canSeePrivate,
     infoBoard: canSeePrivate ? row.info_board : null,
-    pairings: canSeePrivate || ended ? toPairings(row.club_event_pairings) : [],
+    notices: canSeePrivate ? notices : [],
+    hasNoticeboard: Boolean((row.info_board ?? "").trim()) || notices.length > 0,
+    pairings: canSeePrivate || ended ? await readPairings(row.id, canManageClub) : [],
   };
 }

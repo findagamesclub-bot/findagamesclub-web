@@ -18,6 +18,12 @@ type EventRow = {
   venue_name: string | null;
   venue_address: string | null;
   venue_postcode: string | null;
+  /**
+   * Optional because the list queries that are still typed against the
+   * generated schema cannot select it. They filter to published rows in SQL,
+   * so a row arriving without one is a published row.
+   */
+  status?: string | null;
 };
 
 /**
@@ -71,6 +77,7 @@ export function toEventSummary(e: EventRow): ClubEventSummary {
       postcode: e.venue_postcode,
     },
     hasEnded: hasEnded(e.end_date, e.start_date, e.end_time),
+    cancelled: e.status === "cancelled",
   };
 }
 

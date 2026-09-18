@@ -13,3 +13,5 @@
 /dev/listing-health-preview
 /dev/shop-editor-preview
 /dev/shop-preview
+/dev/events-preview
+/dev/noticeboard-preview

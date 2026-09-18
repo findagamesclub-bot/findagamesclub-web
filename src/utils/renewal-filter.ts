@@ -79,7 +79,7 @@ export function toRenewalRow(params: {
 }): RenewalRow {
   const now = params.today ?? Date.now();
   const paid = standing(
-    params.payments, params.member.tierKey, params.member.tierAssignedAt,
+    params.payments, params.member.tierKey, params.member.tierAssignedAt, now,
   );
   const { paidThrough, overdue, settledOneOff } = paid;
 

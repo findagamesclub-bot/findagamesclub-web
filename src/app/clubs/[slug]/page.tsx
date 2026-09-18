@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import NextLink from "next/link";
 import Box from "@mui/material/Box";
+import Alert from "@mui/material/Alert";
 import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -180,6 +181,25 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
 
   return (
     <Container maxWidth="lg" component="main" sx={{ py: { xs: 4, md: 6 } }}>
+      {/* A paused club is hidden from everybody but its own people, so whoever
+          is reading this is a member or on the team, and the thing they need to
+          know is why nobody else can find it. Leading with it, the same way a
+          called-off event leads with its reason. */}
+      {club.status === "paused" ? (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.25 }}>
+            This club is not in the directory at the moment
+          </Typography>
+          <Typography variant="body2">
+            {access.role
+              ? "You took it out. Nobody new can find it, join it or book a table. "
+                + "Put it back from Listing, at the last step."
+              : "The club has taken its page down for now. Your membership, your "
+                + "bookings and the board are all exactly as they were."}
+          </Typography>
+        </Alert>
+      ) : null}
+
       <ClubHeader club={club} canBook={isMember && (club.tablesAvailable ?? 0) > 0}
         joinedCount={joinedCount} />
 

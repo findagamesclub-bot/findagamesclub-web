@@ -66,6 +66,11 @@ export type ClubEventSummary = {
   price: string | null;
   roundCount: number | null;
   ticketsAvailable: number | null;
+  /**
+   * Called off. Public lists filter these out entirely, so it is only ever
+   * true on the owner's own list, which shows every event they run.
+   */
+  cancelled: boolean;
   venueName: string | null;
   /** Where it actually runs. Often the club's own hall, sometimes not. */
   venue: { name: string | null; address: string | null; postcode: string | null };
@@ -88,6 +93,13 @@ export type ClubDetail = {
   /** Needed by the membership actions; never shown. */
   id: number;
   ownerId: string | null;
+  /**
+   * `active`, or `paused` when the club has taken itself out of the directory.
+   *
+   * Only ever `paused` for somebody who can see it at all: the select policy
+   * hides a paused club from everybody but its own members and team.
+   */
+  status: string;
   slug: string;
   name: string;
   city: string;

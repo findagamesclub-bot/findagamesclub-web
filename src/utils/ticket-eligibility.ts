@@ -11,6 +11,20 @@ import type { MembershipTier } from "@/types/clubDetail";
  * that reason rather than silently hiding the ticket, because a member who
  * cannot see the VIP tier cannot work out that upgrading would let them.
  */
+/**
+ * The eight spellings legacy accepts, folded to its own two
+ * (`_normalise_ticket_audience`, club_store.py:15500).
+ *
+ * Normalised on the way out as well as the way in, because the column already
+ * holds rows written before the editor existed, and one saved as "public"
+ * meant a ticket open to everybody was refused to everybody.
+ */
+export function normaliseAudience(raw: string | null | undefined): "all" | "members" {
+  const value = (raw ?? "").trim().toLowerCase();
+  const members = ["member", "members", "member-only", "members-only", "members only"];
+  return members.includes(value) ? "members" : "all";
+}
+
 export function ticketBlockedReason(params: {
   audience: string | null;
   minimumTierKey: string | null;
@@ -20,7 +34,7 @@ export function ticketBlockedReason(params: {
   viewerTierKey: string | null;
   tiers: MembershipTier[];
 }): string | null {
-  const audience = (params.audience ?? "all").trim().toLowerCase() || "all";
+  const audience = normaliseAudience(params.audience);
   const required = (params.minimumTierKey ?? "").trim();
 
   // Open to everyone, no tier needed.
@@ -42,10 +56,6 @@ export function ticketBlockedReason(params: {
     if (wantedRank >= 0 && heldRank < wantedRank) {
       return `${wanted!.label} members only.`;
     }
-  }
-
-  if (audience !== "all" && audience !== "members") {
-    return "Not available to you.";
   }
 
   return null;

@@ -11,6 +11,8 @@ export type ListingStep = {
   label: string;
   /** The line underneath, which counts rather than describes. */
   status: string;
+  /** Whether it is finished. Told, not guessed from the status text. */
+  done: boolean;
 };
 
 /**
@@ -60,7 +62,7 @@ export default function ListingSteps({
                  } }}>
         {steps.map((step, index) => {
           const here = step.slug === current;
-          const done = step.status.startsWith("Complete") || step.status.endsWith("complete");
+          const done = step.done;
 
           return (
             <NextLink key={step.slug} href={`${base}/${step.slug}`}

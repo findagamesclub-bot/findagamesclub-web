@@ -41,6 +41,14 @@ export type LayoutOptions = {
     /** Emphasised last line, ruled off from the rest. */
     total?: { label: string; value: string };
   };
+  /**
+   * Somebody else's words, set apart from ours.
+   *
+   * An admin's note or reason read as another paragraph of our prose, so the
+   * one sentence written by a person about this club looked like boilerplate.
+   * A quote block says who is speaking without needing to say it.
+   */
+  quote?: { label: string; text: string };
   /** Shown under the button for people who can't click it. */
   fallbackNote?: string;
   /** Small print above the footer rule. */
@@ -52,7 +60,9 @@ const esc = (value: string) =>
   value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 export function renderEmail(options: LayoutOptions): string {
-  const { eyebrow, heading, body, action, details, fallbackNote, footnote, previewText } = options;
+  const {
+    eyebrow, heading, body, action, details, quote, fallbackNote, footnote, previewText,
+  } = options;
 
   return `<!doctype html>
 <html lang="en-GB">
@@ -102,6 +112,8 @@ export function renderEmail(options: LayoutOptions): string {
                     `<p style="margin:0 0 16px;font-family:${BODY};font-size:16px;line-height:1.6;color:${brand.ink};">${esc(p)}</p>`,
                 )
                 .join("\n              ")}
+
+              ${quote && quote.text.trim() ? renderQuote(quote) : ""}
 
               ${details && (details.rows.length || details.total) ? renderDetails(details) : ""}
 
@@ -161,6 +173,25 @@ export function renderEmail(options: LayoutOptions): string {
  * The itemised block. Values are monospaced so figures line up column-wise,
  * which is the whole reason a receipt is a table and not a sentence.
  */
+/**
+ * What a person wrote, in their own block.
+ *
+ * A left rule and the page's own surface, so it reads as quoted rather than as
+ * the next thing we are saying. No colour: this is somebody being careful about
+ * somebody else's club, not a warning.
+ */
+function renderQuote(quote: NonNullable<LayoutOptions["quote"]>): string {
+  return `
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:4px 0 20px;">
+                <tr>
+                  <td style="padding:14px 16px;background:${brand.surface};border-left:3px solid ${brand.brass};">
+                    <p style="margin:0 0 6px;font-family:${MONO};font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:${brand.inkMuted};">${esc(quote.label)}</p>
+                    <p style="margin:0;font-family:${BODY};font-size:16px;line-height:1.6;color:${brand.ink};">${esc(quote.text)}</p>
+                  </td>
+                </tr>
+              </table>`;
+}
+
 function renderDetails(details: NonNullable<LayoutOptions["details"]>): string {
   const row = (label: string, value: string, emphasis: boolean) => `
                 <tr>

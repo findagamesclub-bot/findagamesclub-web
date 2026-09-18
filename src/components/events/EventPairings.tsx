@@ -112,8 +112,18 @@ export default function EventPairings({
                     </Typography>
                     <Typography sx={{ fontFamily: mono, fontSize: "0.68rem",
                                       color: tokens.inkMuted, flexShrink: 0 }}>
-                      {`${round.matches.length} ${round.matches.length === 1 ? "PAIRING" : "PAIRINGS"}`}
+                      {`${round.matches.length} ${round.matches.length === 1 ? "TABLE" : "TABLES"}`}
                     </Typography>
+                    {/* An unpublished round only reaches this page for
+                        somebody who runs the club. Without the marker they
+                        would reasonably think members were looking at it. */}
+                    {round.published ? null : (
+                      <Typography sx={{ fontFamily: mono, fontSize: "0.62rem",
+                                        letterSpacing: "0.08em", color: tokens.brass,
+                                        flexShrink: 0 }}>
+                        NOT SHOWN YET
+                      </Typography>
+                    )}
                   </Stack>
                 </AccordionSummary>
 
@@ -135,10 +145,27 @@ export default function EventPairings({
                                             color: mine ? faction.deep : tokens.inkMuted }}>
                             {(m.table ?? "").trim() || "—"}
                           </Typography>
-                          <Typography variant="body2"
-                            sx={{ minWidth: 0, fontWeight: mine ? 700 : 400 }}>
-                            {`${m.playerOne} v ${m.playerTwo}`}
-                          </Typography>
+                          {/* A bye is one name, not a name against nobody.
+                              "Lone Walkin v" with the row trailing off is what
+                              this read as, while the club's own draw page next
+                              door had always said BYE underneath. Two screens
+                              showing the same round have to word it the same
+                              way. */}
+                          <Stack spacing={0.2} sx={{ minWidth: 0 }}>
+                            <Typography variant="body2"
+                              sx={{ minWidth: 0, fontWeight: mine ? 700 : 400 }}>
+                              {m.playerTwo.trim()
+                                ? `${m.playerOne} v ${m.playerTwo}`
+                                : m.playerOne}
+                            </Typography>
+                            {m.playerTwo.trim() ? null : (
+                              <Typography sx={{ fontFamily: mono, fontSize: "0.62rem",
+                                                letterSpacing: "0.08em",
+                                                color: mine ? faction.deep : tokens.inkMuted }}>
+                                BYE
+                              </Typography>
+                            )}
+                          </Stack>
                           {/* The result where there is one, otherwise the
                               reader's own marker. A played round with no score
                               on it looks undrawn, which is what it read as

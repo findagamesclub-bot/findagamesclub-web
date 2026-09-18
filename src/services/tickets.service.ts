@@ -4,6 +4,7 @@ import * as repo from "@/repositories/tickets.repository";
 import { ticketBlockedReason } from "@/utils/ticket-eligibility";
 import { formatPrice } from "@/utils/format";
 import { amountOf, priceCart } from "@/utils/cart-pricing";
+import { allowedQuantity } from "@/utils/ticket-quantity";
 import { checkoutError } from "@/utils/checkout-errors";
 import * as extras from "@/repositories/clubExtras.repository";
 import * as loyaltyRepo from "@/repositories/loyalty.repository";
@@ -117,15 +118,31 @@ export async function addToCart(params: {
   ticketTypeId: number;
   quantity: number;
 }): Promise<Result> {
-  const quantity = Math.max(0, Math.min(20, Math.floor(params.quantity)));
-
   try {
-    if (quantity === 0) {
+    // What is left decides, not what was asked for. This used to cap at twenty
+    // and nothing else, so a cart could hold three of a ticket with one place
+    // on it and only find out at checkout.
+    const type = await repo.findTicketCap(params.eventId, params.ticketTypeId);
+    if (!type) return { ok: false, error: "That ticket is not on sale any more." };
+
+    const taken = await repo.findTicketsTaken(params.eventId);
+    const remaining = type.quantityAvailable === null
+      ? null
+      : Math.max(type.quantityAvailable - (taken.get(params.ticketTypeId) ?? 0), 0);
+
+    const allowed = allowedQuantity(params.quantity, remaining, type.label);
+
+    if (allowed.quantity === 0) {
       // Zero is how the stepper says "remove", rather than a separate control.
-      return { ok: true };
+      // A sold-out one still has to come out of the cart, so the line goes
+      // either way and only the wording differs.
+      return allowed.refusal ? { ok: false, error: allowed.refusal } : { ok: true };
     }
-    await repo.setCartLine({ ...params, quantity });
-    return { ok: true };
+
+    await repo.setCartLine({ ...params, quantity: allowed.quantity });
+    // Trimmed rather than refused: the tickets they can have are in the cart,
+    // and the message says why it is not the number they pressed for.
+    return allowed.refusal ? { ok: false, error: allowed.refusal } : { ok: true };
   } catch (error) {
     const raw = error instanceof Error ? error.message : "";
     if (raw.includes("row-level security")) {

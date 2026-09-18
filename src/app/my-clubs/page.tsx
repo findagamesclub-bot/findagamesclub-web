@@ -4,6 +4,7 @@ import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import EmptyState from "@/components/ui/EmptyState";
+import LinkButton from "@/components/ui/LinkButton";
 import OwnerClubCard from "@/components/owner/OwnerClubCard";
 import WorkspaceLink from "@/components/owner/WorkspaceLink";
 import { getCurrentProfile } from "@/services/auth.service";
@@ -112,13 +113,22 @@ export default async function MyClubsPage() {
                      } }}>
             {ordered.map((club) => <OwnerClubCard key={club.id} club={club} />)}
           </Box>
+
+          {/* The current app has exactly this on its own listings page, a
+              "Create new listing" button beside the clubs somebody already
+              runs. Running one is the commonest reason to run a second. */}
+          <Box sx={{ mt: 3 }}>
+            <LinkButton href="/list-your-club" variant="outlined">
+              List another club
+            </LinkButton>
+          </Box>
         </>
       ) : (
         <Box sx={{ mt: 3 }}>
           <EmptyState
             title="You are not on a club's team"
-            description="Clubs you run, or help run, appear here with anything waiting on you across all of them."
-            action={{ label: "Browse the directory", href: "/clubs" }}
+            description="Clubs you run, or help run, appear here with anything waiting on you across all of them. If you run one that is not here yet, put it in the directory."
+            action={{ label: "List your club", href: "/list-your-club" }}
           />
         </Box>
       )}

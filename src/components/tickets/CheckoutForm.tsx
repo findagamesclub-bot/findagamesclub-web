@@ -23,7 +23,7 @@ import { tokens, type Faction } from "@/lib/tokens";
  */
 export default function CheckoutForm({
   slug, eventKey, eventId, fullName, email, currency, faction,
-  standing, price, points, onPoints,
+  standing, price, points, onPoints, showPaymentNote = true,
 }: {
   slug: string;
   eventKey: string;
@@ -38,6 +38,12 @@ export default function CheckoutForm({
   price: TicketPrice;
   points: number;
   onPoints: (value: number) => void;
+  /**
+   * The drawer turns this off. The event behind it already says the same
+   * sentence under the ticket list, and a form that repeats it takes a third
+   * of a phone screen to say nothing new.
+   */
+  showPaymentNote?: boolean;
 }) {
   const [state, submit, busy] = useActionState<TicketState, FormData>(ticketAction, {});
 
@@ -62,6 +68,7 @@ export default function CheckoutForm({
             helperText="Your reference and the club's notes for the day go here." />
         </Stack>
 
+        {showPaymentNote ? (
         <Box sx={{ p: 2, borderRadius: 1.5, backgroundColor: tokens.surface,
                    border: `1px solid ${tokens.rule}` }}>
           <Stack direction="row" spacing={1.25} sx={{ alignItems: "flex-start" }}>
@@ -77,6 +84,7 @@ export default function CheckoutForm({
             </Stack>
           </Stack>
         </Box>
+        ) : null}
 
         <Button type="submit" variant="contained" size="large" fullWidth
           loading={busy} loadingPosition="start"

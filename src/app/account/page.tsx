@@ -10,6 +10,8 @@ import MonoLabel from "@/components/ui/MonoLabel";
 import { scoreTrend } from "@/utils/member-stats";
 import { tokens } from "@/lib/tokens";
 import { getCurrentProfile } from "@/services/auth.service";
+import { getResumeCard } from "@/services/submissions.service";
+import ListingResumeCard from "@/components/listing/ListingResumeCard";
 import { getDashboard } from "@/services/dashboard.service";
 import { londonToday } from "@/services/bookingCalendar.service";
 
@@ -19,7 +21,13 @@ export default async function AccountPage() {
   const viewer = await getCurrentProfile();
   if (!viewer) redirect("/auth/sign-in?next=/account");
 
-  const data = await getDashboard(viewer.id);
+  // Together, so a half-written listing costs the same one round trip the
+  // dashboard already pays rather than a second wave for a card that is usually
+  // not there.
+  const [data, listing] = await Promise.all([
+    getDashboard(viewer.id),
+    getResumeCard(viewer.id).catch(() => null),
+  ]);
   const approved = data.memberships.filter((m) => m.status === "approved");
   const pending = data.memberships.filter((m) => m.status === "pending");
   const owing = approved.filter((m) => m.standing.overdue);
@@ -53,6 +61,15 @@ export default async function AccountPage() {
           ]}
         />
       </Box>
+
+      {/* Above the run they are on, because a listing waiting on them is the
+          one thing here with a deadline attached, and the one thing nothing
+          else on this page would mention. */}
+      {listing ? (
+        <Box sx={{ mt: 3 }}>
+          <ListingResumeCard card={listing} />
+        </Box>
+      ) : null}
 
       {/* Three layers, each answering a different question and none of them
           repeating another. The strip above is the glance. This is the run

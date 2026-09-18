@@ -9,6 +9,10 @@
 const MESSAGES: [string, string][] = [
   ["TICKETS_SOLD_OUT", "Somebody took the last of those while you were deciding."],
   ["EVENT_FINISHED", "Tickets are no longer available because this event has finished."],
+  // 0097. Reachable from a tab that was already open when the club called the
+  // event off, so it says what happened rather than blaming the cart.
+  ["EVENT_CANCELLED", "This event was called off, so tickets are closed. Nothing has been booked."],
+  ["EVENT_NOT_ON_SALE", "This event is not on sale yet."],
   // The desk already says why per ticket, so this only shows when standing
   // changed between adding to the cart and checking out.
   ["TICKET_NOT_ELIGIBLE",

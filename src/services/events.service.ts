@@ -5,6 +5,7 @@ import * as clubsRepo from "@/repositories/clubs.repository";
 import { formatPrice } from "@/utils/format";
 import { amountOf } from "@/utils/cart-pricing";
 import { hasEnded, toEventSummary } from "@/utils/event-summary";
+import { eventArt } from "@/utils/event-art";
 import { londonNow } from "@/utils/dates";
 import type { ClubEventSummary } from "@/types/clubDetail";
 import { findOrigin } from "./location.service";
@@ -39,9 +40,14 @@ function toSummary(row: Row): EventSummary {
     };
   }).clubs;
 
-  const image = [...(club.club_images ?? [])]
+  const clubArt = [...(club.club_images ?? [])]
     .sort((a, b) => a.position - b.position)
     .map((i) => ({ src: i.src, alt: i.alt }))[0] ?? null;
+
+  // Same rule as the event page: its own poster wins, the club's photo stands
+  // in. A card and the page it opens should not show different pictures.
+  const image = eventArt(
+    { logoSrc: row.logo_src, logoAlt: row.logo_alt, title: row.title }, clubArt);
 
   const results = (row as unknown as {
     club_event_results: { rank: number | null; member_name: string; army: unknown }[] | null;

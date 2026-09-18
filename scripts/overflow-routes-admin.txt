@@ -11,3 +11,5 @@
 /admin/messages
 /admin/profile
 /admin/profile/edit
+/admin/submissions
+/admin/settings

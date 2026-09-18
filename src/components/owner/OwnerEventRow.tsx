@@ -1,5 +1,6 @@
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
+import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
@@ -89,7 +90,16 @@ export default function OwnerEventRow({ event }: { event: OwnerEvent }) {
               </Typography>
             </Stack>
 
-            <Typography variant="h4" sx={{ fontSize: "1.05rem" }}>{event.title}</Typography>
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}>
+              <Typography variant="h4" sx={{ fontSize: "1.05rem" }}>{event.title}</Typography>
+              {/* Unfiltered list, so it has to say which rows are not on. The
+                  figures underneath count what had been reserved before the
+                  club called it off, which reads as live sales without this. */}
+              {event.cancelled ? (
+                <Chip size="small" label="Called off"
+                  sx={{ bgcolor: tokens.danger, color: "#fff", fontWeight: 700 }} />
+              ) : null}
+            </Stack>
 
             {event.startTime ? (
               <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>

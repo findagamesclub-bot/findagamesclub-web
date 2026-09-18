@@ -53,5 +53,9 @@ export function accountLinks(
     // rail is the only navigation they have once the header is hidden.
     { href: isAdmin ? "/admin/profile" : `/members/${viewerId}`, label: "Profile" },
     { href: "/account/messages", label: "Messages", badge: "messages" },
+    // The current app keeps Create Listing in the top bar at all times. This is
+    // the same door: an owner adding a second club opens this menu, not the
+    // footer.
+    ...(isAdmin ? [] : [{ href: "/list-your-club", label: "List a club" }]),
   ];
 }

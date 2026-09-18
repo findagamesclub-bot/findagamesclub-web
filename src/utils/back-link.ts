@@ -69,6 +69,42 @@ export function backTarget(
   }
 }
 
+/**
+ * Where back goes on a club's console pages.
+ *
+ * Separate from `backTarget`, whose default is the club's public page. Inside
+ * the console the sensible default is the event's own editor, and the two
+ * lists somebody can arrive from are the events list and the bookings tab.
+ *
+ * Same fixed-list discipline as above, and for the same reason: a path taken
+ * from the query string would let any link into the app aim the back button
+ * wherever it liked.
+ */
+export const FROM_MANAGE_EVENTS = "manage-events";
+export const FROM_MANAGE_BOOKINGS = "manage-bookings";
+
+export function consoleFrom(from: string | string[] | undefined): string | null {
+  const source = Array.isArray(from) ? from[0] : from;
+  return source === FROM_MANAGE_EVENTS || source === FROM_MANAGE_BOOKINGS ? source : null;
+}
+
+export function consoleBackTarget(
+  from: string | string[] | undefined,
+  event: { slug: string; id: number; title: string },
+): BackTarget {
+  switch (consoleFrom(from)) {
+    case FROM_MANAGE_EVENTS:
+      return { href: `/clubs/${event.slug}/manage/events`, label: "Events" };
+    case FROM_MANAGE_BOOKINGS:
+      return {
+        href: `/clubs/${event.slug}/manage/events?tab=bookings`,
+        label: "Bookings",
+      };
+    default:
+      return { href: `/clubs/${event.slug}/manage/events/${event.id}`, label: event.title };
+  }
+}
+
 /** Carries the trail one hop further, so a third page still knows the way home. */
 export function carryFrom(from: string | string[] | undefined): string {
   const source = fromParam(from);
