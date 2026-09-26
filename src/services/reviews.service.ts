@@ -62,15 +62,6 @@ export async function editReview(
   }
 }
 
-export async function setFlag(reviewId: number, flagged: boolean): Promise<Result> {
-  try {
-    await repo.flagReview(reviewId, flagged);
-    return { ok: true };
-  } catch {
-    return { ok: false, error: "Only the club or an administrator can flag a review." };
-  }
-}
-
 export async function takeDown(reviewId: number): Promise<Result> {
   try {
     await repo.removeReview(reviewId);

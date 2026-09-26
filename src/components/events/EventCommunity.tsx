@@ -7,7 +7,7 @@ import ForumIcon from "@mui/icons-material/Forum";
 import Section from "@/components/ui/Section";
 import EventRoster from "./EventRoster";
 import { tokens, type Faction } from "@/lib/tokens";
-import type { RosterEntry, BoardPost } from "@/services/eventBoard.service";
+import type { RosterEntry, BoardThread } from "@/services/eventBoard.service";
 
 /**
  * What a ticket unlocks: who else is going, and what they are saying.
@@ -21,7 +21,8 @@ import type { RosterEntry, BoardPost } from "@/services/eventBoard.service";
  * it. So the board can be left off (0065).
  */
 export default function EventCommunity({
-  roster, threads, faction, viewerId, canManage, slug, eventId, trail, hasAttendees,
+  roster, threads, threadCount, faction, viewerId, canManage, slug, eventId,
+  trail, hasAttendees,
   showBoard = true, hasEnded = false,
 }: {
   roster: RosterEntry[];
@@ -29,7 +30,10 @@ export default function EventCommunity({
   showBoard?: boolean;
   /** Past tense once the event has been played. */
   hasEnded?: boolean;
-  threads: BoardPost[];
+  /** The newest few, for the summary. The board itself pages them (0132). */
+  threads: BoardThread[];
+  /** Every thread on the event, which is more than `threads` once capped. */
+  threadCount: number;
   faction: Faction;
   viewerId: string | null;
   canManage: boolean;
@@ -69,7 +73,7 @@ export default function EventCommunity({
         action={
           <NextLink href={board} style={{ textDecoration: "none" }}>
             <Typography variant="body2" sx={{ color: tokens.brand, fontWeight: 600 }}>
-              {threads.length ? `Open the board (${threads.length})` : "Open the board"}
+              {threadCount ? `Open the board (${threadCount})` : "Open the board"}
             </Typography>
           </NextLink>
         }>
@@ -81,8 +85,8 @@ export default function EventCommunity({
                   sx={{ color: tokens.ink, "&:hover": { color: faction.base } }}>
                   {t.title}
                   <Box component="span" sx={{ color: tokens.inkMuted, ml: 1 }}>
-                    {t.replies.length
-                      ? `${t.replies.length} ${t.replies.length === 1 ? "reply" : "replies"}`
+                    {t.replyCount
+                      ? `${t.replyCount} ${t.replyCount === 1 ? "reply" : "replies"}`
                       : "no replies yet"}
                   </Box>
                 </Typography>

@@ -95,7 +95,7 @@ export default async function ClubBoardPage({
   };
 
   return (
-    <Container maxWidth="md" component="main" sx={{ py: { xs: 4, md: 6 } }}>
+    <Container maxWidth="lg" component="main" sx={{ py: { xs: 4, md: 6 } }}>
       <BoardMasthead back={back}
         clubName={club.name}
         clubSlug={club.slug}
@@ -150,10 +150,16 @@ export default async function ClubBoardPage({
             : undefined}
         />
       ) : (
-        <Box sx={{ border: `1px solid ${tokens.rule}`, borderRadius: 1.5,
-                   backgroundColor: tokens.paper, overflow: "hidden" }}>
-          {posts.map((post, i) => (
-            <PostCard key={post.id} post={post} slug={slug} faction={faction} first={i === 0} />
+        // A grid, like every other list. One thread a row was a band of
+        // mostly empty screen each, and eight of them made a scroll out of
+        // something that fits on one view.
+        <Box sx={{ display: "grid", gap: 2, alignItems: "stretch",
+                   gridTemplateColumns: { xs: "minmax(0, 1fr)",
+                                          md: "repeat(2, minmax(0, 1fr))",
+                                          lg: "repeat(3, minmax(0, 1fr))" } }}>
+          {posts.map((post) => (
+            <PostCard key={post.id} post={post} faction={faction}
+              href={`/clubs/${slug}/board/${post.id}`} />
           ))}
         </Box>
       )}

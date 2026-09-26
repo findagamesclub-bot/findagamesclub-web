@@ -88,13 +88,24 @@ const context = await browser.newContext({
 const page = await context.newPage();
 
 let failures = 0;
+// A page that never loaded is not a page with no overflow. This printed the
+// status and carried on, so a sweep against a server that was not running
+// reported "No overflow at 360 or 390" and exited 0 for every route on the
+// list. Unreachable is its own count and its own exit code, because the two
+// need different fixes: one is a layout bug, the other is a sweep that
+// measured nothing at all.
+let unreachable = 0;
 for (const route of ROUTES) {
   for (const width of WIDTHS) {
     await page.setViewportSize({ width, height: 844 });
     const response = await page.goto(`${BASE}${route}`, { waitUntil: "networkidle" })
       .catch((error) => ({ status: () => `ERR ${error.message.slice(0, 60)}` }));
     const status = response?.status?.() ?? "?";
-    if (status !== 200) { console.log(`  ${route} @${width} -> ${status}`); continue; }
+    if (status !== 200) {
+      unreachable += 1;
+      console.log(`  ${route} @${width} -> ${status}`);
+      continue;
+    }
 
     const bad = await page.evaluate(MEASURE);
     if (!bad.length) continue;
@@ -105,5 +116,12 @@ for (const route of ROUTES) {
 }
 
 await browser.close();
-console.log(failures ? `\n${failures} page/width combinations overflow.` : "\nNo overflow at 360 or 390.");
-process.exit(failures ? 1 : 0);
+if (unreachable) {
+  console.log(`\n${unreachable} page/width combinations never loaded, so nothing`
+    + ` was measured for them. Is a server up at ${BASE}?`);
+}
+console.log(failures
+  ? `\n${failures} page/width combinations overflow.`
+  : `\nNo overflow at 360 or 390 in the ${ROUTES.length * WIDTHS.length - unreachable}`
+    + " combinations that loaded.");
+process.exit(failures || unreachable ? 1 : 0);

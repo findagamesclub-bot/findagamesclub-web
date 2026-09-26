@@ -57,16 +57,29 @@ export function initialsOf(name: string): string {
  * decimals: "£15" reads as a price, "£15.00" reads as a receipt.
  */
 /**
- * Money in a column, always to the penny.
+ * Money in a column, always to the penny, given POUNDS.
  *
  * formatMoney drops ".00" so a price reads "£15" rather than "£15.00", which is
  * right on a card and wrong in a stack of figures: "£15" above "− £1.50" above
  * "£12.15" does not line up and reads as sloppy arithmetic.
+ *
+ * This was called `formatPence` and took pounds, which is a trap that caught
+ * every Stage 5 screen at once: the billing tables store pence, five callers
+ * handed their `*_pence` columns to the name that said pence, and every figure
+ * came out a hundred times too big, including the amount on a receipt email.
+ * The name says what it takes now, and `formatPence` below really does take
+ * pence.
  */
-export function formatPence(amount: number, currency = "GBP"): string {
+export function formatPounds(amount: number, currency = "GBP"): string {
   const symbol = currency === "GBP" ? "£" : `${currency} `;
   const safe = Number.isFinite(amount) ? amount : 0;
   return `${symbol}${safe.toFixed(2)}`;
+}
+
+/** Money held in pence, which is everything the billing tables store. */
+export function formatPence(pence: number, currency = "GBP"): string {
+  const safe = Number.isFinite(pence) ? pence : 0;
+  return formatPounds(safe / 100, currency);
 }
 
 export function formatMoney(amount: number, currency = "GBP"): string {

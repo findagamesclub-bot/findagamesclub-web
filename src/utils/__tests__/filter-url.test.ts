@@ -69,3 +69,20 @@ const DEFAULTS = { state: "all", sort: "newest", event: "0" };
 }
 
 console.log("filter-url: all assertions passed");
+
+// ------------------------------------------------------- searchParams in
+
+import { searchFrom } from "../filter-url";
+
+assert.equal(searchFrom({}).toString(), "");
+assert.equal(searchFrom({ state: "lapsed", q: "leeds" }).toString(), "state=lapsed&q=leeds");
+// Undefined is absent, not the string "undefined".
+assert.equal(searchFrom({ state: "lapsed", q: undefined }).toString(), "state=lapsed");
+// A repeated param keeps every value.
+assert.equal(searchFrom({ g: ["a", "b"] }).toString(), "g=a&g=b");
+// And it round-trips through nextSearch without losing what it does not own.
+assert.equal(
+  nextSearch(searchFrom({ state: "lapsed", q: "leeds" }), { tab: "costs" }, { tab: "subs" }),
+  "state=lapsed&q=leeds&tab=costs");
+
+console.log("filter-url searchFrom: all assertions passed");

@@ -11,6 +11,7 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import EditNoteIcon from "@mui/icons-material/EditNote";
 import { useActionToast } from "@/components/ui/Toaster";
+import { useActionSuccess } from "@/hooks/useActionSuccess";
 import { recordResultAction, clearResultAction, type ResultState }
   from "@/app/account/games/actions";
 import MatchContextFields from "./MatchContextFields";
@@ -60,17 +61,8 @@ export default function ResultDialog({
    * rather than in an effect: an effect would close it a frame later and trip
    * the set-state-in-effect rule.
    */
-  const [seen, setSeen] = useState<ResultState | null>(null);
-  if (state !== seen) {
-    setSeen(state);
-    if (state.notice) setOpen(false);
-  }
-
-  const [seenClear, setSeenClear] = useState<ResultState | null>(null);
-  if (clearState !== seenClear) {
-    setSeenClear(clearState);
-    if (clearState.notice) setOpen(false);
-  }
+  useActionSuccess(state, () => setOpen(false));
+  useActionSuccess(clearState, () => setOpen(false));
 
   const done = game.myScore !== null;
 

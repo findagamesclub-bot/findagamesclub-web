@@ -1,3 +1,4 @@
+import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import PageHead from "@/components/ui/PageHead";
 import EmptyState from "@/components/ui/EmptyState";
@@ -36,12 +37,17 @@ export default async function AdminAccountsPage({
 
       <AccountSearch query={query} status={status}>
         {accounts.length ? (
-          <Stack spacing={1.5}>
-            <Stack spacing={1}>
+          <Stack spacing={2}>
+            {/* A grid, like the clubs and events lists. A row per person was
+                one name and an email across the full width of the page. */}
+            <Box sx={{ display: "grid", gap: 2, alignItems: "stretch",
+                       gridTemplateColumns: { xs: "minmax(0, 1fr)",
+                                              sm: "repeat(2, minmax(0, 1fr))",
+                                              lg: "repeat(3, minmax(0, 1fr))" } }}>
               {accounts.map((account) => (
                 <AccountRow key={account.id} account={account} />
               ))}
-            </Stack>
+            </Box>
             <Pager page={page} total={total} size={perPage} noun="accounts"
               href={{ path: "/admin/accounts", params: { q: query, status } }} />
           </Stack>

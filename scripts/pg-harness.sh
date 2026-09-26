@@ -1,0 +1,62 @@
+#!/bin/bash
+# A throwaway Postgres carrying the REAL schema, built by running every
+# migration in order.
+#
+# There was a hand-written scaffold before this. It stood in for the tables a
+# new migration touched, and it was wrong: it called the discussion author
+# `author_id` (really `author_profile_id`), gave ticket types a `quantity`
+# (really `quantity_available`) and made `clubs.slug` a `text` (really
+# `citext`). Four functions in 0117 and 0118 were written against those names,
+# passed every test, and failed on the first real request. A test against a
+# schema you invented tests your invention.
+#
+#   scripts/pg-harness.sh build     # from scratch, all migrations
+#   scripts/pg-harness.sh apply     # re-apply the newest migrations only
+#   scripts/pg-harness.sh psql      # a prompt on it
+#
+# Needs a Postgres already running at the socket below. It never touches
+# Supabase and holds no real data.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+export PGHOST=${PGHOST:-/tmp/fagcpg/sock} PGPORT=${PGPORT:-5599} PGUSER=${PGUSER:-postgres}
+DB=${DB:-fagcfull}
+
+prereq() {
+  # What Supabase gives you and plain Postgres does not. Deliberately thin:
+  # every one of these is a thing the platform provides, never a stand-in for
+  # one of our own tables.
+  psql -d "$DB" -q -c "create schema if not exists extensions;
+    create extension if not exists citext schema public;
+    create extension if not exists pg_trgm schema public;
+    create extension if not exists unaccent schema public;
+    create extension if not exists cube schema public;
+    create extension if not exists earthdistance schema public;"
+  psql -d "$DB" -v ON_ERROR_STOP=1 -q -f scripts/pg-harness-prereq.sql
+}
+
+case "${1:-build}" in
+  build)
+    psql -d postgres -q -c "drop database if exists $DB"
+    psql -d postgres -q -c "create database $DB"
+    psql -d postgres -q -c "alter database $DB set search_path = public, extensions"
+    prereq
+    n=0
+    for f in supabase/migrations/*.sql; do
+      n=$((n+1))
+      err=$(psql -d "$DB" -v ON_ERROR_STOP=1 -q -f "$f" 2>&1 | grep -i "^psql.*ERROR" | head -1 || true)
+      if [ -n "$err" ]; then
+        echo "STOP at $(basename "$f") (#$n)"; echo "$err"; exit 1
+      fi
+    done
+    echo "$n migrations applied to $DB"
+    ;;
+  apply)
+    shift
+    for f in "$@"; do
+      psql -d "$DB" -v ON_ERROR_STOP=1 -q -f "$f"
+      echo "applied $(basename "$f")"
+    done
+    ;;
+  psql) shift; exec psql -d "$DB" "$@" ;;
+  *) echo "usage: $0 build|apply <files...>|psql"; exit 2 ;;
+esac

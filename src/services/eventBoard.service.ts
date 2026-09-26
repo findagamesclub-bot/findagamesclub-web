@@ -47,33 +47,115 @@ export type BoardReply = {
   createdAt: string;
 };
 
-export type BoardPost = BoardReply & {
+/** A row on the list: the thread, and how many have answered it. */
+export type BoardThread = BoardReply & {
   title: string;
-  replies: BoardReply[];
+  replyCount: number;
+  lastActivityAt: string;
 };
 
-/** Every thread on one event, newest first. Empty for anybody without a ticket. */
-export async function getEventBoard(eventId: number): Promise<BoardPost[]> {
-  const rows = await repo.findBoardPosts(eventId).catch(() => []);
+const THREADS_PER_PAGE = 8;
+const REPLIES_PER_PAGE = 20;
 
-  return rows.map((row) => ({
-    id: row.id,
-    title: row.title,
-    content: row.content,
-    authorId: row.author_profile_id,
-    authorName: row.author?.full_name?.trim() || "Club member",
-    createdAt: row.created_at,
-    replies: (row.club_event_board_replies ?? [])
-      .filter((r) => r.removed_at === null)
-      .sort((a, b) => a.created_at.localeCompare(b.created_at))
-      .map((r) => ({
-        id: r.id,
-        content: r.content,
-        authorId: r.author_profile_id,
-        authorName: r.author?.full_name?.trim() || "Club member",
-        createdAt: r.created_at,
-      })),
-  }));
+export { THREADS_PER_PAGE, REPLIES_PER_PAGE };
+
+const person = (name: string | null | undefined) =>
+  name?.trim() || "Club member";
+
+/**
+ * A page of threads, paged in SQL.
+ *
+ * Before 0132 this fetched every thread with every reply inside it and the
+ * browser paged the result, which is the thing `CLAUDE.md`'s scale rules exist
+ * to stop: a hundred threads of two hundred replies is twenty thousand rows to
+ * draw eight of them, and the two hundred and first thread did not exist at
+ * all. A failed read answers null rather than an empty list, because "no
+ * threads yet" is a very different thing to tell somebody.
+ */
+export async function getEventThreads(eventId: number, page: number) {
+  // One wave. The masthead's reply figure does not need the rows and the rows
+  // do not need it, so waiting for one before starting the other costs a round
+  // trip for nothing.
+  const [got, replies] = await Promise.all([
+    repo.findEventThreads(eventId, {
+      limit: THREADS_PER_PAGE,
+      offset: (page - 1) * THREADS_PER_PAGE,
+    }).catch(() => null),
+    repo.countEventReplies(eventId).catch(() => 0),
+  ]);
+
+  return {
+    replies,
+    threads: (got?.rows ?? []).map((row): BoardThread => ({
+      id: row.id,
+      title: row.title,
+      content: row.content,
+      authorId: row.author_profile_id,
+      authorName: person(row.author?.full_name),
+      createdAt: row.created_at,
+      lastActivityAt: row.last_activity_at,
+      // PostgREST hands an aggregate back as a one-element array.
+      replyCount: row.club_event_board_replies?.[0]?.count ?? 0,
+    })),
+    total: got?.total ?? 0,
+    page,
+    perPage: THREADS_PER_PAGE,
+    failed: got === null,
+  };
+}
+
+export type BoardThreadPage = {
+  thread: BoardThread;
+  replies: BoardReply[];
+  total: number;
+  page: number;
+  perPage: number;
+};
+
+/**
+ * One thread and a page of its replies.
+ *
+ * Oldest first and the last page by default, because a conversation is read
+ * forward and the reply box sits at the end of it. `page` of 0 means "the last
+ * one", which is what a link to a thread should open on.
+ */
+export async function getEventThread(
+  postId: number, page: number,
+): Promise<BoardThreadPage | null> {
+  const row = await repo.findEventThread(postId).catch(() => null);
+  if (!row) return null;
+
+  const count = row.club_event_board_replies?.[0]?.count ?? 0;
+  const pages = Math.max(1, Math.ceil(count / REPLIES_PER_PAGE));
+  const on = page > 0 ? Math.min(page, pages) : pages;
+
+  const got = await repo.findEventReplies(postId, {
+    limit: REPLIES_PER_PAGE,
+    offset: (on - 1) * REPLIES_PER_PAGE,
+  }).catch(() => ({ rows: [], total: 0 }));
+
+  return {
+    thread: {
+      id: row.id,
+      title: row.title,
+      content: row.content,
+      authorId: row.author_profile_id,
+      authorName: person(row.author?.full_name),
+      createdAt: row.created_at,
+      lastActivityAt: row.last_activity_at,
+      replyCount: count,
+    },
+    replies: got.rows.map((r): BoardReply => ({
+      id: r.id,
+      content: r.content,
+      authorId: r.author_profile_id,
+      authorName: person(r.author?.full_name),
+      createdAt: r.created_at,
+    })),
+    total: got.total,
+    page: on,
+    perPage: REPLIES_PER_PAGE,
+  };
 }
 
 const ERRORS: [string, string][] = [

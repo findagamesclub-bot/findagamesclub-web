@@ -7,15 +7,47 @@ import HeroFan from "@/components/home/HeroFan";
 import LinkButton from "@/components/ui/LinkButton";
 import { FOOTER_GAP } from "@/components/layout/SiteFooter";
 import { listClubs } from "@/services/clubs.service";
+import { getFeaturedClubs } from "@/services/featured.service";
 import { getCurrentProfile } from "@/services/auth.service";
+import { getPublicPrices } from "@/services/billing.service";
+import { listingCostLine } from "@/utils/listing-billing";
 import { mono, tokens } from "@/lib/tokens";
 
 export default async function HomePage() {
-  const [{ clubs, total }, profile] = await Promise.all([
-    listClubs({ sort: "relevance" }),
+  // Who leads the page, asked first because the answer decides what the
+  // directory read has to bring back. It is cached for a minute and the same
+  // for every visitor, so on a warm cache this costs nothing.
+  const featured = await getFeaturedClubs(6);
+  const paidBySlug = new Map(featured.map((row) => [row.slug, row.paid]));
+
+  const [{ clubs, total, featured: leading = [] }, profile, billing] = await Promise.all([
+    listClubs({ sort: "relevance", featuredSlugs: featured.map((row) => row.slug) }),
     getCurrentProfile(),
+    // What listing costs, because this block said "Free to list" as a fixed
+    // string and went on saying it after charging was switched on.
+    getPublicPrices(),
   ]);
   const firstName = profile?.full_name?.split(" ")[0];
+
+  // The strip is always six. `featured_clubs()` says who leads it, the
+  // directory fills the rest, and neither is allowed to shrink the section:
+  // with three spotlight clubs and no paid slots this rendered one row where
+  // the design has two, which is a homepage that breaks itself the day a
+  // migration lands.
+  const seen = new Set(leading.map((club) => club.slug));
+  const shown = [...leading, ...clubs.filter((club) => !seen.has(club.slug))]
+    .slice(0, 6)
+    .map((club) => ({
+      ...club,
+      // A paid slot wears the badge, and so does `spotlight`, which is what the
+      // card already says in the directory. One club cannot read two ways on
+      // two pages.
+      isFeatured: club.isFeatured || paidBySlug.get(club.slug) === true,
+    }));
+
+  // Only money gets to be called featured. Saying it over the spotlight
+  // fallback is exactly what 0113 was written to stop.
+  const anyPaid = shown.some((club) => paidBySlug.get(club.slug) === true);
 
   return (
     <Box component="main">
@@ -95,10 +127,12 @@ export default async function HomePage() {
       <Box sx={{ background: tokens.paper }}>
         <Container maxWidth="lg" sx={{ py: { xs: 5, md: 7 } }}>
           <Stack direction="row" spacing={2} sx={{ justifyContent: "space-between", alignItems: "baseline", mb: 3 }}>
-            <Typography variant="h2" sx={{ fontSize: "1.95rem" }}>Featured clubs</Typography>
+            <Typography variant="h2" sx={{ fontSize: "1.95rem" }}>
+              {anyPaid ? "Featured clubs" : "Clubs worth a look"}
+            </Typography>
             <LinkButton href="/clubs" variant="text">See all {total}</LinkButton>
           </Stack>
-          <ClubGrid clubs={clubs.slice(0, 6)} />
+          <ClubGrid clubs={shown} />
         </Container>
       </Box>
 
@@ -126,9 +160,9 @@ export default async function HomePage() {
                 Put yours in the directory
               </Typography>
               <Typography variant="body1" sx={{ color: "#B9C9DD" }}>
-                Free to list. Take table bookings, run events and sell tickets,
-                keep your members in one place, and stop halfway if the night
-                gets busy.
+                {listingCostLine(billing)} Take table bookings, run events and
+                sell tickets, keep your members in one place, and stop halfway
+                if the night gets busy.
               </Typography>
             </Stack>
 

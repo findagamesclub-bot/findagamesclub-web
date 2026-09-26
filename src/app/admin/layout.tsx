@@ -7,6 +7,9 @@ import { getUnreadCount as getUnreadNotifications } from "@/services/notificatio
 import { getUnreadCount as getUnreadMessages } from "@/services/messages.service";
 import { getCurrentProfile } from "@/services/auth.service";
 import { countWaitingSubmissions } from "@/services/submissionReview.service";
+import { countOverdue } from "@/services/billing.service";
+import { countOpenClaims } from "@/services/claims.service";
+import { countWaiting } from "@/services/moderation.service";
 import { tokens } from "@/lib/tokens";
 
 /**
@@ -30,10 +33,14 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   // a badge is not worth failing the console over.
   // One wave, not three. Each of these is a count rather than a list, so the
   // rail costs one round trip however many rows are behind the numbers.
-  const [unreadNotifications, unreadMessages, waitingSubmissions] = await Promise.all([
+  const [unreadNotifications, unreadMessages, waitingSubmissions,
+         billingOwed, openClaims, openFlags] = await Promise.all([
     getUnreadNotifications(viewer.id).catch(() => 0),
     getUnreadMessages(viewer.id).catch(() => 0),
     countWaitingSubmissions().catch(() => 0),
+    countOverdue().catch(() => 0),
+    countOpenClaims().catch(() => 0),
+    countWaiting().catch(() => 0),
   ]);
 
   return (
@@ -63,7 +70,9 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
                      py: { xs: 1.5, md: 3 },
                      borderRight: { md: `1px solid ${tokens.rule}` },
                      pr: { md: 2 } }}>
-            <AdminSidebar counts={{ unreadNotifications, unreadMessages, waitingSubmissions }}
+            <AdminSidebar counts={{ unreadNotifications, unreadMessages,
+                                    waitingSubmissions, billingOwed, openClaims,
+                                    openFlags }}
               viewerId={viewer.id} viewerName={viewer.full_name || "Site admin"} />
           </Box>
 

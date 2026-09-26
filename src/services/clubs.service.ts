@@ -47,6 +47,14 @@ export type ClubFilters = {
   reviewRating?: string;
   sort?: string;
   page?: number;
+  /**
+   * Slugs to bring back as `featured`, beside the page. The homepage asks who
+   * leads it and who is in the directory in one breath; looking the six up
+   * separately would be a second wave of seven queries for six cards, and
+   * joining them against the page itself would drop a paid slot the moment the
+   * directory outgrew one page.
+   */
+  featuredSlugs?: string[];
 };
 
 export type ClubListResult = {
@@ -55,6 +63,8 @@ export type ClubListResult = {
   page: number;
   pageSize: number;
   origin: { label: string } | null;
+  /** Only when `featuredSlugs` was asked for, in the order it was asked. */
+  featured?: ClubSummary[];
   /**
    * True when a place was searched for and we could not turn it into
    * coordinates. The caller says so instead of showing unfiltered results.
@@ -202,20 +212,33 @@ export async function listClubs(filters: ClubFilters = {}): Promise<ClubListResu
   const total = matched.length;
   const pageRows = matched.slice((page - 1) * pageSize, page * pageSize);
 
+  const summarise = (row: repo.ClubRow) =>
+    toSummary(row, sessionsByClub.get(row.id) ?? [], gamesByClub.get(row.id) ?? [], distances.get(row.id), {
+      facilities: (facilitiesByClub.get(row.id) ?? []).map((f) => f.facilities?.label ?? "").filter(Boolean),
+      formats: (formatsByClub.get(row.id) ?? []).map((f) => f.formats?.label ?? "").filter(Boolean),
+      rating: reviews.get(row.id) ?? null,
+      joinedCount: joined.get(row.id) ?? null,
+      fromPrice: pricing.label.get(row.id) ?? null,
+    });
+
+  // From `rows`, not `matched`: who leads the page is the featured list's
+  // answer, not the search's, and a filter would quietly drop a paid slot.
+  let featured: ClubSummary[] | undefined;
+  if (filters.featuredSlugs?.length) {
+    const bySlug = new Map(rows.map((row) => [row.slug, row]));
+    featured = filters.featuredSlugs
+      .map((slug) => bySlug.get(slug))
+      .filter((row): row is repo.ClubRow => Boolean(row))
+      .map(summarise);
+  }
+
   return {
-    clubs: pageRows.map((row) =>
-      toSummary(row, sessionsByClub.get(row.id) ?? [], gamesByClub.get(row.id) ?? [], distances.get(row.id), {
-        facilities: (facilitiesByClub.get(row.id) ?? []).map((f) => f.facilities?.label ?? "").filter(Boolean),
-        formats: (formatsByClub.get(row.id) ?? []).map((f) => f.formats?.label ?? "").filter(Boolean),
-        rating: reviews.get(row.id) ?? null,
-        joinedCount: joined.get(row.id) ?? null,
-        fromPrice: pricing.label.get(row.id) ?? null,
-      }),
-    ),
+    clubs: pageRows.map(summarise),
     total,
     page,
     pageSize,
     origin: origin ? { label: origin.label } : null,
+    featured,
   };
 }
 

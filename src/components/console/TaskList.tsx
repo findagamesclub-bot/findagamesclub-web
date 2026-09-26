@@ -8,6 +8,7 @@ import ScoreboardIcon from "@mui/icons-material/Scoreboard";
 import StorefrontIcon from "@mui/icons-material/Storefront";
 import SchoolIcon from "@mui/icons-material/School";
 import PaymentsIcon from "@mui/icons-material/Payments";
+import FlagIcon from "@mui/icons-material/OutlinedFlag";
 import type { SvgIconComponent } from "@mui/icons-material";
 import { display, mono, tokens } from "@/lib/tokens";
 import type { ConsoleTask } from "@/services/console.service";
@@ -18,6 +19,7 @@ const ICONS: Record<ConsoleTask["kind"], SvgIconComponent> = {
   order: StorefrontIcon,
   coaching: SchoolIcon,
   renewal: PaymentsIcon,
+  report: FlagIcon,
 };
 
 /**

@@ -6,6 +6,7 @@ import { londonToday } from "./bookingCalendar.service";
 import { getClubResults } from "./clubResults.service";
 import { getUnlinkedNames } from "./memberRecords.service";
 import { getOrders } from "./clubExtras.service";
+import { countClubWaiting } from "./moderation.service";
 import { countCoachingToPay } from "@/repositories/clubExtras.repository";
 import { getClubRenewals } from "./renewals.service";
 import { countRenewals } from "@/utils/renewal-filter";
@@ -27,7 +28,7 @@ import type { MembershipTier } from "@/types/clubDetail";
  */
 
 export type ConsoleTask = {
-  kind: "join" | "score" | "order" | "coaching" | "renewal";
+  kind: "join" | "score" | "order" | "coaching" | "renewal" | "report";
   count: number;
   label: string;
   href: string;
@@ -37,7 +38,7 @@ export async function getConsoleCounts(
   clubId: number, access: ClubAccess,
 ): Promise<ConsoleCounts> {
   const [joinRequests, scoresWaiting, ordersWaiting, unmatchedResults,
-         coachingToPay] = await Promise.all([
+         coachingToPay, reportsWaiting] = await Promise.all([
     access.can("members.manage")
       ? getPendingRequests(clubId).then((r) => r.length).catch(() => 0)
       : Promise.resolve(0),
@@ -53,9 +54,13 @@ export async function getConsoleCounts(
     access.can("coaching.manage")
       ? countCoachingToPay(clubId).catch(() => 0)
       : Promise.resolve(0),
+    access.can("board.moderate")
+      ? countClubWaiting(clubId)
+      : Promise.resolve(0),
   ]);
 
-  return { joinRequests, scoresWaiting, ordersWaiting, unmatchedResults, coachingToPay };
+  return { joinRequests, scoresWaiting, ordersWaiting, unmatchedResults,
+           coachingToPay, reportsWaiting };
 }
 
 /**
@@ -104,6 +109,13 @@ export async function getConsoleTasks(
       kind: "order", count: counts.ordersWaiting,
       label: counts.ordersWaiting === 1 ? "order to answer" : "orders to answer",
       href: at("/manage/shop?tab=orders"),
+    });
+  }
+  if (counts.reportsWaiting) {
+    tasks.push({
+      kind: "report", count: counts.reportsWaiting,
+      label: counts.reportsWaiting === 1 ? "report to answer" : "reports to answer",
+      href: at("/manage/moderation"),
     });
   }
   if (counts.coachingToPay) {

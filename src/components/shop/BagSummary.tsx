@@ -5,7 +5,7 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import { formatPence } from "@/utils/format";
+import { formatPounds } from "@/utils/format";
 import type { BagTotal } from "@/utils/merch-bag";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { ShopStanding } from "@/types/clubExtras";
@@ -43,15 +43,15 @@ export default function BagSummary({
         helperText="Sizes, colours, when you need it by." />
 
       <Stack spacing={0.5}>
-        {!allQuoted ? <Row label="Subtotal" value={formatPence(bag.subtotal)} /> : null}
+        {!allQuoted ? <Row label="Subtotal" value={formatPounds(bag.subtotal)} /> : null}
         {!allQuoted && bag.tierDiscount > 0 ? (
           <Row tone={tokens.positive}
             label={`${standing.tierLabel ?? "Member"} discount · ${standing.discountPercent}%`}
-            value={`− ${formatPence(bag.tierDiscount)}`} />
+            value={`− ${formatPounds(bag.tierDiscount)}`} />
         ) : null}
         {!allQuoted && bag.pointsOff > 0 ? (
           <Row tone={tokens.positive} label={`${points} points`}
-            value={`− ${formatPence(bag.pointsOff)}`} />
+            value={`− ${formatPounds(bag.pointsOff)}`} />
         ) : null}
 
         <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "baseline",
@@ -60,7 +60,7 @@ export default function BagSummary({
           <Typography sx={{ fontFamily: "var(--font-mono)", fontWeight: 700,
                             fontSize: allQuoted ? "0.95rem" : "1.2rem",
                             color: allQuoted ? tokens.inkMuted : undefined }}>
-            {allQuoted ? "To be confirmed" : formatPence(bag.total)}
+            {allQuoted ? "To be confirmed" : formatPounds(bag.total)}
           </Typography>
         </Stack>
 

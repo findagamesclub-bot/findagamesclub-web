@@ -2,10 +2,9 @@
 
 import { startTransition, useActionState, useMemo, useRef, useState, useTransition }
   from "react";
-import Button from "@mui/material/Button";
+import DownloadButton from "@/components/ui/DownloadButton";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import DownloadIcon from "@mui/icons-material/Download";
 import BusyOverlay from "@/components/ui/BusyOverlay";
 import EmptyState from "@/components/ui/EmptyState";
 import FilterBar from "@/components/account/FilterBar";
@@ -94,11 +93,9 @@ export default function RosterBoard({
             : `${counts.all} BOOKED · ALL PAID`}
         </Typography>
 
-        <Button component="a" href={`/clubs/${slug}/manage/events/${eventId}/roster/export`}
-          size="small" variant="outlined" startIcon={<DownloadIcon />}
-          sx={{ alignSelf: { xs: "stretch", sm: "auto" } }}>
-          Export the door list
-        </Button>
+        <DownloadButton href={`/clubs/${slug}/manage/events/${eventId}/roster/export`}
+          label="Export the door list" size="small" variant="outlined"
+          sx={{ alignSelf: { xs: "stretch", sm: "auto" } }} />
       </Stack>
 
       <FilterBar

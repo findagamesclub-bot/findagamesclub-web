@@ -15,9 +15,14 @@ import { matGrid, tokens, type Faction } from "@/lib/tokens";
  */
 export default function BoardMasthead({
   clubName, clubSlug, faction, monogram, threads, replies, children, back,
+  eyebrow = "CLUB BOARD", title,
 }: {
   clubName: string;
   clubSlug: string;
+  /** The small line above the name. An event board says what it is instead. */
+  eyebrow?: string;
+  /** What the plate is named after. Defaults to the club. */
+  title?: string;
   /** Where the back link goes. Defaults to the club's own page. */
   back?: { href: string; label: string };
   faction: Faction;
@@ -74,11 +79,11 @@ export default function BoardMasthead({
         <Stack spacing={0.5} sx={{ position: "relative" }}>
           <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.68rem",
                             letterSpacing: "0.18em", color: "rgba(255,255,255,0.72)" }}>
-            CLUB BOARD
+            {eyebrow}
           </Typography>
           <Typography variant="h1" sx={{ fontSize: { xs: "1.9rem", md: "2.5rem" },
                                          lineHeight: 1.05, color: "#FFFFFF" }}>
-            {clubName}
+            {title ?? clubName}
           </Typography>
 
           <Stack direction="row" spacing={3} useFlexGap

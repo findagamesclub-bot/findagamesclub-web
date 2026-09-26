@@ -10,7 +10,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import RemoveIcon from "@mui/icons-material/Remove";
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import BagSummary from "./BagSummary";
-import { formatPence } from "@/utils/format";
+import { formatPounds } from "@/utils/format";
 import { stockNote, MAX_PER_LINE, type BagTotal } from "@/utils/merch-bag";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { ShopStanding } from "@/types/clubExtras";
@@ -84,7 +84,7 @@ export default function BagDrawer({
                   <Typography variant="caption" sx={{ color: tokens.inkMuted }}>
                     {line.quoted
                       ? `${line.quantity} × price on request`
-                      : `${line.quantity} × ${formatPence(
+                      : `${line.quantity} × ${formatPounds(
                           Math.max(line.unitAmount - line.unitDiscount, 0))}`}
                     {" · "}
                     <Box component="span"
@@ -103,7 +103,7 @@ export default function BagDrawer({
                                   flexShrink: 0,
                                   color: line.quoted ? tokens.inkMuted : undefined,
                                   fontSize: line.quoted ? "0.8rem" : undefined }}>
-                  {line.quoted ? "To be priced" : formatPence(line.lineTotal)}
+                  {line.quoted ? "To be priced" : formatPounds(line.lineTotal)}
                 </Typography>
               </Stack>
 

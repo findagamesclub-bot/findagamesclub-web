@@ -11,22 +11,8 @@ import { mono, tokens } from "@/lib/tokens";
 import { clubIdentity } from "@/utils/club-identity";
 import { formatMoney } from "@/utils/format";
 import { FROM_MY_EVENTS } from "@/utils/back-link";
+import { dateParts } from "@/utils/dates";
 import type { OwnerEvent } from "@/services/ownerEvents.service";
-
-/** Day and month split out so the tile reads as a date, not a sentence. */
-function dateParts(iso: string | null) {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  // UTC on purpose: a club date is a calendar date, and without this anyone
-  // west of Greenwich sees the day before.
-  const opts = { timeZone: "UTC" } as const;
-  return {
-    day: d.toLocaleDateString("en-GB", { ...opts, day: "numeric" }),
-    month: d.toLocaleDateString("en-GB", { ...opts, month: "short" }).toUpperCase(),
-    weekday: d.toLocaleDateString("en-GB", { ...opts, weekday: "short" }).toUpperCase(),
-  };
-}
 
 /**
  * One event across the clubs somebody runs.

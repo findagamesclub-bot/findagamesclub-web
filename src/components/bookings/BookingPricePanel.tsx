@@ -3,7 +3,7 @@
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import { formatPence } from "@/utils/format";
+import { formatPounds } from "@/utils/format";
 import { priceBooking, type BookingStanding } from "@/utils/booking-pricing";
 import { tokens } from "@/lib/tokens";
 
@@ -45,7 +45,7 @@ export default function BookingPricePanel({
       )}
 
       <Stack spacing={0.5}>
-        <Row label="Pay as you play" value={formatPence(price.basePrice)} />
+        <Row label="Pay as you play" value={formatPounds(price.basePrice)} />
 
         {price.discountPercent > 0 ? (
           <Row
@@ -55,13 +55,13 @@ export default function BookingPricePanel({
               // the thing their membership already paid for.
               ? `Included in ${standing.tierLabel ?? "your membership"}`
               : `${standing.tierLabel ?? "Member"} discount · ${price.discountPercent}%`}
-            value={`− ${formatPence(price.discountAmount)}`}
+            value={`− ${formatPounds(price.discountAmount)}`}
           />
         ) : null}
 
         {price.pointsOff > 0 ? (
           <Row tone={tokens.positive} label={`${points} points`}
-            value={`− ${formatPence(price.pointsOff)}`} />
+            value={`− ${formatPounds(price.pointsOff)}`} />
         ) : null}
 
         <Stack direction="row"
@@ -71,7 +71,7 @@ export default function BookingPricePanel({
             {price.free ? "Nothing to pay" : "You pay"}
           </Typography>
           <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "1.1rem", fontWeight: 700 }}>
-            {formatPence(price.total)}
+            {formatPounds(price.total)}
           </Typography>
         </Stack>
 

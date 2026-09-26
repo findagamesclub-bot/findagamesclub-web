@@ -14,7 +14,7 @@ import { accountBookingAction, type AccountBookingState }
   from "@/app/account/bookings/actions";
 import { clubIdentity } from "@/utils/club-identity";
 import { nightLabel } from "@/utils/dates";
-import { formatPence } from "@/utils/format";
+import { formatPounds } from "@/utils/format";
 import { mono, tokens } from "@/lib/tokens";
 import type { TableBooking } from "@/services/dashboard.service";
 
@@ -43,7 +43,7 @@ export default function TableBookingRow({ booking }: { booking: TableBooking }) 
 
   const facts = [
     booking.opponentName ? `vs ${booking.opponentName}` : null,
-    booking.total > 0 ? formatPence(booking.total) : "nothing to pay",
+    booking.total > 0 ? formatPounds(booking.total) : "nothing to pay",
     booking.tierLabel,
   ].filter(Boolean) as string[];
 

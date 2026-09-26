@@ -8,3 +8,5 @@ export * from "./orders";
 export * from "./team";
 export * from "./account";
 export * from "./listings";
+export * from "./billing";
+export * from "./claims";

@@ -3,6 +3,7 @@ import Conversation from "@/components/messages/Conversation";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getContacts, getConversation, markRead } from "@/services/messages.service";
 import { clubIdentity } from "@/utils/club-identity";
+import { getReported } from "@/services/myReports.service";
 
 export const metadata = { title: "Conversation" };
 
@@ -39,6 +40,8 @@ export default async function ConversationPage({
   if (existing) await markRead(id, viewer.id, personId);
 
   const { faction } = clubIdentity(header.clubSlug, header.clubName);
+  const reported = await getReported(viewer.id);
 
-  return <Conversation conversation={header} faction={faction} />;
+  return <Conversation conversation={header} faction={faction}
+    reported={reported} />;
 }

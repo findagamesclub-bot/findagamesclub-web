@@ -27,7 +27,7 @@ import { getMyMembership } from "@/services/memberships.service";
 import { getBuyableTickets, getTicketStanding } from "@/services/tickets.service";
 import { getAttendees } from "@/services/eventBookings.service";
 import { getRoster } from "@/services/memberships.service";
-import { getEventRoster, getEventBoard } from "@/services/eventBoard.service";
+import { getEventRoster, getEventThreads } from "@/services/eventBoard.service";
 import EventCommunity from "@/components/events/EventCommunity";
 import EventTickets from "@/components/tickets/EventTickets";
 import TicketSalesBoard from "@/components/tickets/TicketSalesBoard";
@@ -95,7 +95,12 @@ export default async function EventPage({
   const canSeeRecord = event.canSeePrivate || event.hasEnded;
   const [roster, threads] = await Promise.all([
     canSeeRecord ? getEventRoster(event.id) : Promise.resolve([]),
-    event.canSeePrivate ? getEventBoard(event.id) : Promise.resolve([]),
+    // The summary shows three titles and a count, so it takes the first page
+    // rather than every thread on the event.
+    event.canSeePrivate
+      ? getEventThreads(event.id, 1)
+      : Promise.resolve({ threads: [], total: 0, replies: 0, page: 1, perPage: 8,
+                          failed: false }),
   ]);
 
   // Only for the results editor, so a winner can be linked to their profile
@@ -254,7 +259,8 @@ export default async function EventPage({
           showBoard={event.canSeePrivate}
           hasEnded={event.hasEnded}
           roster={roster}
-          threads={threads}
+          threads={threads.threads}
+          threadCount={threads.total}
           faction={faction}
           viewerId={viewer?.id ?? null}
           canManage={event.canManageClub}

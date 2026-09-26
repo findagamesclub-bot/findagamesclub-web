@@ -12,9 +12,11 @@ import type { MemberContext } from "@/services/memberContext.service";
 import type { MemberRecords } from "@/services/memberRecords.service";
 import type { ClubTracker } from "@/services/grudgeTracker.service";
 import GrudgeTracker from "./GrudgeTracker";
+import MemberBadges from "./MemberBadges";
 import MemberPanels from "./MemberPanels";
 import BackToTop from "@/components/ui/BackToTop";
 import SportsScoreIcon from "@mui/icons-material/SportsScore";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 
 /**
  * A member laid out as a datasheet rather than a column of sections.
@@ -89,7 +91,18 @@ export default function MemberProfileView({
             ) : null
           } />
 
-        {/* Second, not last. It is the answer to "how do they play", it is the
+        {/* Above the columns, not seventh down them. A badge is the most
+            distinctive thing about somebody and it was sitting under "Age
+            group" beside their social links, which the client found on sight.
+            Earned from standings and the join date rather than stored, so
+            correcting a league table corrects the badges with it. */}
+        {records?.badges.length ? (
+          <Panel title="Badges" icon={EmojiEventsIcon}>
+            <MemberBadges badges={records.badges} />
+          </Panel>
+        ) : null}
+
+        {/* Then this. It is the answer to "how do they play", it is the
             tallest thing on the page, and buried under a column of short
             panels it took three screens of scrolling to reach. Full width
             because it carries tabs and two tables. */}

@@ -1,43 +1,44 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useState } from "react";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
+import PostCard from "@/components/board/PostCard";
 import EmptyState from "@/components/ui/EmptyState";
 import SubmitButton from "@/components/ui/SubmitButton";
 import Pager from "@/components/ui/Pager";
-import BoardThread from "./BoardThread";
-import { usePagedList } from "@/hooks/usePagedList";
 import { useLiveEventBoard } from "@/hooks/useLiveEventBoard";
 import { useActionToast } from "@/components/ui/Toaster";
 import { eventBoardAction, type BoardState }
   from "@/app/clubs/[slug]/(console)/events/[eventId]/board/actions";
 import { tokens, type Faction } from "@/lib/tokens";
-import type { BoardPost } from "@/services/eventBoard.service";
-import { PER_PAGE } from "@/utils/paging";
-
-/** A tournament board is notices, not a forum. Ten to a page is generous. */
-const PAGE = PER_PAGE.rich;
+import type { BoardThread } from "@/services/eventBoard.service";
 
 /**
- * The board for one event.
+ * The board for one event: a list of threads, each opening on its own page.
+ *
+ * It used to render every thread expanded with all of its replies and page the
+ * result in the browser. That is fine at four threads and wrong at a hundred:
+ * a hundred threads of two hundred replies was twenty thousand rows in one
+ * payload to draw eight of them, and the two hundred and first thread silently
+ * did not exist. 0132 put the sort key in SQL so this can page there instead,
+ * which is what the club board has done since 0037. One board pattern, not two.
  *
  * Only people holding a ticket can read it, which the database enforces rather
- * than this component: an attendee asking "when is list submission due" is
- * asking the other attendees, and the answer is nobody else's business.
- *
- * Newest first, because a board is read for what changed since you last looked.
+ * than this component.
  */
 export default function EventBoard({
-  posts, faction, viewerId, canManage, slug, eventKey, eventId,
+  threads, total, page, perPage, failed, faction, slug, eventKey, eventId,
 }: {
-  posts: BoardPost[];
+  threads: BoardThread[];
+  total: number;
+  page: number;
+  perPage: number;
+  failed: boolean;
   faction: Faction;
-  viewerId: string | null;
-  canManage: boolean;
   slug: string;
   eventKey: string;
   eventId: number;
@@ -47,11 +48,11 @@ export default function EventBoard({
   // A board is read on the day. Somebody asking when round two starts wants
   // the answer, not a page they have to keep refreshing.
   useLiveEventBoard(eventId, true);
+
   const [asked, setAsked] = useState(false);
   // Closed once a submission has come back with a notice. Compared by identity
   // because useActionState hands back a new object per submission: a string
-  // compare would miss a second post carrying the same wording. No effect, so
-  // no render that schedules another render.
+  // compare would miss a second post carrying the same wording.
   const [openedWith, setOpenedWith] = useState<BoardState>(state);
   const writing = asked && !(state !== openedWith && state.notice);
   const setWriting = (open: boolean) => {
@@ -59,21 +60,7 @@ export default function EventBoard({
     setAsked(open);
   };
 
-  const top = useRef<HTMLDivElement>(null);
-  const paged = usePagedList(posts, PAGE, top);
-
-  // Handed straight to each form rather than wrapped in startTransition.
-  // useFormStatus reads the form it sits in, and that is what scopes a spinner
-  // to the control that was pressed: wrapping the action meant the form knew
-  // nothing was happening, and the only pending flag left was one shared by
-  // the whole board.
-  const fields = (
-    <>
-      <input type="hidden" name="slug" value={slug} />
-      <input type="hidden" name="eventKey" value={eventKey} />
-      <input type="hidden" name="eventId" value={eventId} />
-    </>
-  );
+  const at = `/clubs/${slug}/events/${eventKey}/board`;
 
   return (
     <Stack spacing={2.5}>
@@ -83,7 +70,9 @@ export default function EventBoard({
         <Box component="form" action={submit}
           sx={{ p: { xs: 2, sm: 2.5 }, borderRadius: 1.5,
                 border: `1px solid ${faction.base}`, backgroundColor: tokens.paper }}>
-          {fields}
+          <input type="hidden" name="slug" value={slug} />
+          <input type="hidden" name="eventKey" value={eventKey} />
+          <input type="hidden" name="eventId" value={eventId} />
           <input type="hidden" name="intent" value="post" />
           <Stack spacing={2}>
             <TextField name="title" label="Title" required fullWidth autoFocus
@@ -110,22 +99,40 @@ export default function EventBoard({
         </Box>
       )}
 
-      {posts.length ? (
-        <>
-          <Stack ref={top} spacing={2}>
-            {paged.shown.map((p) => (
-              <BoardThread key={p.id} post={p} faction={faction} viewerId={viewerId}
-                canManage={canManage} action={submit} fields={fields} state={state} />
-            ))}
-          </Stack>
-          <Pager page={paged.page} total={paged.total} noun="threads"
-            size={PAGE} onChange={paged.goTo} />
-        </>
-      ) : (
+      {failed ? (
+        <EmptyState title="The board would not load"
+          description="Nothing was read, so this is not an empty board. Try again in a moment." />
+      ) : threads.length === 0 ? (
         <EmptyState
           title="Nothing on the board yet"
           description="Ask the organisers a question, or tell the other players something they need to know before the day."
         />
+      ) : (
+        <Stack spacing={2}>
+          {/* The same grid the club board uses. Two boards that behave the
+              same way have to look the same way. */}
+          <Box sx={{ display: "grid", gap: 2, alignItems: "stretch",
+                     gridTemplateColumns: { xs: "minmax(0, 1fr)",
+                                            md: "repeat(2, minmax(0, 1fr))",
+                                            lg: "repeat(3, minmax(0, 1fr))" } }}>
+          {threads.map((thread) => (
+            <PostCard key={thread.id} faction={faction}
+              href={`${at}/${thread.id}`}
+              post={{
+                id: thread.id,
+                title: thread.title,
+                content: thread.content,
+                authorName: thread.authorName,
+                createdAt: thread.createdAt,
+                lastActivityAt: thread.lastActivityAt,
+                replyCount: thread.replyCount,
+              }} />
+          ))}
+          </Box>
+
+          <Pager page={page} total={total} size={perPage} noun="threads"
+            href={{ path: at, params: {} }} />
+        </Stack>
       )}
     </Stack>
   );

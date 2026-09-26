@@ -36,7 +36,7 @@ import { mono, tokens } from "@/lib/tokens";
  * trip for both of them.
  */
 export default function SubmitStep({
-  draftId, checks, base, note, history = [],
+  draftId, checks, base, note, history = [], cost = null, submitNote,
 }: {
   draftId: number;
   checks: Check[];
@@ -52,6 +52,13 @@ export default function SubmitStep({
    * have not dropped something from the first.
    */
   history?: HistoryEntry[];
+  /**
+   * What being listed costs, when there is a charge. Null while listing is
+   * free, which is how the site ships.
+   */
+  cost?: string | null;
+  /** What happens after the button, which is not the same once there is a bill. */
+  submitNote: string;
 }) {
   const [state, submit] = useActionState<ListingFlowState, FormData>(submitListingAction, {});
   const [stopState, stop, stopping] =
@@ -118,6 +125,20 @@ export default function SubmitStep({
         </Stack>
       </Panel>
 
+      {cost ? (
+        <Alert severity="info" icon={false}
+          sx={{ border: `1px solid ${tokens.rule}` }}>
+          <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.3 }}>
+            {cost}
+          </Typography>
+          <Typography variant="body2">
+            Your listing waits with us until the first payment is in. We will
+            email you how to pay as soon as you send it, and nothing is charged
+            automatically.
+          </Typography>
+        </Alert>
+      ) : null}
+
       <Box component="form" action={submit}>
         <input type="hidden" name="draft" value={draftId} />
         <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}
@@ -131,9 +152,7 @@ export default function SubmitStep({
             sx={{ alignSelf: "flex-start" }}
           />
           <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-            {ready
-              ? "We will email you either way, usually within a few days."
-              : `${outstanding.length} to finish first.`}
+            {ready ? submitNote : `${outstanding.length} to finish first.`}
           </Typography>
         </Stack>
       </Box>

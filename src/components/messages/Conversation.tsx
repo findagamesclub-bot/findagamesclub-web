@@ -17,18 +17,24 @@ import { SITE_CLUB } from "@/utils/message-rail";
 import { messageAction, type MessageState } from "@/app/account/messages/actions";
 import { initialsOf } from "@/utils/format";
 import { sinceLabel } from "@/utils/dates";
+import ReportButton from "@/components/ui/ReportButton";
+import { useReported } from "@/hooks/useReported";
+import { NOTHING_REPORTED, type ReportedKeys } from "@/utils/reported-set";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { Conversation as Thread } from "@/types/message";
 
 /** One conversation: fixed head, scrolling history, composer pinned below. */
 export default function Conversation({
-  conversation, faction, base = "/account/messages",
+  conversation, faction, base = "/account/messages", reported = NOTHING_REPORTED,
 }: {
   /** Where these conversations live. */
   base?: string;
   conversation: Thread;
   faction: Faction;
+  /** What this reader has already reported, as plain keys from the server. */
+  reported?: ReportedKeys;
 }) {
+  const alreadyReported = useReported(reported);
   // The site talking to a member: the person and the club are one name, so it
   // is printed once.
   const official = conversation.clubId === SITE_CLUB
@@ -132,10 +138,20 @@ export default function Conversation({
                     {message.content}
                   </Typography>
                 </Box>
-                <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.6rem",
-                                  letterSpacing: "0.06em", color: tokens.inkMuted, mt: 0.35 }}>
-                  {(sinceLabel(message.createdAt) ?? "").toUpperCase()}
-                </Typography>
+                <Stack direction="row" spacing={0.5}
+                  sx={{ alignItems: "center", mt: 0.35 }}>
+                  <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.6rem",
+                                    letterSpacing: "0.06em", color: tokens.inkMuted }}>
+                    {(sinceLabel(message.createdAt) ?? "").toUpperCase()}
+                  </Typography>
+                  {/* Only the other person's. Reporting your own message is
+                      reporting yourself, and a private conversation has no
+                      club to take it down, so an admin is the only route. */}
+                  {!message.isMine ? (
+                    <ReportButton type="message" id={message.id} what="message" label=""
+                      reported={alreadyReported("message", message.id)} />
+                  ) : null}
+                </Stack>
               </Stack>
             ))}
           </Stack>

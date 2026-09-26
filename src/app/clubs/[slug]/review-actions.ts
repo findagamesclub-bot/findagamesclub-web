@@ -41,17 +41,6 @@ export async function reviewAction(_prev: ReviewState, data: FormData): Promise<
     return done(await reviews.editReview(reviewId, rating, comment), "Your review is updated.");
   }
 
-  if (intent === "flag") {
-    return done(
-      await reviews.setFlag(reviewId, true),
-      "Flagged for an administrator to look at. It stays visible in the meantime.",
-    );
-  }
-
-  if (intent === "unflag") {
-    return done(await reviews.setFlag(reviewId, false), "Flag cleared.");
-  }
-
   if (intent === "remove") {
     return done(await reviews.takeDown(reviewId), "Review removed.");
   }

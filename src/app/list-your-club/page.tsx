@@ -13,6 +13,8 @@ import { FROM_LIST_YOUR_CLUB } from "@/utils/back-link";
 import ListingList from "@/components/listing/ListingList";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getMyListings } from "@/services/submissions.service";
+import { getPublicPrices } from "@/services/billing.service";
+import { listingCostLine } from "@/utils/listing-billing";
 import { mono, tokens } from "@/lib/tokens";
 
 export const metadata = {
@@ -44,7 +46,12 @@ const WHAT_YOU_GET = [
  * a redirect chain to work out which one they are.
  */
 export default async function ListYourClubPage() {
-  const viewer = await getCurrentProfile();
+  const [viewer, billing] = await Promise.all([
+    getCurrentProfile(),
+    // This page sells listing a club, so it has to say what that costs rather
+    // than keep promising it is free after charging is switched on.
+    getPublicPrices(),
+  ]);
   // Cancelled ones are history and would be three cards of nothing to do.
   const mine = viewer
     ? (await getMyListings(viewer.id).catch(() => []))
@@ -66,9 +73,9 @@ export default async function ListYourClubPage() {
           </Typography>
 
           <Typography variant="body1" sx={{ color: tokens.inkMuted, fontSize: "1.05rem" }}>
-            Five steps and you are in the directory. It is free to list, you keep
-            control of everything on your page, and you can stop halfway and come
-            back to it. Most clubs finish in about twenty minutes.
+            Five steps and you are in the directory. {listingCostLine(billing)} You
+            keep control of everything on your page, and you can stop halfway and
+            come back to it. Most clubs finish in about twenty minutes.
           </Typography>
 
           {resume ? null : viewer ? (
@@ -141,11 +148,20 @@ export default async function ListYourClubPage() {
         <Stack spacing={2} sx={{ maxWidth: 680 }}>
           <Stack spacing={1}>
             <Typography variant="h2" sx={{ fontSize: "1.3rem" }}>What happens next</Typography>
+            {/* The free path and the paid one are different stories, and this
+                told the free one either way: with charging on, nobody reads a
+                listing until it is paid for. */}
             <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-              You fill in the five steps, send it to us, and somebody reads it. If
-              anything is missing we send it back with a note rather than turning it
-              down. Once it is approved your page goes live and the club console is
-              yours.
+              {billing.enabled
+                ? "You fill in the five steps and send it to us. We email you how "
+                  + "to pay, and once the first payment is in somebody reads it. If "
+                  + "anything is missing we send it back with a note rather than "
+                  + "turning it down. Once it is approved your page goes live and "
+                  + "the club console is yours."
+                : "You fill in the five steps, send it to us, and somebody reads it. "
+                  + "If anything is missing we send it back with a note rather than "
+                  + "turning it down. Once it is approved your page goes live and "
+                  + "the club console is yours."}
             </Typography>
           </Stack>
 

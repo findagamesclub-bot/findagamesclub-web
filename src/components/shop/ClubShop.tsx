@@ -14,7 +14,7 @@ import BusyOverlay from "@/components/ui/BusyOverlay";
 import { useMerchBag } from "@/hooks/useMerchBag";
 import { shopAction, type ShopState } from "@/app/clubs/[slug]/(console)/shop/actions";
 import { priceBag } from "@/utils/merch-bag";
-import { formatPence } from "@/utils/format";
+import { formatPounds } from "@/utils/format";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { MerchItem, ShopStanding } from "@/types/clubExtras";
 
@@ -107,7 +107,7 @@ export default function ClubShop({
               onClick={() => setOpen(true)}
               sx={{ backgroundColor: faction.base, boxShadow: 6, borderRadius: 999, px: 2.5,
                     "&:hover": { backgroundColor: faction.deep } }}>
-              Your bag · {formatPence(bag.total)}
+              Your bag · {formatPounds(bag.total)}
             </Button>
           </Badge>
         </Box>

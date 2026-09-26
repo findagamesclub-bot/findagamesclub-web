@@ -15,7 +15,6 @@ import Panel from "./Panel";
 import WeekStrip from "./WeekStrip";
 import MemberClubs from "./MemberClubs";
 import MemberRecord from "./MemberRecord";
-import MemberBadges from "./MemberBadges";
 import MemberEvents from "./MemberEvents";
 import { CompetitionRecords, Podiums } from "./MemberCompetitions";
 import SocialLinks from "@/components/clubs/SocialLinks";
@@ -88,14 +87,6 @@ export default function MemberPanels({
       {profile.ageGroups.length ? (
         <Panel title="Age group" icon={CakeIcon}>
           <GameChips games={profile.ageGroups} faction={faction} max={profile.ageGroups.length} />
-        </Panel>
-      ) : null}
-
-      {/* Earned from standings rather than stored, so correcting a
-          league table corrects the badges with it. */}
-      {records?.badges.length ? (
-        <Panel title="League and campaign badges" icon={EmojiEventsIcon}>
-          <MemberBadges badges={records.badges} />
         </Panel>
       ) : null}
 

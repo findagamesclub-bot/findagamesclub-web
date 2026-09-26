@@ -38,3 +38,22 @@ assert.equal(showingLabel(3, 25, "orders", 10), "Showing 21 to 25 of 25 orders")
 assert.equal(showingLabel(9, 25, "orders", 10), "Showing 21 to 25 of 25 orders");
 
 console.log("paging: all assertions passed");
+
+// ------------------------------------------------- one row is not "1 CLAIMS"
+
+import { showingLabel as label, singular } from "../paging";
+
+assert.equal(singular("claims"), "claim");
+assert.equal(singular("entries"), "entry");
+assert.equal(singular("rivalries"), "rivalry");
+assert.equal(singular("matches"), "match");
+assert.equal(singular("past events"), "past event");
+assert.equal(singular("accounts"), "account");
+
+assert.equal(label(1, 0, "claims"), "No claims");
+assert.equal(label(1, 1, "claims"), "1 claim");
+assert.equal(label(1, 1, "matches"), "1 match");
+assert.equal(label(1, 1, "rivalries"), "1 rivalry");
+assert.equal(label(1, 2, "claims"), "2 claims");
+
+console.log("paging singular: all assertions passed");

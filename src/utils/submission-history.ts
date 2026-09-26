@@ -14,6 +14,7 @@ import type { StatusTone } from "./submission-status";
 
 export const EVENT_LABELS: Record<string, string> = {
   submitted: "Sent in",
+  payment_pending: "Waiting to be paid for",
   changes_requested: "Sent back",
   approved: "Approved",
   declined: "Declined",
@@ -24,6 +25,7 @@ export const EVENT_LABELS: Record<string, string> = {
 /** The house tones, so a history dot and a status chip agree about colour. */
 export const EVENT_TONES: Record<string, StatusTone> = {
   submitted: "neutral",
+  payment_pending: "warn",
   changes_requested: "warn",
   approved: "good",
   declined: "bad",
@@ -61,8 +63,11 @@ export function historySummary(kinds: string[]): string {
   const back = kinds.filter((kind) => kind === "changes_requested").length;
   const sent = kinds.filter((kind) => kind === "submitted").length;
 
+  // A history can now begin with the club waiting to pay, which is a real
+  // beginning and not a missing one.
   const first = kinds[0];
-  const partial = first !== "submitted" && first !== "restarted";
+  const partial = first !== "submitted" && first !== "restarted"
+    && first !== "payment_pending";
   const missing = "Only the last thing that happened was kept for this one. "
     + "Anything asked for before it was not recorded.";
 

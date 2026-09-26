@@ -4,6 +4,7 @@ import { getCurrentProfile } from "@/services/auth.service";
 import { getContacts, getConversation, markRead, SITE_CLUB } from "@/services/messages.service";
 import { getAccountBrief } from "@/services/adminAccounts.service";
 import { clubIdentity } from "@/utils/club-identity";
+import { getReported } from "@/services/myReports.service";
 
 export const metadata = { title: "Conversation" };
 
@@ -58,6 +59,8 @@ export default async function AdminConversationPage({
 
   const { faction } = clubIdentity(header.clubSlug, header.clubName);
 
+  const reported = await getReported(viewer.id);
+
   return <Conversation conversation={header} faction={faction}
-    base="/admin/messages" />;
+    base="/admin/messages" reported={reported} />;
 }

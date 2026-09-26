@@ -12,6 +12,8 @@ import { tokens } from "@/lib/tokens";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getResumeCard } from "@/services/submissions.service";
 import ListingResumeCard from "@/components/listing/ListingResumeCard";
+import ClaimResumeCard from "@/components/clubs/ClaimResumeCard";
+import { getMyLiveClaim } from "@/services/claims.service";
 import { getDashboard } from "@/services/dashboard.service";
 import { londonToday } from "@/services/bookingCalendar.service";
 
@@ -24,9 +26,12 @@ export default async function AccountPage() {
   // Together, so a half-written listing costs the same one round trip the
   // dashboard already pays rather than a second wave for a card that is usually
   // not there.
-  const [data, listing] = await Promise.all([
+  const [data, listing, claim] = await Promise.all([
     getDashboard(viewer.id),
     getResumeCard(viewer.id).catch(() => null),
+    // A club they have asked for is the other thing on this page that is
+    // waiting on somebody else, and nothing here mentioned it.
+    getMyLiveClaim().catch(() => null),
   ]);
   const approved = data.memberships.filter((m) => m.status === "approved");
   const pending = data.memberships.filter((m) => m.status === "pending");
@@ -68,6 +73,13 @@ export default async function AccountPage() {
       {listing ? (
         <Box sx={{ mt: 3 }}>
           <ListingResumeCard card={listing} />
+        </Box>
+      ) : null}
+
+      {claim ? (
+        <Box sx={{ mt: 3 }}>
+          <ClaimResumeCard club={claim.club ?? null} status={claim.status}
+            note={claim.decision_note ?? ""} />
         </Box>
       ) : null}
 

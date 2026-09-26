@@ -54,7 +54,10 @@ import Button from "@mui/material/Button";
 import PlaceIcon from "@mui/icons-material/Place";
 import DirectionsIcon from "@mui/icons-material/Directions";
 import { getCurrentProfile } from "@/services/auth.service";
+import { getReported } from "@/services/myReports.service";
 import { getClubAccess } from "@/services/clubAccess.service";
+import { getMyClaim } from "@/services/claims.service";
+import ClaimPrompt from "@/components/clubs/ClaimPrompt";
 import { getJoinedCount, getMyMembership, getPendingRequests, getRoster } from "@/services/memberships.service";
 import { getPayments, standing } from "@/services/payments.service";
 import JoinClubPanel from "@/components/members/JoinClubPanel";
@@ -103,6 +106,15 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
     getReviewCount(club.id),
   ]);
 
+  // Only on a page that can actually be claimed, so the other forty do not pay
+  // a round trip for a prompt they never render.
+  const claim = club.claimable && !access.role && viewer
+    ? await getMyClaim(club.id).catch(() => null)
+    : null;
+  const myClaim = claim
+    ? { id: claim.id, status: claim.status, note: claim.decision_note }
+    : null;
+
   const membership = viewer
     ? await getMyMembership(club.id, viewer.id)
     : { id: null, status: "none" as const, tierKey: null, tierAssignedAt: null };
@@ -131,7 +143,7 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
     : null;
   const canSeeRoster = isMember;
   const [roster, pending, myPayments, standings, openPosts, activity, rivalries,
-         unmatched, competitions] = await Promise.all([
+         unmatched, competitions, reported] = await Promise.all([
     canSeeRoster ? getRoster(club.id) : Promise.resolve(null),
     canManage ? getPendingRequests(club.id) : Promise.resolve(null),
     // A member can read their own payments by policy, so they can be told
@@ -161,6 +173,9 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
     // should not go down because one section's tables are not there yet.
     getCompetitionOverview(club.id)
       .catch(() => ({ featured: [], activeCount: 0, completedCount: 0 })),
+    // Which reviews this reader has already reported, so the button says so
+    // before it is pressed rather than after a reason has been typed in.
+    getReported(viewer?.id ?? null),
   ]);
 
   // Flattened out of the per-night map and cut to the soonest few: the club
@@ -198,6 +213,15 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
                 + "bookings and the board are all exactly as they were."}
           </Typography>
         </Alert>
+      ) : null}
+
+      {/* Most of this directory was imported, so a lot of these pages are about
+          real clubs that none of those clubs can touch. This is the way in, and
+          it only shows where an admin has opened the listing to it. Above the
+          header on purpose: somebody who runs the club is not reading the page,
+          they are looking for the thing that says it is theirs. */}
+      {club.claimable && !access.role ? (
+        <ClaimPrompt slug={club.slug} clubName={club.name} existing={myClaim} />
       ) : null}
 
       <ClubHeader club={club} canBook={isMember && (club.tablesAvailable ?? 0) > 0}
@@ -496,6 +520,7 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
               canManageClub={canManage}
               isAdmin={viewer?.role === "admin"}
               signedIn={Boolean(viewer)}
+              reported={reported}
             />
           </Section>
 

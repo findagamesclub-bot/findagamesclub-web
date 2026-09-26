@@ -52,29 +52,13 @@ export async function updateOwnReview(reviewId: number, rating: number, comment:
 }
 
 /**
- * The club raising a hand. Flagging does not hide anything — legacy keeps a
- * flagged review visible (club_store.py:20210) and only an admin can remove it.
+ * Taking a review down, which stays with the admin.
+ *
+ * Raising one is no longer here at all: it goes through `flag_content` like
+ * every other kind (0128), so the chip on the club page and the report in the
+ * admin's queue cannot disagree. Legacy keeps a flagged review visible
+ * (club_store.py:20210) and so do we.
  */
-export async function flagReview(reviewId: number, flagged: boolean) {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("club_reviews")
-    .update({
-      flagged_at: flagged ? new Date().toISOString() : null,
-      // The trigger overwrites this with the actor's real name; sending it
-      // keeps the column in the grant list rather than silently unwritable.
-      flagged_by_name: flagged ? "" : null,
-    })
-    .eq("id", reviewId)
-    .is("removed_at", null)
-    .select("id")
-    .maybeSingle();
-
-  if (error) throw new Error(error.message);
-  if (!data) throw new Error("NOT_PERMITTED");
-  return data;
-}
-
 export async function removeReview(reviewId: number) {
   const supabase = await createClient();
   const { data, error } = await supabase

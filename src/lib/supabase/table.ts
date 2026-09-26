@@ -34,7 +34,10 @@ type One<T> = { data: T | null; error: { message: string } | null };
  * sends it.
  */
 export type Query<T> = PromiseLike<Rows<T>> & {
-  select(columns?: string, options?: { count: "exact" }): Query<T>;
+  select(columns?: string,
+    // `head` counts without returning any rows, which is what a figure on a
+    // masthead wants: the number, not the list behind it.
+    options?: { count: "exact"; head?: boolean }): Query<T>;
   eq(column: string, value: string | number | boolean): Query<T>;
   neq(column: string, value: string | number | boolean): Query<T>;
   in(column: string, values: (string | number)[]): Query<T>;
@@ -43,8 +46,9 @@ export type Query<T> = PromiseLike<Rows<T>> & {
   lte(column: string, value: string | number): Query<T>;
   lt(column: string, value: string | number): Query<T>;
   or(filter: string): Query<T>;
+  ilike(column: string, pattern: string): Query<T>;
   not(column: string, operator: string, value: null | string | number): Query<T>;
-  order(column: string, options?: { ascending?: boolean }): Query<T>;
+  order(column: string, options?: { ascending?: boolean; nullsFirst?: boolean }): Query<T>;
   range(from: number, to: number): Query<T>;
   limit(count: number): Query<T>;
   maybeSingle(): PromiseLike<One<T>>;
@@ -57,7 +61,7 @@ export type Query<T> = PromiseLike<Rows<T>> & {
  * by the await instead.
  */
 export type Builder<T> = {
-  select(columns?: string, options?: { count: "exact" }): Query<T>;
+  select(columns?: string, options?: { count: "exact"; head?: boolean }): Query<T>;
   insert(values: Record<string, unknown> | Record<string, unknown>[]): Query<T>;
   update(values: Record<string, unknown>): Query<T>;
   delete(): Query<T>;

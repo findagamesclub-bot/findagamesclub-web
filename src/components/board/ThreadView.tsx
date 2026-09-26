@@ -16,6 +16,9 @@ import SubmitButton from "@/components/ui/SubmitButton";
 import { boardAction, type BoardState } from "@/app/clubs/[slug]/(console)/board/actions";
 import { initialsOf } from "@/utils/format";
 import { messageTime } from "@/utils/dates";
+import ReportButton from "@/components/ui/ReportButton";
+import { useReported } from "@/hooks/useReported";
+import type { ReportedKeys } from "@/utils/reported-set";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { BoardThread } from "@/types/discussion";
 
@@ -38,14 +41,17 @@ function groupByAuthor(replies: PendingReply[]): PendingReply[][] {
 }
 
 export default function ThreadView({
-  thread, slug, faction, canPost, viewerName,
+  thread, slug, faction, canPost, viewerName, reported,
 }: {
   thread: BoardThread;
   slug: string;
   faction: Faction;
   canPost: boolean;
   viewerName: string;
+  /** What this reader has already reported, as plain keys from the server. */
+  reported: ReportedKeys;
 }) {
+  const alreadyReported = useReported(reported);
   const [state, submit, busy] = useActionState<BoardState, FormData>(boardAction, {});
   useActionToast(state);
 
@@ -104,6 +110,13 @@ export default function ThreadView({
             </Typography>
           </Stack>
 
+          {/* Everybody but the author. The club already has Remove, so a
+              manager reporting to themselves would be a strange thing to
+              offer. */}
+          {!thread.isMine && !thread.canRemove ? (
+            <ReportButton type="post" id={thread.id} what="post"
+              reported={alreadyReported("post", thread.id)} />
+          ) : null}
           {thread.canRemove ? (
             <Button size="small" variant="text" disabled={busy}
               onClick={() => send({ intent: "remove-post" })}
@@ -141,6 +154,7 @@ export default function ThreadView({
           {groupByAuthor(replies).map((run, i, runs) => (
             <ReplyRow key={`${run[0].id}-${i}`} replies={run} faction={faction} busy={busy}
               last={i === runs.length - 1}
+              isReported={alreadyReported}
               onRemove={(replyId) => send({ intent: "remove-reply", replyId })} />
           ))}
         </Box>

@@ -4,19 +4,17 @@ import { startTransition, useActionState } from "react";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
-import Typography from "@mui/material/Typography";
 import BadgeIcon from "@mui/icons-material/AssignmentInd";
 import PlaceIcon from "@mui/icons-material/Place";
 import MailIcon from "@mui/icons-material/AlternateEmail";
 import GroupsIcon from "@mui/icons-material/Groups";
 import Panel from "@/components/members/Panel";
 import ChipListField from "@/components/members/ChipListField";
-import SubmitButton from "@/components/ui/SubmitButton";
 import StepTargetFields, { type StepTarget } from "./StepTarget";
+import StepFooter from "./StepFooter";
 import { useActionToast } from "@/components/ui/Toaster";
 import { saveListingStepAction, type ListingState } from
   "@/app/clubs/[slug]/(console)/manage/listing/[step]/actions";
-import { tokens } from "@/lib/tokens";
 
 export type ProfileValues = {
   name: string; city: string; neighbourhood: string;
@@ -140,13 +138,7 @@ export default function ProfileStep({
         </Stack>
       </Box>
 
-      <Stack direction="row" spacing={2}
-        sx={{ mt: 3, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
-        <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-          Saving publishes straight away. Members see this on your club page.
-        </Typography>
-        <SubmitButton label="Save changes" pendingLabel="Saving" pending={saving} />
-      </Stack>
+      <StepFooter target={target} pending={saving} />
     </Box>
   );
 }

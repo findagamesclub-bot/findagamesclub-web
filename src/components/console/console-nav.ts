@@ -1,5 +1,6 @@
 import DashboardIcon from "@mui/icons-material/SpaceDashboard";
 import GroupsIcon from "@mui/icons-material/Groups";
+import MilitaryTechIcon from "@mui/icons-material/MilitaryTech";
 import BadgeIcon from "@mui/icons-material/AssignmentInd";
 import EditIcon from "@mui/icons-material/EditNote";
 import EventSeatIcon from "@mui/icons-material/EventSeat";
@@ -9,10 +10,12 @@ import SchoolIcon from "@mui/icons-material/School";
 import EventIcon from "@mui/icons-material/Event";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import ForumIcon from "@mui/icons-material/ForumOutlined";
+import FlagIcon from "@mui/icons-material/OutlinedFlag";
 import StorefrontIcon from "@mui/icons-material/Storefront";
 import LoyaltyIcon from "@mui/icons-material/Loyalty";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import type { NavGroup, NavItem } from "@/components/ui/side-nav";
+import InsightsIcon from "@mui/icons-material/Insights";
 import type { Capability, ClubAccess } from "@/utils/club-access";
 
 /**
@@ -37,6 +40,8 @@ export type ConsoleCounts = {
   unmatchedResults?: number;
   /** Coaching places taken and not yet paid for. */
   coachingToPay?: number;
+  /** Reports on this club waiting for an answer. */
+  reportsWaiting?: number;
 };
 
 export function consoleGroups(
@@ -59,6 +64,11 @@ export function consoleGroups(
           owns: at("/manage/listing"), icon: EditIcon, needs: "listing.edit" },
         { label: "Team", href: at("/manage/team"), icon: BadgeIcon,
           needs: "team.manage" },
+        // `billing.manage` is owner-only in the capability matrix, which is the
+        // same line the page itself draws: a manager runs the club, the money
+        // is the person whose name is on it.
+        { label: "Billing", href: at("/manage/billing"), icon: PaymentsIcon,
+          needs: "billing.manage" },
       ],
     },
     {
@@ -68,6 +78,10 @@ export function consoleGroups(
           count: counts.joinRequests, alert: true, needs: "members.manage" },
         { label: "Renewals", href: at("/members/renewals"), icon: PaymentsIcon,
           count: counts.renewalsDue, needs: "members.manage" },
+        // No badge count. A club with six badges is not six things waiting on
+        // somebody, and the rail's numbers all mean work.
+        { label: "Badges", href: at("/manage/badges"), icon: MilitaryTechIcon,
+          needs: "members.manage" },
       ],
     },
     {
@@ -112,6 +126,11 @@ export function consoleGroups(
       items: [
         { label: "Board", href: at("/board"), icon: ForumIcon,
           needs: "board.moderate" },
+        // Reports on this club's own content. An alert count, because a
+        // report is somebody waiting on an answer, which is the definition
+        // the other alert badges here use.
+        { label: "Reported", href: at("/manage/moderation"), icon: FlagIcon,
+          count: counts.reportsWaiting, alert: true, needs: "board.moderate" },
         // What the club sells, the sizes left, and the orders waiting. The
         // count sits here because this is now the page that answers them:
         // while the queue lived on the club's own shop page, this badge sent
@@ -122,6 +141,15 @@ export function consoleGroups(
         // own loyalty page, which this links out to.
         { label: "Loyalty", href: at("/manage/loyalty"), icon: LoyaltyIcon,
           needs: "members.manage" },
+      ],
+    },
+    {
+      title: "How it is going",
+      items: [
+        // Owner and manager, not helper: `analytics.view` is where the money
+        // is, and a helper runs a night rather than reads the accounts.
+        { label: "Analytics", href: at("/manage/analytics"), icon: InsightsIcon,
+          needs: "analytics.view" },
       ],
     },
   ];

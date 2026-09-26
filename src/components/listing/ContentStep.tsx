@@ -15,8 +15,8 @@ import Panel from "@/components/members/Panel";
 import ChipListField from "@/components/members/ChipListField";
 import PhotoEditor from "./PhotoEditor";
 import RemoveRow from "@/components/ui/RemoveRow";
-import SubmitButton from "@/components/ui/SubmitButton";
 import StepTargetFields, { type StepTarget } from "./StepTarget";
+import StepFooter from "./StepFooter";
 import { useActionToast } from "@/components/ui/Toaster";
 import { saveListingStepAction, type ListingState } from
   "@/app/clubs/[slug]/(console)/manage/listing/[step]/actions";
@@ -159,13 +159,7 @@ export default function ContentStep({
         </Stack>
       </Box>
 
-      <Stack direction="row" spacing={2}
-        sx={{ mt: 3, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
-        <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-          Saving publishes straight away. Members see this on your club page.
-        </Typography>
-        <SubmitButton label="Save changes" pendingLabel="Saving" pending={saving} />
-      </Stack>
+      <StepFooter target={target} pending={saving} />
     </Box>
   );
 }

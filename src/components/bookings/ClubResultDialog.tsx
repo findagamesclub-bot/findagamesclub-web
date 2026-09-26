@@ -11,6 +11,7 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import MatchContextFields from "@/components/account/MatchContextFields";
 import { useActionToast } from "@/components/ui/Toaster";
+import { useActionSuccess } from "@/hooks/useActionSuccess";
 import { clubResultAction, type ClubResultState }
   from "@/app/clubs/[slug]/results-actions";
 import { confirmationLabel, toConfirmation } from "@/utils/result-meta";
@@ -41,7 +42,6 @@ export default function ClubResultDialog({
   const [terrain, setTerrain] = useState("");
   const [confirmation, setConfirmation] = useState("admin-confirmed");
   const [seenId, setSeenId] = useState<number | null>(null);
-  const [seen, setSeen] = useState<ClubResultState | null>(null);
 
   // A different game opened, so the fields follow it. Derived during render:
   // an effect would paint one frame of the previous game's values.
@@ -54,10 +54,7 @@ export default function ClubResultDialog({
   }
 
   // Close on success, stay open on a refusal so the typing survives it.
-  if (state !== seen) {
-    setSeen(state);
-    if (state.notice) onClose();
-  }
+  useActionSuccess(state, onClose);
 
   return (
     <Dialog open={Boolean(result)} onClose={busy ? undefined : onClose} fullWidth maxWidth="sm">

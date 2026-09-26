@@ -65,6 +65,10 @@ export default function ClubMap({ clubs }: { clubs: ClubSummary[] }) {
             popupAnchor: [0, -18],
           });
 
+          // client-nav-ok: Leaflet builds this popup from an HTML string and
+          // injects it outside React's tree, so there is no next/link to use.
+          // The cost is real, a pin reloads the app, and the fix is a click
+          // handler calling router.push. Recorded in DEFERRED.md.
           L.marker([club.coordinates!.latitude, club.coordinates!.longitude], { icon })
             .addTo(map as never)
             .bindPopup(

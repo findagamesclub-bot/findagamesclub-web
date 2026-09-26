@@ -17,7 +17,7 @@ import {
 } from "@/utils/club-order-filter";
 import { clubIdentity } from "@/utils/club-identity";
 import { shortDate } from "@/utils/dates";
-import { formatPence } from "@/utils/format";
+import { formatPounds } from "@/utils/format";
 import { orderTotalLabel } from "@/utils/order-total";
 import { mono, tokens } from "@/lib/tokens";
 import type { OwnerOrder } from "@/services/ownerBookings.service";
@@ -136,7 +136,7 @@ export default function OwnerOrders({ orders }: { orders: OwnerOrder[] }) {
                       style={{ textDecoration: "none" }}>
                       <Typography sx={{ fontFamily: mono, fontSize: "0.86rem", fontWeight: 700,
                                         color: faction.deep, flexShrink: 0 }}>
-                        {orderTotalLabel(order, formatPence)}
+                        {orderTotalLabel(order, formatPounds)}
                       </Typography>
                     </NextLink>
                   </Stack>

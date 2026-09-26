@@ -35,3 +35,21 @@ export function nextSearch(
 export function withSearch(pathname: string, search: string): string {
   return search ? `${pathname}?${search}` : pathname;
 }
+
+/**
+ * A page's resolved `searchParams` as a `URLSearchParams`.
+ *
+ * Next hands a plain object whose values are `string | string[] | undefined`,
+ * and `nextSearch` needs the real thing. Without this every caller writes the
+ * same flatMap, and the one that gets it wrong drops a repeated param.
+ */
+export function searchFrom(
+  params: Record<string, string | string[] | undefined>,
+): URLSearchParams {
+  const out = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined) continue;
+    for (const one of Array.isArray(value) ? value : [value]) out.append(key, one);
+  }
+  return out;
+}

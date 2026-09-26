@@ -7,6 +7,7 @@ import EventSeatIcon from "@mui/icons-material/EventSeat";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import NotificationsIcon from "@mui/icons-material/NotificationsActive";
 import ForumIcon from "@mui/icons-material/ForumOutlined";
+import FlagIcon from "@mui/icons-material/OutlinedFlag";
 import SchoolIcon from "@mui/icons-material/School";
 import StorefrontIcon from "@mui/icons-material/Storefront";
 import GroupsIcon from "@mui/icons-material/Groups";
@@ -66,6 +67,9 @@ export function accountGroups(counts: AccountCounts): NavGroup[] {
           count: counts.unreadMessages, alert: true },
         { label: "Event alerts", href: "/account/alerts",
           icon: NotificationsIcon, count: counts.alerts },
+        // No count. A waiting report is not a job for the person who filed it,
+        // and a badge here would read as something they have to act on.
+        { label: "Things you reported", href: "/account/reports", icon: FlagIcon },
       ],
     },
     {

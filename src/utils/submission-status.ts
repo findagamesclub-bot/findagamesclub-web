@@ -17,7 +17,8 @@
  */
 
 export const SUBMISSION_STATUSES = [
-  "draft", "review_pending", "changes_requested", "approved", "declined", "cancelled",
+  "draft", "payment_pending", "review_pending", "changes_requested",
+  "approved", "declined", "cancelled",
 ] as const;
 
 export type SubmissionStatus = (typeof SUBMISSION_STATUSES)[number];
@@ -28,6 +29,7 @@ export function isSubmissionStatus(value: string): value is SubmissionStatus {
 
 export const STATUS_LABELS: Record<SubmissionStatus, string> = {
   draft: "Not sent yet",
+  payment_pending: "Waiting to be paid for",
   review_pending: "Awaiting admin approval",
   changes_requested: "Changes needed",
   approved: "Approved and live",
@@ -40,6 +42,7 @@ export type StatusTone = "neutral" | "warn" | "good" | "bad";
 
 export const STATUS_TONES: Record<SubmissionStatus, StatusTone> = {
   draft: "neutral",
+  payment_pending: "warn",
   review_pending: "warn",
   changes_requested: "warn",
   approved: "good",
@@ -55,15 +58,28 @@ export const STATUS_TONES: Record<SubmissionStatus, StatusTone> = {
  */
 export const QUEUE_TABS: { key: SubmissionStatus | "all"; label: string }[] = [
   { key: "review_pending", label: "Waiting" },
+  // Deliberately no tab for `payment_pending`. An unpaid listing is money, not
+  // review work, and it has a screen of its own under Billing. It still shows
+  // under All, because "where did that listing go" has to have an answer.
   { key: "changes_requested", label: "Sent back" },
   { key: "approved", label: "Approved" },
   { key: "declined", label: "Declined" },
   { key: "all", label: "All" },
 ];
 
-/** Editable by the person who started it: before sending, and after it comes back. */
+/**
+ * Editable by the person who started it: before sending, after it comes back,
+ * and while it waits to be paid for.
+ *
+ * That last one is not a courtesy, it is what 0112's own update policy allows
+ * (`status in ('draft', 'changes_requested', 'payment_pending')`) and what
+ * `submit_club_submission` accepts as a re-send. Leaving it out here left a
+ * club that owed us money unable to fix a typo, unable to send it again and
+ * unable to stop: the database said yes and the screens said nothing.
+ */
 export function ownerCanEdit(status: string): boolean {
-  return status === "draft" || status === "changes_requested";
+  return status === "draft" || status === "changes_requested"
+    || status === "payment_pending";
 }
 
 export function ownerCanSubmit(status: string): boolean {
@@ -72,7 +88,8 @@ export function ownerCanSubmit(status: string): boolean {
 
 /** Cancellable until it is decided. A decided one is history, not a live thing. */
 export function ownerCanCancel(status: string): boolean {
-  return status === "draft" || status === "changes_requested" || status === "review_pending";
+  return status === "draft" || status === "changes_requested"
+    || status === "review_pending" || status === "payment_pending";
 }
 
 /**
@@ -113,6 +130,9 @@ export function ownerNextStep(
       return detail.resume
         ? `You stopped at ${detail.resume}. Pick up where you left off.`
         : "Finish it whenever you like. Nothing is sent until you say so.";
+    case "payment_pending":
+      return "It is with us and waiting for the first payment. We have emailed you "
+        + "how to pay, and nobody reads it until that lands.";
     case "review_pending":
       return "It is with us. We will email you when somebody has looked at it.";
     case "changes_requested":

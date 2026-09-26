@@ -162,3 +162,24 @@ export function londonNow(at: Date = new Date()): { date: string; time: string }
     time: `${parts.hour}:${parts.minute}`,
   };
 }
+
+/**
+ * A date split into the three parts a date tile prints.
+ *
+ * UTC on purpose: a club date is a calendar date, and reading it in the
+ * viewer's zone puts a Thursday night on Wednesday for anybody west of
+ * Greenwich. Was private to `OwnerEventRow` until the admin events grid needed
+ * the same tile; one copy, so the two cannot disagree about what day it is.
+ */
+export function dateParts(iso: string | null | undefined):
+  { day: string; month: string; weekday: string } | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const opts = { timeZone: "UTC" } as const;
+  return {
+    day: d.toLocaleDateString("en-GB", { ...opts, day: "numeric" }),
+    month: d.toLocaleDateString("en-GB", { ...opts, month: "short" }).toUpperCase(),
+    weekday: d.toLocaleDateString("en-GB", { ...opts, weekday: "short" }).toUpperCase(),
+  };
+}

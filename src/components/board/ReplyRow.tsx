@@ -10,6 +10,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import Counter from "@/components/ui/Counter";
 import { initialsOf } from "@/utils/format";
 import { messageTime } from "@/utils/dates";
+import ReportButton from "@/components/ui/ReportButton";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { BoardReply } from "@/types/discussion";
 
@@ -24,13 +25,15 @@ export type PendingReply = BoardReply & { pending?: boolean };
  * every conversation people already use is laid out.
  */
 export default function ReplyRow({
-  replies, faction, busy, last, onRemove,
+  replies, faction, busy, last, onRemove, isReported,
 }: {
   replies: PendingReply[];
   faction: Faction;
   busy: boolean;
   last: boolean;
   onRemove: (replyId: number) => void;
+  /** Asked per reply, so a thread of forty does not scan an array forty times. */
+  isReported: (type: string, id: number) => boolean;
 }) {
   const lead = replies[0];
 
@@ -84,6 +87,23 @@ export default function ReplyRow({
                     down from the post above, but picking single replies out of
                     somebody else's conversation is not a control worth putting
                     on every line. */}
+                {/* Somebody else's reply, so the only thing to offer is
+                    reporting it. Appears on hover and on focus, the same way
+                    Delete does, because a Report button on every line of a
+                    conversation reads as an accusation. */}
+                {!reply.isMine && !reply.pending ? (
+                  <Box className="reply-remove"
+                    sx={{ opacity: 0, transition: "opacity 140ms ease",
+                          "&:focus-within": { opacity: 1 },
+                          // A phone has no hover, so on one this was a control
+                          // that could not be reached at all: a member could
+                          // report a post but never a reply. Coarse pointers
+                          // get it always; a mouse keeps the quiet line.
+                          "@media (hover: none)": { opacity: 1 } }}>
+                    <ReportButton type="reply" id={reply.id} what="reply" label=""
+                      reported={isReported("reply", reply.id)} />
+                  </Box>
+                ) : null}
                 {reply.isMine && !reply.pending ? (
                   <Tooltip title="Delete your reply">
                     <IconButton
@@ -95,6 +115,8 @@ export default function ReplyRow({
                       sx={{ p: 0.25, opacity: 0, transition: "opacity 140ms ease",
                             color: tokens.inkMuted,
                             "&:focus-visible": { opacity: 1 },
+                            // Same as the report beside it: no hover, no way in.
+                            "@media (hover: none)": { opacity: 1 },
                             "&:hover": { color: tokens.danger } }}
                     >
                       <CloseIcon sx={{ fontSize: 14 }} />

@@ -67,6 +67,23 @@ export function pageOf<T>(items: T[], page: number, size = PAGE_SIZE): T[] {
  * Written out rather than "Page 2 of 13" because the question people actually
  * have is how much there is, and a page number does not answer it.
  */
+/**
+ * The singular of a Pager noun.
+ *
+ * Every caller passes a plural, so a list holding exactly one row read "1
+ * CLAIMS", "1 MATCHES", "1 RIVALRIES". The nouns are a closed set of about
+ * twenty English plurals, so three rules cover all of them rather than every
+ * call site having to pass both forms.
+ */
+export function singular(noun: string): string {
+  const [last, ...rest] = noun.split(" ").reverse();
+  const word = last.endsWith("ies") ? `${last.slice(0, -3)}y`
+    : /(ch|sh|ss|x|z)es$/.test(last) ? last.slice(0, -2)
+      : last.endsWith("s") ? last.slice(0, -1)
+        : last;
+  return [...rest].reverse().concat(word).join(" ");
+}
+
 export function showingLabel(
   page: number, total: number, noun: string, size = PAGE_SIZE,
 ): string {
@@ -75,6 +92,7 @@ export function showingLabel(
   const { from } = rangeFor(safe, size);
   const first = from + 1;
   const last = Math.min(from + size, total);
+  if (total === 1) return `1 ${singular(noun)}`;
   if (total <= size) return `${total} ${noun}`;
   return `Showing ${first} to ${last} of ${total} ${noun}`;
 }

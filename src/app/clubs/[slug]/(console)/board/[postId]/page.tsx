@@ -12,6 +12,7 @@ import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
 import { getMyMembership } from "@/services/memberships.service";
 import { getThread } from "@/services/discussions.service";
+import { getReported } from "@/services/myReports.service";
 import { clubIdentity } from "@/utils/club-identity";
 import { tokens } from "@/lib/tokens";
 
@@ -34,7 +35,12 @@ export default async function ThreadPage({ params }: PageProps<"/clubs/[slug]/bo
 
   const access = await getClubAccess(club.id, viewer);
   const canManageClub = access.can("board.moderate");
-  const thread = await getThread(Number(postId), { id: viewer.id, canManageClub });
+  // Which of these this reader has already reported, so the button says so
+  // before it is pressed rather than after a reason has been typed into it.
+  const [thread, reported] = await Promise.all([
+    getThread(Number(postId), { id: viewer.id, canManageClub }),
+    getReported(viewer.id),
+  ]);
 
   // RLS returns nothing for a thread in a category the viewer's tier does not
   // reach, so a locked thread and a missing one look the same here. Both 404.
@@ -90,7 +96,7 @@ export default async function ThreadPage({ params }: PageProps<"/clubs/[slug]/bo
         </Box>
       ) : (
         <ThreadView thread={thread} slug={slug} faction={faction} canPost={canPost}
-          viewerName={viewer.full_name || "You"} />
+          viewerName={viewer.full_name || "You"} reported={reported} />
       )}
     </Container>
   );

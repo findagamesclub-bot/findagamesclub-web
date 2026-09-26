@@ -123,15 +123,28 @@ export async function banAuthUser(userId: string, banned: boolean) {
  */
 export async function countSite() {
   const supabase = await createClient();
-  const [clubs, live, members] = await Promise.all([
+  // The month by London days, like every other date on the site. Building it
+  // from the browser's idea of a month would put a 1 October event in
+  // September for anybody sitting west of here.
+  const today = new Date();
+  const firstOfMonth = `${today.getUTCFullYear()}-`
+    + `${String(today.getUTCMonth() + 1).padStart(2, "0")}-01`;
+  const nextMonth = new Date(Date.UTC(
+    today.getUTCFullYear(), today.getUTCMonth() + 1, 1));
+  const firstOfNext = nextMonth.toISOString().slice(0, 10);
+
+  const [clubs, live, members, events] = await Promise.all([
     supabase.from("clubs").select("id", { count: "exact", head: true }),
     supabase.from("clubs").select("id", { count: "exact", head: true }).eq("status", "active"),
     supabase.from("profiles").select("id", { count: "exact", head: true }),
+    supabase.from("club_events").select("id", { count: "exact", head: true })
+      .gte("start_date", firstOfMonth).lt("start_date", firstOfNext),
   ]);
 
   return {
     clubs: clubs.count ?? 0,
     liveClubs: live.count ?? 0,
     members: members.count ?? 0,
+    eventsThisMonth: events.count ?? 0,
   };
 }

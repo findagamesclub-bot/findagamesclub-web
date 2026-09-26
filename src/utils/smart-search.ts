@@ -328,8 +328,45 @@ export function parseSmartSearch(rawQuery: string, options: SmartSearchOptions):
   // and listed the whole country.
   const withinMiles = location ? parsedMiles : "";
 
+  /**
+   * Whatever the box could not classify.
+   *
+   * `q` used to be the recognised facets and nothing else, so anything the
+   * parser did not know was thrown away: typing a club's name filtered nothing
+   * and the page answered with the whole directory under "Applied your search
+   * without adding extra filters." The plain search underneath covers club name
+   * and town on purpose (it was a deliberate departure from legacy, because
+   * people do search by name), so the honest thing is to hand it the words
+   * rather than drop them.
+   *
+   * Everything already turned into a filter comes out first, then the generic
+   * words, and what is left is a search term. Nothing left means nothing to
+   * add, which is the case every working search was already in.
+   */
+  const spent = [
+    ...facetHits.filter((h) => h.exact).map((h) => h.value),
+    formatLabel, day, cityMatch, place.value,
+  ].filter(Boolean);
+
+  const kept = spent
+    .reduce((text, used) => text.split(` ${fold(used)} `).join(" "), padded(withoutNumbers))
+    .split(/\s+/)
+    .filter((word) => word && !GENERIC.has(word) && !NON_PLACES.has(word));
+
+  // Folding lowercases, and this term goes into the address and back into the
+  // box somebody typed it in, so it is put back the way they wrote it.
+  const typed = query.split(/\s+/);
+  const leftover = kept
+    .map((word) => typed.find((raw) => fold(raw) === word) ?? word)
+    .join(" ")
+    .trim();
+
+  // The facets stay first: they are the part the service matches exactly, and
+  // a term it cannot match would otherwise narrow a working search to nothing.
+  const terms = leftover ? [...facets, leftover] : facets;
+
   return {
-    q: joinFacets(facets),
+    q: joinFacets(terms),
     city,
     format,
     day,

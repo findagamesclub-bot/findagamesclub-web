@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useActionState, useState } from "react";
+import { startTransition, useActionState } from "react";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -10,6 +10,7 @@ import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import { useActionToast } from "@/components/ui/Toaster";
+import { useActionSuccess } from "@/hooks/useActionSuccess";
 import { competitionAction, type CompetitionState }
   from "@/app/clubs/[slug]/(console)/competitions/actions";
 import { COMPETITION_STATUSES, COMPETITION_TYPES } from "@/utils/competition-meta";
@@ -37,13 +38,8 @@ export default function CompetitionForm({
   const [state, submit, busy] = useActionState<CompetitionState, FormData>(
     competitionAction, {});
   useActionToast(state);
-  const [seen, setSeen] = useState<CompetitionState | null>(null);
-
   // Close on success, stay open on a refusal so the typing survives it.
-  if (state !== seen) {
-    setSeen(state);
-    if (state.notice) onClose();
-  }
+  useActionSuccess(state, onClose);
 
   const editing = Boolean(competition);
 

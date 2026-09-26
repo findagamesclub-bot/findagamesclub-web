@@ -32,10 +32,16 @@ export default function UrlFilterBar({
   query, placeholder, tabs, tab, sorts, sort, second, defaults, onBusy,
 }: {
   query: string;
-  placeholder: string;
+  /**
+   * Left out on a list with nothing to search. One person's own reports are a
+   * handful of rows, and a search box that narrows nothing is a control
+   * offering to do something it cannot.
+   */
+  placeholder?: string;
   tabs: UrlTab[];
   tab: string;
-  sorts: UrlOption[];
+  /** Left out on a list with one sensible order, which then has no picker. */
+  sorts?: UrlOption[];
   sort: string;
   /** A second axis, such as which event. Optional. */
   second?: { label: string; value: string; options: UrlOption[]; param: string };
@@ -90,20 +96,25 @@ export default function UrlFilterBar({
     <Stack spacing={1.5}
       sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: 2,
             border: `1px solid ${tokens.rule}`, backgroundColor: tokens.paper }}>
+      {/* The whole row goes when there is neither a search nor a picker on
+          it, rather than leaving an empty strip above the tabs. */}
+      {placeholder || second || sorts?.length ? (
       <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
-        <TextField
-          size="small" fullWidth placeholder={placeholder} value={typed}
-          onChange={(event) => setTyped(event.target.value)}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ color: tokens.inkMuted }} />
-                </InputAdornment>
-              ),
-            },
-          }}
-        />
+        {placeholder ? (
+          <TextField
+            size="small" fullWidth placeholder={placeholder} value={typed}
+            onChange={(event) => setTyped(event.target.value)}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: tokens.inkMuted }} />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+        ) : null}
 
         {second ? (
           <TextField select size="small" label={second.label} value={second.value}
@@ -115,14 +126,17 @@ export default function UrlFilterBar({
           </TextField>
         ) : null}
 
-        <TextField select size="small" label="Sort" value={sort}
-          onChange={(event) => go({ sort: event.target.value })}
-          sx={{ minWidth: { sm: 190 } }}>
-          {sorts.map((option) => (
-            <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
-          ))}
-        </TextField>
+        {sorts?.length ? (
+          <TextField select size="small" label="Sort" value={sort}
+            onChange={(event) => go({ sort: event.target.value })}
+            sx={{ minWidth: { sm: 190 } }}>
+            {sorts.map((option) => (
+              <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+            ))}
+          </TextField>
+        ) : null}
       </Stack>
+      ) : null}
 
       <Tabs
         value={tab}

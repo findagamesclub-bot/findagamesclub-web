@@ -100,6 +100,8 @@ export type ClubDetail = {
    * hides a paused club from everybody but its own members and team.
    */
   status: string;
+  /** An admin has opened this listing to being claimed (0114). */
+  claimable: boolean;
   slug: string;
   name: string;
   city: string;

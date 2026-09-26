@@ -54,7 +54,9 @@ export default function ListingResumeCard({ card }: { card: ListingCard }) {
         <NextLink href={`/list-your-club/${card.id}/${card.lastStep}`}
           style={{ textDecoration: "none", alignSelf: "flex-start" }}>
           <Button variant="contained">
-            {card.status === "changes_requested" ? "Make the changes" : "Pick up where you left off"}
+            {card.status === "changes_requested" ? "Make the changes"
+              : card.status === "payment_pending" ? "Change it before we read it"
+                : "Pick up where you left off"}
           </Button>
         </NextLink>
       ) : card.status === "approved" ? (

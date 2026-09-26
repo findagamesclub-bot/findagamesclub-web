@@ -15,3 +15,4 @@
 /dev/shop-preview
 /dev/events-preview
 /dev/noticeboard-preview
+/dev/claim-preview

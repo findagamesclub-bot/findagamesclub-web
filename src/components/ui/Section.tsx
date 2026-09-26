@@ -11,12 +11,19 @@ export default function Section({
   note,
   action,
   navLabel,
+  flush = false,
   children,
 }: {
   title: string;
   icon?: SvgIconComponent;
   note?: string;
   action?: React.ReactNode;
+  /**
+   * No top margin. The margin exists to separate sections stacked down one
+   * page; where a page shows one section at a time, behind tabs, it is a band
+   * of empty screen between the tabs and the only thing under them.
+   */
+  flush?: boolean;
   /**
    * Short form for a shortcut nav. "Club nights and table booking" is a fair
    * heading and a poor tab.
@@ -34,7 +41,7 @@ export default function Section({
       id={id}
       data-section-label={navLabel ?? title}
       sx={{
-        mt: 7,
+        mt: flush ? 0 : 7,
         // Clears the app bar and the sticky shortcuts, so jumping to a section
         // lands on its heading rather than under them.
         scrollMarginTop: { xs: 132, md: 140 },

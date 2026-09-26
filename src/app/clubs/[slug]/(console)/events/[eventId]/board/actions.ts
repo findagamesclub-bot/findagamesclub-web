@@ -28,6 +28,12 @@ export async function eventBoardAction(
   const refresh = () => {
     revalidatePath(`/clubs/${slug}/events/${eventKey}/board`);
     revalidatePath(`/clubs/${slug}/events/${eventKey}`);
+    // And every thread page under it. A reply is posted from the thread, and
+    // since 0132 that is its own route, so revalidating only the board left
+    // the page the reply was typed on showing the list without it. "page"
+    // rather than "layout", so only the thread pages are dropped and the
+    // console shell around them is not.
+    revalidatePath(`/clubs/${slug}/events/${eventKey}/board/[postId]`, "page");
   };
 
   if (intent === "reply") {

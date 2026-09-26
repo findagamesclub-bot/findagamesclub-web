@@ -3,6 +3,7 @@ import MemberProfileView from "@/components/members/MemberProfileView";
 import { getProfile } from "@/services/profiles.service";
 import { getMemberContext } from "@/services/memberContext.service";
 import { getMemberRecords } from "@/services/memberRecords.service";
+import { getHeldBadges } from "@/services/memberBadges.service";
 import { getGrudgeTracker } from "@/services/grudgeTracker.service";
 import { getCurrentProfile } from "@/services/auth.service";
 
@@ -26,12 +27,16 @@ export default async function MemberPage({ params }: PageProps<"/members/[id]">)
 
   // Where they play, and how the reader has done against them. Both are
   // limited by policy to what the reader may already see.
-  const [context, records] = await Promise.all([
+  const [context, records, held] = await Promise.all([
     getMemberContext(viewer.id, profile.id)
       .catch(() => ({ clubs: [], events: [], meetings: [],
                       record: { played: 0, won: 0, drawn: 0, lost: 0 } })),
     getMemberRecords(profile.id)
       .catch(() => ({ competitions: [], podiums: [], badges: [] })),
+    // What their clubs have given them, and how long they have been about.
+    // Both are derived or stored elsewhere than the standings, so they ride
+    // in the same wave rather than costing a round trip of their own.
+    getHeldBadges(profile.id).catch(() => []),
   ]);
 
   // Their playing record, one card per club the reader also belongs to. Read
@@ -45,7 +50,7 @@ export default async function MemberPage({ params }: PageProps<"/members/[id]">)
       profile={profile}
       isSelf={viewer.id === profile.id}
       context={context}
-      records={records}
+      records={{ ...records, badges: [...held, ...records.badges] }}
       trackers={trackers}
     />
   );

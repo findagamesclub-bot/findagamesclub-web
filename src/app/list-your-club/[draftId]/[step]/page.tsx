@@ -9,6 +9,8 @@ import ContentStep from "@/components/listing/ContentStep";
 import ScheduleStep from "@/components/listing/ScheduleStep";
 import PricingStep from "@/components/listing/PricingStep";
 import SubmitStep from "@/components/listing/SubmitStep";
+import { getBillingSettings } from "@/services/billing.service";
+import { listingCostLine, listingSubmitNote } from "@/utils/listing-billing";
 import type { StepTarget } from "@/components/listing/StepTarget";
 import { getCurrentProfile } from "@/services/auth.service";
 import { draftReadiness, getDraft } from "@/services/submissions.service";
@@ -60,11 +62,11 @@ export default async function ListingDraftStepPage({
   // be saving into a row the policy refuses.
   if (!ownerCanEdit(draft.status)) redirect("/account");
 
-  // Only the last step draws it, so the four before it do not pay for a read
-  // they never render.
-  const history = step === "review"
-    ? await getReviewHistory(draft.id)
-    : [];
+  // Only the last step draws these, so the four before it do not pay for reads
+  // they never render. One wave, because neither depends on the other.
+  const [history, billing] = step === "review"
+    ? await Promise.all([getReviewHistory(draft.id), getBillingSettings()])
+    : [[], null];
 
   const payload = draft.payload ?? {};
   const { checks, status, done } = draftReadiness(payload);
@@ -133,6 +135,9 @@ export default async function ListingDraftStepPage({
           base={base}
           note={draft.status === "changes_requested" ? draft.review_note : undefined}
           history={history}
+          cost={billing?.enabled ? listingCostLine(billing) : null}
+          submitNote={listingSubmitNote(
+            billing ?? { enabled: false, monthly_price_pence: 0, yearly_price_pence: 0 })}
         />
       ) : null}
     </Container>

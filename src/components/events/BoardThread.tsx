@@ -9,11 +9,13 @@ import Typography from "@mui/material/Typography";
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import ReplyIcon from "@mui/icons-material/Reply";
 import SubmitButton from "@/components/ui/SubmitButton";
+import ReportButton from "@/components/ui/ReportButton";
 import { sinceLabel } from "@/utils/dates";
 import { mono, tokens, type Faction } from "@/lib/tokens";
 import type { BoardState }
   from "@/app/clubs/[slug]/(console)/events/[eventId]/board/actions";
-import type { BoardPost } from "@/services/eventBoard.service";
+import type { BoardReply, BoardThread as BoardThreadRow }
+  from "@/services/eventBoard.service";
 
 /**
  * One thread: the notice, its replies, and a box to answer in.
@@ -28,9 +30,11 @@ import type { BoardPost } from "@/services/eventBoard.service";
  * Remove button on the board.
  */
 export default function BoardThread({
-  post, faction, viewerId, canManage, action, fields, state,
+  post, replies, faction, viewerId, canManage, action, fields, state, isReported,
 }: {
-  post: BoardPost;
+  post: BoardThreadRow;
+  /** One page of them. The thread page pages these in SQL (0132). */
+  replies: BoardReply[];
   faction: Faction;
   viewerId: string | null;
   canManage: boolean;
@@ -40,6 +44,8 @@ export default function BoardThread({
   fields: React.ReactNode;
   /** The board's action state, so the reply box shuts once one lands. */
   state: BoardState;
+  /** Whether this reader already has an open report on a post or reply. */
+  isReported: (type: string, id: number) => boolean;
 }) {
   const [asked, setAsked] = useState(false);
   const [openedWith, setOpenedWith] = useState<BoardState>(state);
@@ -61,9 +67,9 @@ export default function BoardThread({
         </Typography>
       </Box>
 
-      {post.replies.length ? (
+      {replies.length ? (
         <Stack spacing={0} sx={{ borderTop: `1px solid ${tokens.rule}` }}>
-          {post.replies.map((r, i) => (
+          {replies.map((r, i) => (
             <Box key={r.id}
               sx={{ px: { xs: 2, sm: 2.5 }, py: 1.75,
                     borderTop: i === 0 ? "none" : `1px solid ${tokens.rule}`,
@@ -73,6 +79,12 @@ export default function BoardThread({
               <Typography variant="body2" sx={{ whiteSpace: "pre-line", mt: 0.75 }}>
                 {r.content}
               </Typography>
+              {/* Somebody else's, and not the club's to take down: the only
+                  thing left to offer is reporting it to an admin. */}
+              {viewerId && !mine(r.authorId) && !canManage ? (
+                <ReportButton type="event_reply" id={r.id} what="reply" label=""
+                  reported={isReported("event_reply", r.id)} />
+              ) : null}
               {mine(r.authorId) || canManage ? (
                 <Box component="form" action={action} sx={{ mt: 0.5, ml: -1 }}>
                   {fields}
@@ -97,6 +109,10 @@ export default function BoardThread({
             Reply
           </Button>
         )}
+        {viewerId && !mine(post.authorId) && !canManage ? (
+          <ReportButton type="event_post" id={post.id} what="post"
+            reported={isReported("event_post", post.id)} />
+        ) : null}
         {mine(post.authorId) || canManage ? (
           <Box component="form" action={action}>
             {fields}

@@ -5,6 +5,7 @@ import Box from "@mui/material/Box";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import NextLink from "next/link";
+import LinkPending from "@/components/ui/LinkPending";
 import { tokens } from "@/lib/tokens";
 
 export type NavTabItem = {
@@ -68,19 +69,26 @@ export default function NavTabs({
           title={tab.title}
           icon={tab.icon as never}
           iconPosition={tab.icon ? "start" : undefined}
+          // The page behind a tab is server-rendered, so there is a real wait
+          // between the press and the content changing. Without this the tab
+          // moves, nothing else does, and it reads as broken.
           label={
-            tab.count ? (
-              <Box component="span">
-                {tab.label}{" "}
-                <Box component="span" sx={{ color: tokens.inkMuted, fontWeight: 500 }}>
-                  {tab.count}
+            <LinkPending overlay size={16}>
+              {tab.count ? (
+                <Box component="span">
+                  {tab.label}{" "}
+                  <Box component="span" sx={{ color: tokens.inkMuted, fontWeight: 500 }}>
+                    {tab.count}
+                  </Box>
                 </Box>
-              </Box>
-            ) : (
-              tab.label
-            )
+              ) : (
+                tab.label
+              )}
+            </LinkPending>
           }
           sx={{
+            // So the pending spinner can centre itself on the tab it belongs to.
+            position: "relative",
             // 44px is the floor a finger needs; 48 leaves room for the label to
             // sit on the type scale rather than being squeezed to fit.
             minHeight: dense ? 46 : 52,

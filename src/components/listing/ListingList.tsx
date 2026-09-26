@@ -158,7 +158,9 @@ export default function ListingList({
                 style={{ textDecoration: "none" }}>
                 <Button variant="contained" sx={{ alignSelf: "flex-start" }}>
                   {card.status === "changes_requested"
-                    ? "Make the changes" : "Pick up where you left off"}
+                    ? "Make the changes"
+                    : card.status === "payment_pending" ? "Change it before we read it"
+                      : "Pick up where you left off"}
                 </Button>
               </NextLink>
             ) : null}

@@ -6,7 +6,7 @@ import {
 import {
   QUEUE_TABS, STATUS_LABELS, STATUS_TONES, SUBMISSION_STATUSES, adminCanReview,
   isFinished, isSubmissionStatus, ownerCanCancel, ownerCanEdit, ownerCanRestart,
-  ownerNextStep,
+  ownerCanSubmit, ownerNextStep,
 } from "../submission-status";
 
 // --- the steps ------------------------------------------------------------
@@ -54,8 +54,9 @@ import {
     assert.ok(STATUS_TONES[status], `${status} has no tone`);
     assert.ok(ownerNextStep(status), `${status} has no sentence`);
   }
-  assert.equal(isSubmissionStatus("payment_pending"), false,
-    "Stage 5's status is not one of ours yet");
+  // Stage 4 asserted this status was deliberately not ours yet. Stage 5 is the
+  // stage that built billing, so it is ours now and the block below proves it.
+  assert.equal(isSubmissionStatus("nonsense_status"), false);
 }
 
 {
@@ -68,12 +69,16 @@ import {
 }
 
 {
-  // Editable before it is sent and again when it comes back, never while it is
-  // being looked at. This mirrors the RLS policy exactly; if one changes and
-  // the other does not, the form saves nothing and says it saved.
-  assert.deepEqual(SUBMISSION_STATUSES.filter(ownerCanEdit), ["draft", "changes_requested"]);
+  // Editable before it is sent, while it waits to be paid for, and again when
+  // it comes back; never while it is being looked at. This mirrors 0112's RLS
+  // policy exactly (`status in ('draft', 'changes_requested',
+  // 'payment_pending')`); if one changes and the other does not, the form saves
+  // nothing and says it saved, or a club that owes us money can do nothing at
+  // all. Both have happened.
+  assert.deepEqual(SUBMISSION_STATUSES.filter(ownerCanEdit),
+    ["draft", "payment_pending", "changes_requested"]);
   assert.deepEqual(SUBMISSION_STATUSES.filter(ownerCanCancel),
-    ["draft", "review_pending", "changes_requested"]);
+    ["draft", "payment_pending", "review_pending", "changes_requested"]);
   assert.deepEqual(SUBMISSION_STATUSES.filter(adminCanReview), ["review_pending"]);
   assert.deepEqual(SUBMISSION_STATUSES.filter(isFinished),
     ["approved", "declined", "cancelled"]);
@@ -123,3 +128,32 @@ import {
 }
 
 console.log("submission-status: all assertions passed");
+
+// ------------------------------------------- a listing waiting to be paid for
+
+// 0112 added this status to the database and this file never heard about it,
+// so the owner's own card rendered an undefined label, an undefined tone and
+// an empty sentence. A blank card, on the listing they had just sent.
+assert.equal(isSubmissionStatus("payment_pending"), true);
+assert.equal(STATUS_LABELS.payment_pending, "Waiting to be paid for");
+assert.equal(STATUS_TONES.payment_pending, "warn");
+assert.match(ownerNextStep("payment_pending"), /how to pay/);
+
+// The database lets them fix it, send it again and stop. So do we.
+assert.equal(ownerCanEdit("payment_pending"), true);
+assert.equal(ownerCanSubmit("payment_pending"), true);
+assert.equal(ownerCanCancel("payment_pending"), true);
+
+// It is not over, and an admin cannot review one nobody has paid for.
+assert.equal(isFinished("payment_pending"), false);
+assert.equal(adminCanReview("payment_pending"), false);
+assert.equal(ownerCanRestart("payment_pending"), false);
+
+// Every status has a label and a tone, so this cannot happen again.
+for (const status of SUBMISSION_STATUSES) {
+  assert.ok(STATUS_LABELS[status], `no label for ${status}`);
+  assert.ok(STATUS_TONES[status], `no tone for ${status}`);
+  assert.ok(ownerNextStep(status).length > 0, `no sentence for ${status}`);
+}
+
+console.log("submission-status payment_pending: all assertions passed");

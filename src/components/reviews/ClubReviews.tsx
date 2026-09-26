@@ -11,6 +11,9 @@ import NextLink from "next/link";
 import FlagIcon from "@mui/icons-material/OutlinedFlag";
 import StarRating from "@/components/ui/StarRating";
 import Pager from "@/components/ui/Pager";
+import ReportButton from "@/components/ui/ReportButton";
+import { useReported } from "@/hooks/useReported";
+import { NOTHING_REPORTED, type ReportedKeys } from "@/utils/reported-set";
 import { usePagedList } from "@/hooks/usePagedList";
 import ReviewForm from "./ReviewForm";
 import ReviewBreakdown from "./ReviewBreakdown";
@@ -34,6 +37,7 @@ const REVIEWS_PER_PAGE = PER_PAGE.rich;
  */
 export default function ClubReviews({
   clubId, slug, faction, reviews, total, viewerId, canManageClub, isAdmin, signedIn,
+  reported = NOTHING_REPORTED,
 }: {
   clubId: number;
   slug: string;
@@ -45,7 +49,10 @@ export default function ClubReviews({
   canManageClub: boolean;
   isAdmin: boolean;
   signedIn: boolean;
+  /** What this reader has already reported, as plain keys from the server. */
+  reported?: ReportedKeys;
 }) {
+  const alreadyReported = useReported(reported);
   const [state, submit, busy] = useActionState<ReviewState, FormData>(reviewAction, {});
   useActionToast(state);
   const mine = reviews.find((r) => r.authorId && r.authorId === viewerId) ?? null;
@@ -142,24 +149,28 @@ export default function ClubReviews({
                 <Typography variant="body2" color="text.secondary">{r.comment}</Typography>
               ) : null}
 
-              {canManageClub || isAdmin ? (
-                <Stack direction="row" spacing={1} sx={{ pt: 0.25 }}>
-                  {canManageClub || isAdmin ? (
-                    <Button size="small" variant="text" disabled={busy}
-                      onClick={() => act(r.flaggedAt ? "unflag" : "flag", r.id)}
-                      sx={{ color: tokens.inkMuted, fontSize: "0.75rem", minWidth: 0 }}>
-                      {r.flaggedAt ? "Clear flag" : "Flag for review"}
-                    </Button>
-                  ) : null}
-                  {isAdmin ? (
-                    <Button size="small" variant="text" disabled={busy}
-                      onClick={() => act("remove", r.id)}
-                      sx={{ color: tokens.danger, fontSize: "0.75rem", minWidth: 0 }}>
-                      Remove
-                    </Button>
-                  ) : null}
-                </Stack>
-              ) : null}
+              {/* One way to raise a review, for everybody who did not write it,
+                  including the club. There used to be a second: a "Flag for
+                  review" button only the club saw, which wrote a column and
+                  filed nothing, so it promised an admin would look and no
+                  admin ever did. Reporting it is the same act with a reason
+                  attached, and taking it back lives on /account/reports where
+                  every other report is. A member reporting their own review is
+                  a member who can edit it instead. */}
+              <Stack direction="row" spacing={1}
+                sx={{ pt: 0.25, alignItems: "center" }}>
+                {viewerId && !isMine ? (
+                  <ReportButton type="review" id={r.id} what="review"
+                    reported={alreadyReported("review", r.id)} />
+                ) : null}
+                {isAdmin ? (
+                  <Button size="small" variant="text" disabled={busy}
+                    onClick={() => act("remove", r.id)}
+                    sx={{ color: tokens.danger, fontSize: "0.75rem", minWidth: 0 }}>
+                    Remove
+                  </Button>
+                ) : null}
+              </Stack>
             </Stack>
           );
         })}

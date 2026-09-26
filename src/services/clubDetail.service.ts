@@ -64,6 +64,11 @@ function toDetail(row: NonNullable<Row>): ClubDetail {
     id: row.id,
     ownerId: row.owner_id,
     status: row.status ?? "active",
+    // `claimable` arrives with 0114 and the generated types do not carry it
+    // yet. `findClubDetail` selects everything, so the column is on the row;
+    // this reads it without widening the generated type by hand. Drop the cast
+    // when `database.ts` is regenerated.
+    claimable: (row as { claimable?: boolean }).claimable ?? false,
     slug: row.slug,
     name: row.name,
     city: row.city,
