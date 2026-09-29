@@ -5,6 +5,7 @@ import Typography from "@mui/material/Typography";
 import PageHead from "@/components/ui/PageHead";
 import Panel from "@/components/members/Panel";
 import MemberBadges from "@/components/members/MemberBadges";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import LinkButton from "@/components/ui/LinkButton";
 import ProfileForm from "@/components/members/ProfileForm";
 import { getCurrentProfile } from "@/services/auth.service";
@@ -66,7 +67,9 @@ export default async function EditProfilePage() {
           {/* The way to see yourself as everybody else does, which nothing on
               the site offered before. */}
           <Box sx={{ mt: 2 }}>
-            <LinkButton variant="outlined" size="small" href={`/members/${viewer.id}`}>
+            <LinkButton variant="contained" href={`/members/${viewer.id}`}
+              startIcon={<VisibilityIcon />}
+              sx={{ width: { xs: "100%", sm: "auto" } }}>
               See your profile as others do
             </LinkButton>
           </Box>

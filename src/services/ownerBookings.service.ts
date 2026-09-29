@@ -6,6 +6,8 @@ import { londonToday } from "./bookingCalendar.service";
 import { isLocked, toConfirmation, type ConfirmationState } from "@/utils/result-meta";
 import { getOrders } from "./clubExtras.service";
 import type { ClubResult } from "./clubResults.service";
+import { getArmyContext, NO_ARMIES, type ArmyContext }
+  from "./resultArmies.service";
 import type { MerchOrder } from "@/types/clubExtras";
 
 /**
@@ -40,7 +42,8 @@ export type ScoreQueue = {
 type Person = { id: string; full_name: string | null } | null;
 const nameOf = (p: Person, fallback: string) => p?.full_name?.trim() || fallback;
 
-function toResult(row: unknown, clubs: Map<number, OwnerClubRef>): OwnerResult | null {
+function toResult(row: unknown, clubs: Map<number, OwnerClubRef>,
+                  army: ArmyContext): OwnerResult | null {
   const r = row as {
     id: number; club_id: number; session_date: string; session_time: string | null;
     game_title: string | null; opponent_name: string | null;
@@ -76,6 +79,8 @@ function toResult(row: unknown, clubs: Map<number, OwnerClubRef>): OwnerResult |
     confirmation: toConfirmation(r.result_confirmation) as ConfirmationState,
     locked: isLocked(r.result_confirmation),
     recorded: r.booked_by_score !== null,
+    armies: army.sides(r.id),
+    builder: army.builder(r.club_id),
   };
 }
 
@@ -93,8 +98,17 @@ export async function getScoreQueue(profileId: string): Promise<ScoreQueue> {
 
   const rows = await repo.findPlayedBookingsForClubs(
     clubs.map((c) => c.id), londonToday());
+
+  // The ids are only knowable once the rows are in, so this is a second wave
+  // for the page rather than a read per game.
+  const scored = rows as { id: number; booked_by_score: number | null }[];
+  const army = await getArmyContext("booking",
+    scored.filter((row) => row.booked_by_score !== null).map((row) => row.id),
+    clubs.map((c) => c.id));
+
   const byId = new Map(clubs.map((c) => [c.id, c]));
-  const all = rows.map((row) => toResult(row, byId)).filter(Boolean) as OwnerResult[];
+  const all = rows.map((row) => toResult(row, byId, army))
+    .filter(Boolean) as OwnerResult[];
 
   return {
     clubs,
@@ -133,5 +147,7 @@ export async function getOwnedBookings(profileId: string): Promise<OwnerResult[]
   const rows = await repo.findUpcomingBookingsForClubs(
     clubs.map((c) => c.id), londonToday());
   const byId = new Map(clubs.map((c) => [c.id, c]));
-  return rows.map((row) => toResult(row, byId)).filter(Boolean) as OwnerResult[];
+  // A table still to come has no result, so it has no army to read.
+  return rows.map((row) => toResult(row, byId, NO_ARMIES))
+    .filter(Boolean) as OwnerResult[];
 }

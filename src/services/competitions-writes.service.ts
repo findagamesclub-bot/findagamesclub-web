@@ -16,9 +16,31 @@ import {
 
 type Result = { ok: true; id?: number } | { ok: false; error: string };
 
+/**
+ * The army a row names has to be one this club's catalogue holds.
+ *
+ * 0136 mirrors every standing into `game_result_armies`, so a faction the
+ * catalogue has never heard of refuses the whole table. The trigger puts the
+ * player's name on the end of the code, which is the only way somebody
+ * scanning twenty rows can tell which one to open.
+ */
+const ARMY_REFUSALS: [string, string][] = [
+  ["RESULT_BAD_FACTION", "is not a faction in this club's catalogue"],
+  ["RESULT_BAD_DETACHMENT", "is not a detachment that faction has"],
+  ["RESULT_BAD_DISPOSITION", "is not a disposition that detachment offers"],
+];
+
 function refusal(raw: string, fallback: string): string {
   if (raw.includes("NOT_PERMITTED") || raw.includes("row-level security")) {
     return "Only the club can change its competitions.";
+  }
+  for (const [code, said] of ARMY_REFUSALS) {
+    if (!raw.includes(code)) continue;
+    // "RESULT_BAD_FACTION for Joe Matthews", which the trigger builds.
+    const who = raw.slice(raw.indexOf(code) + code.length).replace(/^\s*for\s*/, "").trim();
+    return who
+      ? `What ${who} played ${said}. Open their row and pick from the list.`
+      : `One of the armies ${said}. Open each row and pick from the list.`;
   }
   if (raw.includes("_len") || raw.includes("too long")) {
     return "That is too long. Trim it and try again.";
@@ -96,16 +118,32 @@ export async function removeCompetition(id: number): Promise<Result> {
   }
 }
 
+/**
+ * A row as the browser posted it, which is to say: not to be trusted.
+ *
+ * The action `JSON.parse`s this out of a form field and casts it, so every
+ * field here is a claim rather than a fact. A tab left open across a deploy
+ * posts the shape the old bundle knew, which is how `detachment` arrived
+ * undefined and `.trim()` threw a TypeError the club read as "Could not save
+ * the table. Try again." Optional, and read through `text()` below.
+ */
 export type StandingForm = {
-  memberName: string;
-  profileId: string | null;
-  wins: number;
-  draws: number;
-  losses: number;
-  points: number;
-  notes: string;
-  faction: string;
+  memberName?: string;
+  profileId?: string | null;
+  wins?: number;
+  draws?: number;
+  losses?: number;
+  points?: number;
+  notes?: string;
+  faction?: string;
+  detachment?: string;
+  disposition?: string;
 };
+
+const text = (value: unknown, cap: number) =>
+  (typeof value === "string" ? value : "").trim().slice(0, cap);
+const count = (value: unknown) =>
+  Math.max(0, Math.floor(typeof value === "number" ? value : Number(value) || 0));
 
 /**
  * The whole table at once, ranked here rather than by whoever typed it.
@@ -118,12 +156,19 @@ export async function saveStandings(
 ): Promise<Result> {
   const named = rows
     .map((row) => ({
-      ...row,
-      memberName: row.memberName.trim().slice(0, 120),
-      wins: Math.max(0, Math.floor(row.wins) || 0),
-      draws: Math.max(0, Math.floor(row.draws) || 0),
-      losses: Math.max(0, Math.floor(row.losses) || 0),
-      points: Math.max(0, Math.floor(row.points) || 0),
+      memberName: text(row.memberName, 120),
+      profileId: typeof row.profileId === "string" ? row.profileId : null,
+      notes: text(row.notes, 300),
+      faction: text(row.faction, 120),
+      detachment: text(row.detachment, 120),
+      // A disposition belongs to a detachment, so one without the other is a
+      // value with nothing to hang off. The trigger in 0136 refuses it; this
+      // drops it so the rest of the table still saves.
+      disposition: text(row.detachment, 120) ? text(row.disposition, 120) : "",
+      wins: count(row.wins),
+      draws: count(row.draws),
+      losses: count(row.losses),
+      points: count(row.points),
     }))
     .filter((row) => row.memberName);
 
@@ -134,9 +179,10 @@ export async function saveStandings(
       rank: 0,
       played: playedFrom(row.wins, row.draws, row.losses),
       wins: row.wins, draws: row.draws, losses: row.losses, points: row.points,
-      notes: row.notes.trim().slice(0, 300),
-      faction: row.faction.trim().slice(0, 120),
-      detachment: "",
+      notes: row.notes,
+      faction: row.faction,
+      detachment: row.detachment,
+      disposition: row.disposition,
     })));
     return { ok: true };
   } catch (error) {

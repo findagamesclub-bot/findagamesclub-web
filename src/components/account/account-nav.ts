@@ -4,6 +4,7 @@ import CardMembershipIcon from "@mui/icons-material/CardMembership";
 import LoyaltyIcon from "@mui/icons-material/Loyalty";
 import ConfirmationNumberIcon from "@mui/icons-material/ConfirmationNumber";
 import EventSeatIcon from "@mui/icons-material/EventSeat";
+import ShieldIcon from "@mui/icons-material/Shield";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import NotificationsIcon from "@mui/icons-material/NotificationsActive";
 import ForumIcon from "@mui/icons-material/ForumOutlined";
@@ -45,6 +46,10 @@ export function accountGroups(counts: AccountCounts): NavGroup[] {
       items: [
         { label: "Your games", href: "/account/games", icon: SportsEsportsIcon,
           count: counts.unrecorded, alert: true },
+        // Lists belong to the member, not to one club, so they gather here as
+        // well as on each club's own builder. Somebody in two clubs would
+        // otherwise have to remember which one they built it at.
+        { label: "Your armies", href: "/account/armies", icon: ShieldIcon },
       ],
     },
     {

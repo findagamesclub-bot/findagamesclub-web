@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/services/auth.service";
 import { recordResult, removeResult } from "@/services/games.service";
+import { readArmies } from "@/utils/result-form";
 
 export type ResultState = { error?: string; notice?: string };
 
@@ -22,6 +23,7 @@ export async function recordResultAction(
     theirScore: Number(data.get("theirScore")),
     myArmy: String(data.get("myArmy") ?? "").trim(),
     theirArmy: String(data.get("theirArmy") ?? "").trim(),
+    armies: readArmies(data.get("armies")),
     iBooked: String(data.get("iBooked")) === "true",
     mission: String(data.get("mission") ?? ""),
     deployment: String(data.get("deployment") ?? ""),

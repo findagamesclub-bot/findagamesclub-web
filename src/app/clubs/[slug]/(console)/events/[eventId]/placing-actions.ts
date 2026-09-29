@@ -40,6 +40,7 @@ export async function placingAction(
     profileId: String(data.get("profileId") ?? "") || null,
     faction: String(data.get("faction") ?? ""),
     detachment: String(data.get("detachment") ?? ""),
+    disposition: String(data.get("disposition") ?? ""),
   });
 
   refresh();

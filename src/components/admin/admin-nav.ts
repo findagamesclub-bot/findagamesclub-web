@@ -3,6 +3,7 @@ import PeopleIcon from "@mui/icons-material/ManageAccounts";
 import ReportIcon from "@mui/icons-material/Flag";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import StarIcon from "@mui/icons-material/StarBorder";
+import ShieldIcon from "@mui/icons-material/Shield";
 import GavelIcon from "@mui/icons-material/Gavel";
 import NotificationsIcon from "@mui/icons-material/NotificationsActive";
 import ForumIcon from "@mui/icons-material/ForumOutlined";
@@ -70,6 +71,16 @@ export function adminGroups(counts: AdminCounts = {}): NavGroup[] {
         { label: "Billing", href: "/admin/billing", icon: PaymentsIcon,
           count: counts.billingOwed, alert: true },
         { label: "Featured", href: "/admin/featured", icon: StarIcon },
+      ],
+    },
+    {
+      // Its own group: the catalogue is not a club and not a person, it is the
+      // reference every club's results are recorded against.
+      title: "The game",
+      items: [
+        // No count. A catalogue with work outstanding is not somebody waiting
+        // on an answer, which is what every alert badge here means.
+        { label: "Army catalogue", href: "/admin/catalogue", icon: ShieldIcon },
       ],
     },
     {

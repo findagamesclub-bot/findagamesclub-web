@@ -51,7 +51,7 @@ const NAV: NavItem[] = [
   { label: "Directory", href: "/clubs" },
   { label: "Events", href: "/events", owns: /\/events(\/|$)/ },
   { label: "Map", href: "/clubs?view=map" },
-  { label: "Meta Tracker", milestone: 3 },
+  { label: "Meta Tracker", href: "/meta-tracker" },
   { label: "My Clubs", href: "/my-clubs", ownerOnly: true,
     // The console lives under a club's own path, so on path alone it lights
     // Directory. It is the club you run, and My Clubs is where you came from.

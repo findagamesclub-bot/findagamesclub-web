@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import MemberProfileView from "@/components/members/MemberProfileView";
+import { getMemberMeta } from "@/services/meta.service";
 import { getProfile } from "@/services/profiles.service";
 import { getMemberContext } from "@/services/memberContext.service";
 import { getMemberRecords } from "@/services/memberRecords.service";
@@ -27,7 +28,7 @@ export default async function MemberPage({ params }: PageProps<"/members/[id]">)
 
   // Where they play, and how the reader has done against them. Both are
   // limited by policy to what the reader may already see.
-  const [context, records, held] = await Promise.all([
+  const [context, records, held, armies] = await Promise.all([
     getMemberContext(viewer.id, profile.id)
       .catch(() => ({ clubs: [], events: [], meetings: [],
                       record: { played: 0, won: 0, drawn: 0, lost: 0 } })),
@@ -37,6 +38,10 @@ export default async function MemberPage({ params }: PageProps<"/members/[id]">)
     // Both are derived or stored elsewhere than the standings, so they ride
     // in the same wave rather than costing a round trip of their own.
     getHeldBadges(profile.id).catch(() => []),
+    // What they play. Read through RLS rather than a guard: the rows already
+    // say who may see them, so a reader who shares no club with them gets an
+    // empty list and the panel draws nothing.
+    getMemberMeta(profile.id).catch(() => []),
   ]);
 
   // Their playing record, one card per club the reader also belongs to. Read
@@ -52,6 +57,7 @@ export default async function MemberPage({ params }: PageProps<"/members/[id]">)
       context={context}
       records={{ ...records, badges: [...held, ...records.badges] }}
       trackers={trackers}
+      armies={armies}
     />
   );
 }

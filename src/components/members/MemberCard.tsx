@@ -72,7 +72,16 @@ export default function MemberCard({
       ) : null}
 
       <Stack spacing={1.5} sx={{ p: 2.25, minWidth: 0 }}>
-        <Stack direction="row" spacing={1.75} sx={{ alignItems: "center", minWidth: 0 }}>
+        {/* The whole identity block is the link, not just the name. A 52px
+            monogram beside a name that navigates is a target people aim at and
+            miss, and the client did: "it is just clickable on the name, on the
+            icon it should be". The buttons underneath stay outside it, so
+            nothing interactive is nested inside a link. */}
+        <NextLink href={`/members/${member.profileId}`}
+          style={{ color: "inherit", textDecoration: "none", display: "block" }}>
+        <Stack direction="row" spacing={1.75}
+          sx={{ alignItems: "center", minWidth: 0,
+                "&:hover .member-card-name": { color: faction.base } }}>
           <Avatar
             sx={{
               bgcolor: faction.soft, color: faction.deep,
@@ -85,11 +94,9 @@ export default function MemberCard({
           </Avatar>
 
           <Box sx={{ minWidth: 0, flex: 1 }}>
-            <NextLink href={`/members/${member.profileId}`} style={{ color: "inherit", textDecoration: "none" }}>
-              <Typography variant="subtitle1" noWrap sx={{ "&:hover": { color: faction.base } }}>
-                {member.fullName}
-              </Typography>
-            </NextLink>
+            <Typography variant="subtitle1" noWrap className="member-card-name">
+              {member.fullName}
+            </Typography>
 
             <Stack direction="row" spacing={1} sx={{ alignItems: "baseline", flexWrap: "wrap" }}>
               {since ? (
@@ -113,6 +120,7 @@ export default function MemberCard({
             </Stack>
           </Box>
         </Stack>
+        </NextLink>
 
         {loyalty ? (
           <Stack direction="row" spacing={1.5}

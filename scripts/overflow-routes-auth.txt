@@ -63,3 +63,12 @@
 /clubs/didcot-wargames-didcot/manage/moderation
 /clubs/didcot-wargames-didcot/manage/moderation?state=any
 /account/reports?state=any&type=post
+/clubs/didcot-wargames-didcot/manage/army-builder
+/meta-tracker
+/meta-tracker?tab=matchups
+/meta-tracker?tab=context&lens=all
+/meta-tracker?tab=units
+/meta-tracker?tab=trend&lens=12m
+/clubs/didcot-wargames-didcot/army-builder
+/clubs/didcot-wargames-didcot/army-builder/new
+/account/armies

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -15,6 +16,9 @@ import { useActionSuccess } from "@/hooks/useActionSuccess";
 import { recordResultAction, clearResultAction, type ResultState }
   from "@/app/account/games/actions";
 import MatchContextFields from "./MatchContextFields";
+import ArmyFields from "@/components/results/ArmyFields";
+import { useCatalogue } from "@/hooks/useCatalogue";
+import { type ResultArmy } from "@/utils/result-army";
 import { confirmationLabel, toConfirmation } from "@/utils/result-meta";
 import { mono, tokens } from "@/lib/tokens";
 import type { MyGame } from "@/services/games.service";
@@ -33,15 +37,58 @@ export default function ResultDialog({
   /** The club may set the result state, and may edit a settled one. */
   canManageClub?: boolean;
 }) {
+  // Wider than the rest of the site's dialogs, and the whole screen on a
+  // phone. A result is eleven fields per side once the army is open, and at
+  // 600px the cascade read as a column of boxes with no relationship to each
+  // other. Rule 5: editing goes in a dialog, and a dialog that has to hold a
+  // form gets the room for it.
+  const fullScreen = useMediaQuery("(max-width:600px)");
   const [open, setOpen] = useState(false);
+
+  // Started from what was recorded, never from an empty army: saving an empty
+  // one deletes the row, so a dialog that forgot last week's army would throw
+  // it away the moment somebody corrected a score.
+  const [mine, setMine] = useState<ResultArmy>(game.armies.mine);
+  const [theirs, setTheirs] = useState<ResultArmy>(game.armies.theirs);
   const [mission, setMission] = useState(game.mission);
   const [deployment, setDeployment] = useState(game.deployment);
   const [terrain, setTerrain] = useState(game.terrain);
   const [confirmation, setConfirmation] = useState(game.confirmation);
 
+  /**
+   * Take the server's version whenever this is shut.
+   *
+   * Every one of these is a `useState` initialiser, which runs once when the
+   * card mounts and never again. This dialog is mounted for every game on the
+   * page, so a result somebody else changed -- the club settling it, the other
+   * player correcting it -- never reached the fields: the page re-rendered with
+   * the new data and the dialog went on showing what it captured at load. It
+   * cost a disposition the club had set and would have written the stale value
+   * back on the next save.
+   *
+   * Only while closed, because adopting new props under somebody who is typing
+   * would throw their work away. `game` is a fresh object on every server
+   * render, so the reference is the signal that something arrived.
+   */
+  const [seen, setSeen] = useState(game);
+  if (!open && seen !== game) {
+    setSeen(game);
+    setMine(game.armies.mine);
+    setTheirs(game.armies.theirs);
+    setMission(game.mission);
+    setDeployment(game.deployment);
+    setTerrain(game.terrain);
+    setConfirmation(game.confirmation);
+  }
+
   // Settled or disputed results belong to the club. Saying so up front beats a
   // form that accepts your typing and then refuses on save.
   const readOnly = game.locked && !canManageClub;
+
+  // Fetched on the first open rather than shipped with the page. A club that
+  // does not run the builder has no builder to fetch, and sees the two free
+  // text boxes it has always seen.
+  const { catalogue, loading, failed } = useCatalogue(game.builder, open);
 
   const [state, submit, busy] = useActionState<ResultState, FormData>(recordResultAction, {});
   const [clearState, clear, clearing] = useActionState<ResultState, FormData>(clearResultAction, {});
@@ -75,8 +122,9 @@ export default function ResultDialog({
         {done ? "Edit result" : "Add the result"}
       </Button>
 
-      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm"
-        slotProps={{ paper: { sx: { borderRadius: 2 } } }}>
+      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="md"
+        fullScreen={fullScreen}
+        slotProps={{ paper: { sx: { borderRadius: fullScreen ? 0 : 2 } } }}>
         <DialogTitle sx={{ fontSize: "1.25rem" }}>
           {game.title}
           <Typography sx={{ fontFamily: mono, fontSize: "0.7rem", color: tokens.inkMuted }}>
@@ -104,12 +152,24 @@ export default function ResultDialog({
                   slotProps={{ htmlInput: { min: 0, step: "0.5" } }} />
               </Stack>
 
-              <Stack direction="row" spacing={2}>
-                <TextField name="myArmy" label="Your army" fullWidth
-                  defaultValue={game.myArmy} placeholder="Death Guard" />
-                <TextField name="theirArmy" label="Their army" fullWidth
-                  defaultValue={game.theirArmy} placeholder="Custodes" />
-              </Stack>
+              {/* A club that does not run the builder sees the two boxes it
+                  has always seen. Nothing about this dialog changes for them,
+                  which is the point of the switch being the club's. */}
+              <ArmyFields
+                builder={game.builder} catalogue={catalogue}
+                loading={loading} failed={failed}
+                one={mine} two={theirs}
+                onOne={setMine} onTwo={setTheirs}
+                twoTitle={`${game.opponentName}'s army`}
+                fallback={
+                  <Stack direction="row" spacing={2}>
+                    <TextField name="myArmy" label="Your army" fullWidth
+                      defaultValue={game.myArmy} placeholder="Death Guard" />
+                    <TextField name="theirArmy" label="Their army" fullWidth
+                      defaultValue={game.theirArmy} placeholder="Custodes" />
+                  </Stack>
+                }
+              />
 
               <MatchContextFields
                 mission={mission} deployment={deployment} terrain={terrain}

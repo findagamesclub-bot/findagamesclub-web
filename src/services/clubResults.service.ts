@@ -1,3 +1,5 @@
+import { getArmyContext, type Builder, type ResultArmies }
+  from "./resultArmies.service";
 import "server-only";
 
 import { findPlayedBookings } from "@/repositories/bookings.repository";
@@ -29,6 +31,10 @@ export type ClubResult = {
   confirmation: ConfirmationState;
   locked: boolean;
   recorded: boolean;
+  /** In the booking's own order: `one` is whoever booked. */
+  armies: ResultArmies;
+  /** Null when this club does not run the army builder. */
+  builder: Builder | null;
 };
 
 type Person = { id: string; full_name: string | null } | null;
@@ -36,6 +42,11 @@ const nameOf = (p: Person, fallback: string) => p?.full_name?.trim() || fallback
 
 export async function getClubResults(clubId: number, limit = 40): Promise<ClubResult[]> {
   const rows = await findPlayedBookings(clubId, londonToday(), limit);
+
+  // A second wave, once, rather than two more reads per game on the page.
+  const army = await getArmyContext("booking",
+    rows.filter((row) => row.booked_by_score !== null).map((row) => row.id),
+    [clubId]);
 
   return rows.map((row) => {
     const r = row as unknown as { booker: Person; opponent: Person; acceptor: Person };
@@ -61,6 +72,8 @@ export async function getClubResults(clubId: number, limit = 40): Promise<ClubRe
       confirmation: toConfirmation(row.result_confirmation),
       locked: isLocked(row.result_confirmation),
       recorded: row.booked_by_score !== null,
+      armies: army.sides(row.id),
+      builder: army.builder(clubId),
     };
   });
 }

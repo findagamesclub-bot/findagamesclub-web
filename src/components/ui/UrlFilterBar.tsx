@@ -38,7 +38,12 @@ export default function UrlFilterBar({
    * offering to do something it cannot.
    */
   placeholder?: string;
-  tabs: UrlTab[];
+  /**
+   * Left out on a list whose groups are named somewhere else. The faction
+   * editor's tabs are the page's own, so a second strip under them saying
+   * "All units 35" was the same fact twice.
+   */
+  tabs?: UrlTab[];
   tab: string;
   /** Left out on a list with one sensible order, which then has no picker. */
   sorts?: UrlOption[];
@@ -67,7 +72,11 @@ export default function UrlFilterBar({
   // false left the overlay up for good: the rows underneath had already been
   // replaced and the page still read as working.
   const tell = useRef(onBusy);
-  tell.current = onBusy;
+  // Written in an effect, not during render: a ref assigned while rendering is
+  // the thing React's own rule warns about, and it is not needed here. Both
+  // effects run after the same render, in order, so this one is up to date
+  // before the one below reads it.
+  useEffect(() => { tell.current = onBusy; });
   useEffect(() => { tell.current?.(navigating); }, [navigating]);
 
   const go = (changes: Record<string, string>) => {
@@ -138,6 +147,7 @@ export default function UrlFilterBar({
       </Stack>
       ) : null}
 
+      {tabs?.length ? (
       <Tabs
         value={tab}
         onChange={(_event, value) => go({ state: String(value) })}
@@ -159,6 +169,7 @@ export default function UrlFilterBar({
             } />
         ))}
       </Tabs>
+      ) : null}
     </Stack>
   );
 }

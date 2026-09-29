@@ -36,6 +36,7 @@ export async function savePlacing(params: {
   profileId: string | null;
   faction: string;
   detachment: string;
+  disposition: string;
 }): Promise<{ ok: boolean; error?: string }> {
   if (!Number.isFinite(params.rank) || params.rank < 1) {
     return { ok: false, error: "A place has to be between 1 and 999." };
@@ -51,6 +52,9 @@ export async function savePlacing(params: {
       name: params.name.trim(),
       faction: params.faction.trim(),
       detachment: params.detachment.trim(),
+      // A disposition hangs off a detachment. Without one it has nothing to
+      // belong to, and `resolve_result_army` would refuse the whole placing.
+      disposition: params.detachment.trim() ? params.disposition.trim() : "",
     });
     return { ok: true };
   } catch (error) {

@@ -5,6 +5,8 @@ import { isLocked, safeDeployment, toConfirmation, type ConfirmationState }
   from "@/utils/result-meta";
 
 import * as repo from "@/repositories/games.repository";
+import { getArmyContext, type Builder } from "./resultArmies.service";
+import { type ResultArmy } from "@/utils/result-army";
 import { londonToday } from "./bookingCalendar.service";
 import { suggestOpponents, winRate, type Suggestion } from "@/utils/opponent-finder";
 import { intensityOf, type Intensity } from "@/utils/rivalry-intensity";
@@ -53,6 +55,18 @@ export type MyGame = {
    * that is already settled. False on every game at a club they only play at.
    */
   canManageClub: boolean;
+  /**
+   * What each side played, turned round the same way the scores are, so the
+   * dialog never has to think about who booked.
+   */
+  armies: { mine: ResultArmy; theirs: ResultArmy };
+  /**
+   * The catalogue this club records against, or null when it does not run the
+   * builder. Two short strings rather than the catalogue itself: the snapshot
+   * is most of a megabyte, and the dialog fetches it from the cached, frozen
+   * API route when somebody opens it.
+   */
+  builder: Builder | null;
 };
 
 export type Record = {
@@ -87,6 +101,13 @@ export async function getMyGames(profileId: string, page = 1): Promise<MyGame[]>
   ]);
   const owned = new Set(ownedClubs.map((club) => club.id));
   const today = londonToday();
+
+  // One more wave, not one more query per game: both reads need ids from the
+  // page above, so they cannot join the first wave, but they share this one.
+  const army = await getArmyContext("booking",
+    rows.filter(({ club_bookings: row }) => row.booked_by_score !== null)
+        .map(({ club_bookings: row }) => row.id),
+    rows.map(({ club_bookings: row }) => row.club_id));
 
   return rows.map(({ club_bookings: row }) => {
     const iBooked = row.booked_by === profileId;
@@ -125,6 +146,13 @@ export async function getMyGames(profileId: string, page = 1): Promise<MyGame[]>
       confirmation: toConfirmation(row.result_confirmation),
       locked: isLocked(row.result_confirmation),
       canManageClub: owned.has(row.club_id),
+      // `one` is whoever booked, which is the booking's own order, so this is
+      // the same turn-round the scores above get.
+      armies: {
+        mine: iBooked ? army.sides(row.id).one : army.sides(row.id).two,
+        theirs: iBooked ? army.sides(row.id).two : army.sides(row.id).one,
+      },
+      builder: army.builder(row.club_id),
     };
   });
 }
@@ -156,6 +184,12 @@ export async function recordResult(params: {
   terrain?: string;
   /** Only the club's choice counts; the function drops everyone else's. */
   confirmation?: string;
+  /**
+   * What each side played, as the dialog holds it: the member's own first.
+   * Turned into the booking's order below, the same way the scores are, so a
+   * row always reads the same regardless of who filled the form in.
+   */
+  armies?: { one?: unknown; two?: unknown };
 }): Promise<{ ok: boolean; error?: string }> {
   const { myScore, theirScore } = params;
   if (!Number.isFinite(myScore) || !Number.isFinite(theirScore)) {
@@ -180,6 +214,11 @@ export async function recordResult(params: {
       deployment: safeDeployment(params.deployment),
       terrain: (params.terrain ?? "").trim(),
       confirmation: (params.confirmation ?? "").trim(),
+      armies: params.armies
+        ? (params.iBooked
+            ? { one: params.armies.one, two: params.armies.two }
+            : { one: params.armies.two, two: params.armies.one })
+        : {},
     });
     return { ok: true };
   } catch (error) {
@@ -204,6 +243,8 @@ export async function recordClubResult(params: {
   deployment?: string;
   terrain?: string;
   confirmation?: string;
+  /** Already in the booking's order: `one` is whoever booked. */
+  armies?: { one?: unknown; two?: unknown };
 }): Promise<{ ok: boolean; error?: string }> {
   if (!Number.isFinite(params.homeScore) || !Number.isFinite(params.awayScore)) {
     return { ok: false, error: "Put a number in both boxes." };
@@ -223,6 +264,7 @@ export async function recordClubResult(params: {
       deployment: safeDeployment(params.deployment),
       terrain: (params.terrain ?? "").trim(),
       confirmation: (params.confirmation ?? "").trim(),
+      armies: params.armies ?? {},
     });
     return { ok: true };
   } catch (error) {

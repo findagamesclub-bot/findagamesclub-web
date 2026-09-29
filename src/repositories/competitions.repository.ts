@@ -6,6 +6,7 @@ export type StandingRow = {
   rank: number; member_name: string; profile_id: string | null;
   played: number; wins: number; draws: number; losses: number; points: number;
   record_label: string; notes: string; faction: string; detachment: string;
+  disposition: string;
 };
 
 export type UpdateRow = {
@@ -57,7 +58,7 @@ type Root = {
 const STANDINGS = `
   club_competition_standings(
     rank, member_name, profile_id, played, wins, draws, losses, points,
-    record_label, notes, faction, detachment
+    record_label, notes, faction, detachment, disposition
   )`;
 
 const HISTORY = `
@@ -269,6 +270,7 @@ export async function replaceStandings(
       // beside the row and a hand-typed one drifts the moment a game is added.
       record_label: `${row.wins}-${row.draws}-${row.losses}`,
       notes: row.notes, faction: row.faction, detachment: row.detachment,
+      disposition: row.disposition,
     })),
   ).select("id").rows();
 

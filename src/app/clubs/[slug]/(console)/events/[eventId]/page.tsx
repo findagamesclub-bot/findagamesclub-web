@@ -19,9 +19,14 @@ import EventTags from "@/components/events/EventTags";
 import SectionNav from "@/components/ui/SectionNav";
 import ManageStrip from "@/components/ui/ManageStrip";
 import EventPairings from "@/components/events/EventPairings";
+import EventArmyMeta from "@/components/events/EventArmyMeta";
 import FacilityChips from "@/components/clubs/FacilityChips";
 import EventHero from "@/components/events/EventHero";
 import { getEventDetail } from "@/services/eventDetail.service";
+import { getEventMeta } from "@/services/meta.service";
+import { mayHaveArmyMeta } from "@/utils/event-meta";
+import { londonToday } from "@/services/bookingCalendar.service";
+import { getBuilderFor } from "@/services/armyBuilder.service";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getMyMembership } from "@/services/memberships.service";
 import { getBuyableTickets, getTicketStanding } from "@/services/tickets.service";
@@ -93,7 +98,10 @@ export default async function EventPage({
   // becomes "who was there"; the board stays with the people who wrote in it
   // whatever the date (0065).
   const canSeeRecord = event.canSeePrivate || event.hasEnded;
-  const [roster, threads] = await Promise.all([
+  // Rides the roster's wave rather than a wave of its own: it needs nothing
+  // the roster does not already have, and it was costing a round trip of its
+  // own further down the page.
+  const [roster, threads, eventArmies] = await Promise.all([
     canSeeRecord ? getEventRoster(event.id) : Promise.resolve([]),
     // The summary shows three titles and a count, so it takes the first page
     // rather than every thread on the event.
@@ -101,15 +109,30 @@ export default async function EventPage({
       ? getEventThreads(event.id, 1)
       : Promise.resolve({ threads: [], total: 0, replies: 0, page: 1, perPage: 8,
                           failed: false }),
+    mayHaveArmyMeta({ startDate: event.startDate, games: event.featuredGames,
+                      today: londonToday() })
+      ? getEventMeta(event.id).catch(() => [])
+      : Promise.resolve([]),
   ]);
 
   // Only for the results editor, so a winner can be linked to their profile
   // and the placing shows on it. Members-only by RLS, and a manager passes.
-  const placingRoster = event.canManageClub
-    ? (await getRoster(event.clubId).catch(() => []))
-        .filter((m) => m.status === "approved")
-        .map((m) => ({ id: m.profileId, name: m.fullName }))
-    : [];
+  // One wave with the club's army switch, which the same editor reads.
+  const [members, builder] = event.canManageClub
+    ? await Promise.all([
+        getRoster(event.clubId).catch(() => []),
+        getBuilderFor(event.clubId).catch(() => null),
+      ])
+    : [[], null];
+  const placingRoster = members
+    .filter((m) => m.status === "approved")
+    .map((m) => ({ id: m.profileId, name: m.fullName }));
+
+  // Two short strings, not the catalogue itself: the dialog fetches that when
+  // it opens.
+  const records = builder?.enabled && builder.editionId && builder.catalogueVersion
+    ? { editionId: builder.editionId, catalogueVersion: builder.catalogueVersion }
+    : null;
 
   const cancelled = event.status === "cancelled";
   const { faction, monogram } = clubIdentity(event.clubSlug, event.clubName);
@@ -216,6 +239,17 @@ export default async function EventPage({
         </Section>
       ) : null}
 
+      {/* What was brought. Hidden outright when the event is not 40k, which is
+          the client's own condition, and until it has started, which is the
+          rule the placings already follow. */}
+      {eventArmies.length ? (
+        <Section navLabel="Armies" title="Event analytics" icon={EmojiEventsIcon}
+          note="What was taken to this event, from the finishing places and the draw.">
+          <EventArmyMeta rows={eventArmies} top={3}
+            href={`/clubs/${slug}/events/${eventId}/armies`} />
+        </Section>
+      ) : null}
+
       {/* The club sees the section even when it is empty, because an empty
           results section is the prompt to fill it in — but only once the event
           has actually been played. Standings on a tournament nobody has turned
@@ -232,7 +266,8 @@ export default async function EventPage({
             faction={faction}
             viewerName={viewer?.full_name ?? null}
             admin={event.canManageClub
-              ? { slug, eventKey: event.legacyId, eventId: event.id, roster: placingRoster }
+              ? { slug, eventKey: event.legacyId, eventId: event.id,
+                  roster: placingRoster, builder: records }
               : undefined}
           />
         </Section>

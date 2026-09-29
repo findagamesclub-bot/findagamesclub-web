@@ -12,9 +12,14 @@ export type CompetitionStanding = {
   /** "4-0-1" as the club writes it, which is not always W-D-L. */
   recordLabel: string;
   notes: string;
-  /** Text only. The link to a stored army list is Milestone 3. */
+  /**
+   * What they took. Free text at a club with the army builder off, and the
+   * catalogue's own spelling at one that runs it. The link to a stored army
+   * list is stage 10.
+   */
   faction: string;
   detachment: string;
+  disposition: string;
 };
 
 export type CompetitionMatch = {

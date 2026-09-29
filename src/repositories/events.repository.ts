@@ -144,6 +144,7 @@ export async function saveEventPlacing(params: {
   profileId: string | null;
   faction: string;
   detachment: string;
+  disposition: string;
 }) {
   const supabase = await createClient();
   const { error } = await (supabase as unknown as {
@@ -156,6 +157,7 @@ export async function saveEventPlacing(params: {
     p_profile: params.profileId,
     p_faction: params.faction,
     p_detachment: params.detachment,
+    p_disposition: params.disposition,
   });
 
   if (error) throw new Error(error.message);

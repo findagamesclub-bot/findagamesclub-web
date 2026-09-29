@@ -13,6 +13,7 @@ import ForumIcon from "@mui/icons-material/ForumOutlined";
 import FlagIcon from "@mui/icons-material/OutlinedFlag";
 import StorefrontIcon from "@mui/icons-material/Storefront";
 import LoyaltyIcon from "@mui/icons-material/Loyalty";
+import ShieldIcon from "@mui/icons-material/Shield";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import type { NavGroup, NavItem } from "@/components/ui/side-nav";
 import InsightsIcon from "@mui/icons-material/Insights";
@@ -69,6 +70,13 @@ export function consoleGroups(
         // is the person whose name is on it.
         { label: "Billing", href: at("/manage/billing"), icon: PaymentsIcon,
           needs: "billing.manage" },
+        // "Army settings", not "Army builder". Two entries a row apart both
+        // starting with the same word, one a settings page and one a list of
+        // content, is the trap "roster" and "pairings" already sprang: the
+        // client read them as the same thing twice. The path does not move,
+        // because a path is not a label.
+        { label: "Army settings", href: at("/manage/army-builder"),
+          icon: ShieldIcon, needs: "listing.edit" },
       ],
     },
     {
@@ -141,6 +149,11 @@ export function consoleGroups(
         // own loyalty page, which this links out to.
         { label: "Loyalty", href: at("/manage/loyalty"), icon: LoyaltyIcon,
           needs: "members.manage" },
+        // The shelf. The switch that turns it on is a club setting and sits
+        // with the other club settings; this is the content it produced, so
+        // it belongs beside the board and the shop.
+        { label: "Army lists", href: at("/army-builder"),
+          icon: ShieldIcon, needs: "listing.edit" },
       ],
     },
     {

@@ -18,3 +18,4 @@
 /auth/sign-in
 /list-your-club
 /auth/sign-up
+/clubs/didcot-wargames-didcot/events/2026-04-04-warhammer-40k-rtt/armies

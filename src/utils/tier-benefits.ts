@@ -47,7 +47,7 @@ const on = (value: unknown): boolean => value === true || value === "true";
  * when setting it ("Off table bookings"). Deriving one from the other reads
  * badly the moment the number is in the middle of the sentence.
  */
-const EDITOR_LABELS: Record<string, string> = {"bookingDiscountPercent": "Off table bookings", "eventDiscountPercent": "Off event tickets", "merchandiseDiscountPercent": "Off merchandise", "coachingDiscountPercent": "Off coaching", "waiveGameBookingFee": "No table booking fee", "maxUpcomingBookings": "Bookings they can hold at once", "extraAdvanceBookingDates": "Extra days they can book ahead", "priorityEventAdvanceDays": "Days they get event tickets early", "lookingForGamePostLimit": "Looking-for-a-game posts at once", "lookingForGameFutureDates": "Extra days they can post ahead", "bonusMembershipApprovalPoints": "Bonus points for joining", "bonusGameBookingPoints": "Bonus points per booking", "bonusEventBookingPoints": "Bonus points per event", "bonusAnniversaryPoints": "Bonus points each year", "premiumTicketAccess": "Member-only event tickets", "priorityLeagueAccess": "Priority league entry", "merchandiseAccess": "Club merchandise", "coachingBookingAccess": "Book coaching sessions", "listCoachingAccess": "Offer coaching to others", "rivalryToolsAccess": "Rivalry tracking", "priorityOpponentFinderPlacement": "Listed first when finding opponents"};
+const EDITOR_LABELS: Record<string, string> = {"bookingDiscountPercent": "Off table bookings", "eventDiscountPercent": "Off event tickets", "merchandiseDiscountPercent": "Off merchandise", "coachingDiscountPercent": "Off coaching", "waiveGameBookingFee": "No table booking fee", "maxUpcomingBookings": "Bookings they can hold at once", "extraAdvanceBookingDates": "Extra days they can book ahead", "priorityEventAdvanceDays": "Days they get event tickets early", "lookingForGamePostLimit": "Looking-for-a-game posts at once", "lookingForGameFutureDates": "Extra days they can post ahead", "bonusMembershipApprovalPoints": "Bonus points for joining", "bonusGameBookingPoints": "Bonus points per booking", "bonusEventBookingPoints": "Bonus points per event", "bonusAnniversaryPoints": "Bonus points each year", "premiumTicketAccess": "Member-only event tickets", "priorityLeagueAccess": "Priority league entry", "merchandiseAccess": "Club merchandise", "coachingBookingAccess": "Book coaching sessions", "armyBuilderAccess": "Build and save army lists", "listCoachingAccess": "Offer coaching to others", "rivalryToolsAccess": "Rivalry tracking", "priorityOpponentFinderPlacement": "Listed first when finding opponents"};
 
 const labelFor = (key: string) => EDITOR_LABELS[key] ?? key;
 
@@ -70,10 +70,11 @@ const flag = (key: string, group: PerkGroup, text: string): Rule => ({
  * Order is the order they are shown in, most concrete first: money off, then
  * how much more you can do, then access.
  *
- * Deliberately missing: armyBuilderAccess, matchupAnalysisAccess,
- * opponentScoutingAccess, seasonCoachAccess and detailedAnalytics. Those are
- * milestone 3 features, and listing a perk the site cannot yet deliver invites
- * "so where is it?" from the first member who pays for it.
+ * `armyBuilderAccess` arrived with stage 10, which is the first release that
+ * can deliver it. Still deliberately missing: matchupAnalysisAccess,
+ * opponentScoutingAccess, seasonCoachAccess and detailedAnalytics, because
+ * listing a perk the site cannot yet deliver invites "so where is it?" from
+ * the first member who pays for it.
  */
 const RULES: Rule[] = [
   percent("bookingDiscountPercent", "savings", (n) => `${n}% off table bookings`),
@@ -100,6 +101,7 @@ const RULES: Rule[] = [
   flag("priorityLeagueAccess", "tools", "Priority league entry"),
   flag("merchandiseAccess", "tools", "Club merchandise"),
   flag("coachingBookingAccess", "tools", "Book coaching sessions"),
+  flag("armyBuilderAccess", "tools", "Build and save army lists"),
   flag("listCoachingAccess", "tools", "Offer coaching to others"),
   flag("rivalryToolsAccess", "tools", "Rivalry tracking"),
   flag("priorityOpponentFinderPlacement", "tools", "Listed first when finding opponents"),

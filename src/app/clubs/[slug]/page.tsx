@@ -17,6 +17,11 @@ import LookingForGameSummary from "@/components/clubs/LookingForGameSummary";
 import ClubActivity from "@/components/clubs/ClubActivity";
 import ClubNoticeboard from "@/components/clubs/ClubNoticeboard";
 import ClubCompetitions from "@/components/clubs/ClubCompetitions";
+import ClubFactionMeta from "@/components/clubs/ClubFactionMeta";
+import ArmyBuilderTile from "@/components/clubs/ArmyBuilderTile";
+import { getBuilderFor } from "@/services/armyBuilder.service";
+import { armyBuilderBlockedReason } from "@/utils/army-access";
+import ShieldIcon from "@mui/icons-material/Shield";
 import { getClubEventsPage } from "@/services/events.service";
 import { getReviewCount } from "@/services/reviews.service";
 import { getCompetitionOverview } from "@/services/competitions.service";
@@ -48,6 +53,7 @@ import StarIcon from "@mui/icons-material/Star";
 import EventIcon from "@mui/icons-material/Event";
 import { tokens } from "@/lib/tokens";
 import { getClubDetail } from "@/services/clubDetail.service";
+import { getClubMeta } from "@/services/meta.service";
 import { clubIdentity } from "@/utils/club-identity";
 import VenueMap from "@/components/map/VenueMap";
 import Button from "@mui/material/Button";
@@ -142,8 +148,18 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
       ?? null
     : null;
   const canSeeRoster = isMember;
+  // The builder's gate, worked out from what the page already holds rather
+  // than through `getArmyGate`, which would re-read the club and the viewer
+  // this page fetched two waves ago. `builder` itself joins the wave below.
+  const armyReason = (enabled: boolean) => armyBuilderBlockedReason({
+    enabled,
+    signedIn: Boolean(viewer),
+    canManageClub: canManage,
+    isApprovedMember: membership.status === "approved",
+    tierAllows: Boolean(myTier?.benefitValues?.armyBuilderAccess),
+  });
   const [roster, pending, myPayments, standings, openPosts, activity, rivalries,
-         unmatched, competitions, reported] = await Promise.all([
+         unmatched, competitions, reported, clubMeta, builder] = await Promise.all([
     canSeeRoster ? getRoster(club.id) : Promise.resolve(null),
     canManage ? getPendingRequests(club.id) : Promise.resolve(null),
     // A member can read their own payments by policy, so they can be told
@@ -176,7 +192,21 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
     // Which reviews this reader has already reported, so the button says so
     // before it is pressed rather than after a reason has been typed in.
     getReported(viewer?.id ?? null),
+    // What people play here and how it goes. The client asked for this by
+    // name as "missing from M2". Public, like the rest of the page: the
+    // results it counts are already on it. Caught rather than thrown, because
+    // a club page should not go down over a panel.
+    getClubMeta(club.id).catch(() => ({ factions: [], dispositions: [] })),
+    // Two booleans and two short strings, never the catalogue: that is close
+    // to a megabyte and the club page is not where anybody opens it.
+    getBuilderFor(club.id).catch(() => ({ enabled: false })),
   ]);
+
+  // Drawn whenever the club runs the builder, with the reason in words when
+  // the reader cannot use it. A club that does not run it has no section.
+  const armyBuilder = builder.enabled
+    ? { reason: armyReason(true) }
+    : null;
 
   // Flattened out of the per-night map and cut to the soonest few: the club
   // page is answering "is anyone about", not listing every night.
@@ -410,6 +440,32 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
             <Section navLabel="Leagues" title="Leagues and campaigns" icon={MilitaryTechIcon}
               note={`How ${club.name} runs its competitive play, and who is winning.`}>
               <ClubCompetitions overview={competitions} slug={club.slug} faction={faction} />
+            </Section>
+          ) : null}
+
+          {/* What gets played here. Shown once anything has been recorded,
+              rather than gated on the club's game list: a club that records
+              armies is a club that wants this, and one that does not never
+              gets a row to show. */}
+          {/* The way in to the builder, for members rather than for the team.
+              Sits with the factions because it is the same subject: one is
+              what people brought, this is where you plan what to bring. Drawn
+              whenever the club runs it, with the reason in words when the
+              reader cannot use it, never hidden. */}
+          {armyBuilder ? (
+            <Section navLabel="Army builder" title="Army builder"
+              icon={ShieldIcon}
+              note={`Build a list against ${club.name}'s catalogue, price it as you go, and keep every version.`}>
+              <ArmyBuilderTile slug={club.slug} reason={armyBuilder.reason} />
+            </Section>
+          ) : null}
+
+          {clubMeta.factions.length ? (
+            <Section navLabel="Factions" title="Factions and dispositions"
+              icon={MilitaryTechIcon}
+              note={`What people bring to ${club.name}, and how it goes. Only results the club has confirmed.`}>
+              <ClubFactionMeta clubId={club.id} clubName={club.name}
+                factions={clubMeta.factions} dispositions={clubMeta.dispositions} />
             </Section>
           ) : null}
 

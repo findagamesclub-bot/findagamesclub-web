@@ -67,7 +67,8 @@ export default function PlacingCard({
           {p.army ? (
             <>
               <Typography variant="body2" color="text.secondary">
-                {[p.army.factionLabel, p.army.detachment].filter(Boolean).join(" · ")}
+                {[p.army.factionLabel, p.army.detachment, p.army.disposition]
+                  .filter(Boolean).join(" · ")}
               </Typography>
 
               {p.army.mvpUnits.length ? (

@@ -19,6 +19,7 @@ import { usePagedList } from "@/hooks/usePagedList";
 import { fold } from "@/utils/text";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { EventPlacing } from "@/types/event";
+import type { Builder } from "@/services/resultArmies.service";
 import { PER_PAGE } from "@/utils/paging";
 
 /** Below this the whole field fits as podium cards and nothing is gained by paging. */
@@ -33,6 +34,8 @@ export type PlacingAdmin = {
   eventKey: string;
   eventId: number;
   roster: { id: string; name: string }[];
+  /** What this club records armies against, or null when it does not. */
+  builder: Builder | null;
 };
 
 /**
@@ -189,6 +192,7 @@ export default function EventPlacings({
             slug={admin.slug}
             eventKey={admin.eventKey}
             eventId={admin.eventId}
+            builder={admin.builder}
             onClose={() => setTarget(null)}
           />
         </>

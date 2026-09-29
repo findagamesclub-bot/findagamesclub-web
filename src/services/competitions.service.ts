@@ -42,6 +42,7 @@ function toCompetition(row: CompetitionRow): Competition {
         notes: entry.notes,
         faction: entry.faction,
         detachment: entry.detachment,
+        disposition: entry.disposition ?? "",
       })),
 
     updates: [...(row.club_competition_updates ?? [])]

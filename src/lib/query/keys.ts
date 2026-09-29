@@ -29,3 +29,9 @@ export const taxonomyKeys = {
   games: () => [...taxonomyKeys.all, "games"] as const,
   facilities: () => [...taxonomyKeys.all, "facilities"] as const,
 };
+
+export const catalogueKeys = {
+  all: ["army-catalogue"] as const,
+  version: (edition: string, version: string) =>
+    [...catalogueKeys.all, edition, version] as const,
+};

@@ -29,3 +29,6 @@
 /admin/featured?tab=book
 /admin/moderation
 /admin/moderation?state=any
+/admin/catalogue
+/admin/catalogue/adepta-sororitas
+/admin/catalogue/adepta-sororitas?q=castigator

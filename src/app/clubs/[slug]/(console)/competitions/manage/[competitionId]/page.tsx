@@ -13,6 +13,7 @@ import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
 import { getManagedCompetitions } from "@/services/competitions.service";
 import { getRoster } from "@/services/memberships.service";
+import { getBuilderFor } from "@/services/armyBuilder.service";
 import { clubIdentity } from "@/utils/club-identity";
 
 export const metadata = { title: "Competition setup" };
@@ -43,11 +44,21 @@ export default async function CompetitionSetupPage({
 
   const { faction } = clubIdentity(club.slug, club.name);
 
-  // Only approved members can be linked to a row. Anybody else is a guest,
-  // which is a name in the table and nothing more.
-  const roster = (await getRoster(club.id))
+  // One wave. Only approved members can be linked to a row; anybody else is a
+  // guest, which is a name in the table and nothing more.
+  const [members, builder] = await Promise.all([
+    getRoster(club.id),
+    getBuilderFor(club.id).catch(() => null),
+  ]);
+  const roster = members
     .filter((member) => member.status === "approved")
     .map((member) => ({ id: member.profileId, name: member.fullName }));
+
+  // Two short strings, not the catalogue: the editor fetches that when a row
+  // is opened.
+  const records = builder?.enabled && builder.editionId && builder.catalogueVersion
+    ? { editionId: builder.editionId, catalogueVersion: builder.catalogueVersion }
+    : null;
 
   return (
     <Container maxWidth="md" component="main" sx={{ py: { xs: 4, md: 6 } }}>
@@ -63,7 +74,7 @@ export default async function CompetitionSetupPage({
 
       <Section title="The table" icon={LeaderboardIcon}>
         <StandingsEditor competitionId={competition.id} slug={slug} faction={faction}
-          standings={competition.standings} roster={roster} />
+          standings={competition.standings} roster={roster} builder={records} />
       </Section>
 
       <Section title="Rounds" icon={HistoryIcon}>

@@ -11,6 +11,9 @@ import type { MemberProfile } from "@/types/profile";
 import type { MemberContext } from "@/services/memberContext.service";
 import type { MemberRecords } from "@/services/memberRecords.service";
 import type { ClubTracker } from "@/services/grudgeTracker.service";
+import MilitaryTechIcon from "@mui/icons-material/MilitaryTechOutlined";
+import MemberArmyInsights, { type MemberArmy }
+  from "@/components/members/MemberArmyInsights";
 import GrudgeTracker from "./GrudgeTracker";
 import MemberBadges from "./MemberBadges";
 import MemberPanels from "./MemberPanels";
@@ -31,6 +34,7 @@ export default function MemberProfileView({
   context,
   records,
   trackers,
+  armies,
   editHref = "/account/profile",
   embedded = false,
 }: {
@@ -50,6 +54,7 @@ export default function MemberProfileView({
   records?: MemberRecords;
   /** Their playing record at each club the reader shares with them. */
   trackers?: ClubTracker[];
+  armies?: MemberArmy[];
 }) {
   const { faction } = clubIdentity(profile.id, profile.fullName);
 
@@ -65,7 +70,7 @@ export default function MemberProfileView({
     Boolean(records?.competitions.length) ||
     Boolean(records?.podiums.length) ||
     Boolean(context?.events.length) ||
-    Boolean(trackers?.length);
+    Boolean(trackers?.length) || Boolean(armies?.length);
 
   const Shell = embedded ? Box : Container;
 
@@ -99,6 +104,17 @@ export default function MemberProfileView({
         {records?.badges.length ? (
           <Panel title="Badges" icon={EmojiEventsIcon}>
             <MemberBadges badges={records.badges} />
+          </Panel>
+        ) : null}
+
+        {/* What they bring, above the grudge tracker: "what do they play" is
+            the question somebody asks before "how have I done against them",
+            and it is two lines rather than two tables. */}
+        {armies?.length ? (
+          <Panel title="What they play" icon={MilitaryTechIcon}>
+            <MemberArmyInsights armies={armies} top={6}
+              href={`/members/${profile.id}/armies`}
+              name={profile.fullName.trim().split(" ")[0] || profile.fullName} />
           </Panel>
         ) : null}
 

@@ -4,6 +4,8 @@ import type { MembershipTier } from "./clubDetail";
 export type ResultArmy = {
   factionLabel: string | null;
   detachment: string | null;
+  /** Belongs to the detachment, never to the faction. */
+  disposition: string | null;
   mvpUnits: string[];
   /** Present only when the player had a saved list attached. */
   list: {

@@ -47,6 +47,7 @@ function toArmy(raw: unknown): ResultArmy | null {
   return {
     factionLabel: (a.factionLabel as string) || null,
     detachment: (a.detachment as string) || null,
+    disposition: (a.disposition as string) || null,
     mvpUnits: Array.isArray(a.mvpUnits) ? (a.mvpUnits as string[]).filter(Boolean) : [],
     list: snapshot
       ? {

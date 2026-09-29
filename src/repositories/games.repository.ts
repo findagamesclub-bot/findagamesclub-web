@@ -101,6 +101,9 @@ export async function saveResult(params: {
   terrain: string;
   /** Only honoured for somebody who can manage the club. */
   confirmation: string;
+  /** `{ one, two }` in the booking's own order, or empty for a club with the
+   *  army builder off. */
+  armies?: Record<string, unknown>;
 }) {
   const supabase = await createClient();
   const { error } = await (supabase as unknown as {
@@ -111,6 +114,7 @@ export async function saveResult(params: {
     p_opponent_score: params.opponentScore,
     p_booked_by_army: params.bookedByArmy,
     p_opponent_army: params.opponentArmy,
+    p_armies: params.armies ?? {},
     p_mission: params.mission,
     p_deployment: params.deployment,
     p_terrain: params.terrain,

@@ -10,15 +10,19 @@
 # passed every test, and failed on the first real request. A test against a
 # schema you invented tests your invention.
 #
+#   scripts/pg-harness.sh start     # the server itself, if it is not up
 #   scripts/pg-harness.sh build     # from scratch, all migrations
 #   scripts/pg-harness.sh apply     # re-apply the newest migrations only
 #   scripts/pg-harness.sh psql      # a prompt on it
 #
-# Needs a Postgres already running at the socket below. It never touches
-# Supabase and holds no real data.
+# It never touches Supabase and holds no real data. The data directory lives in
+# /tmp, so a restart takes it with it: `start` is here because rediscovering
+# the initdb incantation has cost an afternoon twice, and `build` calls it
+# rather than failing with a socket error that says nothing about what to do.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 export PGHOST=${PGHOST:-/tmp/fagcpg/sock} PGPORT=${PGPORT:-5599} PGUSER=${PGUSER:-postgres}
+PGDATA_DIR=${PGDATA_DIR:-/tmp/fagcpg/data}
 DB=${DB:-fagcfull}
 
 prereq() {
@@ -34,8 +38,18 @@ prereq() {
   psql -d "$DB" -v ON_ERROR_STOP=1 -q -f scripts/pg-harness-prereq.sql
 }
 
+start() {
+  [ -d "$PGDATA_DIR/base" ] || initdb -D "$PGDATA_DIR" -U postgres -A trust -q
+  pg_isready -q 2>/dev/null && return 0
+  mkdir -p "$PGHOST"
+  pg_ctl -D "$PGDATA_DIR" -l "$PGDATA_DIR/../log" \
+    -o "-k $PGHOST -p $PGPORT -c listen_addresses=''" -w start
+}
+
 case "${1:-build}" in
+  start) start ;;
   build)
+    start
     psql -d postgres -q -c "drop database if exists $DB"
     psql -d postgres -q -c "create database $DB"
     psql -d postgres -q -c "alter database $DB set search_path = public, extensions"

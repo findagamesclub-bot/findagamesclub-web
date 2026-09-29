@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/services/auth.service";
 import { recordClubResult } from "@/services/games.service";
+import { readArmies } from "@/utils/result-form";
 
 export type ClubResultState = { error?: string; notice?: string };
 
@@ -23,6 +24,9 @@ export async function clubResultAction(
     awayScore: Number(data.get("awayScore")),
     homeArmy: String(data.get("homeArmy") ?? "").trim(),
     awayArmy: String(data.get("awayArmy") ?? "").trim(),
+    // Already in the booking's order here: the club's dialog names whoever
+    // booked first, so there is nothing to turn round.
+    armies: readArmies(data.get("armies")),
     mission: String(data.get("mission") ?? ""),
     deployment: String(data.get("deployment") ?? ""),
     terrain: String(data.get("terrain") ?? ""),

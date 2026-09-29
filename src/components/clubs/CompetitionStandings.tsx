@@ -92,9 +92,13 @@ export default function CompetitionStandings({
                   {entry.faction ? (
                     <>
                       <Typography variant="body2">{entry.faction}</Typography>
+                      {/* The disposition rides with the detachment it belongs
+                          to, on one line: two lines of grey under a name is a
+                          column doing more than the eye is reading. */}
                       {entry.detachment ? (
                         <Typography sx={{ fontSize: "0.76rem", color: tokens.inkMuted }}>
-                          {entry.detachment}
+                          {[entry.detachment, entry.disposition]
+                            .filter(Boolean).join(" · ")}
                         </Typography>
                       ) : null}
                     </>

@@ -14,13 +14,18 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import PlacingArmyFields from "./PlacingArmyFields";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { useActionSuccess } from "@/hooks/useActionSuccess";
+import { useCatalogue } from "@/hooks/useCatalogue";
 import SubmitButton from "@/components/ui/SubmitButton";
 import { useActionToast } from "@/components/ui/Toaster";
 import { placingAction, type PlacingState }
   from "@/app/clubs/[slug]/(console)/events/[eventId]/placing-actions";
 import { tokens } from "@/lib/tokens";
 import type { EventPlacing } from "@/types/event";
+import type { Builder } from "@/services/resultArmies.service";
+import { NO_ARMY, type ArmyNaming } from "@/components/results/ArmyPicker";
 
 export type PlacingTarget = { placing: EventPlacing | null };
 
@@ -32,11 +37,12 @@ export type PlacingTarget = { placing: EventPlacing | null };
  * and a row of six narrow fields is unusable on one. The next place is filled
  * in for them, because they are working down a printed sheet in order.
  *
- * Faction and detachment are free text. The linked army list legacy shows
- * against a placing comes out of the Army Builder, which is M3.
+ * The army is free text at a club with the builder off, and the same cascade
+ * as every other result screen at one that runs it. The linked army list
+ * legacy shows against a placing comes out of the Army Builder, in stage 10.
  */
 export default function PlacingEditor({
-  open, target, nextRank, roster, slug, eventKey, eventId, onClose,
+  open, target, nextRank, roster, slug, eventKey, eventId, onClose, builder = null,
 }: {
   open: boolean;
   /** null placing means a new one. */
@@ -48,14 +54,41 @@ export default function PlacingEditor({
   eventKey: string;
   eventId: number;
   onClose: () => void;
+  /** Null at a club that does not record armies. */
+  builder?: Builder | null;
 }) {
   const fullScreen = useMediaQuery("(max-width:600px)");
   const [state, submit, busy] = useActionState<PlacingState, FormData>(placingAction, {});
   useActionToast(state);
 
   const placing = target?.placing ?? null;
-  const [profileId, setProfileId] = useState<string | null>(placing?.profileId ?? null);
+  const [profileId, setProfileId] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+
+  // Fetched when the dialog opens rather than with the page: an event's results
+  // are read far more often than they are typed in.
+  const { catalogue, loading, failed } = useCatalogue(builder, open);
+
+  const [army, setArmy] = useState<ArmyNaming>(NO_ARMY);
+  const [seenId, setSeenId] = useState<number | string | null>(null);
+
+  // A different placing opened, so the army follows it. Derived during render:
+  // an effect would paint one frame of the previous winner's army. The form
+  // itself is keyed on the same id, which is what resets the plain fields.
+  const key = placing?.id ?? "new";
+  if (open && key !== seenId) {
+    setSeenId(key);
+    // Read once, here, rather than as a `useState` initialiser: an initialiser
+    // runs on the first mount and never again, so this dialog carried the
+    // previous winner's profile link onto the next row it opened.
+    setProfileId(placing?.profileId ?? null);
+    setArmy({
+      factionId: placing?.army?.factionLabel ?? "",
+      factionLabel: placing?.army?.factionLabel ?? "",
+      detachment: placing?.army?.detachment ?? "",
+      disposition: placing?.army?.disposition ?? "",
+    });
+  }
 
   const send = (data: FormData) => {
     data.set("slug", slug);
@@ -64,14 +97,19 @@ export default function PlacingEditor({
     startTransition(() => submit(data));
   };
 
+  // Closed by the answer landing, not by the click, for both of them. Saving
+  // closed on neither, so a club working down a printed results sheet
+  // dismissed this by hand after every place; removing closed on the click,
+  // which took the dialog off the screen before the work had happened and left
+  // the row sitting there until the toast caught up.
+  useActionSuccess(state, () => { setConfirming(false); onClose(); });
+
   const remove = () => {
     if (!placing) return;
     const data = new FormData();
     data.set("intent", "remove");
     data.set("placingId", String(placing.id));
-    setConfirming(false);
     send(data);
-    onClose();
   };
 
   return (
@@ -148,18 +186,11 @@ export default function PlacingEditor({
                 )}
               />
 
-              <Box sx={{ display: "grid", gap: 2.5,
-                         gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "minmax(0, 1fr) minmax(0, 1fr)" } }}>
-                <TextField name="faction" label="Faction"
-                  defaultValue={placing?.army?.factionLabel ?? ""}
-                  slotProps={{ htmlInput: { maxLength: 80 } }} />
-                <TextField name="detachment" label="Detachment"
-                  defaultValue={placing?.army?.detachment ?? ""}
-                  slotProps={{ htmlInput: { maxLength: 80 } }} />
-              </Box>
-              <Typography variant="caption" sx={{ color: tokens.inkMuted, mt: -1.5 }}>
-                Both optional. The army list itself arrives with the Army Builder.
-              </Typography>
+              <PlacingArmyFields
+                builder={builder} catalogue={catalogue}
+                loading={loading} failed={failed}
+                placing={placing} army={army} onChange={setArmy}
+              />
             </Stack>
           </DialogContent>
 

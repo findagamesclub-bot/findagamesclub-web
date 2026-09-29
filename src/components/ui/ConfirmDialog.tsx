@@ -7,6 +7,7 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
+import Stack from "@mui/material/Stack";
 
 /**
  * Ask before doing something that is hard to take back.
@@ -17,7 +18,7 @@ import DialogTitle from "@mui/material/DialogTitle";
  */
 export default function ConfirmDialog({
   open, title, body, confirmLabel, cancelLabel = "Keep it",
-  destructive = false, busy, onConfirm, onClose,
+  destructive = false, busy, blocked = false, children, onConfirm, onClose,
 }: {
   open: boolean;
   title: string;
@@ -35,6 +36,15 @@ export default function ConfirmDialog({
    * render and every confirmation looked like nothing had happened.
    */
   busy?: boolean;
+  /**
+   * The caller knows the answer is not ready yet, for a confirmation that asks
+   * for a word before it can act. Different from `busy`: blocked is genuinely
+   * off, and a control that looks live and does nothing when pressed is worse
+   * than one that looks off.
+   */
+  blocked?: boolean;
+  /** A field the confirmation needs, under the body. */
+  children?: React.ReactNode;
   onConfirm: () => void;
   onClose: () => void;
 }) {
@@ -52,6 +62,7 @@ export default function ConfirmDialog({
       <DialogTitle>{title}</DialogTitle>
       <DialogContent>
         <DialogContentText sx={{ fontSize: "0.95rem" }}>{body}</DialogContentText>
+        {children ? <Stack sx={{ pt: 2 }}>{children}</Stack> : null}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2.5 }}>
         {/* Keeping things as they are is the safe default, so it takes the
@@ -69,6 +80,7 @@ export default function ConfirmDialog({
           color={destructive ? "error" : "primary"}
           loading={busy ?? false}
           loadingPosition="start"
+          disabled={blocked}
         >
           {confirmLabel}
         </Button>

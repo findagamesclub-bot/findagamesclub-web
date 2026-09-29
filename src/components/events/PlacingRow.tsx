@@ -25,7 +25,10 @@ export default function PlacingRow({
   mine: boolean;
   onEdit?: () => void;
 }) {
-  const army = [p.army?.factionLabel, p.army?.detachment].filter(Boolean).join(" · ");
+  // The client asked for all three: "Army faction, list and disposition shown
+  // against an event placing".
+  const army = [p.army?.factionLabel, p.army?.detachment, p.army?.disposition]
+    .filter(Boolean).join(" · ");
 
   return (
     <Box
