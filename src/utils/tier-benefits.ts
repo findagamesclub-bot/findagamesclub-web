@@ -47,7 +47,7 @@ const on = (value: unknown): boolean => value === true || value === "true";
  * when setting it ("Off table bookings"). Deriving one from the other reads
  * badly the moment the number is in the middle of the sentence.
  */
-const EDITOR_LABELS: Record<string, string> = {"bookingDiscountPercent": "Off table bookings", "eventDiscountPercent": "Off event tickets", "merchandiseDiscountPercent": "Off merchandise", "coachingDiscountPercent": "Off coaching", "waiveGameBookingFee": "No table booking fee", "maxUpcomingBookings": "Bookings they can hold at once", "extraAdvanceBookingDates": "Extra days they can book ahead", "priorityEventAdvanceDays": "Days they get event tickets early", "lookingForGamePostLimit": "Looking-for-a-game posts at once", "lookingForGameFutureDates": "Extra days they can post ahead", "bonusMembershipApprovalPoints": "Bonus points for joining", "bonusGameBookingPoints": "Bonus points per booking", "bonusEventBookingPoints": "Bonus points per event", "bonusAnniversaryPoints": "Bonus points each year", "premiumTicketAccess": "Member-only event tickets", "priorityLeagueAccess": "Priority league entry", "merchandiseAccess": "Club merchandise", "coachingBookingAccess": "Book coaching sessions", "armyBuilderAccess": "Build and save army lists", "listCoachingAccess": "Offer coaching to others", "rivalryToolsAccess": "Rivalry tracking", "priorityOpponentFinderPlacement": "Listed first when finding opponents"};
+const EDITOR_LABELS: Record<string, string> = {"bookingDiscountPercent": "Off table bookings", "eventDiscountPercent": "Off event tickets", "merchandiseDiscountPercent": "Off merchandise", "coachingDiscountPercent": "Off coaching", "waiveGameBookingFee": "No table booking fee", "maxUpcomingBookings": "Bookings they can hold at once", "extraAdvanceBookingDates": "Extra days they can book ahead", "priorityEventAdvanceDays": "Days they get event tickets early", "lookingForGamePostLimit": "Looking-for-a-game posts at once", "lookingForGameFutureDates": "Extra days they can post ahead", "bonusMembershipApprovalPoints": "Bonus points for joining", "bonusGameBookingPoints": "Bonus points per booking", "bonusEventBookingPoints": "Bonus points per event", "bonusAnniversaryPoints": "Bonus points each year", "premiumTicketAccess": "Member-only event tickets", "priorityLeagueAccess": "Priority league entry", "merchandiseAccess": "Club merchandise", "coachingBookingAccess": "Book coaching sessions", "armyBuilderAccess": "Build and save army lists", "listCoachingAccess": "AI coaching on their army lists", "matchupAnalysisAccess": "AI match-up analysis", "opponentScoutingAccess": "AI opponent scouting", "seasonCoachAccess": "AI season coaching", "rivalryToolsAccess": "Rivalry tracking", "priorityOpponentFinderPlacement": "Listed first when finding opponents"};
 
 const labelFor = (key: string) => EDITOR_LABELS[key] ?? key;
 
@@ -70,11 +70,15 @@ const flag = (key: string, group: PerkGroup, text: string): Rule => ({
  * Order is the order they are shown in, most concrete first: money off, then
  * how much more you can do, then access.
  *
- * `armyBuilderAccess` arrived with stage 10, which is the first release that
- * can deliver it. Still deliberately missing: matchupAnalysisAccess,
- * opponentScoutingAccess, seasonCoachAccess and detailedAnalytics, because
- * listing a perk the site cannot yet deliver invites "so where is it?" from
- * the first member who pays for it.
+ * `armyBuilderAccess` arrived with stage 10 and the four AI keys with stage
+ * 11, which are the releases that can deliver them. Still deliberately
+ * missing: detailedAnalytics, because listing a perk the site cannot yet
+ * deliver invites "so where is it?" from the first member who pays for it.
+ *
+ * The four are separate keys on purpose: a club can sell the list coach
+ * without selling the season coach, which is legacy's own arrangement
+ * (`_require_membership_tier_benefit` is called with a different key per
+ * feature, club_store.py:7044, 7247, 7724, 8546).
  */
 const RULES: Rule[] = [
   percent("bookingDiscountPercent", "savings", (n) => `${n}% off table bookings`),
@@ -102,7 +106,10 @@ const RULES: Rule[] = [
   flag("merchandiseAccess", "tools", "Club merchandise"),
   flag("coachingBookingAccess", "tools", "Book coaching sessions"),
   flag("armyBuilderAccess", "tools", "Build and save army lists"),
-  flag("listCoachingAccess", "tools", "Offer coaching to others"),
+  flag("listCoachingAccess", "tools", "AI coaching on their army lists"),
+  flag("matchupAnalysisAccess", "tools", "AI match-up analysis"),
+  flag("opponentScoutingAccess", "tools", "AI opponent scouting"),
+  flag("seasonCoachAccess", "tools", "AI season coaching"),
   flag("rivalryToolsAccess", "tools", "Rivalry tracking"),
   flag("priorityOpponentFinderPlacement", "tools", "Listed first when finding opponents"),
   {

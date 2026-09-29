@@ -7,6 +7,11 @@ import Collapse from "@mui/material/Collapse";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Stack from "@mui/material/Stack";
 import Switch from "@mui/material/Switch";
+
+const NEEDS_BUILDER = [
+  "listCoachingAccess", "matchupAnalysisAccess",
+  "opponentScoutingAccess", "seasonCoachAccess",
+];
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -47,6 +52,18 @@ export default function TierPerks({
 
   const groups = ["savings", "access", "tools"] as const;
 
+  /**
+   * The four AI perks are unreachable without the builder itself.
+   *
+   * The ladder checks `armyBuilderAccess` before it checks the feature, so a
+   * tier with AI coaching on and list building off refuses at the rung above
+   * and never reaches the coaching check. The client set exactly that
+   * combination while testing and it would have looked like a broken feature
+   * rather than a setting that cannot work. Disabled with the reason, so the
+   * impossible state is unreachable rather than merely explained.
+   */
+  const builds = held.armyBuilderAccess === true;
+
   return (
     <Box>
       <input type="hidden" name={name} value={value} />
@@ -75,10 +92,19 @@ export default function TierPerks({
 
                 {perks.map((perk) => (
                   perk.kind === "flag" ? (
-                    <FormControlLabel key={perk.key}
-                      control={<Switch size="small" checked={held[perk.key] === true}
-                        onChange={(event) => set(perk.key, event.target.checked)} />}
-                      label={<Typography variant="body2">{perk.label}</Typography>} />
+                    <Stack key={perk.key} spacing={0.25}>
+                      <FormControlLabel
+                        disabled={NEEDS_BUILDER.includes(perk.key) && !builds}
+                        control={<Switch size="small" checked={held[perk.key] === true}
+                          onChange={(event) => set(perk.key, event.target.checked)} />}
+                        label={<Typography variant="body2">{perk.label}</Typography>} />
+                      {NEEDS_BUILDER.includes(perk.key) && !builds ? (
+                        <Typography sx={{ pl: 5.5, fontSize: "0.72rem",
+                                          color: tokens.inkMuted }}>
+                          Needs &ldquo;Build and save army lists&rdquo; above.
+                        </Typography>
+                      ) : null}
+                    </Stack>
                   ) : (
                     <TextField key={perk.key} size="small" label={perk.label}
                       value={String(held[perk.key] ?? "")}

@@ -4,10 +4,16 @@ import Stack from "@mui/material/Stack";
 import PageHead from "@/components/ui/PageHead";
 import Crumbs from "@/components/ui/Crumbs";
 import ArmyListActions from "@/components/army/ArmyListActions";
-import ArmyWizard from "@/components/army/ArmyWizard";
 import ArmyLines from "@/components/army/ArmyLines";
 import ArmyGateNote from "../ArmyGateNote";
-import { getArmyGate } from "@/services/armyAccess.service";
+import { getArmyGate, aiGateFor } from "@/services/armyAccess.service";
+import { getUsage, getLatest } from "@/services/aiJobs.service";
+import { listHealth } from "@/utils/list-health";
+import { dispositionsFor } from "@/utils/army-catalogue";
+import Section from "@/components/ui/Section";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import ListHealthCard from "@/components/ai/ListHealthCard";
+import AiPanel from "@/components/ai/AiPanel";
 import { getList } from "@/services/armyLists.service";
 import { mono, tokens } from "@/lib/tokens";
 import Typography from "@mui/material/Typography";
@@ -47,6 +53,28 @@ export default async function ArmyListPage(
   const { list } = held;
   const current = list.current;
 
+  // The deterministic half runs on every open and costs nothing. The AI half
+  // is three short reads and no model call: the gate, the allowance, and the
+  // last answer if there is one.
+  const health = current && listHealth({
+    units: current.units,
+    totalPoints: current.totalPoints,
+    pointsLimit: Number(current.pointsLimit) || 0,
+    detachments: current.detachments,
+    dispositionsFor: (detachment) =>
+      dispositionsFor(gate.build?.catalogue ?? null, current.factionId, detachment),
+  });
+
+  const coachReason = aiGateFor(gate, "coach");
+  const [coachUsage, coachJob] = list.isOwner && !coachReason && current
+    ? await Promise.all([
+        getUsage(gate.club.id, "coach"),
+        // The version is the coach's signature, so the report on file is
+        // this list's and never the last list somebody opened.
+        getLatest(gate.club.id, gate.viewer?.id ?? "", "coach", String(current!.id)),
+      ])
+    : [{ message: "", limited: false, remaining: null }, null];
+
   return (
     <Container maxWidth="lg" component="main" sx={{ py: { xs: 3, md: 5 } }}>
       <Stack spacing={3}>
@@ -70,27 +98,29 @@ export default async function ArmyListPage(
               versions={list.versionCount} canEdit={list.isOwner} />
           } />
 
-        {list.isOwner ? (
-          <ArmyWizard slug={slug} catalogue={gate.build?.catalogue ?? null}
-            start={{
-              listId: list.id, name: list.name, listType: list.listType,
-              pointsLimit: list.pointsLimit, factionId: current?.factionId ?? "",
-              detachments: current?.detachments ?? [],
-              units: (current?.units ?? []).map((one) => ({
-                unitName: one.unitName, optionLabel: one.optionLabel,
-                quantity: one.quantity,
-              })),
-            }} />
-        ) : (
-          <Stack spacing={1.5}>
-            <Typography sx={{ fontFamily: mono, fontSize: "0.72rem",
-                              color: tokens.inkMuted }}>
-              {`Built by a clubmate · v${current?.versionNumber ?? 1} · `
-                + `against catalogue ${current?.catalogueVersion ?? "unknown"}`}
-            </Typography>
-            <ArmyLines lines={current?.units ?? []} readOnly />
-          </Stack>
-        )}
+        <Stack spacing={1.5}>
+          <Typography sx={{ fontFamily: mono, fontSize: "0.72rem",
+                            color: tokens.inkMuted }}>
+            {[list.isOwner ? "Yours" : "Built by a clubmate",
+              `v${current?.versionNumber ?? 1}`,
+              `against catalogue ${current?.catalogueVersion ?? "unknown"}`,
+            ].join(" · ")}
+          </Typography>
+          <ArmyLines lines={current?.units ?? []} readOnly />
+        </Stack>
+
+        {list.isOwner && current && health ? (
+          <Section navLabel="Coaching" title="List health and coaching"
+            icon={AutoAwesomeIcon}
+            note="What the shape of this list says, worked out here, and a written review on top of it.">
+            <Stack spacing={3}>
+              <ListHealthCard health={health} />
+              <AiPanel feature="coach" slug={slug} listId={list.id}
+                reason={coachReason} usage={coachUsage} initial={coachJob} />
+            </Stack>
+          </Section>
+        ) : null}
+
       </Stack>
     </Container>
   );

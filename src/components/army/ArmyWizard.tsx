@@ -95,6 +95,8 @@ export default function ArmyWizard({
     // confirms, which is what the client found.
     window.scrollTo({ top: 0, behavior: "smooth" });
     if (answer.listId && !draft.listId) {
+      // Straight to the list, which is where its health and coaching are. The
+      // editor is a job somebody has just finished.
       router.replace(`/clubs/${slug}/army-builder/${answer.listId}`);
     } else {
       // An edit rewrites the heading's own figures, which are server-rendered.
@@ -177,8 +179,10 @@ export default function ArmyWizard({
               reads as a page that has not finished. */}
           {step === 4 && !refusal ? (
             <LinkButton size="large" variant="outlined"
-              href={`/clubs/${slug}/army-builder`}>
-              All your lists
+              href={draft.listId
+                ? `/clubs/${slug}/army-builder/${draft.listId}`
+                : `/clubs/${slug}/army-builder`}>
+              {draft.listId ? "Done editing" : "All your lists"}
             </LinkButton>
           ) : null}
         </Stack>

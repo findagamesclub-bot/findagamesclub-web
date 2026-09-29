@@ -7,6 +7,10 @@ import { getClubAccess } from "@/services/clubAccess.service";
 import { getClubDetail } from "@/services/clubDetail.service";
 import { getBuilderFor } from "@/services/armyBuilder.service";
 import { getEditions } from "@/services/armyCatalogue.service";
+import { getClubSpend } from "@/services/aiJobs.service";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
+import { mono, tokens } from "@/lib/tokens";
 
 export const metadata = { title: "Army builder" };
 
@@ -38,9 +42,12 @@ export default async function ArmyBuilderPage({
   const access = await getClubAccess(club.id, viewer);
   if (!access.can("listing.edit")) notFound();
 
-  const [builder, editions] = await Promise.all([
+  const [builder, editions, spentPence] = await Promise.all([
     getBuilderFor(club.id),
     getEditions(),
+    // What the club has spent this month. Read whether or not the builder is
+    // on, because a club that has just turned it off still has a bill.
+    getClubSpend(club.id),
   ]);
 
   return (
@@ -55,6 +62,23 @@ export default async function ArmyBuilderPage({
         editionId={builder.editionId}
         editions={editions.filter((one) => one.status === "active")}
       />
+
+      {/* The bill, under the switch that causes it. Its own line rather than a
+          panel: it is one number until a club is actually spending. */}
+      <Stack spacing={0.5} sx={{ mt: 4, pt: 2.5, borderTop: `1px solid ${tokens.rule}` }}>
+        <Typography sx={{ fontFamily: mono, fontSize: "0.68rem", fontWeight: 700,
+                          letterSpacing: "0.1em", color: tokens.inkMuted }}>
+          AI THIS MONTH
+        </Typography>
+        <Typography sx={{ fontFamily: mono, fontSize: "1.5rem", fontWeight: 700,
+                          color: tokens.brass }}>
+          {`£${(spentPence / 100).toFixed(2)}`}
+        </Typography>
+        <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
+          Coaching, match-ups, scouting and season plans your members have run.
+          A run that fails is not charged for.
+        </Typography>
+      </Stack>
     </Container>
   );
 }

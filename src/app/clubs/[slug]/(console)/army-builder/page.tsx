@@ -5,6 +5,7 @@ import PageHead from "@/components/ui/PageHead";
 import LinkButton from "@/components/ui/LinkButton";
 import Crumbs from "@/components/ui/Crumbs";
 import AddIcon from "@mui/icons-material/Add";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import ArmyListBoard from "@/components/army/ArmyListBoard";
 import ArmyGateNote from "./ArmyGateNote";
 import { getArmyGate } from "@/services/armyAccess.service";
@@ -47,10 +48,16 @@ export default async function ArmyBuilderPage(
           title="Army builder"
           lede={`Lists built against ${gate.club.name}'s catalogue. Yours first, then your clubmates'.`}
           action={gate.reason ? undefined : (
-            <LinkButton variant="contained" startIcon={<AddIcon />}
-              href={`/clubs/${slug}/army-builder/new`}>
-              New list
-            </LinkButton>
+            <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }} useFlexGap>
+              <LinkButton variant="outlined" startIcon={<AutoAwesomeIcon />}
+                href={`/clubs/${slug}/army-builder/season-coach`}>
+                Season coach
+              </LinkButton>
+              <LinkButton variant="contained" startIcon={<AddIcon />}
+                href={`/clubs/${slug}/army-builder/new`}>
+                New list
+              </LinkButton>
+            </Stack>
           )} />
 
         {gate.reason ? (

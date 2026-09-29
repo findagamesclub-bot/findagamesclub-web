@@ -3,6 +3,7 @@ import PeopleIcon from "@mui/icons-material/ManageAccounts";
 import ReportIcon from "@mui/icons-material/Flag";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import StarIcon from "@mui/icons-material/StarBorder";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import ShieldIcon from "@mui/icons-material/Shield";
 import GavelIcon from "@mui/icons-material/Gavel";
 import NotificationsIcon from "@mui/icons-material/NotificationsActive";
@@ -81,6 +82,10 @@ export function adminGroups(counts: AdminCounts = {}): NavGroup[] {
         // No count. A catalogue with work outstanding is not somebody waiting
         // on an answer, which is what every alert badge here means.
         { label: "Army catalogue", href: "/admin/catalogue", icon: ShieldIcon },
+        // What the AI features are costing, per club per month. Beside the
+        // catalogue because they are the same subject from two ends: one is
+        // what the features read, this is what they spend.
+        { label: "AI usage", href: "/admin/ai-usage", icon: AutoAwesomeIcon },
       ],
     },
     {

@@ -45,6 +45,22 @@ export default function ArmyListActions({
 
   return (
     <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }} useFlexGap>
+      {canEdit ? (
+        <>
+          <LinkButton variant="contained"
+            href={`/clubs/${slug}/army-builder/${listId}/edit`}>
+            Edit list
+          </LinkButton>
+          <LinkButton variant="outlined"
+            href={`/clubs/${slug}/army-builder/${listId}/matchup`}>
+            Match-up
+          </LinkButton>
+          <LinkButton variant="outlined"
+            href={`/clubs/${slug}/army-builder/${listId}/scout`}>
+            Scout
+          </LinkButton>
+        </>
+      ) : null}
       <LinkButton variant="outlined"
         href={`/clubs/${slug}/army-builder/${listId}/versions`}>
         {`History (${versions})`}
