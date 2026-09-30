@@ -177,7 +177,11 @@ revoke all on function public.prune_club_audit_log() from public, anon, authenti
 -- Guarded, so this still applies on a project without pg_cron.
 do $$
 begin
-  if not exists (select 1 from pg_extension where extname = 'pg_cron') then
+  -- Asks whether the function exists rather than whether an extension row
+  -- does. Same answer on Supabase, and it lets the harness exercise this
+  -- branch: with the extension check, no scheduling block in the whole
+  -- codebase had ever run locally. (0152 has the longer note.)
+  if to_regprocedure('cron.schedule(text,text,text)') is null then
     raise notice 'pg_cron is not enabled; prune-club-audit created but not scheduled';
     return;
   end if;

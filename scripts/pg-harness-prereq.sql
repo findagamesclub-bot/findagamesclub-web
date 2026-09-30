@@ -36,11 +36,43 @@ create table if not exists storage.objects (
 create or replace function storage.foldername(name text) returns text[]
   language sql immutable as $$ select string_to_array(name, '/') $$;
 do $$ begin create publication supabase_realtime; exception when duplicate_object then null; end $$;
+-- pg_cron, enough of it to test the scheduling itself.
+--
+-- This used to be two functions that returned a constant and remembered
+-- nothing, with no `cron.job` behind them. Every migration guards its
+-- scheduling with `if exists (select 1 from pg_extension where extname =
+-- 'pg_cron')`, which is false here, so **no scheduling block in the codebase
+-- had ever run locally**: 0028, 0068, 0149 and 0152 all took the "not enabled"
+-- branch and the harness reported success either way. 0149's was proved only
+-- by the user running it against the real database.
+--
+-- A table the stubs actually write to makes the schedule assertable, and the
+-- migrations now guard on `to_regproc('cron.schedule')` rather than on the
+-- extension row, which is the thing they actually call and cannot be faked
+-- into pg_extension here.
 create schema if not exists cron;
-create or replace function cron.schedule(text, text, text) returns bigint
-  language sql as $$ select 1::bigint $$;
-create or replace function cron.unschedule(text) returns boolean
-  language sql as $$ select true $$;
+create table if not exists cron.job (
+  jobid    bigserial primary key,
+  jobname  text unique,
+  schedule text not null,
+  command  text not null
+);
+create or replace function cron.schedule(job_name text, sched text, cmd text)
+returns bigint language plpgsql as $$
+declare v_id bigint;
+begin
+  insert into cron.job (jobname, schedule, command) values (job_name, sched, cmd)
+  on conflict (jobname) do update set schedule = excluded.schedule,
+                                      command = excluded.command
+  returning jobid into v_id;
+  return v_id;
+end $$;
+create or replace function cron.unschedule(job_name text)
+returns boolean language plpgsql as $$
+begin
+  delete from cron.job where jobname = job_name;
+  return found;
+end $$;
 alter table auth.users add column if not exists last_sign_in_at timestamptz;
 alter table auth.users add column if not exists email_confirmed_at timestamptz;
 alter table auth.users add column if not exists confirmed_at timestamptz;

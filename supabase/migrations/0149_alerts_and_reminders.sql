@@ -238,7 +238,14 @@ grant execute on function public.memberships_lapsed(interval) to service_role;
 -- that a Vercel cron is for a job that needs to send something.
 do $$
 begin
-  if exists (select 1 from pg_extension where extname = 'pg_cron') then
+  -- Asks whether the function this is about to call exists, rather than
+  -- whether an extension row does. Same answer on Supabase, and it lets
+  -- the harness exercise the branch instead of skipping it.
+  --
+  -- `to_regprocedure`, not `to_regproc`: the latter takes a bare name and
+  -- answers null for anything carrying an argument list, so the first cut
+  -- of this guard was false everywhere and scheduled nothing at all.
+  if to_regprocedure('cron.schedule(text,text,text)') is not null then
     perform cron.unschedule('prune-notification-deliveries')
       where exists (select 1 from cron.job where jobname = 'prune-notification-deliveries');
     perform cron.schedule(

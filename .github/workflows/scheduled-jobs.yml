@@ -31,9 +31,12 @@ on:
     - cron: "15 8 * * *"
     # Saved event searches, once a day.
     - cron: "0 9 * * *"
-    # Frees an AI job whose request died mid-run, so nobody watches a spinner
-    # that will never finish.
-    - cron: "*/10 * * * *"
+    #
+    # The AI sweep is NOT here. It is one SQL update that sends nothing, so it
+    # runs from pg_cron inside Supabase every two minutes (migration 0152).
+    # Here it would have cost about 4,300 GitHub minutes a month against a
+    # 2,000-minute allowance, and run ten minutes late besides. It is still in
+    # the list below, so it can be triggered by hand.
 
   # Run one by hand from the Actions tab, which is also how to test the setup.
   workflow_dispatch:
@@ -61,7 +64,6 @@ jobs:
             "0 7 * * *")    route=listing-billing ;;
             "15 8 * * *")   route=renewals ;;
             "0 9 * * *")    route=event-alerts ;;
-            "*/10 * * * *") route=ai-sweep ;;
             *)              route="${{ inputs.job }}" ;;
           esac
           echo "route=$route" >> "$GITHUB_OUTPUT"
