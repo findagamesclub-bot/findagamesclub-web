@@ -18,6 +18,11 @@ export default function MembersPreviewPage() {
 
   const { faction } = clubIdentity("didcot-wargames-didcot", "Didcot Wargames");
 
+  // A fixed clock, not NOW. A fixture page that moves with the wall
+  // clock renders differently every run, so the overflow sweep measures
+  // something slightly different each time and a failure cannot be reproduced.
+  const NOW = Date.UTC(2026, 8, 30, 12, 0, 0);
+
   const make = (i: number, name: string, games: string[], armies: string[], years: number): ClubMember => ({
     membershipId: i,
     profileId: String(i),
@@ -25,8 +30,8 @@ export default function MembersPreviewPage() {
     status: "approved",
     tierKey: i % 3 === 0 ? "premium-membership" : "basic",
     tierAssignedAt: null,
-    joinedAt: new Date(Date.now() - years * 365 * 86_400_000).toISOString(),
-    requestedAt: new Date(Date.now() - 3 * 86_400_000).toISOString(),
+    joinedAt: new Date(NOW - years * 365 * 86_400_000).toISOString(),
+    requestedAt: new Date(NOW - 3 * 86_400_000).toISOString(),
     games,
     armies,
     playStyle: [],
@@ -49,20 +54,20 @@ export default function MembersPreviewPage() {
   const day = 86_400_000;
   const samplePayments = [
     { id: 2, tierKey: "basic", tierLabel: "Basic Membership", billingOptionLabel: "Monthly", price: "£10",
-      priceDuration: "month", periodStart: new Date(Date.now() - 10 * day).toISOString(),
-      periodEnd: new Date(Date.now() + 20 * day).toISOString(), note: "Bank transfer",
-      recordedAt: new Date(Date.now() - 10 * day).toISOString() },
+      priceDuration: "month", periodStart: new Date(NOW - 10 * day).toISOString(),
+      periodEnd: new Date(NOW + 20 * day).toISOString(), note: "Bank transfer",
+      recordedAt: new Date(NOW - 10 * day).toISOString() },
     { id: 1, tierKey: "basic", tierLabel: "Basic Membership", billingOptionLabel: "Monthly", price: "£10",
-      priceDuration: "month", periodStart: new Date(Date.now() - 40 * day).toISOString(),
-      periodEnd: new Date(Date.now() - 10 * day).toISOString(), note: "Cash at the door",
-      recordedAt: new Date(Date.now() - 40 * day).toISOString() },
+      priceDuration: "month", periodStart: new Date(NOW - 40 * day).toISOString(),
+      periodEnd: new Date(NOW - 10 * day).toISOString(), note: "Cash at the door",
+      recordedAt: new Date(NOW - 40 * day).toISOString() },
   ];
   const standings = [
-    { paidThrough: new Date(Date.now() + 20 * day).toISOString(), overdue: false, settledOneOff: false },
+    { paidThrough: new Date(NOW + 20 * day).toISOString(), overdue: false, settledOneOff: false },
     { paidThrough: null, overdue: false, settledOneOff: false },
-    { paidThrough: new Date(Date.now() - 9 * day).toISOString(), overdue: true, settledOneOff: false },
+    { paidThrough: new Date(NOW - 9 * day).toISOString(), overdue: true, settledOneOff: false },
     { paidThrough: null, overdue: false, settledOneOff: true },
-    { paidThrough: new Date(Date.now() + 200 * day).toISOString(), overdue: false, settledOneOff: false },
+    { paidThrough: new Date(NOW + 200 * day).toISOString(), overdue: false, settledOneOff: false },
     { paidThrough: null, overdue: false, settledOneOff: false },
   ];
 

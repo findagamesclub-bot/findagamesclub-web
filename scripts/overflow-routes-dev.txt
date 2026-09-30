@@ -16,3 +16,4 @@
 /dev/events-preview
 /dev/noticeboard-preview
 /dev/claim-preview
+/dev/unsubscribe-preview

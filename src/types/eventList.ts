@@ -30,6 +30,8 @@ export type EventSummary = {
   /** Weekday the event starts on, for the day filter. Null when undated. */
   weekday: string | null;
   hasEnded: boolean;
+  /** When the club published it. Saved alerts send what is new since last time. */
+  createdAt: string;
   club: { slug: string; name: string; city: string; logoUrl: string | null };
   /** The club's position. Events without their own venue run there. */
   coordinates: { latitude: number; longitude: number } | null;

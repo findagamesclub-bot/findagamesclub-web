@@ -1,12 +1,13 @@
 "use client";
 
-import { startTransition, useActionState, useEffect, useRef, useState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import AddIcon from "@mui/icons-material/Add";
 import EmptyState from "@/components/ui/EmptyState";
 import { useActionToast } from "@/components/ui/Toaster";
+import { useActionSuccess } from "@/hooks/useActionSuccess";
 import ItemDialog, { type ItemTier } from "./ItemDialog";
 import ItemSizes from "./ItemSizes";
 import { deleteItemAction, saveItemAction, type ShopEditState } from "./actions";
@@ -28,7 +29,7 @@ export default function ShopEditor({
   faction: Faction;
   tiers: ItemTier[];
 }) {
-  const [state, submit, saving] = useActionState<ShopEditState, FormData>(saveItemAction, {});
+  const [state, submit] = useActionState<ShopEditState, FormData>(saveItemAction, {});
   const [gone, removing] = useActionState<ShopEditState, FormData>(deleteItemAction, {});
   useActionToast(state);
   useActionToast(gone);
@@ -41,14 +42,9 @@ export default function ShopEditor({
 
   // The dialog stays up while the save runs, so the button can show a spinner
   // and a refusal lands with the form still holding what was typed. It closes
-  // itself once the save comes back clean.
-  const started = useRef(false);
-  useEffect(() => {
-    if (saving) { started.current = true; return; }
-    if (!started.current) return;
-    started.current = false;
-    if (!state.error) setEditing(undefined);
-  }, [saving, state]);
+  // itself once the save comes back clean, through the shared hook rather than
+  // a hand-rolled latch.
+  useActionSuccess(state, () => setEditing(undefined));
 
   const remove = (itemId: number) => {
     const data = new FormData();

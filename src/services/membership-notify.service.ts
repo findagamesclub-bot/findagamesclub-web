@@ -17,7 +17,7 @@ export async function notifyRequested(params: {
   clubSlug: string;
   applicantName: string;
 }) {
-  await deliver(params.applicantId, (name) =>
+  await deliver(params.applicantId, "membership-requested", (name) =>
     templates.membershipRequested({
       name,
       clubName: params.clubName,
@@ -27,7 +27,7 @@ export async function notifyRequested(params: {
 
   // A club with no owner has nobody to tell. That is a data gap, not an error.
   if (!params.ownerId) return;
-  await deliver(params.ownerId, () =>
+  await deliver(params.ownerId, "join_request", () =>
     templates.membershipPendingForOwner({
       clubName: params.clubName,
       applicantName: params.applicantName,
@@ -44,7 +44,7 @@ export async function notifyTierRequested(params: {
   tierLabel: string;
 }) {
   if (!params.ownerId) return;
-  await deliver(params.ownerId, () =>
+  await deliver(params.ownerId, "tier_request", () =>
     templates.tierUpgradeForOwner({
       clubName: params.clubName,
       memberName: params.memberName,
@@ -60,7 +60,7 @@ export async function notifyApproved(params: {
   clubSlug: string;
   tierLabel?: string | null;
 }) {
-  await deliver(params.memberId, (name) =>
+  await deliver(params.memberId, "membership", (name) =>
     templates.membershipApproved({
       name,
       clubName: params.clubName,
@@ -75,7 +75,7 @@ export async function notifyDeclined(params: {
   clubName: string;
   reason?: string | null;
 }) {
-  await deliver(params.memberId, (name) =>
+  await deliver(params.memberId, "membership", (name) =>
     templates.membershipDeclined({
       name,
       clubName: params.clubName,
@@ -95,7 +95,7 @@ export async function notifyPaid(params: {
   price: string;
   periodEnd: string | null;
 }) {
-  await deliver(params.memberId, (name) =>
+  await deliver(params.memberId, "membership-paid", (name) =>
     templates.membershipPaid({
       name,
       clubName: params.clubName,
@@ -118,7 +118,7 @@ export async function notifyTierChanged(params: {
   clubSlug: string;
   tierLabel: string;
 }) {
-  await deliver(params.memberId, (name) =>
+  await deliver(params.memberId, "tier", (name) =>
     templates.tierChanged({
       name,
       clubName: params.clubName,

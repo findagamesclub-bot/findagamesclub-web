@@ -2,6 +2,7 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { table } from "@/lib/supabase/table";
 import { CLUB_MEDIA, isClubMediaPath } from "@/utils/club-media";
 import type { Tables } from "@/types/database";
 
@@ -177,22 +178,28 @@ export async function findClubLocations() {
   return data ?? [];
 }
 
-/** Average rating and count per club, for the rating filter and sorts. */
+/**
+ * Average rating and count per club, for the rating filter and sorts.
+ *
+ * Read from `club_review_summary`, one row per club, rather than by pulling
+ * every review in the database and summing them here. The old shape was fine
+ * at nine hundred rows and is the kind that stops being fine without warning:
+ * the directory paged twenty-five clubs and read every review of all of them.
+ * A trigger keeps the summary current, so it is never stale either.
+ */
 export async function findReviewAggregates() {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("club_reviews").select("club_id, rating").is("removed_at", null);
-  if (error) throw new Error(`Failed to load reviews: ${error.message}`);
+  const summary = await table<{
+    club_id: number; review_count: number; average: number | string | null;
+  }>("club_review_summary");
+  const { data, error } = await summary.select("club_id, review_count, average");
+  if (error) throw new Error(`Failed to load review summaries: ${error.message}`);
 
-  const totals = new Map<number, { sum: number; count: number }>();
-  for (const row of data ?? []) {
-    const entry = totals.get(row.club_id) ?? { sum: 0, count: 0 };
-    entry.sum += row.rating;
-    entry.count += 1;
-    totals.set(row.club_id, entry);
-  }
-  return new Map(
-    [...totals].map(([id, { sum, count }]) => [id, { average: sum / count, count }]),
+  return new Map<number, { average: number; count: number }>(
+    (data ?? []).map((row) => [
+      row.club_id,
+      // numeric comes back as a string over the wire, which sorts as text.
+      { average: Number(row.average ?? 0), count: row.review_count },
+    ]),
   );
 }
 

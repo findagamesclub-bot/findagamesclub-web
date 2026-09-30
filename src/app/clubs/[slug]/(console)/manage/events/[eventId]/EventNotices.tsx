@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useActionState, useEffect, useRef, useState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
@@ -13,6 +13,7 @@ import BusyOverlay from "@/components/ui/BusyOverlay";
 import { useActionToast } from "@/components/ui/Toaster";
 import { noticeAction, type EventEditState } from "./actions";
 import { sinceLabel } from "@/utils/dates";
+import { useActionSuccess } from "@/hooks/useActionSuccess";
 import { tokens } from "@/lib/tokens";
 import type { EditableEvent } from "@/types/eventEditor";
 
@@ -34,16 +35,11 @@ export default function EventNotices({
   useActionToast(state);
   const [message, setMessage] = useState("");
 
-  // Cleared once a post lands, so the box is empty for the next one. In an
-  // effect rather than during render: a render-time check would also wipe a
-  // notice somebody started typing while the last one was still saving.
-  const posting = useRef(false);
-  useEffect(() => {
-    if (busy) { posting.current = true; return; }
-    if (!posting.current) return;
-    posting.current = false;
-    if (!state.error) setMessage("");
-  }, [busy, state]);
+  // Cleared once a post lands, so the box is empty for the next one. Through
+  // the shared hook rather than a hand-rolled latch: a render-time check would
+  // also wipe a notice somebody started typing while the last one was still
+  // saving, which is why this cannot be done during render like the dialogs.
+  useActionSuccess(state, () => setMessage(""));
 
   const remove = (noticeId: number) => {
     const data = new FormData();

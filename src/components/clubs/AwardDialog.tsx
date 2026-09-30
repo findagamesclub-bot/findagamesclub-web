@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useWhenChanged } from "@/hooks/useWhenChanged";
 import Autocomplete from "@mui/material/Autocomplete";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
@@ -47,12 +48,12 @@ export default function AwardDialog({
   // on the way off screen.
   const [shown, setShown] = useState<ClubBadgeRow | null>(null);
 
-  useEffect(() => {
+  useWhenChanged([open, badge], () => {
     if (!open) return;
     setShown(badge);
     setPicked([]);
     setNote("");
-  }, [open, badge]);
+  });
 
   return (
     <Dialog open={open} onClose={busy ? undefined : onClose}

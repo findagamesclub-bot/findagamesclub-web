@@ -47,7 +47,7 @@ export default function EventDetailsForm({
     name: event.venueName, address: event.venueAddress, postcode: event.venuePostcode,
   });
 
-  const useClubVenue = (on: boolean) => {
+  const applyClubVenue = (on: boolean) => {
     setAtClub(on);
     if (on) {
       setVenue({ name: club.venueName, address: club.venueAddress,
@@ -117,7 +117,7 @@ export default function EventDetailsForm({
               <Stack spacing={2}>
                 <FormControlLabel
                   control={<Switch checked={atClub}
-                    onChange={(e) => useClubVenue(e.target.checked)} />}
+                    onChange={(e) => applyClubVenue(e.target.checked)} />}
                   label="At the club's usual venue"
                 />
                 <TextField name="venueName" label="Venue name" fullWidth disabled={atClub}

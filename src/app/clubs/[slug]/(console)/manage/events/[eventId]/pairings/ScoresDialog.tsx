@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useWhenChanged } from "@/hooks/useWhenChanged";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
@@ -41,14 +42,14 @@ export default function ScoresDialog({
   const fullScreen = useMediaQuery(useTheme().breakpoints.down("sm"));
   const [rows, setRows] = useState<Row[]>([]);
 
-  useEffect(() => {
+  useWhenChanged([open, matches], () => {
     if (!open) return;
     setRows(matches.map((match) => ({
       id: match.id,
       scoreOne: match.scoreOne === null ? "" : String(match.scoreOne),
       scoreTwo: match.scoreTwo === null ? "" : String(match.scoreTwo),
     })));
-  }, [open, matches]);
+  });
 
   const set = (id: number, side: "scoreOne" | "scoreTwo", value: string) =>
     setRows((current) => current.map((row) =>

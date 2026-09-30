@@ -59,9 +59,17 @@ alter table auth.users add column if not exists raw_app_meta_data jsonb default 
 -- work, not the absence of a grant.
 alter default privileges in schema public
   grant execute on functions to anon, authenticated, service_role;
--- Table grants are deliberately NOT defaulted here. Supabase does hand out a
--- whole-table grant on creation (CLAUDE.md has the section), and every
--- migration revokes it, but reproducing the exact order Supabase applies it in
--- is a rabbit hole and gets 0114's own guard firing on `clubs`. What matters
--- for the harness is the function grants above: those are what the definer
--- guards have to overcome, and with them in place a missing revoke shows up.
+-- Table grants are not defaulted here, but they CAN be: run the build with
+-- PGHARNESS_SUPABASE_GRANTS=1 and the harness adds
+--   alter default privileges in schema public grant all on tables to ...
+-- which is what Supabase really does. It is off by default because the chain
+-- then stops at 0114, whose guard fires on `clubs` for a real reason: 0002
+-- revokes UPDATE and leaves the whole-table INSERT, DELETE and TRUNCATE that
+-- Supabase handed out. RLS covers the first two (there is no insert or delete
+-- policy) and does NOT cover TRUNCATE, which ignores row security entirely.
+-- DEFERRED.md carries the finding.
+--
+-- Turn it on when writing a migration that creates a table: without it,
+-- `revoke insert, update, delete` looks complete here and leaves TRUNCATE,
+-- REFERENCES and TRIGGER behind on the real database. That is how 0149 passed
+-- locally and failed its own guard on Supabase.

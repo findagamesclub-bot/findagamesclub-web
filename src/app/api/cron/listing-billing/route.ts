@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { cronRefusal } from "../guard";
 import * as repo from "@/repositories/billing.repository";
 import * as notify from "@/services/billing-notify.service";
 
@@ -23,16 +24,8 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) {
-    return NextResponse.json(
-      { error: "CRON_SECRET is not set, so this route is closed." }, { status: 503 });
-  }
-
-  const auth = request.headers.get("authorization");
-  if (auth !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: "Not for you." }, { status: 401 });
-  }
+  const refusal = cronRefusal(request);
+  if (refusal) return refusal;
 
   // Read as the job, and let a failure be a failure. Going through the
   // ordinary settings read meant an unreadable table came back as "off", and

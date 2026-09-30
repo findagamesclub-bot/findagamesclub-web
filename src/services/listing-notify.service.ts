@@ -33,7 +33,7 @@ const reviewUrl = (id: number) => `${siteUrl()}/admin/submissions/${id}`;
  * the top of something they know, with no hint they were the one who asked.
  */
 export async function received(row: Row, ownerName: string, answered = false) {
-  await deliver(row.owner_id, (name) => (answered
+  await deliver(row.owner_id, "club-request", (name) => (answered
     ? templates.listingResubmitted({
       name,
       clubName: row.club_name || "your club",
@@ -72,7 +72,7 @@ export async function received(row: Row, ownerName: string, answered = false) {
 }
 
 export async function changesRequested(row: Row, note: string) {
-  await deliver(row.owner_id, (name) => templates.listingChangesRequested({
+  await deliver(row.owner_id, "listing-changes-needed", (name) => templates.listingChangesRequested({
     name,
     clubName: row.club_name || "your club",
     note,
@@ -81,7 +81,7 @@ export async function changesRequested(row: Row, note: string) {
 }
 
 export async function declined(row: Row, reason: string) {
-  await deliver(row.owner_id, (name) => templates.listingDeclined({
+  await deliver(row.owner_id, "listing-declined", (name) => templates.listingDeclined({
     name,
     clubName: row.club_name || "your club",
     reason,
@@ -92,7 +92,7 @@ export async function declined(row: Row, reason: string) {
 }
 
 export async function approved(row: Row, slug: string) {
-  await deliver(row.owner_id, (name) => templates.listingApproved({
+  await deliver(row.owner_id, "listing-approved", (name) => templates.listingApproved({
     name,
     clubName: row.club_name || "your club",
     url: `${siteUrl()}/clubs/${slug}`,
@@ -142,7 +142,7 @@ export async function clubPaused(
   // Same condition as the trigger in 0110, so the bell and the inbox cannot
   // disagree about who did what.
   if (club.ownerId && club.ownerId !== actorId) {
-    await deliver(club.ownerId, (name) => (paused
+    await deliver(club.ownerId, paused ? "listing-paused" : "listing-resumed", (name) => (paused
       ? templates.listingPaused({
         name,
         clubName: club.name,

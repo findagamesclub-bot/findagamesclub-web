@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/services/auth.service";
 import { removeAlert, saveAlert } from "@/services/eventAlerts.service";
 
-export type AlertState = { error?: string; saved?: string };
+export type AlertState = { error?: string; saved?: string; notice?: string };
 
 /** Save the search currently in the URL, so new matches can find the person. */
 export async function saveAlertAction(
@@ -26,7 +26,12 @@ export async function saveAlertAction(
   // The saved list lives on this page, so it has to redraw or the alert you
   // just made does not appear until a reload.
   if (result.ok) revalidatePath("/events");
-  return result.ok ? { saved: result.label } : { error: result.error };
+  // `notice` is what useActionToast reads. Returning only `saved` meant the
+  // toast never fired and the dialog grew an inline Alert instead, which is
+  // the house rule the other way round.
+  return result.ok
+    ? { saved: result.label, notice: `Saved as “${result.label}”.` }
+    : { error: result.error };
 }
 
 export async function deleteAlertAction(id: number): Promise<{ error?: string }> {

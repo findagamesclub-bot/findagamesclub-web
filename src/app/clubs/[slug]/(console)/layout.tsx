@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import Box from "@mui/material/Box";
 import GlobalStyles from "@mui/material/GlobalStyles";
 import ConsoleSidebar from "@/components/console/ConsoleSidebar";

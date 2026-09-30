@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useWhenChanged } from "@/hooks/useWhenChanged";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
@@ -41,13 +42,13 @@ export default function DetachmentDialog({
   // "Edit" to "New" for half a second on the way out.
   const [shown, setShown] = useState<DetachmentRow | null>(null);
 
-  useEffect(() => {
+  useWhenChanged([open, detachment], () => {
     if (!open) return;
     setShown(detachment);
     setLabel(detachment?.label ?? "");
     setSlug(detachment?.slug ?? "");
     setDispositions((detachment?.dispositions ?? []).join("\n"));
-  }, [open, detachment]);
+  });
 
   return (
     <Dialog open={open} onClose={busy ? undefined : onClose}

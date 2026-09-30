@@ -36,10 +36,17 @@ prereq() {
     create extension if not exists cube schema public;
     create extension if not exists earthdistance schema public;"
   psql -d "$DB" -v ON_ERROR_STOP=1 -q -f scripts/pg-harness-prereq.sql
+  # Supabase's real table default, off unless asked for. See the prereq file.
+  if [ -n "${PGHARNESS_SUPABASE_GRANTS:-}" ]; then
+    psql -d "$DB" -q -c "alter default privileges in schema public
+      grant all on tables to anon, authenticated, service_role;"
+  fi
 }
 
 start() {
-  [ -d "$PGDATA_DIR/base" ] || initdb -D "$PGDATA_DIR" -U postgres -A trust -q
+  # No -q: Postgres 18 dropped it, and the failure only shows on a machine
+  # whose data directory has been thrown away, so it hid behind the `[ -d ]`.
+  [ -d "$PGDATA_DIR/base" ] || initdb -D "$PGDATA_DIR" -U postgres -A trust >/dev/null
   pg_isready -q 2>/dev/null && return 0
   mkdir -p "$PGHOST"
   pg_ctl -D "$PGDATA_DIR" -l "$PGDATA_DIR/../log" \

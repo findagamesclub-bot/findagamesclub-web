@@ -15,12 +15,21 @@ export function useDebouncedField(
   delay = 400,
 ): [string, (next: string) => void] {
   const [draft, setDraft] = useState(value);
-  const commitRef = useRef(commit);
-  commitRef.current = commit;
 
-  useEffect(() => {
+  // Written in an effect, not during render. A ref assigned while rendering is
+  // a side effect in a function React is allowed to run twice or abandon.
+  const commitRef = useRef(commit);
+  useEffect(() => { commitRef.current = commit; });
+
+  // React's own "adjusting state when a prop changes" pattern: compare against
+  // the value last rendered with and set during render, which React handles by
+  // re-rendering immediately and never painting the stale draft. The effect
+  // this replaces painted the old text first and corrected it after.
+  const [lastValue, setLastValue] = useState(value);
+  if (value !== lastValue) {
+    setLastValue(value);
     setDraft(value);
-  }, [value]);
+  }
 
   useEffect(() => {
     if (draft === value) return;

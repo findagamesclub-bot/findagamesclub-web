@@ -102,6 +102,7 @@ function toSummary(row: Row): EventSummary {
     facilities: row.facilities ?? [],
     weekday,
     hasEnded: hasEnded(row.end_date, row.start_date, row.end_time),
+    createdAt: row.created_at,
     club: { slug: club.slug, name: club.name, city: club.city, logoUrl: club.logo_url },
     coordinates:
       club.latitude !== null && club.longitude !== null
@@ -127,7 +128,21 @@ export type EventListFilters = EventFilters & {
 };
 
 export async function listEvents(params: EventListFilters = {}): Promise<EventListResult> {
-  const all = (await repo.findEvents({ limit: 500 })).map(toSummary);
+  const rows = await repo.findEvents({ limit: 500 });
+
+  // What has actually sold, before anything reads `ticketsAvailable`. The
+  // club's typed figure is what it hoped to sell; nothing decrements it, so a
+  // card read "50 tickets left" beside a page that said 46. Null where the
+  // event sells no typed tickets or any type is unlimited, and then the club's
+  // own number is the only answer there is.
+  const remaining = await repo.findTicketsRemaining(rows.map((row) => row.id));
+  const all: EventSummary[] = rows.map((row) => {
+    const summary = toSummary(row);
+    const counted = remaining.get(row.id);
+    return counted === undefined || counted === null
+      ? summary
+      : { ...summary, ticketsAvailable: counted };
+  });
 
   const upcoming = all.filter((e) => !e.hasEnded);
   const past = all.filter((e) => e.hasEnded);

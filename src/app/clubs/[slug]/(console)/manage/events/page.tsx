@@ -84,7 +84,7 @@ export default async function ManageEventsPage({
       {showing === "bookings" && bookings ? (
         <BookingsBoard slug={slug} view={bookings} faction={faction} />
       ) : listing ? (
-        <EventsList slug={slug} events={listing.rows} today={listing.today} faction={faction} />
+        <EventsList slug={slug} events={listing.rows} today={listing.today} />
       ) : null}
     </Container>
   );

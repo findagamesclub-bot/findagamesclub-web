@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -39,12 +39,15 @@ export default function NotificationList({
   // Which arrived new during this visit, kept for the whole of it. Marking
   // them read is what clears the badge; taking the marks off the rows in the
   // same moment would remove the only thing saying which ones to look at.
-  // Adding to it while rendering is safe because it only ever grows and the
-  // same id twice is the same set.
-  const seen = useRef(new Set<number>());
-  const wasNew = seen.current;
-  for (const notice of notices) {
-    if (!notice.read) wasNew.add(notice.id);
+  // Held as state and grown during render rather than as a ref mutated in
+  // place. "Only ever grows" made the mutation safe in practice, but a render
+  // that React abandons would still have written to it, and the rule is right
+  // to say so. Setting state during render is the supported way to do this:
+  // React re-renders immediately and never paints the intermediate result.
+  const [wasNew, setWasNew] = useState<Set<number>>(() => new Set());
+  const unseen = notices.filter((notice) => !notice.read && !wasNew.has(notice.id));
+  if (unseen.length) {
+    setWasNew(new Set([...wasNew, ...unseen.map((notice) => notice.id)]));
   }
 
   const unreadNow = notices.some((notice) => !notice.read);

@@ -75,3 +75,4 @@
 /clubs/didcot-wargames-didcot/army-builder/season-coach
 /admin/ai-usage
 /clubs/didcot-wargames-didcot/army-builder/1/edit
+/account/notifications

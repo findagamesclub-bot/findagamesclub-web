@@ -69,10 +69,10 @@ export default function PhotoEditor({
                          border: `1px solid ${tokens.rule}` }}>
                 {/* Not next/image: the source is a blob URL until the upload
                     lands, and half of these are on somebody else's domain. */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 {/* A photo still uploading has only a blob URL; a saved one has
                     a storage path or, if it came from the old site, a URL of
                     its own. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={photo.preview
                           || clubImageUrl({ src: photo.src, storagePath: photo.path }, publicUrl)}
                   alt=""

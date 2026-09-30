@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useWhenChanged } from "@/hooks/useWhenChanged";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -35,12 +36,12 @@ export default function EditBookingDialog({
   const [email, setEmail] = useState("");
   const [notes, setNotes] = useState("");
 
-  useEffect(() => {
+  useWhenChanged([row], () => {
     if (!row) return;
     setFullName(row.fullName);
     setEmail(row.email);
     setNotes(row.notes);
-  }, [row]);
+  });
 
   return (
     <Dialog open={Boolean(row)} onClose={saving ? undefined : onClose}

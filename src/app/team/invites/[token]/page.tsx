@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
@@ -56,6 +55,11 @@ export default async function InvitePage({ params }: PageProps<"/team/invites/[t
 
   const gone = !invite || !role
     || invite.accepted_at || invite.declined_at || invite.revoked_at;
+  // `Date.now()` in a render is impure, and the rule is right about that for a
+  // component the compiler may re-run. This is an async Server Component: it
+  // renders once per request, on the server, and "has this invite expired" is
+  // a question that has to be asked at the moment somebody opens the link.
+  // eslint-disable-next-line react-hooks/purity
   const expired = Boolean(invite && new Date(invite.expires_at).getTime() < Date.now());
 
   return (

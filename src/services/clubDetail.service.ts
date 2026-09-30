@@ -5,7 +5,6 @@ import { formatMeeting, formatPrice, formatPricingLabel } from "@/utils/format";
 import { toMembershipTiers } from "@/utils/membership-tiers";
 import { clubImageUrl } from "@/utils/club-media";
 import { publicUrl } from "@/lib/supabase/storage";
-import { billingOptions } from "./payments.service";
 import { fromPriceFor } from "./clubs.service";
 import type { ClubDetail } from "@/types/clubDetail";
 

@@ -27,7 +27,7 @@ export async function paymentReceived(
   club: Club, amountPence: number, paidTo: string | null,
 ) {
   if (!club.ownerId) return;
-  await deliver(club.ownerId, (name) => templates.paymentReceived({
+  await deliver(club.ownerId, "listing-payment-received", (name) => templates.paymentReceived({
     name,
     clubName: club.name,
     amount: formatPence(amountPence),
@@ -40,7 +40,7 @@ export async function renewalDue(
   club: Club, amountPence: number, dueOn: string, daysLeft: number,
 ) {
   if (!club.ownerId) return;
-  await deliver(club.ownerId, (name) => templates.renewalDue({
+  await deliver(club.ownerId, "listing-renewal-due", (name) => templates.renewalDue({
     name,
     clubName: club.name,
     amount: formatPence(amountPence),
@@ -54,7 +54,7 @@ export async function renewalOverdue(
   club: Club, amountPence: number, graceEnds: string,
 ) {
   if (!club.ownerId) return;
-  await deliver(club.ownerId, (name) => templates.renewalOverdue({
+  await deliver(club.ownerId, "listing-overdue", (name) => templates.renewalOverdue({
     name,
     clubName: club.name,
     amount: formatPence(amountPence),
@@ -67,7 +67,7 @@ export async function listingLapsed(
   club: Club, amountPence: number, hidden: boolean,
 ) {
   if (!club.ownerId) return;
-  await deliver(club.ownerId, (name) => templates.listingLapsed({
+  await deliver(club.ownerId, "listing-lapsed", (name) => templates.listingLapsed({
     name,
     clubName: club.name,
     amount: formatPence(amountPence),

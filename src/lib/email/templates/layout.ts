@@ -56,6 +56,30 @@ export type LayoutOptions = {
   previewText: string;
 };
 
+/**
+ * Where the unsubscribe line goes, filled in at send time.
+ *
+ * A template knows what it is saying; only the sender knows who is reading it
+ * and which switch would stop it. Leaving the slot in the markup means a new
+ * template gets the line for free, and a template that never reaches `deliver`
+ * renders the placeholder rather than silently dropping it, which is visible.
+ */
+export const UNSUBSCRIBE_SLOT = "<!--fagc-unsubscribe-->";
+
+/**
+ * The unsubscribe line, named rather than generic.
+ *
+ * "Stop emails about your bookings" tells somebody what they are switching off.
+ * "Unsubscribe" makes them guess whether it means this message or everything,
+ * and the guess is why people press the spam button instead.
+ */
+export function unsubscribeLine(url: string, what: string, settingsUrl: string): string {
+  return `<p style="margin:6px 0 0;font-family:${BODY};font-size:12px;line-height:1.6;color:${brand.inkMuted};">`
+    + `<a href="${esc(url)}" style="color:${brand.inkMuted};">Stop emails about ${esc(what)}</a>`
+    + ` &middot; <a href="${esc(settingsUrl)}" style="color:${brand.inkMuted};">All your settings</a>`
+    + `</p>`;
+}
+
 const esc = (value: string) =>
   value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -158,6 +182,11 @@ export function renderEmail(options: LayoutOptions): string {
               <p style="margin:0;font-family:${DISPLAY};font-size:12px;line-height:1.6;color:${brand.inkMuted};">
                 FindAGamesClub · Tabletop and wargaming clubs across the UK
               </p>
+              <!-- Replaced by deliver() with a one-click unsubscribe for this
+                   message's family, or with nothing where there is nothing to
+                   turn off. Here rather than in every template's arguments, so
+                   a new template cannot ship without one. -->
+              ${UNSUBSCRIBE_SLOT}
             </td>
           </tr>
 

@@ -5,7 +5,7 @@ import { findMembershipPulse } from "@/repositories/memberships.repository";
 import { londonToday } from "./bookingCalendar.service";
 import {
   byWeekday, changeOnLastMonth, countByMonth, tierMix,
-  type MixSlice, type MonthCount, type NightCount,
+  type MixSlice, type NightCount,
 } from "@/utils/club-pulse";
 import type { MembershipTier } from "@/types/clubDetail";
 

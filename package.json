@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "check:links": "node scripts/check-server-links.mjs",
-    "verify": "npm run check:links && npm run check:actions && npm run check:nav && npm run check:routes && npm run check:server && tsc --noEmit && next build",
+    "verify": "npm run check:links && npm run check:actions && npm run check:nav && npm run check:routes && npm run check:server && npm run check:columns && npm run lint && tsc --noEmit && next build",
     "check:mobile": "node scripts/check-overflow.mjs",
     "check:mobile:auth": "node scripts/check-overflow.mjs --routes scripts/overflow-routes-auth.txt --storage .mobile-session.json",
     "mobile:login": "node scripts/mobile-session.mjs",
@@ -18,7 +18,8 @@
     "check:server": "node scripts/check-server-exports.mjs",
     "check:actions": "node scripts/check-action-dispatch.mjs",
     "check:nav": "node scripts/check-client-nav.mjs",
-    "check:routes": "node scripts/check-nav-routes.mjs"
+    "check:routes": "node scripts/check-nav-routes.mjs",
+    "check:columns": "node scripts/check-columns.mjs"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

@@ -28,7 +28,7 @@ export async function notifyBooked(bookingId: number) {
     if (!row?.clubs) return;
     const club = row.clubs;
 
-    await deliver(row.booked_by, (name) =>
+    await deliver(row.booked_by, "booking-confirmed", (name) =>
       templates.tableBooked({
         name,
         clubName: club.name,
@@ -57,7 +57,7 @@ export async function notifyCancelled(bookingId: number) {
     if (!row?.clubs) return;
     const club = row.clubs;
 
-    await deliver(row.booked_by, (name) =>
+    await deliver(row.booked_by, "booking-cancelled-yours", (name) =>
       templates.tableCancelled({
         name,
         clubName: club.name,
@@ -79,7 +79,7 @@ export async function notifyPromoted(params: {
   gameTitle: string;
   price?: string | null;
 }) {
-  await deliver(params.profileId, (name) =>
+  await deliver(params.profileId, "waitlist_promoted", (name) =>
     templates.tablePromoted({
       name,
       clubName: params.clubName,
@@ -106,7 +106,7 @@ export async function notifyGameFound(bookingId: number, opponentName: string) {
     if (!row?.clubs) return;
     const club = row.clubs;
 
-    await deliver(row.booked_by, (name) =>
+    await deliver(row.booked_by, "game_found", (name) =>
       templates.gameFound({
         name,
         clubName: club.name,
@@ -145,7 +145,7 @@ export async function notifyClubOfLookingForGame(params: {
     const club = await memberships.findClubBasics(params.clubId);
     if (!club?.owner_id || club.owner_id === params.posterId) return;
 
-    await deliver(club.owner_id, () =>
+    await deliver(club.owner_id, "looking_for_game", () =>
       templates.lookingForGameForOwner({
         clubName: params.clubName,
         memberName: params.memberName.trim() || "A member",

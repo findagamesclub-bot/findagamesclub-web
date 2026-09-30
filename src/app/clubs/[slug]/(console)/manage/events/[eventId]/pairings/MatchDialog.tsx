@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useWhenChanged } from "@/hooks/useWhenChanged";
 import Autocomplete from "@mui/material/Autocomplete";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
@@ -42,12 +43,12 @@ export default function MatchDialog({
   const [one, setOne] = useState("");
   const [two, setTwo] = useState("");
 
-  useEffect(() => {
+  useWhenChanged([open, match, nextTable], () => {
     if (!open) return;
     setTable(match?.tableLabel || nextTable);
     setOne(match?.playerOne ?? "");
     setTwo(match?.playerTwo ?? "");
-  }, [open, match, nextTable]);
+  });
 
   const idOf = (name: string) =>
     roster.find((p) => p.name.trim().toLowerCase() === name.trim().toLowerCase())

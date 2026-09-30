@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useWhenChanged } from "@/hooks/useWhenChanged";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -33,7 +34,7 @@ export default function CancelPlaceDialog({
   const fullScreen = useMediaQuery(useTheme().breakpoints.down("sm"));
   const [reason, setReason] = useState("");
 
-  useEffect(() => { if (row) setReason(""); }, [row]);
+  useWhenChanged([row], () => { if (row) setReason(""); });
 
   const paid = row ? row.paymentStatus !== "unpaid" : false;
 

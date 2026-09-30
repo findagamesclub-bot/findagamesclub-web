@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 import { useActionState } from "react";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
@@ -15,13 +17,19 @@ import { inviteReplyAction, type TeamState } from "@/app/clubs/[slug]/(console)/
  * invitation to refuse it.
  */
 export default function InviteReply({ token, clubSlug }: { token: string; clubSlug: string }) {
+  // A client navigation, not `window.location`: a hard load throws the whole
+  // running app away and downloads it again, for a move between two pages of
+  // the same app. Nothing cached can be stale here, because somebody who has
+  // just accepted an invite has never been able to open that console before.
+  const router = useRouter();
+
   const [state, formAction] = useActionState<TeamState, FormData>(
     async (prev, data) => {
       const next = await inviteReplyAction(prev, data);
       // Straight into the console on acceptance: the reason they clicked the
       // link is to get in, and a success toast on a dead-end page is not that.
       if (next.notice && String(data.get("reply")) === "accept") {
-        window.location.href = `/clubs/${clubSlug}/manage`;
+        router.push(`/clubs/${clubSlug}/manage`);
       }
       return next;
     },

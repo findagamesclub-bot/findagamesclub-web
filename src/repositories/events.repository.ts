@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
-import { table, type TableRow } from "@/lib/supabase/table";
+import { callRpc, table, type TableRow } from "@/lib/supabase/table";
 
 /**
  * Event lists.
@@ -21,6 +21,7 @@ export async function findEvents(params: { from?: string; to?: string; limit?: n
        event_types, formats, facilities,
        price, round_count, tickets_available, bestcoast_link,
        venue_name, venue_address, venue_postcode, featured_games, logo_src, logo_alt,
+       created_at,
        club_event_ticket_types(price),
        clubs!inner(slug, name, city, logo_url, status, latitude, longitude, ages,
                    club_images(src, alt, position),
@@ -65,6 +66,21 @@ type OwnedEventRow = Pick<TableRow<"club_events">,
   status: string;
   clubs: Pick<TableRow<"clubs">, "id" | "slug" | "name">;
 };
+
+/**
+ * How many tickets are really left, for a page of events.
+ *
+ * Definer, and a count only: `club_event_booking_items` is guarded to your own
+ * bookings, so counting it directly gives the club the truth, a member an
+ * under-count and a signed-out visitor nothing at all. 0066 fixed that for one
+ * event; this is the same answer for fifty.
+ */
+export async function findTicketsRemaining(eventIds: number[]) {
+  if (!eventIds.length) return new Map<number, number | null>();
+  const rows = await callRpc<{ event_id: number; remaining: number | null }[]>(
+    "event_tickets_taken_many", { p_events: eventIds });
+  return new Map((rows ?? []).map((row) => [row.event_id, row.remaining]));
+}
 
 export async function findEventsForClubs(clubIds: number[]) {
   if (!clubIds.length) return [];

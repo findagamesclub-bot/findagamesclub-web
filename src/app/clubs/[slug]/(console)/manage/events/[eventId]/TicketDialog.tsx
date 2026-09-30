@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -12,6 +12,7 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
+import { useWhenChanged } from "@/hooks/useWhenChanged";
 import { soldLabel, type TicketDraft } from "@/utils/event-tickets";
 import { tokens } from "@/lib/tokens";
 
@@ -42,11 +43,11 @@ export default function TicketDialog({
              audience: "all", minimumTierKey: "" });
 
   // Reset each time the dialog opens, so the row being edited is the row shown.
-  useEffect(() => {
+  useWhenChanged([open, row], () => {
     if (!open) return;
     setDraft(row ?? { id: null, label: "", price: "", quantityAvailable: null,
                       audience: "all", minimumTierKey: "" });
-  }, [open, row]);
+  });
 
   const locked = taken > 0;
   const sold = soldLabel(taken, draft.quantityAvailable);
@@ -54,10 +55,10 @@ export default function TicketDialog({
   // Held as a string so the box can be emptied: a number coerced on every
   // keystroke means the 0 cannot be backspaced away.
   const [cap, setCap] = useState("");
-  useEffect(() => {
+  useWhenChanged([open, row], () => {
     if (open) setCap(row?.quantityAvailable === null || row?.quantityAvailable === undefined
       ? "" : String(row.quantityAvailable));
-  }, [open, row]);
+  });
 
   const save = () => onSave({
     ...draft,

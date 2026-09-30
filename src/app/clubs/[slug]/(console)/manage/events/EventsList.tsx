@@ -27,7 +27,6 @@ import {
   type ManageEvent, type ManageEventSort, type ManageEventTab,
 } from "@/utils/event-manage-filter";
 import { mono, tokens } from "@/lib/tokens";
-import type { Faction } from "@/lib/tokens";
 
 /**
  * The club's own list of events.
@@ -37,12 +36,11 @@ import type { Faction } from "@/lib/tokens";
  * directory, and a cancelled event simply sat in the past list.
  */
 export default function EventsList({
-  slug, events, today, faction,
+  slug, events, today,
 }: {
   slug: string;
   events: ManageEvent[];
   today: string;
-  faction: Faction;
 }) {
   const router = useRouter();
   const [made, create, creating] = useActionState<EventListState, FormData>(

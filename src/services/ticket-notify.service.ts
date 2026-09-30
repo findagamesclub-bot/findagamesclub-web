@@ -6,6 +6,7 @@ import { formatMoney } from "@/utils/format";
 import { nightLabel } from "@/utils/dates";
 import * as memberships from "@/repositories/memberships.repository";
 import { deliver } from "./mail-recipient.service";
+import type { NotificationKind } from "@/utils/notification-families";
 import type { EventBooking } from "@/types/ticket";
 
 /**
@@ -75,6 +76,7 @@ export async function notifyCancelled(booking: EventBooking) {
  */
 async function tellTheClub(
   booking: EventBooking,
+  kind: NotificationKind,
   make: (url: string) => templates.Email,
 ) {
   try {
@@ -84,14 +86,14 @@ async function tellTheClub(
     // The console's roster, which is where a club acts on this: mark them
     // paid, check them in, or give the place back.
     const url = `${siteUrl()}/clubs/${booking.clubSlug}/manage/events/${booking.eventId}/roster`;
-    await deliver(club.owner_id, () => make(url));
+    await deliver(club.owner_id, kind, () => make(url));
   } catch (error) {
     console.error("club ticket notification failed", { reference: booking.reference, error });
   }
 }
 
 export async function notifyClubBooked(booking: EventBooking) {
-  await tellTheClub(booking, (url) =>
+  await tellTheClub(booking, "tickets_booked", (url) =>
     templates.ticketsForOwner({
       clubName: booking.clubName,
       eventTitle: booking.eventTitle,
@@ -106,7 +108,7 @@ export async function notifyClubBooked(booking: EventBooking) {
 }
 
 export async function notifyClubCancelled(booking: EventBooking) {
-  await tellTheClub(booking, (url) =>
+  await tellTheClub(booking, "tickets_cancelled", (url) =>
     templates.ticketsCancelledForOwner({
       clubName: booking.clubName,
       eventTitle: booking.eventTitle,

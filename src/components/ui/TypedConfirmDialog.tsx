@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -39,13 +39,16 @@ export default function TypedConfirmDialog({
 
   // Shuts itself once the work is done, so the caller does not close it on the
   // same click that started the action and hide its own spinner.
-  const [started, setStarted] = useState(false);
+  // A ref, not state: nothing renders it, it only remembers that the work
+  // started so the finish can be spotted. Writing a ref in an effect is the
+  // supported way to keep a fact across renders without asking for one.
+  const started = useRef(false);
   useEffect(() => {
-    if (busy) setStarted(true);
-    else if (started) { setStarted(false); shut(); }
+    if (busy) started.current = true;
+    else if (started.current) { started.current = false; shut(); }
     // shut is stable enough here: it only closes and clears the field.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [busy, started]);
+  }, [busy]);
 
   return (
     <Dialog open={open} onClose={busy ? undefined : shut} maxWidth="xs" fullWidth>

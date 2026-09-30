@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -49,14 +49,17 @@ export default function ConfirmDialog({
   onClose: () => void;
 }) {
   const reportsProgress = busy !== undefined;
-  const [started, setStarted] = useState(false);
+  // A ref, not state: nothing renders it, it only remembers that the work
+  // started so the finish can be spotted. Writing a ref in an effect is the
+  // supported way to keep a fact across renders without asking for one.
+  const started = useRef(false);
 
   // Shuts itself once the work is done, so the caller does not have to thread
   // the same condition through a second time.
   useEffect(() => {
-    if (busy) setStarted(true);
-    else if (started) { setStarted(false); onClose(); }
-  }, [busy, started, onClose]);
+    if (busy) started.current = true;
+    else if (started.current) { started.current = false; onClose(); }
+  }, [busy, onClose]);
   return (
     <Dialog open={open} onClose={busy ? undefined : onClose} maxWidth="xs" fullWidth>
       <DialogTitle>{title}</DialogTitle>

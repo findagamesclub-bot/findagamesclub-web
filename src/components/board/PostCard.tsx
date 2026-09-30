@@ -7,7 +7,6 @@ import PollIcon from "@mui/icons-material/Poll";
 import Counter from "@/components/ui/Counter";
 import { sinceLabel } from "@/utils/dates";
 import { tokens, type Faction } from "@/lib/tokens";
-import type { BoardPost } from "@/types/discussion";
 
 /**
  * One thread, as a ruled row on the board's sheet.

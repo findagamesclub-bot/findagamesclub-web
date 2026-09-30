@@ -107,6 +107,19 @@ for (const route of ROUTES) {
       continue;
     }
 
+    // A redirect to the sign-in page is a 200, so the status alone says
+    // nothing about whether the page being measured is the page asked for.
+    // With an expired session this reported "No overflow" for twenty-seven
+    // admin routes while measuring the sign-in form twenty-seven times, which
+    // is the most dangerous kind of green: a check that cannot fail.
+    const landed = new URL(page.url()).pathname.replace(/\/$/, "");
+    const asked = route.split("?")[0].replace(/\/$/, "");
+    if (landed !== asked) {
+      unreachable += 1;
+      console.log(`  ${route} @${width} -> redirected to ${landed}`);
+      continue;
+    }
+
     const bad = await page.evaluate(MEASURE);
     if (!bad.length) continue;
     failures += 1;
@@ -117,11 +130,17 @@ for (const route of ROUTES) {
 
 await browser.close();
 if (unreachable) {
-  console.log(`\n${unreachable} page/width combinations never loaded, so nothing`
-    + ` was measured for them. Is a server up at ${BASE}?`);
+  console.log(`\n${unreachable} page/width combinations were not measured,`
+    + ` because they did not load or landed somewhere else.`
+    + `\nIs a server up at ${BASE}, and is the saved session still valid?`
+    + `\nSessions expire: npm run mobile:login (and mobile:login:admin).`);
 }
-console.log(failures
-  ? `\n${failures} page/width combinations overflow.`
-  : `\nNo overflow at 360 or 390 in the ${ROUTES.length * WIDTHS.length - unreachable}`
-    + " combinations that loaded.");
+const measured = ROUTES.length * WIDTHS.length - unreachable;
+console.log(
+  failures ? `\n${failures} page/width combinations overflow.`
+  // "No overflow in the 0 combinations that loaded" is technically true and
+  // reads as a pass, which is how a sweep that measured nothing gets mistaken
+  // for a sweep that found nothing.
+  : measured === 0 ? "\nNothing was measured, so this proves nothing."
+  : `\nNo overflow at 360 or 390 in the ${measured} combinations that loaded.`);
 process.exit(failures || unreachable ? 1 : 0);

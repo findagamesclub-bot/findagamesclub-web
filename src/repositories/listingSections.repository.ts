@@ -8,10 +8,6 @@ import { createClient } from "@/lib/supabase/server";
  * thrown away. The functions live in 0086.
  */
 
-type ImageRow = {
-  id: number; src: string | null; alt: string | null; storage_path: string | null;
-};
-
 /**
  * One of the whole-section writers from 0086.
  *

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useWhenChanged } from "@/hooks/useWhenChanged";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
@@ -60,7 +61,7 @@ export default function ModerationDialog({
   // everything spins or, as shipped, nothing does.
   const [pressed, setPressed] = useState<"keep" | "remove" | null>(null);
 
-  useEffect(() => { if (flag) { setReason(""); setPressed(null); } }, [flag]);
+  useWhenChanged([flag], () => { if (flag) { setReason(""); setPressed(null); } });
 
   const answer = (action: "keep" | "remove") => {
     setPressed(action);

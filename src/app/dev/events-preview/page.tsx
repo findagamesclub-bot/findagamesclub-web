@@ -105,8 +105,7 @@ export default async function EventsPreviewPage({
 
         <Stack spacing={2}>
           <Typography variant="overline" color="text.secondary">The list</Typography>
-          <EventsList slug="didcot-wargames-didcot" events={events} today={today}
-            faction={faction} />
+          <EventsList slug="didcot-wargames-didcot" events={events} today={today} />
         </Stack>
 
         <Divider />
@@ -174,7 +173,7 @@ export default async function EventsPreviewPage({
         <Divider />
 
         <Stack spacing={2}>
-          <Typography variant="overline" color="text.secondary">One event's roster</Typography>
+          <Typography variant="overline" color="text.secondary">The roster for one event</Typography>
           <RosterBoard slug="didcot-wargames-didcot" eventId={1} rows={roster}
             faction={faction} />
         </Stack>

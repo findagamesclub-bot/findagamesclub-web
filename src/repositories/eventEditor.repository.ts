@@ -5,7 +5,6 @@ import { findTicketTypes } from "./eventTicketTypes.repository";
 import { findNotices } from "./eventNotices.repository";
 import type { EditableEvent, EditableTicketType, EventNotice } from "@/types/eventEditor";
 import type { EventStatus } from "@/utils/event-draft";
-import type { TicketAudience } from "@/utils/event-tickets";
 
 /**
  * A club's own events, including the ones nobody else can see.

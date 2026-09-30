@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useWhenChanged } from "@/hooks/useWhenChanged";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
@@ -44,14 +45,14 @@ export default function UnitDialog({
   const [rules, setRules] = useState("[]");
   const [shown, setShown] = useState<UnitRow | null>(null);
 
-  useEffect(() => {
+  useWhenChanged([open, unit], () => {
     if (!open) return;
     setShown(unit);
     setName(unit?.name ?? "");
     setPoints(unit ? String(unit.base_points) : "");
     setOptions(pretty(unit?.options));
     setRules(pretty(unit?.copy_cost_rules));
-  }, [open, unit]);
+  });
 
   // A points value that will not parse is not nought. `Number("")` being 0 is
   // how a listing price shipped as free in stage 5.

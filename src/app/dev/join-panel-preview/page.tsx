@@ -21,19 +21,24 @@ export default function JoinPanelPreviewPage() {
       billingOptions: [{ id: "premium-membership-month", label: "Monthly", price: "£15", cadence: "month" }] },
   ];
 
+  // A fixed clock, not NOW. A fixture page that moves with the wall
+  // clock renders differently every run, so the overflow sweep measures
+  // something slightly different each time and a failure cannot be reproduced.
+  const NOW = Date.UTC(2026, 8, 30, 12, 0, 0);
+
   const unpaid = { paidThrough: null, overdue: false, settledOneOff: false };
   const day = 86_400_000;
   const samplePayments = [
     { id: 2, tierKey: "basic", tierLabel: "Basic Membership", billingOptionLabel: "Monthly",
       price: "£10", priceDuration: "month",
-      periodStart: new Date(Date.now() - 10 * day).toISOString(),
-      periodEnd: new Date(Date.now() + 20 * day).toISOString(),
-      note: "Bank transfer", recordedAt: new Date(Date.now() - 10 * day).toISOString() },
+      periodStart: new Date(NOW - 10 * day).toISOString(),
+      periodEnd: new Date(NOW + 20 * day).toISOString(),
+      note: "Bank transfer", recordedAt: new Date(NOW - 10 * day).toISOString() },
     { id: 1, tierKey: "basic", tierLabel: "Basic Membership", billingOptionLabel: "Monthly",
       price: "£10", priceDuration: "month",
-      periodStart: new Date(Date.now() - 40 * day).toISOString(),
-      periodEnd: new Date(Date.now() - 10 * day).toISOString(),
-      note: "Cash at the door", recordedAt: new Date(Date.now() - 40 * day).toISOString() },
+      periodStart: new Date(NOW - 40 * day).toISOString(),
+      periodEnd: new Date(NOW - 10 * day).toISOString(),
+      note: "Cash at the door", recordedAt: new Date(NOW - 40 * day).toISOString() },
   ];
   const base = {
     clubId: 9, slug: "didcot-wargames-didcot", clubName: "Didcot Wargames",
@@ -50,12 +55,12 @@ export default function JoinPanelPreviewPage() {
     { title: "Approved member, paid up", props: { ...base, signedIn: true, canManage: false, pendingCount: null,
         membership: { id: 1, status: "approved" as const, tierKey: "basic", tierAssignedAt: null },
         payments: samplePayments,
-        standing: { paidThrough: new Date(Date.now() + 60 * 86_400_000).toISOString(),
+        standing: { paidThrough: new Date(NOW + 60 * 86_400_000).toISOString(),
                     overdue: false, settledOneOff: false } } },
     { title: "Approved member, lapsed", props: { ...base, signedIn: true, canManage: false, pendingCount: null,
         membership: { id: 1, status: "approved" as const, tierKey: "premium-membership", tierAssignedAt: null },
         payments: samplePayments,
-        standing: { paidThrough: new Date(Date.now() - 12 * 86_400_000).toISOString(),
+        standing: { paidThrough: new Date(NOW - 12 * 86_400_000).toISOString(),
                     overdue: true, settledOneOff: false } } },
     { title: "Club owner", props: { ...base, signedIn: true, canManage: true, pendingCount: 2,
         membership: { id: null, status: "none" as const, tierKey: null, tierAssignedAt: null } } },

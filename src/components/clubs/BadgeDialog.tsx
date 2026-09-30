@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useWhenChanged } from "@/hooks/useWhenChanged";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
@@ -60,7 +61,7 @@ export default function BadgeDialog({
   // Filled from whichever badge was opened. In an effect rather than during
   // render because this dialog is mounted once and reopened, so there is no
   // previous badge's values to flash.
-  useEffect(() => {
+  useWhenChanged([open, badge], () => {
     if (!open) return;
     setShown(badge);
     setLabel(badge?.label ?? "");
@@ -68,7 +69,7 @@ export default function BadgeDialog({
     setIcon(badge?.icon ?? DEFAULT_ICON);
     setTone(badge?.tone ?? DEFAULT_TONE);
     setActive(badge?.active ?? true);
-  }, [open, badge]);
+  });
 
   return (
     <Dialog open={open} onClose={busy ? undefined : onClose}

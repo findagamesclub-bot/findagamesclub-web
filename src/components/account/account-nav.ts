@@ -9,6 +9,7 @@ import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import NotificationsIcon from "@mui/icons-material/NotificationsActive";
 import ForumIcon from "@mui/icons-material/ForumOutlined";
 import FlagIcon from "@mui/icons-material/OutlinedFlag";
+import MailIcon from "@mui/icons-material/MarkEmailRead";
 import SchoolIcon from "@mui/icons-material/School";
 import StorefrontIcon from "@mui/icons-material/Storefront";
 import GroupsIcon from "@mui/icons-material/Groups";
@@ -75,6 +76,9 @@ export function accountGroups(counts: AccountCounts): NavGroup[] {
         // No count. A waiting report is not a job for the person who filed it,
         // and a badge here would read as something they have to act on.
         { label: "Things you reported", href: "/account/reports", icon: FlagIcon },
+        // Last in the group, because it is the thing you set once and the
+        // three above it are things you read.
+        { label: "Email settings", href: "/account/notifications", icon: MailIcon },
       ],
     },
     {

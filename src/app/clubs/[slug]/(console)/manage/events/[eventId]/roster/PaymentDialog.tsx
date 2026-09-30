@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useWhenChanged } from "@/hooks/useWhenChanged";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -39,7 +40,7 @@ export default function PaymentDialog({
   const [method, setMethod] = useState("Cash");
   const [note, setNote] = useState("");
 
-  useEffect(() => {
+  useWhenChanged([row], () => {
     if (!row) return;
     // Paid on the door is the answer most of the time, so it is the one
     // already selected. An unpaid row opening on "unpaid" would need two taps
@@ -47,7 +48,7 @@ export default function PaymentDialog({
     setStatus(row.paymentStatus === "unpaid" ? "paid_on_the_door" : row.paymentStatus);
     setMethod(row.paymentMethod || "Cash");
     setNote("");
-  }, [row]);
+  });
 
   return (
     <Dialog open={Boolean(row)} onClose={saving ? undefined : onClose}

@@ -2,6 +2,7 @@ import "server-only";
 
 import { Resend } from "resend";
 import { LOGO_CID, LOGO_PNG_BASE64 } from "./logo-data";
+import { UNSUBSCRIBE_SLOT } from "./templates/layout";
 
 /**
  * Transactional email. Server-only so the API key can't reach the browser.
@@ -16,6 +17,13 @@ export type SendEmailInput = {
   /** Improves deliverability. Derived from the HTML if omitted. */
   text?: string;
   replyTo?: string;
+  /**
+   * List-Unsubscribe and its One-Click partner, which is what makes Gmail and
+   * Apple Mail show their own unsubscribe button. Providers also read it when
+   * deciding whether this is bulk mail, so it earns its place on deliverability
+   * alone.
+   */
+  headers?: Record<string, string>;
 };
 
 export type SendEmailResult =
@@ -47,6 +55,11 @@ function getClient(): Resend | null {
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
   const resend = getClient();
 
+  // `deliver()` fills the unsubscribe slot; a receipt sent to an address typed
+  // at checkout never goes through it, and there is nothing to unsubscribe
+  // from. Stripped here so no path can ship the placeholder.
+  input = { ...input, html: input.html.replace(UNSUBSCRIBE_SLOT, "") };
+
   if (!resend) {
     console.info(
       [
@@ -71,6 +84,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
     html: input.html,
     text: input.text ?? stripHtml(input.html),
     replyTo: input.replyTo,
+    headers: input.headers,
     // Only when the template actually shows it, so a plain message isn't
     // carrying 21KB it never renders.
     attachments: input.html.includes(`cid:${LOGO_CID}`) ? [LOGO_ATTACHMENT] : undefined,

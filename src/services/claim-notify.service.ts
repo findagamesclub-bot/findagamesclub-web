@@ -11,7 +11,7 @@ export async function claimReceived(
   claimantId: string, club: { slug: string; name: string; city: string },
   claimantName: string, claimId: number,
 ) {
-  await deliver(claimantId, (name) => templates.claimReceived({
+  await deliver(claimantId, "club-claim", (name) => templates.claimReceived({
     name,
     clubName: club.name,
     url: `${siteUrl()}/clubs/${club.slug}`,
@@ -39,7 +39,7 @@ export async function claimReceived(
 export async function claimApproved(
   claimantId: string, club: { slug: string; name: string },
 ) {
-  await deliver(claimantId, (name) => templates.claimApproved({
+  await deliver(claimantId, "claim-approved", (name) => templates.claimApproved({
     name,
     clubName: club.name,
     consoleUrl: `${siteUrl()}/clubs/${club.slug}/manage`,
@@ -50,7 +50,7 @@ export async function claimApproved(
 export async function claimDeclined(
   claimantId: string, clubName: string, reason: string,
 ) {
-  await deliver(claimantId, (name) => templates.claimDeclined({
+  await deliver(claimantId, "claim-declined", (name) => templates.claimDeclined({
     name, clubName, reason,
   }));
 }

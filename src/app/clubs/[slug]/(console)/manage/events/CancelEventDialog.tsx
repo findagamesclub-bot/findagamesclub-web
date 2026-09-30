@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useWhenChanged } from "@/hooks/useWhenChanged";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -34,7 +35,7 @@ export default function CancelEventDialog({
 
   // Cleared between events, so a reason typed for one does not turn up on the
   // next one somebody opens.
-  useEffect(() => { if (event) setReason(""); }, [event]);
+  useWhenChanged([event], () => { if (event) setReason(""); });
 
   const holders = event?.bookings ?? 0;
 

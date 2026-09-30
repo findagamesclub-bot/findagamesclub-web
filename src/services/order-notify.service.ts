@@ -26,7 +26,7 @@ export async function notifyOrdered(orderId: number) {
     const club = row.clubs;
     const items = row.club_merchandise_order_items ?? [];
 
-    await deliver(row.profile_id, (name) =>
+    await deliver(row.profile_id, "order", (name) =>
       templates.merchandiseOrdered({
         name,
         clubName: club.name,
@@ -58,7 +58,7 @@ export async function notifyCoachingBooked(bookingId: number) {
       [slot.start_time, slot.end_time].filter(Boolean).join(" to "),
     ].filter(Boolean).join(", ");
 
-    await deliver(row.profile_id, (name) =>
+    await deliver(row.profile_id, "coaching_booked", (name) =>
       templates.coachingBooked({
         name,
         clubName: club.name,

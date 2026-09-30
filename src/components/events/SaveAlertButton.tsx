@@ -3,7 +3,6 @@
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { useActionToast } from "@/components/ui/Toaster";
 import { useSearchParams } from "next/navigation";
-import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -135,11 +134,12 @@ function AlertForm({
   const [state, submit] = useActionState<AlertState, FormData>(saveAlertAction, {});
   useActionToast(state);
 
+  // Closes at once now that the toast says what happened. The 1.2 second wait
+  // was there to let somebody read the inline Alert, which is exactly the
+  // pattern the toast replaces: a dialog that lingers after its job is done
+  // reads as though something is still happening.
   useEffect(() => {
-    if (state.saved) {
-      const timer = setTimeout(onSaved, 1200);
-      return () => clearTimeout(timer);
-    }
+    if (state.saved) onSaved();
   }, [state.saved, onSaved]);
 
   return (
@@ -147,8 +147,6 @@ function AlertForm({
       <input type="hidden" name="filters" value={JSON.stringify(filters)} />
 
       <Stack spacing={2.5}>
-        {state.saved ? <Alert severity="success">Saved as “{state.saved}”.</Alert> : null}
-
         <Stack spacing={1.25}>
           <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.74rem",
                             letterSpacing: "0.12em", color: tokens.inkMuted, fontWeight: 700 }}>

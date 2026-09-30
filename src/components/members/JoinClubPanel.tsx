@@ -25,7 +25,6 @@ import type { MyMembership } from "@/types/membership";
 import type { MembershipTier } from "@/types/clubDetail";
 import type { MembershipPayment, PaymentStanding } from "@/types/payment";
 import MyPaymentsDialog from "./MyPaymentsDialog";
-import { shortDate } from "@/utils/dates";
 
 type Props = {
   clubId: number;
@@ -61,7 +60,7 @@ type Props = {
  * out the ones that did not apply, which read as broken.
  */
 export default function JoinClubPanel({
-  clubId, slug, clubName, membership, signedIn, faction, memberCount, pendingCount, tiers, canManage, takesBookings,
+  clubId, slug, clubName, membership, signedIn, faction, pendingCount, tiers, canManage, takesBookings,
   hasLoyalty, hasShop, hasCoaching, hasRivalries = false, hasCompetitions = false,
   unmatchedResults = 0,
   standing, payments,

@@ -34,7 +34,7 @@ export async function notifyInvited(params: {
   // is the one they read. The address typed into the form may be a work one
   // they never check.
   if (params.profileId) {
-    await deliver(params.profileId, message);
+    await deliver(params.profileId, "team_invite", message);
     return;
   }
 
@@ -53,7 +53,7 @@ export async function notifyInviteAnswered(params: {
   personName: string;
   accepted: boolean;
 }) {
-  await deliver(params.inviterId, (name) =>
+  await deliver(params.inviterId, "team_invite", (name) =>
     templates.teamInviteAnswered({
       name, clubName: params.clubName,
       personName: params.personName, accepted: params.accepted,
@@ -67,7 +67,7 @@ export async function notifyRoleChanged(params: {
   clubSlug: string;
   role: "manager" | "helper";
 }) {
-  await deliver(params.profileId, (name) =>
+  await deliver(params.profileId, "team_role", (name) =>
     templates.teamRoleChanged({
       name, clubName: params.clubName, role: params.role,
       url: `${siteUrl()}/clubs/${params.clubSlug}/manage`,

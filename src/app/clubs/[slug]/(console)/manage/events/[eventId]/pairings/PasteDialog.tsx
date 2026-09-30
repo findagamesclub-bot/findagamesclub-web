@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useWhenChanged } from "@/hooks/useWhenChanged";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
@@ -34,7 +35,7 @@ export default function PasteDialog({
   const fullScreen = useMediaQuery(useTheme().breakpoints.down("sm"));
   const [raw, setRaw] = useState("");
 
-  useEffect(() => { if (open) setRaw(""); }, [open]);
+  useWhenChanged([open], () => { if (open) setRaw(""); });
 
   const parsed = useMemo(() => parsePastedPairings(raw), [raw]);
   const usable = parsed.filter((match) => !match.problem).length;

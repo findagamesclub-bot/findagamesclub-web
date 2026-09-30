@@ -55,20 +55,25 @@ export default function NewMessageDialog({
 }) {
   const [query, setQuery] = useState("");
   const [found_, setFound] = useState<Contact[]>([]);
-  const [searching, setSearching] = useState(false);
+  // The query the rows in hand were fetched for. Searching is then derived
+  // rather than set from inside the effect: we are searching exactly when the
+  // box has moved on from the results we are holding, which is a fact about
+  // this render and does not need to be remembered separately.
+  const [answered, setAnswered] = useState("");
 
   // Debounced, because this one goes to the server on every keystroke
   // otherwise. Only runs when a search function was supplied.
   useEffect(() => {
     if (!onSearch || !open) return;
     let live = true;
-    setSearching(true);
     const id = setTimeout(async () => {
       const rows = await onSearch(query).catch(() => []);
-      if (live) { setFound(rows); setSearching(false); }
+      if (live) { setFound(rows); setAnswered(query); }
     }, 250);
     return () => { live = false; clearTimeout(id); };
   }, [onSearch, open, query]);
+
+  const searching = Boolean(onSearch) && open && query !== answered;
 
   const pool = onSearch ? found_ : contacts;
   // Grouped by club when the people share one, which is how a member knows
