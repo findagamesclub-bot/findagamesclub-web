@@ -1,0 +1,88 @@
+# The four scheduled jobs that keep the site honest about time passing.
+#
+# Not Vercel cron: the Hobby plan allows one run a day per job and refuses
+# anything more frequent AT DEPLOY TIME, so the AI sweep's ten-minute schedule
+# failed the whole deployment. This also keeps the schedule in the repo, where
+# a change to it shows up in a diff.
+#
+# Every route refuses without the right secret, so an unset CRON_SECRET is a
+# 503 and a failed run rather than a job that quietly does nothing.
+#
+# Two things to know about GitHub's scheduler:
+#   - Times are UTC, always. It does not follow British Summer Time, so these
+#     land an hour later in local terms between late March and late October.
+#     That is fine for all four: none of them is tied to a wall-clock promise.
+#   - A schedule is best effort and runs late under load, sometimes by fifteen
+#     minutes or more. Also fine: every job asks "what is due" rather than
+#     assuming it woke up on time, and the delivery ledger stops a late run
+#     sending twice.
+#
+# **A scheduled workflow is disabled after 60 days with no commits to the
+# default branch.** GitHub emails first. If reminders stop arriving on a quiet
+# repo, that is the reason.
+
+name: Scheduled jobs
+
+on:
+  schedule:
+    # Clubs paying us: reminders, grace, lapse.
+    - cron: "0 7 * * *"
+    # Members paying their club: a week ahead, and the day after.
+    - cron: "15 8 * * *"
+    # Saved event searches, once a day.
+    - cron: "0 9 * * *"
+    # Frees an AI job whose request died mid-run, so nobody watches a spinner
+    # that will never finish.
+    - cron: "*/10 * * * *"
+
+  # Run one by hand from the Actions tab, which is also how to test the setup.
+  workflow_dispatch:
+    inputs:
+      job:
+        description: Which job to run
+        required: true
+        default: renewals
+        type: choice
+        options: [listing-billing, renewals, event-alerts, ai-sweep]
+
+# A second run while one is still going would ask the same questions twice.
+concurrency:
+  group: scheduled-jobs
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Work out which route to call
+        id: pick
+        run: |
+          case "${{ github.event.schedule }}" in
+            "0 7 * * *")    route=listing-billing ;;
+            "15 8 * * *")   route=renewals ;;
+            "0 9 * * *")    route=event-alerts ;;
+            "*/10 * * * *") route=ai-sweep ;;
+            *)              route="${{ inputs.job }}" ;;
+          esac
+          echo "route=$route" >> "$GITHUB_OUTPUT"
+          echo "Calling /api/cron/$route"
+
+      - name: Call it
+        env:
+          SITE_URL: ${{ secrets.SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$SITE_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "SITE_URL and CRON_SECRET must both be set as repository secrets."
+            exit 1
+          fi
+
+          # --fail-with-body so a 500 fails the run AND still prints what the
+          # route said, which is where the stage name lives. Retries cover a
+          # cold start; the routes are safe to call twice.
+          curl --fail-with-body --show-error --silent \
+               --retry 3 --retry-delay 10 --retry-connrefused \
+               --max-time 300 \
+               -H "Authorization: Bearer $CRON_SECRET" \
+               "${SITE_URL%/}/api/cron/${{ steps.pick.outputs.route }}"
+          echo
