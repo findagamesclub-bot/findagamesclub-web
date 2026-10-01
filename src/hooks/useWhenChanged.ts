@@ -21,13 +21,35 @@ import { useState } from "react";
  * `keys` is compared like an effect's dependency array, so a call site reads
  * the same as the effect it replaces.
  */
-export function useWhenChanged(keys: readonly unknown[], sync: () => void) {
-  const [seen, setSeen] = useState(keys);
-
-  const changed = seen.length !== keys.length
+/**
+ * Whether this render is one the sync should run on.
+ *
+ * Pulled out so the mount case can be tested without React. `null` means
+ * nothing has been seen yet, which is the first render, and an effect would
+ * have run there.
+ */
+export function shouldSync(
+  seen: readonly unknown[] | null, keys: readonly unknown[],
+): boolean {
+  return seen === null
+    || seen.length !== keys.length
     || keys.some((key, i) => !Object.is(key, seen[i]));
+}
 
-  if (changed) {
+export function useWhenChanged(keys: readonly unknown[], sync: () => void) {
+  // Null, not `keys`. An effect runs on mount as well as on a change, and
+  // seeding this with the first render's keys skipped that: a dialog opened on
+  // an existing row never filled the fields the sync was responsible for.
+  //
+  // It cost a real bug. `TicketDialog` holds the quantity as its own string
+  // state starting at "", filled by this sync, while the rest of the row is
+  // seeded from the prop. So the quantity box came up empty on every edit and
+  // pressing Update wrote "no limit" over whatever the club had set. The label
+  // and the price looked right the whole time, which is why it read as a save
+  // that had not happened rather than as a field that had been cleared.
+  const [seen, setSeen] = useState<readonly unknown[] | null>(null);
+
+  if (shouldSync(seen, keys)) {
     setSeen(keys);
     sync();
   }

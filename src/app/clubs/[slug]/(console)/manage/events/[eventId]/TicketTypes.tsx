@@ -6,6 +6,8 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import AddIcon from "@mui/icons-material/Add";
+import PendingIcon from "@mui/icons-material/ErrorOutlineOutlined";
+import { useKeepScroll } from "@/hooks/useKeepScroll";
 import ConfirmationNumberIcon from "@mui/icons-material/ConfirmationNumber";
 import Section from "@/components/ui/Section";
 import EmptyState from "@/components/ui/EmptyState";
@@ -36,6 +38,9 @@ export default function TicketTypes({
   tiers: TicketTier[];
 }) {
   const [state, submit] = useActionState<EventEditState, FormData>(saveTicketsAction, {});
+  // Saving refreshes the route, which otherwise throws the reader back to
+  // the top of a page they were several sections down.
+  const keep = useKeepScroll(state);
   useActionToast(state);
 
   const [rows, setRows] = useState<TicketDraft[]>(event.ticketTypes.map((row) => ({
@@ -65,12 +70,27 @@ export default function TicketTypes({
 
   const total = ticketsAvailable(rows);
 
+  // The dialog only puts a row into this list; the button below is what writes
+  // it. Two buttons a letter apart, one of them saving nothing, is how somebody
+  // edits a ticket, watches the dialog close, and walks away having lost it.
+  // So the gap between what is on screen and what is stored has to be visible.
+  const saved = JSON.stringify(event.ticketTypes.map((row) => ({
+    id: row.id, label: row.label, price: row.price,
+    quantityAvailable: row.quantityAvailable, audience: row.audience,
+    minimumTierKey: row.minimumTierKey ?? "",
+  })));
+  const unsaved = JSON.stringify(rows.map((row) => ({
+    id: row.id, label: row.label, price: row.price,
+    quantityAvailable: row.quantityAvailable, audience: row.audience,
+    minimumTierKey: row.minimumTierKey ?? "",
+  }))) !== saved;
+
   return (
     <Section title="Tickets" icon={ConfirmationNumberIcon} navLabel="Tickets"
       note={total === null
         ? "Nothing is capped, so the event takes as many as turn up."
         : `${total} places in total across every ticket type.`}>
-      <Box component="form" action={submit}>
+      <Box component="form" action={(data) => keep(() => submit(data))}>
         <input type="hidden" name="slug" value={slug} />
         <input type="hidden" name="eventId" value={event.id} />
 
@@ -138,6 +158,19 @@ export default function TicketTypes({
               </Box>
             );
           })}
+
+          {unsaved ? (
+            <Stack direction="row" spacing={1.25}
+              sx={{ alignItems: "flex-start", p: 1.75, borderRadius: 1,
+                    border: `1px solid ${tokens.brass}`,
+                    backgroundColor: tokens.brassSoft }}>
+              <PendingIcon aria-hidden
+                sx={{ fontSize: 19, color: tokens.brass, mt: "1px", flexShrink: 0 }} />
+              <Typography variant="body2" sx={{ lineHeight: 1.55 }}>
+                These changes are on this screen only. Press Save tickets to keep them.
+              </Typography>
+            </Stack>
+          ) : null}
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}
             sx={{ justifyContent: "space-between", pt: 0.5 }}>

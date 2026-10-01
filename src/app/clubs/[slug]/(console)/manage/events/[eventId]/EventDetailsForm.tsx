@@ -14,6 +14,7 @@ import Section from "@/components/ui/Section";
 import Panel from "@/components/members/Panel";
 import ChipListField from "@/components/members/ChipListField";
 import SubmitButton from "@/components/ui/SubmitButton";
+import { useKeepScroll } from "@/hooks/useKeepScroll";
 import { useActionToast } from "@/components/ui/Toaster";
 import EventArtwork from "./EventArtwork";
 import { saveEventAction, type EventEditState } from "./actions";
@@ -35,6 +36,8 @@ export default function EventDetailsForm({
   club: { venueName: string; venueAddress: string; venuePostcode: string; clubId: number };
 }) {
   const [state, submit] = useActionState<EventEditState, FormData>(saveEventAction, {});
+  // See useKeepScroll: saving refreshes the route and takes the scroll with it.
+  const keep = useKeepScroll(state);
   useActionToast(state);
   const error = (field: string) => state.errors?.[field];
 
@@ -56,7 +59,7 @@ export default function EventDetailsForm({
   };
 
   return (
-    <Box component="form" action={submit}>
+    <Box component="form" action={(data) => keep(() => submit(data))}>
       <input type="hidden" name="slug" value={slug} />
       <input type="hidden" name="eventId" value={event.id} />
 

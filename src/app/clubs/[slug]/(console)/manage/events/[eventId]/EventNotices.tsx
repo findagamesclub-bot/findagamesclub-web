@@ -14,6 +14,7 @@ import { useActionToast } from "@/components/ui/Toaster";
 import { noticeAction, type EventEditState } from "./actions";
 import { sinceLabel } from "@/utils/dates";
 import { useActionSuccess } from "@/hooks/useActionSuccess";
+import { useKeepScroll } from "@/hooks/useKeepScroll";
 import { tokens } from "@/lib/tokens";
 import type { EditableEvent } from "@/types/eventEditor";
 
@@ -32,6 +33,8 @@ export default function EventNotices({
   event: EditableEvent;
 }) {
   const [state, submit, busy] = useActionState<EventEditState, FormData>(noticeAction, {});
+  // See useKeepScroll: saving refreshes the route and takes the scroll with it.
+  const keep = useKeepScroll(state);
   useActionToast(state);
   const [message, setMessage] = useState("");
 
@@ -53,7 +56,7 @@ export default function EventNotices({
     <Section title="Notices" icon={CampaignIcon} navLabel="Notices"
       note="Everybody holding a ticket sees these on the event page.">
       <Stack spacing={2}>
-        <Box component="form" action={submit}>
+        <Box component="form" action={(data) => keep(() => submit(data))}>
           <input type="hidden" name="slug" value={slug} />
           <input type="hidden" name="eventId" value={event.id} />
 

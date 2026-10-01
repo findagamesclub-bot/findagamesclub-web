@@ -126,7 +126,7 @@ export default function TicketDialog({
       <DialogActions sx={{ px: 3, pb: 2.5 }}>
         <Button onClick={onClose}>Cancel</Button>
         <Button variant="contained" disabled={!draft.label.trim()} onClick={save}>
-          {row ? "Save ticket" : "Add ticket"}
+          {row ? "Update ticket" : "Add ticket"}
         </Button>
       </DialogActions>
     </Dialog>
