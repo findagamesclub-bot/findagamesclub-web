@@ -123,6 +123,13 @@ export default function ClubSidebar({ club }: { club: ClubDetail }) {
     });
   }
 
+  // A club with nothing filled in is a card drawn around nothing. Every block
+  // here is conditional, so a bare listing, which is what an admin creates for
+  // somebody to claim, reached this with an empty list and rendered an empty
+  // white box under the join panel. The client found it on Northern Dice
+  // Society. Nothing to say means say nothing.
+  if (!sections.length) return null;
+
   return (
     <Card component="aside">
       <CardContent sx={{ p: 2.5 }}>
