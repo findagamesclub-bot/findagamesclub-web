@@ -66,7 +66,7 @@ export default function NewPostForm({
               : "Every category here needs a higher membership tier."}
         </Typography>
         {canManage && categories.length === 0 ? (
-          <Box component={NextLink} href={`/clubs/${slug}/manage/listing/games`}
+          <Box component={NextLink} href={`/clubs/${slug}/manage/listing/content`}
             sx={{ fontSize: "0.88rem", fontWeight: 600, color: faction.deep }}>
             Add a category
           </Box>
