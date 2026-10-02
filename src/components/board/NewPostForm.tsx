@@ -14,6 +14,7 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import AddIcon from "@mui/icons-material/Add";
+import NextLink from "next/link";
 import CloseIcon from "@mui/icons-material/Close";
 import LockIcon from "@mui/icons-material/Lock";
 import PollIcon from "@mui/icons-material/Poll";
@@ -25,7 +26,7 @@ import type { CategoryOption } from "@/utils/discussion-categories";
 
 /** Start a thread, optionally with a poll attached. */
 export default function NewPostForm({
-  clubId, slug, faction, categories, profileId,
+  clubId, slug, faction, categories, profileId, canManage = false,
 }: {
   clubId: number;
   slug: string;
@@ -33,6 +34,8 @@ export default function NewPostForm({
   categories: CategoryOption[];
   /** Whose folder the photos upload into. */
   profileId: string;
+  /** Changes what the dead end says: a manager can go and fix it. */
+  canManage?: boolean;
 }) {
   const [state, submit, busy] = useActionState<BoardState, FormData>(boardAction, {});
   useActionToast(state);
@@ -44,10 +47,37 @@ export default function NewPostForm({
 
   const open_ = categories.filter((c) => !c.lockedBy);
 
+  // A disabled button that says nothing is the same failure as a hidden
+  // feature: the client pressed it as an owner on a club with no categories
+  // yet, got nothing, and reasonably read it as broken. A thread has to go
+  // into a category, so no categories means nobody can post, including the
+  // people who run the club. Say which of the two it is, and for somebody who
+  // can fix it, say where.
+  if (open_.length === 0) {
+    return (
+      <Stack spacing={0.75} sx={{ maxWidth: 320 }}>
+        <Typography variant="body2" sx={{ color: tokens.inkMuted, lineHeight: 1.55 }}>
+          {categories.length === 0
+            ? canManage
+              ? "Nobody can post yet, because the board has no categories. Add one and the club can start talking."
+              : "This club has not opened its board for posting yet."
+            : canManage
+              ? "Every category here is reserved for a membership tier, so nothing is open to post in."
+              : "Every category here needs a higher membership tier."}
+        </Typography>
+        {canManage && categories.length === 0 ? (
+          <Box component={NextLink} href={`/clubs/${slug}/manage/listing/games`}
+            sx={{ fontSize: "0.88rem", fontWeight: 600, color: faction.deep }}>
+            Add a category
+          </Box>
+        ) : null}
+      </Stack>
+    );
+  }
+
   return (
     <>
       <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpen(true)}
-        disabled={open_.length === 0}
         sx={{ backgroundColor: faction.base, "&:hover": { backgroundColor: faction.deep } }}>
         Start a thread
       </Button>

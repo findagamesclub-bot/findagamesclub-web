@@ -114,7 +114,7 @@ export default async function ClubBoardPage({
           </Box>
           <Box sx={{ flexShrink: 0 }}>
             <NewPostForm clubId={club.id} slug={slug} faction={faction} categories={options}
-              profileId={viewer.id} />
+              profileId={viewer.id} canManage={canManageClub} />
           </Box>
         </Stack>
       </BoardMasthead>
