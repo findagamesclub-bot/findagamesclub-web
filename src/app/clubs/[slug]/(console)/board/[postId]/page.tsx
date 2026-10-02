@@ -1,4 +1,3 @@
-import { after } from "next/server";
 import { notFound, redirect } from "next/navigation";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
@@ -8,11 +7,12 @@ import NextLink from "next/link";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
 import ThreadView from "@/components/board/ThreadView";
+import MarkThreadRead from "@/components/board/MarkThreadRead";
 import { getClubDetail } from "@/services/clubDetail.service";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
 import { getMyMembership } from "@/services/memberships.service";
-import { getThread, readThread } from "@/services/discussions.service";
+import { getThread } from "@/services/discussions.service";
 import { getReported } from "@/services/myReports.service";
 import { clubIdentity } from "@/utils/club-identity";
 import { tokens } from "@/lib/tokens";
@@ -46,11 +46,6 @@ export default async function ThreadPage({ params }: PageProps<"/clubs/[slug]/bo
   // RLS returns nothing for a thread in a category the viewer's tier does not
   // reach, so a locked thread and a missing one look the same here. Both 404.
   if (!thread || thread.clubSlug !== slug) notFound();
-
-  // Opening a thread is reading it. After the response rather than during the
-  // render, because a render is not the place to write: Next may run one twice
-  // or abandon it, and the page should paint whether or not this lands.
-  after(() => readThread(thread.id));
 
   const { faction } = clubIdentity(club.slug, club.name);
   const membership = await getMyMembership(club.id, viewer.id);
@@ -101,8 +96,15 @@ export default async function ThreadPage({ params }: PageProps<"/clubs/[slug]/bo
           </Typography>
         </Box>
       ) : (
-        <ThreadView thread={thread} slug={slug} faction={faction} canPost={canPost}
-          viewerName={viewer.full_name || "You"} reported={reported} />
+        <>
+          {/* Renders nothing. Marks the thread read once it is on screen, and
+              a removed thread is deliberately not marked: there is nothing to
+              catch up on. */}
+          <MarkThreadRead postId={thread.id} slug={slug} />
+
+          <ThreadView thread={thread} slug={slug} faction={faction} canPost={canPost}
+            viewerName={viewer.full_name || "You"} reported={reported} />
+        </>
       )}
     </Container>
   );

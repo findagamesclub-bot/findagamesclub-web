@@ -207,7 +207,11 @@ export async function getUnreadInThreads(postIds: number[]) {
 export async function readThread(postId: number) {
   try {
     await repo.markThreadRead(postId);
-  } catch {
-    // Failing to mark a thread read must never stop somebody reading it.
+  } catch (error) {
+    // Reading a thread must not fail because the watermark did not save. It is
+    // logged rather than swallowed: the first version was silent, so when the
+    // write could not run at all the counts simply never cleared and there was
+    // nothing anywhere saying why.
+    console.error("could not mark a thread read", { postId, error });
   }
 }
