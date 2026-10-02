@@ -41,7 +41,7 @@ export const FAMILY_META: Record<Family, FamilyMeta> = {
   },
   membership: {
     label: "Your clubs",
-    detail: "Joining, membership tiers, badges, rivalries and team invitations.",
+    detail: "Joining, membership tiers, badges, rivalries, team invitations and replies on a club board.",
     emailByDefault: false,
   },
   events: {
@@ -95,6 +95,11 @@ const MAP = {
 
   // Your standing at a club.
   membership: "membership",
+  // Both board kinds, and deliberately not in "replies". That family cannot be
+  // switched off, and a thread with thirty replies would then send the author
+  // thirty emails they could do nothing about. Club activity, opt in.
+  "board-reply-yours": "membership",
+  "board-reply-joined": "membership",
   "membership-requested": "membership",
   tier: "membership",
   tier_request: "membership",

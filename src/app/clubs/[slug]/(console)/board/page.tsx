@@ -17,7 +17,9 @@ import { getClubDetail } from "@/services/clubDetail.service";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
 import { getMyMembership } from "@/services/memberships.service";
-import { BOARD_PAGE_SIZE, getBoard, getBoardPulse } from "@/services/discussions.service";
+import {
+  BOARD_PAGE_SIZE, getBoard, getBoardPulse, getUnreadInThreads,
+} from "@/services/discussions.service";
 import { categoryOptions, tierRank } from "@/utils/discussion-categories";
 import { clubIdentity } from "@/utils/club-identity";
 import { backTarget } from "@/utils/back-link";
@@ -87,6 +89,10 @@ export default async function ClubBoardPage({
   const board = await getBoard(club.id, { id: viewer.id, canManageClub },
     { category, search, page });
   const { posts } = board;
+
+  // One round trip for the whole page. The function checks membership itself,
+  // so somebody outside the club gets an empty map rather than counts.
+  const unread = await getUnreadInThreads(posts.map((post) => post.id));
 
   // Keeps whatever the reader is already filtering by when they turn the page.
   const pageTarget = {
@@ -159,6 +165,7 @@ export default async function ClubBoardPage({
                                           lg: "repeat(3, minmax(0, 1fr))" } }}>
           {posts.map((post) => (
             <PostCard key={post.id} post={post} faction={faction}
+              unread={unread.get(post.id) ?? 0}
               href={`/clubs/${slug}/board/${post.id}`} />
           ))}
         </Box>

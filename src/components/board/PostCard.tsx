@@ -39,12 +39,17 @@ export type ThreadSummary = {
 };
 
 export default function PostCard({
-  post, href, faction,
+  post, href, faction, unread = 0,
 }: {
   post: ThreadSummary;
   /** Where the card goes. The two boards live at different paths. */
   href: string;
   faction: Faction;
+  /**
+   * Replies this reader has not seen. Nought for a thread they have opened
+   * since the last reply, and for anybody signed out.
+   */
+  unread?: number;
 }) {
   const images = post.images ?? [];
   // Only its author and the club ever receive a removed row, so this is not a
@@ -118,6 +123,11 @@ export default function PostCard({
                 : (sinceLabel(post.createdAt) ?? "").toUpperCase()}
             </Typography>
 
+            {/* First in the row rather than last: it is the reason this card
+                is worth opening, and at card width the byline wraps, which
+                would push it onto a line of its own at the bottom. */}
+            {unread > 0 ? <UnreadPill count={unread} /> : null}
+
             {post.poll ? (
               <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
                 <PollIcon sx={{ fontSize: 14, color: tokens.brass }} />
@@ -173,5 +183,56 @@ export default function PostCard({
         </Stack>
       </Stack>
     </NextLink>
+  );
+}
+
+/**
+ * How many replies are waiting on this reader.
+ *
+ * Brass, which is this site's colour for a figure that matters, and a dot that
+ * breathes so the eye finds it in a grid of twelve cards. One pulse, on one
+ * element: a card that animates all over reads as an advert.
+ *
+ * The animation is off under `prefers-reduced-motion`, and the count is in
+ * words for a screen reader, because a pulsing dot says nothing to one.
+ */
+function UnreadPill({ count }: { count: number }) {
+  return (
+    <Stack
+      direction="row"
+      spacing={0.6}
+      sx={{
+        alignItems: "center", flexShrink: 0,
+        px: 0.9, py: 0.2, borderRadius: 999,
+        backgroundColor: tokens.brassSoft,
+        border: `1px solid ${tokens.brass}`,
+      }}
+    >
+      <Box
+        aria-hidden
+        sx={{
+          width: 7, height: 7, borderRadius: "50%",
+          backgroundColor: tokens.brass,
+          animation: "boardUnread 1.9s ease-in-out infinite",
+          "@keyframes boardUnread": {
+            "0%, 100%": { transform: "scale(1)", opacity: 1 },
+            "50%": { transform: "scale(1.45)", opacity: 0.55 },
+          },
+          "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+        }}
+      />
+      <Typography
+        component="span"
+        sx={{ fontFamily: "var(--font-mono)", fontSize: "0.66rem",
+              letterSpacing: "0.06em", color: tokens.ink, fontWeight: 700 }}
+      >
+        {count} NEW
+      </Typography>
+      <Box component="span" sx={{ position: "absolute", width: 1, height: 1,
+                                  overflow: "hidden", clip: "rect(0 0 0 0)",
+                                  whiteSpace: "nowrap" }}>
+        {count === 1 ? "1 reply you have not read" : `${count} replies you have not read`}
+      </Box>
+    </Stack>
   );
 }

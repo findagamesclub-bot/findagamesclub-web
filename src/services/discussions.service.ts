@@ -191,3 +191,23 @@ export async function getBoardPulse(clubId: number, today: string) {
     active: countByMonth(rows.map((r) => r.last_activity_at), today),
   };
 }
+
+/**
+ * Replies the reader has not seen, for a page of threads.
+ *
+ * One round trip for the page rather than one per card. Membership is checked
+ * in SQL, so somebody outside the club gets nothing back rather than counts
+ * they should not have.
+ */
+export async function getUnreadInThreads(postIds: number[]) {
+  return repo.findUnreadInThreads(postIds);
+}
+
+/** Opening a thread is reading it, and takes its notice off the bell too. */
+export async function readThread(postId: number) {
+  try {
+    await repo.markThreadRead(postId);
+  } catch {
+    // Failing to mark a thread read must never stop somebody reading it.
+  }
+}

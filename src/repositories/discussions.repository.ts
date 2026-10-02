@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { callRpc } from "@/lib/supabase/table";
 import { orIlike } from "@/utils/postgrest";
 
 const AUTHOR = "profiles!club_discussion_posts_author_profile_id_fkey(id, full_name)";
@@ -174,3 +175,26 @@ export async function castVote(postId: number, optionKey: string) {
 
   if (error) throw Object.assign(new Error(error.message), { code: error.code });
 }
+
+/**
+ * Replies this reader has not seen, for a page of threads.
+ *
+ * One round trip for the whole page rather than one per card. The function
+ * checks membership itself, so a signed-out reader or somebody outside the
+ * club gets nothing back rather than a count they should not have.
+ */
+export async function findUnreadInThreads(postIds: number[]) {
+  if (!postIds.length) return new Map<number, number>();
+  try {
+    const rows = await callRpc<{ post_id: number; unread: number }[]>(
+      "unread_in_threads", { p_posts: postIds });
+    return new Map((rows ?? []).map((row) => [row.post_id, row.unread]));
+  } catch {
+    // A board that will not count is still a board worth reading.
+    return new Map<number, number>();
+  }
+}
+
+/** Opening a thread is reading it. Also clears its notice off the bell. */
+export const markThreadRead = (postId: number) =>
+  callRpc<void>("mark_thread_read", { p_post: postId });
