@@ -14,6 +14,7 @@ import SubmitButton from "@/components/ui/SubmitButton";
 import { scoreProblem } from "@/utils/result-army";
 import { linePoints } from "@/utils/army-pricing";
 import { mono, tokens } from "@/lib/tokens";
+import { copyRulesProblem, optionsProblem } from "@/utils/unit-shape";
 import type { UnitRow } from "@/services/armyCatalogue.service";
 
 const pretty = (value: unknown) =>
@@ -60,12 +61,24 @@ export default function UnitDialog({
   const pointsError = points.trim() === ""
     ? "" : scoreProblem(points, 99999, "Points");
 
+  // Two separate problems, said separately: "not valid JSON" and "that is the
+  // wrong shape for this box" need different fixes, and the second used to be
+  // reported as nothing at all.
   let jsonError = "";
+  let optionsError = "";
+  let rulesError = "";
   let preview = "";
   try {
     const parsedOptions = JSON.parse(options || "[]");
     const parsedRules = JSON.parse(rules || "[]");
-    if (parsed > 0) {
+    optionsError = optionsProblem(parsedOptions);
+    rulesError = copyRulesProblem(parsedRules);
+
+    // Only priced once both boxes hold the thing they are for. A preview built
+    // from the wrong shape reads as a real figure and is not one: the client's
+    // copy costs pasted into Options previewed "Three of them cost 300", which
+    // is just the base points three times.
+    if (parsed > 0 && !optionsError && !rulesError) {
       const three = linePoints(
         { name, basePoints: parsed, options: parsedOptions, copyCostRules: parsedRules }, 3);
       preview = `Three of them cost ${three}`;
@@ -74,7 +87,8 @@ export default function UnitDialog({
     jsonError = "The options or the copy costs are not valid JSON.";
   }
 
-  const blocked = !name.trim() || parsed <= 0 || Boolean(jsonError);
+  const blocked = !name.trim() || parsed <= 0
+    || Boolean(jsonError || optionsError || rulesError);
 
   return (
     <Dialog open={open} onClose={busy ? undefined : onClose}
@@ -97,14 +111,16 @@ export default function UnitDialog({
             error={Boolean(pointsError)} helperText={pointsError || "What one costs."}
             onChange={(event) => setPoints(event.target.value.slice(0, 6))} />
           <TextField label="Options" value={options} multiline minRows={3}
+            error={Boolean(optionsError)}
             onChange={(event) => setOptions(event.target.value)}
             slotProps={{ htmlInput: { style: { fontFamily: mono, fontSize: "0.8rem" } } }}
-            helperText="Legacy's own shape: label, modelCount and points." />
+            helperText={optionsError
+              || "Legacy's own shape: label, modelCount and points."} />
           <TextField label="Copy costs" value={rules} multiline minRows={3}
-            error={Boolean(jsonError)}
+            error={Boolean(jsonError || rulesError)}
             onChange={(event) => setRules(event.target.value)}
             slotProps={{ htmlInput: { style: { fontFamily: mono, fontSize: "0.8rem" } } }}
-            helperText={jsonError
+            helperText={jsonError || rulesError
               || "fromCopy, toCopy and options. A null toCopy means every copy after."} />
 
           {preview ? (

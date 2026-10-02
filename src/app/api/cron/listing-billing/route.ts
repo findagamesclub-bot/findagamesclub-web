@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { cronRefusal } from "../guard";
 import * as repo from "@/repositories/billing.repository";
 import * as notify from "@/services/billing-notify.service";
+import * as featuredRepo from "@/repositories/featured.repository";
+import * as featuredNotify from "@/services/featured-notify.service";
 
 /**
  * The letters time sends.
@@ -27,6 +29,32 @@ export async function GET(request: Request) {
   const refusal = cronRefusal(request);
   if (refusal) return refusal;
 
+  // Featured slots first, and deliberately outside everything below.
+  //
+  // A slot ends on its own, which is 0113's design and the right one, but the
+  // cost is that nothing happens at the moment a date passes and the club has
+  // to be told by somebody asking. It is not governed by the billing switch:
+  // a club can be on the front page while charging for listings is off, so
+  // putting this under the `enabled` return would have meant the one case that
+  // actually happens today never being announced.
+  let featuredEnded = 0;
+  try {
+    for (const slot of await featuredRepo.findEndedSlotsAsJob()) {
+      // Stamp and ring the bell in one statement, then write. False means
+      // somebody else got there first, which is what makes a job that runs
+      // twice in a day harmless rather than a second letter.
+      if (!await featuredRepo.markFeaturedAnnouncedAsJob(slot.slot_id)) continue;
+      await featuredNotify.featuredEnded(
+        { slug: slot.club_slug, name: slot.club_name, ownerId: slot.owner_id },
+        slot.starts_on, slot.ends_on);
+      featuredEnded += 1;
+    }
+  } catch (error) {
+    // Logged and carried, not fatal: the slots are nobody's money and the
+    // three billing stages underneath are.
+    console.error("[billing] the featured stage failed", error);
+  }
+
   // Read as the job, and let a failure be a failure. Going through the
   // ordinary settings read meant an unreadable table came back as "off", and
   // the job answered "Billing is switched off" every night while billing was
@@ -37,20 +65,23 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error("[billing] could not read the settings", error);
     return NextResponse.json(
-      { error: "Could not read the billing settings, so nothing was done." },
+      { error: "Could not read the billing settings, so no chasing was done.",
+        featuredEnded },
       { status: 500 });
   }
 
   if (!settings) {
     return NextResponse.json(
-      { error: "There is no billing settings row, so nothing was done." },
+      { error: "There is no billing settings row, so no chasing was done.",
+        featuredEnded },
       { status: 500 });
   }
 
   // Nothing to chase while billing is off, and writing to forty clubs about a
   // charge that does not exist is the worst possible way to find that out.
   if (!settings.enabled) {
-    return NextResponse.json({ ran: false, reason: "Billing is switched off." });
+    return NextResponse.json({
+      ran: false, reason: "Billing is switched off.", featuredEnded });
   }
 
   const done = { reminded: 0, overdue: 0, lapsed: 0 };
@@ -98,9 +129,10 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error(`[billing] the ${stage} stage failed`, error);
     return NextResponse.json(
-      { error: `The ${stage} stage failed, so the run stopped there.`, ...done },
+      { error: `The ${stage} stage failed, so the run stopped there.`,
+        featuredEnded, ...done },
       { status: 500 });
   }
 
-  return NextResponse.json({ ran: true, ...done });
+  return NextResponse.json({ ran: true, featuredEnded, ...done });
 }

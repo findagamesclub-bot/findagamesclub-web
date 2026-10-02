@@ -32,3 +32,5 @@
 /admin/catalogue
 /admin/catalogue/adepta-sororitas
 /admin/catalogue/adepta-sororitas?q=castigator
+/admin/catalogue/versions/11th-test-2026-07-27
+/admin/catalogue?tab=versions

@@ -89,7 +89,11 @@ export function listHealth(input: HealthInput): ListHealth {
 
   if (limit >= 1500 && antiTank <= 1) {
     issues.push({ title: "Anti-tank looks light", severity: "high",
-      detail: `Only ${antiTank || 0} clearly anti-tank-tagged selection is showing, so heavy vehicles or monsters could be awkward to answer.` });
+      // "Only 0 ... selection" is the stage 5 singular slip wearing a new hat,
+      // and nought is worth saying in words rather than as a figure.
+      detail: `${antiTank === 1 ? "Only one selection is" : "Nothing in the list is"}`
+        + " tagged as anti-tank, so heavy vehicles or monsters could be awkward"
+        + " to answer." });
   } else if (antiTank === 2) {
     issues.push({ title: "Anti-tank is workable but thin", severity: "medium",
       detail: "You have some anti-tank presence, but losing one key piece could make target priority much tighter." });
@@ -175,8 +179,10 @@ export function listHealth(input: HealthInput): ListHealth {
     strengths: strengths.slice(0, 4),
     healthSummary: {
       label,
-      reason: issues[0]?.detail ?? strengths[0]
-        ?? "The list has a usable baseline but would benefit from deeper coaching.",
+      reason: issues.length
+        ? saidIssues(issues)
+        : strengths[0]
+          ?? "The list has a usable baseline but would benefit from deeper coaching.",
     },
     duplicateUnits: duplicates.slice(0, 5),
     configurationReadiness: {
@@ -188,4 +194,20 @@ export function listHealth(input: HealthInput): ListHealth {
       isComplete: missing.length === 0,
     },
   };
+}
+
+/**
+ * The flagged titles in one line.
+ *
+ * It used to be `issues[0].detail` verbatim, which printed the first flagged
+ * card's own sentence directly above that card. A summary that repeats what
+ * is underneath it is a summary doing nothing, so this names what is wrong
+ * rather than restating the first of it.
+ */
+function saidIssues(issues: Issue[]): string {
+  const titles = issues.map((one) => one.title);
+  const lower = (title: string) => title.charAt(0).toLowerCase() + title.slice(1);
+  if (titles.length === 1) return `${titles[0]}.`;
+  if (titles.length === 2) return `${titles[0]}, and ${lower(titles[1])}.`;
+  return `${titles[0]}, ${lower(titles[1])}, and ${titles.length - 2} more.`;
 }

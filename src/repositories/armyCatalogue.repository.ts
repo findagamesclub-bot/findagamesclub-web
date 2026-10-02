@@ -201,3 +201,27 @@ export const saveBuilderSettings = (club: number, enabled: boolean, edition: str
 export const findBuilderFor = (club: number) =>
   callRpc<{ enabled: boolean; edition_id: string | null; catalogue_version: string | null }[]>(
     "army_builder_for", { p_club: club });
+
+export type CatalogueVersionRow = {
+  edition_id: string;
+  edition_label: string;
+  catalogue_version: string;
+  note: string;
+  published_at: string;
+  published_by: string;
+  factions: number;
+  units: number;
+  lists: number;
+  results: number;
+  is_current: boolean;
+};
+
+/** Every published version, newest first, with what is pinned to each. */
+export const findCatalogueVersions = () =>
+  callRpc<CatalogueVersionRow[]>("admin_catalogue_versions");
+
+/** One frozen catalogue, whole. About 936 KB, so only ask when it is wanted. */
+export const findCatalogueSnapshot = (editionId: string, version: string) =>
+  callRpc<unknown>("admin_catalogue_snapshot", {
+    p_edition: editionId, p_version: version,
+  });

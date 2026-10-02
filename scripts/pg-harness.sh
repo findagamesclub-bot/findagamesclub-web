@@ -78,6 +78,10 @@ case "${1:-build}" in
       echo "applied $(basename "$f")"
     done
     ;;
-  psql) shift; exec psql -d "$DB" "$@" ;;
+  # ON_ERROR_STOP, because a behaviour test that raises and then carries on
+  # still reaches its own "all pass" echo and still exits 0. Twenty-eight of
+  # the twenty-nine suites were written that way. psql ignores it on an
+  # interactive prompt, so one flag covers both uses.
+  psql) shift; exec psql -d "$DB" -v ON_ERROR_STOP=1 "$@" ;;
   *) echo "usage: $0 build|apply <files...>|psql"; exit 2 ;;
 esac

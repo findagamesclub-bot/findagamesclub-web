@@ -148,6 +148,14 @@ const MAP = {
   "listing-renewal-due": "money",
   "listing-overdue": "money",
   "listing-lapsed": "money",
+  // A featured slot is dated and priced, so it belongs with the money rather
+  // than under "Running a club", where email is off by default and a club
+  // would have paid for a slot and heard nothing. Three kinds for one row,
+  // because `notify_person` de-duplicates on the kind and the ending would
+  // otherwise rewrite the booking notice in place (0104, 0112, 0126).
+  "featured-booked": "money",
+  "featured-ended": "money",
+  "featured-removed": "money",
 } satisfies Record<string, Family>;
 
 /**

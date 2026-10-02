@@ -48,8 +48,13 @@ const bare = { detachments: [], dispositionsFor: () => [] };
   assert.equal(out.flaggedIssues[0].title, "Anti-tank looks light");
   assert.equal(out.flaggedIssues[0].severity, "high");
   assert.equal(out.healthSummary.label, "Needs attention");
-  // The reason is the first issue's detail, never invented.
-  assert.equal(out.healthSummary.reason, out.flaggedIssues[0].detail);
+  // One reads as one, and nought reads as "Nothing in the list is", never as
+  // "Only 0 ... selection".
+  assert.ok(out.flaggedIssues[0].detail.startsWith("Only one selection is"));
+  // The reason names what is flagged rather than repeating the first card's
+  // own sentence directly above it.
+  assert.ok(out.healthSummary.reason.startsWith("Anti-tank looks light,"));
+  assert.ok(!out.healthSummary.reason.includes(out.flaggedIssues[0].detail));
 }
 {
   // Exactly two is its own middle rung, not a strength and not a crisis.
@@ -113,6 +118,11 @@ const bare = { detachments: [], dispositionsFor: () => [] };
   assert.equal(out.healthSummary.label, "Needs attention");
   assert.ok(out.flaggedIssues.length >= 2);
   assert.ok(out.roleBalance.every((r) => r.status === "weak"));
+  // Nought in words. "Only 0 clearly anti-tank-tagged selection" went in front
+  // of the client, and it is the stage 5 singular slip in a new place.
+  const none = out.flaggedIssues.find((i) => i.title === "Anti-tank looks light");
+  assert.ok(none?.detail.startsWith("Nothing in the list is tagged as anti-tank"));
+  assert.ok(!/\b0\b/.test(none?.detail ?? ""));
 }
 
 // ----------------------------------------------- the disposition rung

@@ -207,3 +207,27 @@ export async function newDraft(edition: string, version: string): Promise<Result
     return { ok: false, error: explain(error, "That draft could not be started.") };
   }
 }
+
+/**
+ * The published versions, for the admin's history.
+ *
+ * Never throws: a catalogue screen that will not draw because the history read
+ * failed is worse than a screen with no history on it. The page says so rather
+ * than showing nothing and implying there is nothing.
+ */
+export async function getCatalogueVersions() {
+  try {
+    return { rows: await repo.findCatalogueVersions(), failed: false };
+  } catch {
+    return { rows: [], failed: true };
+  }
+}
+
+/** One frozen catalogue, read back as the shape the pickers already use. */
+export async function getCatalogueSnapshot(editionId: string, version: string) {
+  try {
+    return (await repo.findCatalogueSnapshot(editionId, version)) ?? null;
+  } catch {
+    return null;
+  }
+}

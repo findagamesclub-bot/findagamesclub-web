@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/services/auth.service";
+import { unitShapeProblem } from "@/utils/unit-shape";
 import {
   newDraft, publish, removeUnit, saveDetachment, saveFaction, saveUnit,
 } from "@/services/armyCatalogue.service";
@@ -67,6 +68,14 @@ export async function catalogueAction(
     } catch {
       return { error: "The options or the copy costs are not valid JSON." };
     }
+
+    // Parsing is not checking. Copy-cost rules pasted into the options box are
+    // valid JSON and the wrong thing entirely, and they saved without a word
+    // and then priced every copy at the base points. The screen says this too;
+    // this is the half that holds whatever sent the request.
+    const problem = unitShapeProblem(options, rules);
+    if (problem) return { error: problem };
+
     const done = await saveUnit({
       edition, faction: str(data, "faction"), name: str(data, "name"),
       points: num(data, "points"), options, rules, position: num(data, "position"),

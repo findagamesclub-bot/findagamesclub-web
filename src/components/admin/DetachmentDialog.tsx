@@ -52,7 +52,10 @@ export default function DetachmentDialog({
 
   return (
     <Dialog open={open} onClose={busy ? undefined : onClose}
-      fullWidth maxWidth="xs" fullScreen={small}>
+      // "sm", matching the unit dialog beside it. At "xs" the dispositions box
+      // was narrower than the names going into it, and two dialogs a click
+      // apart being different widths reads as one of them being wrong.
+      fullWidth maxWidth="sm" fullScreen={small}>
       <DialogTitle sx={{ fontSize: "1.1rem" }}>
         {shown ? "Edit detachment" : "New detachment"}
       </DialogTitle>

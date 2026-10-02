@@ -11,3 +11,4 @@ export * from "./listings";
 export * from "./billing";
 export * from "./claims";
 export * from "./alerts";
+export * from "./featured";
