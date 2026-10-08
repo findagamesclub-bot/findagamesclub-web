@@ -5,16 +5,21 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import ReceiptIcon from "@mui/icons-material/ReceiptLong";
+import StarIcon from "@mui/icons-material/StarBorder";
+import TuneIcon from "@mui/icons-material/Tune";
 import Panel from "@/components/members/Panel";
 import PageHead from "@/components/ui/PageHead";
 import EmptyState from "@/components/ui/EmptyState";
 import Markdown from "@/components/ui/Markdown";
+import PlanPicker from "@/components/billing/PlanPicker";
+import FeaturedAsk from "@/components/billing/FeaturedAsk";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
 import { getClubDetail } from "@/services/clubDetail.service";
 import {
   getBillingSettings, getPayments, getSubscriptionForClub,
 } from "@/services/billing.service";
+import { getFeaturedRequest } from "@/services/featuredRequests.service";
 import { methodLabel, ownerStanding, standingLabel, standingTone } from "@/utils/listing-billing";
 import { formatPence } from "@/utils/format";
 import { shortDate } from "@/utils/dates";
@@ -42,9 +47,13 @@ export default async function ClubBillingPage({
   const access = await getClubAccess(club.id, viewer);
   if (access.role !== "owner" && access.role !== "admin") notFound();
 
-  const [subscription, settings] = await Promise.all([
+  const [subscription, settings, featured] = await Promise.all([
     getSubscriptionForClub(club.id),
     getBillingSettings(),
+    // Deliberately in the same wave and outside the billing switch below: a
+    // club can lead the homepage while listing charges are off, which is the
+    // state the site is in today (0155 draws the same line).
+    getFeaturedRequest(club.id),
   ]);
 
   const payments = subscription ? await getPayments(subscription.id) : [];
@@ -110,6 +119,33 @@ export default async function ClubBillingPage({
                   })}
             </Typography>
           </Stack>
+        </Panel>
+
+        {/* Only with a subscription to move. Charging off means there is no
+            plan yet, and a club picking between two prices nobody is charging
+            would be choosing the shape of a bill that does not exist. */}
+        {charging && subscription ? (
+          <Panel title="Your plan" icon={TuneIcon}>
+            <PlanPicker
+              slug={slug}
+              current={subscription.plan_interval === "yearly" ? "yearly" : "monthly"}
+              monthlyPence={settings.monthly_price_pence}
+              yearlyPence={settings.yearly_price_pence}
+              currency={subscription.currency}
+              renewsOn={subscription.current_period_end
+                ? shortDate(subscription.current_period_end.slice(0, 10)) : null}
+            />
+          </Panel>
+        ) : null}
+
+        <Panel title="Lead the homepage" icon={StarIcon}>
+          <FeaturedAsk
+            slug={slug}
+            request={featured}
+            pricePence={settings.featured_price_pence}
+            days={settings.featured_duration_days}
+            currency={settings.currency ?? "GBP"}
+          />
         </Panel>
 
         {/* Only when there is something to pay. A free listing being shown bank

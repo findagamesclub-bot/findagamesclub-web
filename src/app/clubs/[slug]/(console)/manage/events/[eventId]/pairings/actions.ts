@@ -6,7 +6,9 @@ import { getClubAccess } from "@/services/clubAccess.service";
 import { getClubDetail } from "@/services/clubDetail.service";
 import { getEvent } from "@/services/eventEditor.service";
 import * as pairings from "@/services/eventPairings.service";
+import * as armies from "@/services/eventPairingArmies.service";
 import * as draw from "@/services/eventDraw.service";
+import * as teams from "@/services/eventTeams.service";
 
 export type PairingsState = { error?: string; notice?: string };
 
@@ -64,6 +66,14 @@ export async function pairingsAction(
       case "generate":
         return draw.generateRound(event.id, round, label);
 
+      case "generate-teams":
+        // The teams are read here rather than posted, so a tab left open
+        // while somebody added a team draws the teams that exist now.
+        return teams.drawRound(event.id, round, await teams.getTeams(event.id));
+
+      case "remove-fixture":
+        return teams.removeFixture(event.id, Number(data.get("fixtureId")) || 0);
+
       case "paste":
         return draw.pasteRound(event.id, round, label, String(data.get("pasted") ?? ""));
 
@@ -102,6 +112,31 @@ export async function pairingsAction(
 
       case "remove-match":
         return pairings.removeMatch(pairingId, Number(data.get("matchId")) || 0);
+
+      case "save-armies": {
+        const matchId = Number(data.get("matchId")) || 0;
+        if (!matchId) {
+          return { ok: false as const, error: "Save the table first, then say what was played." };
+        }
+        // Each side is four strings and a list id. A form cannot post a shape,
+        // so they arrive as named fields rather than as one blob: a key
+        // nobody types is a key nobody can see has gone missing.
+        const side = (which: string) => ({
+          factionId: String(data.get(`${which}FactionId`) ?? ""),
+          factionLabel: String(data.get(`${which}Faction`) ?? ""),
+          detachment: String(data.get(`${which}Detachment`) ?? ""),
+          disposition: String(data.get(`${which}Disposition`) ?? ""),
+        });
+        const list = (which: string) => Number(data.get(`${which}List`)) || null;
+
+        return armies.saveMatchArmies(matchId,
+          { one: side("one"), two: side("two") },
+          { one: list("one"), two: list("two") });
+      }
+
+      case "draw-audience":
+        return pairings.setDrawPublic(event.id,
+          String(data.get("drawPublic") ?? "") === "yes");
 
       case "publish":
         return pairings.publishRound(event.id, pairingId,

@@ -82,7 +82,7 @@ export async function findMyUpcoming(profileId: string, fromDate: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("club_bookings")
-    .select(`${BOOKING_COLUMNS}, clubs!inner(slug, name, logo_url)`)
+    .select(`${BOOKING_COLUMNS}, clubs!inner(slug, name, logo_url, logo_path)`)
     .eq("booked_by", profileId)
     .gte("session_date", fromDate)
     .neq("status", "cancelled")
@@ -234,7 +234,7 @@ export async function findPlayedBookingsForClubs(
     .from("club_bookings")
     .select(
       `*,
-       clubs!inner(id, slug, name, logo_url),
+       clubs!inner(id, slug, name, logo_url, logo_path),
        booker:profiles!club_bookings_booked_by_fkey(id, full_name),
        opponent:profiles!club_bookings_opponent_profile_id_fkey(id, full_name),
        acceptor:profiles!club_bookings_accepted_by_fkey(id, full_name)`,
@@ -259,7 +259,7 @@ export async function findUpcomingBookingsForClubs(
     .from("club_bookings")
     .select(
       `*,
-       clubs!inner(id, slug, name, logo_url),
+       clubs!inner(id, slug, name, logo_url, logo_path),
        booker:profiles!club_bookings_booked_by_fkey(id, full_name),
        opponent:profiles!club_bookings_opponent_profile_id_fkey(id, full_name),
        acceptor:profiles!club_bookings_accepted_by_fkey(id, full_name)`,

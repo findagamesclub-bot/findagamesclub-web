@@ -92,3 +92,78 @@ export async function countReviews(clubId: number): Promise<number> {
   if (error) throw new Error(`Failed to count reviews: ${error.message}`);
   return count ?? 0;
 }
+
+export type ClubReviewRow = {
+  id: number;
+  rating: number;
+  comment: string | null;
+  author_name: string;
+  author_profile_id: string | null;
+  created_at: string;
+  flagged_at: string | null;
+};
+
+/**
+ * A club's own reviews, for its console.
+ *
+ * Paged in SQL rather than read with the club: the club page embeds every
+ * review to work out an average, which is fine at eleven and wrong at four
+ * hundred, and this is the screen a club with four hundred opens.
+ *
+ * Removed ones are filtered here rather than relied on through RLS, because
+ * `club_reviews_select` deliberately still returns them to the club: a review
+ * an admin took down should not simply vanish from the owner's view without
+ * explanation, and that is the next thing to build (DEFERRED).
+ */
+/** The one base query. A second copy is a second thing to get wrong. */
+function narrow(supabase: Awaited<ReturnType<typeof createClient>>) {
+  return (clubId: number) => supabase
+    .from("club_reviews")
+    .select("id, rating, comment, author_name, author_profile_id, created_at, flagged_at",
+      { count: "exact" })
+    .eq("club_id", clubId)
+    .is("removed_at", null);
+}
+
+export type ReviewView = "all" | "low" | "reported";
+
+/** The filter, as SQL. One place, so the list and its counts cannot disagree. */
+function scoped(
+  query: ReturnType<ReturnType<typeof narrow>>, view: ReviewView,
+) {
+  if (view === "low") return query.lte("rating", 2);
+  if (view === "reported") return query.not("flagged_at", "is", null);
+  return query;
+}
+
+export async function findClubReviewsPage(
+  clubId: number,
+  opts: { from: number; to: number; view: ReviewView; oldest: boolean },
+): Promise<{ rows: ClubReviewRow[]; total: number }> {
+  const supabase = await createClient();
+  const { data, error, count } = await scoped(narrow(supabase)(clubId), opts.view)
+    .order("created_at", { ascending: opts.oldest })
+    .range(opts.from, opts.to);
+
+  if (error) throw new Error(`Failed to load the reviews: ${error.message}`);
+  return { rows: (data ?? []) as ClubReviewRow[], total: count ?? 0 };
+}
+
+/**
+ * How many are in each tab, narrowed the same way the list is.
+ *
+ * Three index counts rather than a figure the page works out from the rows it
+ * happens to be showing: "Low 2" beside a page of twenty-five has to mean two
+ * in the club, not two on this page.
+ */
+export async function countClubReviews(clubId: number) {
+  const supabase = await createClient();
+  const views: ReviewView[] = ["all", "low", "reported"];
+
+  const counts = await Promise.all(views.map(async (view) => {
+    const { count } = await scoped(narrow(supabase)(clubId), view);
+    return [view, count ?? 0] as const;
+  }));
+
+  return Object.fromEntries(counts) as Record<ReviewView, number>;
+}

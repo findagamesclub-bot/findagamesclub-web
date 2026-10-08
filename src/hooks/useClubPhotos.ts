@@ -4,7 +4,8 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { downscaleImage } from "@/lib/images";
 import {
-  CLUB_MEDIA, MAX_CLUB_IMAGES, clubMediaPath, rejectImage, type MediaKind,
+  CLUB_MEDIA, MAX_CLUB_IMAGES, mediaPathFor, rejectImage,
+  type MediaKind, type MediaOwner,
 } from "@/utils/club-media";
 
 export type ClubPhoto = {
@@ -27,7 +28,7 @@ export type ClubPhoto = {
  * on the site renders wider than 1200. Uploading the original would fail on
  * exactly the phones most likely to be used on a club night.
  */
-export function useClubPhotos(clubId: number, initial: ClubPhoto[]) {
+export function useClubPhotos(owner: MediaOwner, initial: ClubPhoto[]) {
   const [photos, setPhotos] = useState<ClubPhoto[]>(initial);
   const [busy, setBusy] = useState(false);
   /** Paths whose files go once the save that drops their rows succeeds. */
@@ -56,7 +57,7 @@ export function useClubPhotos(clubId: number, initial: ClubPhoto[]) {
       if (refusal) { setError(refusal); continue; }
 
       const key = crypto.randomUUID();
-      const path = clubMediaPath(clubId, kind, shrunk.name || file.name, key);
+      const path = mediaPathFor(owner, kind, shrunk.name || file.name, key);
       const preview = URL.createObjectURL(shrunk);
       setPhotos((held) => [...held, { key, preview, path: null, src: null, alt: "" }]);
 

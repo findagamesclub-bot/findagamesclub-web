@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 
-import { drawRound, drawSummary, shuffle, uniquePlayers } from "../pairings-draw";
+import { drawRound, drawSummary, roundTabs, shuffle, uniquePlayers }
+  from "../pairings-draw";
 
 const player = (name: string) => ({ profileId: null, name });
 
@@ -119,3 +120,19 @@ const last = () => 0.999999;
 }
 
 console.log("pairings-draw: all assertions passed");
+
+// The round tabs: what exists, what the event says it has, and the next one.
+{
+  assert.deepEqual(roundTabs([], null), [1],
+    "an event with no rounds offers the first one");
+  assert.deepEqual(roundTabs([], 5), [1, 2, 3, 4, 5],
+    "an event that says it has five offers five before any are drawn");
+  assert.deepEqual(roundTabs([{ round: 1 }, { round: 2 }], null), [1, 2, 3],
+    "the next one to build is always there");
+  assert.deepEqual(roundTabs([{ round: 4 }], 3), [1, 2, 3, 4],
+    "a round drawn past the stated count is not hidden");
+  assert.deepEqual(roundTabs([{ round: 2 }, { round: 1 }], null), [1, 2, 3],
+    "sorted, whatever order they came back in");
+}
+
+console.log("pairings-draw: round tabs passed");

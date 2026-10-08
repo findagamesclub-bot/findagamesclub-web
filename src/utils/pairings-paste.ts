@@ -37,12 +37,32 @@ const clean = (value: string | undefined) => (value ?? "").trim();
 const isTable = (value: string) => /^[0-9]+$/.test(value);
 
 export function parsePastedPairings(raw: string): PastedMatch[] {
-  return raw
+  const lines = raw
     .split(/\r?\n/)
     // Blank lines go, but the line itself is not trimmed: a trailing tab is
     // what makes "3<tab>Ann<tab>" a bye on table three rather than two cells.
-    .filter((line) => line.trim() !== "")
-    .map((line, index) => {
+    .filter((line) => line.trim() !== "");
+
+  // Which numbers the paste has already claimed outright. A list that numbers
+  // some lines and not others used to hand the un-numbered ones their position
+  // in the list, which collides: "1, Ann, Ben" followed by "Cal vs Dee" gave
+  // two table ones. Found by pasting the dialog's own worked example.
+  const taken = new Set<string>();
+  for (const line of lines) {
+    const cells = columns(line).map(clean);
+    if (cells.length >= 3 && isTable(cells[0] ?? "")) taken.add(cells[0]!);
+  }
+
+  let next = 1;
+  const nextFree = () => {
+    while (taken.has(String(next))) next += 1;
+    const free = String(next);
+    next += 1;
+    return free;
+  };
+
+  return lines
+    .map((line) => {
       // Trailing empties are kept while deciding: "3<tab>Ann<tab>" is a bye on
       // table three, and dropping the empty cell first read the 3 as a player.
       const cells = columns(line).map(clean);
@@ -51,7 +71,7 @@ export function parsePastedPairings(raw: string): PastedMatch[] {
       // Two cells and a number first is ambiguous, and taking it as a table
       // would lose a player. Three cells is a table and two players.
       const hasTable = cells.length >= 3 && isTable(leading);
-      const table = hasTable ? leading : String(index + 1);
+      const table = hasTable ? leading : nextFree();
       const [one, two] = hasTable ? [cells[1], cells[2]] : [cells[0], cells[1]];
 
       const playerOne = clean(one);

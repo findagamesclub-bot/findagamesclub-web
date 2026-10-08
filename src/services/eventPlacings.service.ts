@@ -1,6 +1,7 @@
 import "server-only";
 
 import * as repo from "@/repositories/events.repository";
+import { setResultList } from "./resultArmies.service";
 
 /** Every refusal the placing functions raise, worded for the club reading it. */
 const ERRORS: [string, string][] = [
@@ -37,6 +38,8 @@ export async function savePlacing(params: {
   faction: string;
   detachment: string;
   disposition: string;
+  /** Undefined leaves whatever list is already named alone. */
+  listId?: number | null;
 }): Promise<{ ok: boolean; error?: string }> {
   if (!Number.isFinite(params.rank) || params.rank < 1) {
     return { ok: false, error: "A place has to be between 1 and 999." };
@@ -46,7 +49,7 @@ export async function savePlacing(params: {
   }
 
   try {
-    await repo.saveEventPlacing({
+    const placingId = await repo.saveEventPlacing({
       ...params,
       rank: Math.floor(params.rank),
       name: params.name.trim(),
@@ -56,6 +59,24 @@ export async function savePlacing(params: {
       // belong to, and `resolve_result_army` would refuse the whole placing.
       disposition: params.detachment.trim() ? params.disposition.trim() : "",
     });
+
+    // Second, and only once the placing exists: a list hangs off the army row
+    // the save above writes, so there is nothing to attach one to before it.
+    // A failure here is reported as itself rather than rolled into the save,
+    // because the result is recorded and only the list is missing.
+    //
+    // A placing with no faction writes no army row at all, so there is nothing
+    // to attach a list to and nothing to clear. Without that clause this
+    // raised RESULT_NOT_FOUND and the club was told "That result is not here
+    // any more" about a placing that had just saved, so pressing Save again
+    // made a duplicate. Same guard the draw's armies already carry, missing
+    // from this path; found by recording a place with the army left blank.
+    if (params.listId !== undefined && placingId && params.faction.trim()) {
+      const linked = await setResultList("event_podium", placingId, "one", params.listId);
+      if (!linked.ok) {
+        return { ok: false, error: linked.error ?? "That list did not save. Try again." };
+      }
+    }
     return { ok: true };
   } catch (error) {
     return { ok: false, error: refusal(error, "save placing failed") };

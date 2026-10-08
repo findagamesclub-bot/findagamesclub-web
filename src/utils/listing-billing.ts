@@ -1,3 +1,5 @@
+import { pricePence } from "./format";
+
 /**
  * Where a listing's subscription stands, in words.
  *
@@ -182,11 +184,7 @@ export function listingCostLine(settings: ListingCostSettings): string | null {
   if (!settings.enabled) return "Free to list.";
   if (settings.monthly_price_pence <= 0 && settings.yearly_price_pence <= 0) return null;
 
-  const money = (pence: number) => {
-    const pounds = pence / 100;
-    const symbol = (settings.currency ?? "GBP") === "GBP" ? "£" : `${settings.currency} `;
-    return `${symbol}${Number.isInteger(pounds) ? pounds : pounds.toFixed(2)}`;
-  };
+  const money = (pence: number) => pricePence(pence, settings.currency ?? "GBP");
 
   if (settings.monthly_price_pence <= 0) {
     return `${money(settings.yearly_price_pence)} a year to list.`;

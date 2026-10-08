@@ -18,7 +18,7 @@ export async function findMyCoaching(profileId: string) {
        club_coaching_slots!inner(
          id, title, description, slot_date, start_time, end_time, price,
          coaching_type, capacity,
-         clubs!inner(slug, name, logo_url)
+         clubs!inner(slug, name, logo_url, logo_path)
        )`,
     )
     .eq("profile_id", profileId)
@@ -35,7 +35,7 @@ export async function findMyOrders(profileId: string) {
     .select(
       `id, status, created_at, status_updated_at, subtotal, total,
        tier_discount_amount, loyalty_discount, membership_tier_label, notes,
-       clubs!inner(slug, name, logo_url),
+       clubs!inner(slug, name, logo_url, logo_path),
        club_merchandise_order_items(id, name, price, quantity, line_total)`,
     )
     .eq("profile_id", profileId)
@@ -60,7 +60,7 @@ export async function findOpenSlots(clubIds: number[], fromDate: string) {
     .select(
       `id, title, description, slot_date, start_time, end_time, price,
        coaching_type, capacity,
-       clubs!inner(slug, name, logo_url),
+       clubs!inner(slug, name, logo_url, logo_path),
        club_coaching_bookings(id, profile_id, status)`,
     )
     .in("club_id", clubIds)

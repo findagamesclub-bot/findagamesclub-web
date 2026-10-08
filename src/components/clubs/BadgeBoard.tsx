@@ -107,7 +107,7 @@ export default function BadgeBoard({
                 : "No badges yet"}
               description={filters.query || filters.state
                 ? "Try a different word, or clear the filters to see every badge this club gives out."
-                : "A badge is something this club gives out: a tournament win, or painting the terrain nobody else will. Members earn the year ones on their own."}
+                : "A badge is something this club gives out, like painting the terrain nobody else will. First, second and third go out on their own when you record a podium, and so do the year ones."}
             />
           ) : (
             <Box sx={{ display: "grid", gap: 2, alignItems: "stretch",

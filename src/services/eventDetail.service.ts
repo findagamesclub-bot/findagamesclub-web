@@ -2,8 +2,11 @@ import "server-only";
 
 import { findEvent } from "@/repositories/eventDetail.repository";
 import { findMyBookingsForEvent } from "@/repositories/eventBookings.repository";
-import { findRounds } from "@/repositories/eventPairings.repository";
+import { findDrawPublic, findHasDraw, findRounds }
+  from "@/repositories/eventPairings.repository";
 import { findNotices } from "@/repositories/eventNotices.repository";
+import { findTeamDraw, findTeamEvent, findTeams }
+  from "@/repositories/eventTeams.repository";
 import { toMembershipTiers } from "@/utils/membership-tiers";
 import { formatPrice } from "@/utils/format";
 import { eventArt } from "@/utils/event-art";
@@ -51,6 +54,7 @@ function toArmy(raw: unknown): ResultArmy | null {
     mvpUnits: Array.isArray(a.mvpUnits) ? (a.mvpUnits as string[]).filter(Boolean) : [],
     list: snapshot
       ? {
+          id: typeof a.armyListId === "number" ? a.armyListId : null,
           name: (a.armyListName as string) || null,
           pointsLimit: (snapshot.pointsLimit as string) || null,
           totalPoints: typeof snapshot.totalPoints === "number" ? snapshot.totalPoints : null,
@@ -171,14 +175,38 @@ export async function getEventDetail(
   // Read for everybody, handed to nobody who has not earned it. Fetching only
   // when the gate opens would mean the page cannot say there is a board here,
   // and "nothing" is what a member sees when a club has posted four notices.
-  const notices = await findNotices(row.id).catch(() => []);
+  //
+  // Three queries, one wave. The draw's two come out of functions rather than
+  // the row because `draw_public` is newer than the generated types, and they
+  // ride along here rather than each costing a round trip of their own.
+  const [notices, drawPublic, hasDraw, teamEvent, allTeams, allFixtures] =
+    await Promise.all([
+      findNotices(row.id).catch(() => []),
+      findDrawPublic(row.id).catch(() => false),
+      findHasDraw(row.id).catch(() => false),
+      // The switch is the only answer to "is this a team event", here and in
+      // the console, so turning it off really does put the page back. Nothing
+      // is lost by that: a fixture's tables are ordinary tables either way and
+      // the flat draw shows them.
+      findTeamEvent(row.id).catch(() => false),
+      findTeams(row.id).catch(() => []),
+      findTeamDraw(row.id).catch(() => []),
+    ]);
+  const teams = teamEvent ? allTeams : [];
+  const teamFixtures = teamEvent ? allFixtures : [];
   const canSeePrivate = canManageClub || myBookings.length > 0;
   // The draw is a record, not a plan. Before the event it belongs to the room;
   // after it, it is the same public history as the standings underneath it,
   // and it is what the Best Coast Pairings link on this page opens to the
   // whole internet anyway (0065). The board is not opened this way: people
   // wrote in it believing only the room could read it.
+  //
+  // "The room" is a ticket, never membership, which is the thing the console's
+  // old switch label got wrong: somebody who booked a place without joining
+  // has always been in it. 0163 adds the case underneath that, an open event
+  // where the club wants the draw on the page for anybody.
   const ended = hasEnded(row);
+  const drawOpen = canSeePrivate || ended || drawPublic;
 
   // An event can name its own venue; otherwise it happens at the club's.
   const venue = {
@@ -254,6 +282,17 @@ export async function getEventDetail(
     infoBoard: canSeePrivate ? row.info_board : null,
     notices: canSeePrivate ? notices : [],
     hasNoticeboard: Boolean((row.info_board ?? "").trim()) || notices.length > 0,
-    pairings: canSeePrivate || ended ? await readPairings(row.id, canManageClub) : [],
+    pairings: drawOpen ? await readPairings(row.id, canManageClub) : [],
+    // Who entered is public; the fixtures are the draw and follow it exactly.
+    // The policy only knows whether a round is on show, so the ticket gate is
+    // applied here, the same place and the same way the individual draw's is.
+    teams,
+    teamFixtures: drawOpen
+      ? teamFixtures.filter((fixture) => fixture.published || canManageClub)
+      : [],
+    // Named rather than hidden, the same call the noticeboard makes. A visitor
+    // used to get no draw section at all and no way to learn that booking a
+    // place opens one.
+    drawLocked: !drawOpen && hasDraw,
   };
 }

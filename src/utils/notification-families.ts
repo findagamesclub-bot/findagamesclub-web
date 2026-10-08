@@ -80,6 +80,11 @@ const MAP = {
   "ticket-checked-in": "bookings",
   "ticket-cancelled-by-club": "bookings",
   coaching_booked: "bookings",
+  // 0158, the club's side of a coaching place. Both are about a booking the
+  // member holds rather than about running a club, so they sit with the
+  // booking that was called off and not in "running".
+  "coaching-cancelled-by-club": "bookings",
+  "coaching-refunded": "bookings",
   // Emails with no bell twin. The club is told by a trigger; the person who
   // did the thing is told by email alone, so the kind exists only here.
   //
@@ -121,6 +126,8 @@ const MAP = {
   "club-request": "running",
   "club-request-updated": "running",
   "club-request-withdrawn": "running",
+  // An admin's work queue, like the club requests above it.
+  "featured-requested": "running",
   "club-claim": "running",
   "claim-approved": "running",
   "claim-declined": "running",
@@ -156,6 +163,9 @@ const MAP = {
   "featured-booked": "money",
   "featured-ended": "money",
   "featured-removed": "money",
+  // With the other three, so the club hears by letter as well: a slot is
+  // dated and priced, and being turned down is news you act on.
+  "featured-declined": "money",
 } satisfies Record<string, Family>;
 
 /**

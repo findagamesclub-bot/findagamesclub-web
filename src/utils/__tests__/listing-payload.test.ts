@@ -60,6 +60,19 @@ const form = (pairs: [string, string][]) => {
 
   assert.deepEqual(read.games, ["Warhammer 40,000", "Kill Team"], "blanks dropped");
   assert.equal(read.images.length, 1, "a half-uploaded photo and broken json are not rows");
+
+  // The logo is absent unless somebody touched it. A club imported with one
+  // has a URL and no path, so a field that was always posted would clear the
+  // logo of every club that opened this step to fix a social link.
+  assert.equal(read.logo, null, "an untouched logo is left alone");
+
+  const set = contentReading(form([["logoPath", "clubs/9/logo/a.webp"]]));
+  assert.deepEqual(set.logo, { path: "clubs/9/logo/a.webp" });
+
+  // Present and empty is a real instruction, and a different one from absent:
+  // it means take my logo off.
+  const cleared = contentReading(form([["logoPath", ""]]));
+  assert.deepEqual(cleared.logo, { path: "" }, "clearing is not the same as not saying");
   assert.equal(read.images[0]!.storage_path, "clubs/9/a.webp");
   assert.equal(read.images[0]!.alt, "The hall");
   assert.equal(read.social_links.length, 1, "an empty social box is not a link");
@@ -105,6 +118,51 @@ const form = (pairs: [string, string][]) => {
   if (salvaged.ok) {
     assert.deepEqual(salvaged.value.tiers[0]!.benefits, {});
     assert.deepEqual(salvaged.value.tiers[0]!.billing_options, []);
+  }
+}
+
+{
+  // A tier sells itself three ways and its headline follows the first of them.
+  // The client's screenshot was a tier reading "Life Member · £120" above a
+  // payment list offering Monthly £15, which is a tier disagreeing with itself.
+  const three = pricingReading(form([
+    ["tierKey", "premium"], ["tierLabel", "Premium"],
+    // Deliberately a stale headline in the form: the options win.
+    ["tierPrice", "120"], ["tierDuration", "one-off"],
+    ["tierDescription", ""], ["tierBasic", "yes"], ["tierBenefits", "{}"],
+    ["tierBilling", JSON.stringify([
+      { id: "", label: "", price: "15", cadence: "month" },
+      { id: "", label: "", price: "150", cadence: "year" },
+      { id: "", label: "", price: "500", cadence: "one-off" },
+    ])],
+  ]));
+  assert.ok(three.ok);
+  if (three.ok) {
+    const tier = three.value.tiers[0]!;
+    const options = tier.billing_options as { id: string; price: string }[];
+    assert.equal(options.length, 3);
+    assert.deepEqual(options.map((o) => o.id),
+      ["premium-month", "premium-year", "premium-one-off"]);
+    // The headline is the first option, not what the form said.
+    assert.equal(tier.price, "15");
+    assert.equal(tier.price_duration, "month");
+  }
+}
+
+{
+  // A club that has only ever had one price keeps it: the bare fields become
+  // the one option rather than the tier reading as free.
+  const bare = pricingReading(form([
+    ["tierKey", "basic"], ["tierLabel", "Basic"], ["tierPrice", "10"],
+    ["tierDuration", "month"], ["tierDescription", ""], ["tierBasic", "yes"],
+    ["tierBenefits", "{}"], ["tierBilling", "[]"],
+  ]));
+  assert.ok(bare.ok);
+  if (bare.ok) {
+    const tier = bare.value.tiers[0]!;
+    assert.equal((tier.billing_options as unknown[]).length, 1);
+    assert.equal(tier.price, "10");
+    assert.equal(tier.price_duration, "month");
   }
 }
 

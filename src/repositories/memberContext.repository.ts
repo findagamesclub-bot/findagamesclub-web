@@ -15,7 +15,7 @@ export async function findTheirMemberships(memberId: string) {
     .from("club_memberships")
     .select(
       `id, club_id, status, tier_key, joined_at,
-       clubs!inner(id, slug, name, logo_url,
+       clubs!inner(id, slug, name, logo_url, logo_path,
          club_membership_tiers(tier_key, label))`,
     )
     .eq("profile_id", memberId)
@@ -36,7 +36,7 @@ export type MeetingRow = {
   opponent_score: number | null;
   booked_by_army: string;
   opponent_army: string;
-  clubs: { slug: string; name: string; logo_url: string | null };
+  clubs: { slug: string; name: string; logo_url: string | null; logo_path: string | null };
 };
 
 /**
@@ -59,7 +59,7 @@ export async function findGamesBetween(viewerId: string, memberId: string) {
     .select(
       `id, session_date, game_title, status, booked_by, opponent_profile_id,
        booked_by_score, opponent_score, booked_by_army, opponent_army,
-       clubs!inner(slug, name, logo_url)`,
+       clubs!inner(slug, name, logo_url, logo_path)`,
     )
     .eq("status", "booked")
     .or(

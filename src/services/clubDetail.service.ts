@@ -3,7 +3,7 @@ import "server-only";
 import * as repo from "@/repositories/clubs.repository";
 import { formatMeeting, formatPrice, formatPricingLabel } from "@/utils/format";
 import { toMembershipTiers } from "@/utils/membership-tiers";
-import { clubImageUrl } from "@/utils/club-media";
+import { clubImageUrl, clubLogoUrl } from "@/utils/club-media";
 import { publicUrl } from "@/lib/supabase/storage";
 import { fromPriceFor } from "./clubs.service";
 import type { ClubDetail } from "@/types/clubDetail";
@@ -75,7 +75,10 @@ function toDetail(row: NonNullable<Row>): ClubDetail {
     country: row.country,
     summary: row.summary,
     description: row.description,
-    logoUrl: row.logo_url,
+    logoUrl: clubLogoUrl(
+        { logoPath: row.logo_path, logoUrl: row.logo_url },
+        publicUrl),
+    logoPath: row.logo_path,
     isFeatured: row.spotlight,
     announcement: row.announcement,
 

@@ -17,6 +17,8 @@ export type SubmissionRow = {
   city: string;
   payload: Record<string, unknown>;
   last_step: string;
+  /** Monthly or yearly, and '' until the club has been asked. 0112 reads it. */
+  plan_interval: string;
   club_id: number | null;
   submitted_at: string | null;
   reviewed_at: string | null;
@@ -113,7 +115,11 @@ export async function startSubmission(fields: {
  */
 export async function saveSubmissionDraft(
   id: number,
-  patch: Partial<Pick<SubmissionRow, "club_name" | "city" | "payload" | "last_step">>,
+  // `plan_interval` joined the grant list in 0161. The four before it have
+  // been writable since 0099; the column list here mirrors that grant so a
+  // field nobody may write cannot be named by accident.
+  patch: Partial<Pick<SubmissionRow,
+    "club_name" | "city" | "payload" | "last_step" | "plan_interval">>,
 ): Promise<SubmissionListRow> {
   const rows = await table<SubmissionListRow>("club_submissions");
   const { data, error } = await rows

@@ -87,6 +87,15 @@ export const metals = {
 
 export type MetalTone = keyof typeof metals;
 
+/**
+ * The tones a club may pick from, in ladder order.
+ *
+ * Derived from `metals` rather than typed out again: two lists of metal names
+ * drift the first time either is touched, which is the one-vocabulary rule the
+ * status chips already learned.
+ */
+export const METAL_TONES = Object.keys(metals) as MetalTone[];
+
 /** A club can type anything into `tone`; unknown ones fall back to bronze. */
 export function metalOf(tone: string | null | undefined) {
   const key = String(tone ?? "").trim().toLowerCase() as MetalTone;

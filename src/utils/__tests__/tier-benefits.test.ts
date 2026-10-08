@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { describeTierBenefits, groupTierBenefits } from "../tier-benefits";
+import { describeTierBenefits, groupTierBenefits, PERK_FIELDS }
+  from "../tier-benefits";
 
 const premium = {
   eventDiscountPercent: 5,
@@ -37,3 +38,21 @@ assert.deepEqual(groupTierBenefits({}), []);
 assert.deepEqual(groupTierBenefits(null), []);
 
 console.log("tier-benefits ok");
+
+// The one switch that makes points spendable. Five payment paths read this key
+// and nothing could set it, so a club with no value in its imported data
+// offered points that could never be spent.
+{
+  const field = PERK_FIELDS.find((f) => f.key === "loyaltyRedemptionCapPercent");
+  assert.ok(field, "the redemption cap is offered to the tier editor");
+  assert.equal(field?.kind, "percent", "and it is asked for as a percentage");
+  assert.equal(field?.group, "savings");
+
+  assert.deepEqual(
+    describeTierBenefits({ loyaltyRedemptionCapPercent: 50 }),
+    ["Points cover up to 50% of a bill"]);
+  assert.deepEqual(describeTierBenefits({ loyaltyRedemptionCapPercent: 0 }), [],
+    "nought is not a perk, it is points switched off");
+}
+
+console.log("tier-benefits: redemption cap passed");

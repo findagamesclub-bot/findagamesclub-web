@@ -1,4 +1,8 @@
 import "server-only";
+import { clubLogoUrl } from "@/utils/club-media";
+import { publicUrl } from "@/lib/supabase/storage";
+
+import type { LoyaltyTier } from "@/utils/loyalty";
 
 import { countUpcoming } from "@/utils/coaching-filter";
 import { countWaiting } from "@/utils/order-filter";
@@ -54,7 +58,7 @@ export type LoyaltyCard = {
    * their own tiers, so the list has to come from the club rather than from a
    * constant.
    */
-  tiers: { label: string; pointsRequired: number; tone: string }[];
+  tiers: LoyaltyTier[];
 };
 
 export type Dashboard = {
@@ -98,13 +102,15 @@ export async function getDashboard(profileId: string): Promise<Dashboard> {
 
   const bookings: TableBooking[] = rawBookings.map((row) => {
     const club = (row as unknown as {
-      clubs: { slug: string; name: string; logo_url: string | null };
+      clubs: { slug: string; name: string; logo_url: string | null; logo_path: string | null };
     }).clubs;
     return {
       id: row.id,
       clubSlug: club.slug,
       clubName: club.name,
-      logoUrl: club.logo_url,
+      logoUrl: clubLogoUrl(
+        { logoPath: club.logo_path, logoUrl: club.logo_url },
+        publicUrl),
       date: row.session_date,
       time: row.session_time ?? "",
       gameTitle: row.game_title ?? "",

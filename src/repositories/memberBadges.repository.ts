@@ -10,6 +10,10 @@ import { table } from "@/lib/supabase/table";
  * holder, anybody on that club's roster, and its team. A profile page read by
  * a clubmate therefore shows the badges they share a club with and nothing
  * else, without this having to know the rule.
+ *
+ * Length-of-membership badges arrive through here too since 0162. They used to
+ * be worked out on the fly from the join date and are ordinary rows now, which
+ * is why this file no longer reads memberships at all.
  */
 
 export type HeldBadgeRow = {
@@ -26,23 +30,6 @@ export async function findBadgesHeldBy(profileId: string): Promise<HeldBadgeRow[
     .eq("profile_id", profileId)
     .is("revoked_at", null)
     .order("awarded_at", { ascending: false });
-
-  if (error) throw new Error(error.message);
-  return data ?? [];
-}
-
-export type TenureRow = {
-  joined_at: string | null;
-  created_at: string;
-  clubs: { slug: string; name: string };
-};
-
-/** What they joined and when, for the year badges. */
-export async function findMembershipsFor(profileId: string): Promise<TenureRow[]> {
-  const { data, error } = await (await table<TenureRow>("club_memberships"))
-    .select("joined_at, created_at, clubs(slug, name)")
-    .eq("profile_id", profileId)
-    .eq("status", "approved");
 
   if (error) throw new Error(error.message);
   return data ?? [];

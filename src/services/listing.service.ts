@@ -123,6 +123,9 @@ export async function saveContentStep(clubId: number, form: FormData): Promise<S
     await taxonomy.replaceClubTaxonomy(clubId, "payment_methods", v.payment_methods);
 
     await repo.replaceClubImages(clubId, v.images);
+    // Only when it was actually changed, or opening this step to fix a social
+    // link would clear the logo of every club that has one.
+    if (v.logo) await repo.setClubLogo(clubId, v.logo.path);
     await repo.replaceClubSocialLinks(clubId, v.social_links);
     await sections.saveCategories(clubId, v.categories);
   } catch (error) {
@@ -133,7 +136,7 @@ export async function saveContentStep(clubId: number, form: FormData): Promise<S
   // left in the bucket is clutter nobody sees, and reporting the save as failed
   // over it would send somebody back to redo work that is already done.
   try {
-    await repo.removeClubMedia(clubId, v.removed);
+    await repo.removeClubMedia({ kind: "club", id: clubId }, v.removed);
   } catch (error) {
     console.error("[listing] photos removed but their files stayed:", error);
   }

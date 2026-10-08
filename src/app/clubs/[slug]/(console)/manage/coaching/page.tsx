@@ -11,7 +11,7 @@ import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
 import { getClubDetail } from "@/services/clubDetail.service";
 import { getMyMembership } from "@/services/memberships.service";
-import { getCoaching } from "@/services/clubExtras.service";
+import { getClubCoachingBookings, getCoaching } from "@/services/clubExtras.service";
 import { londonToday } from "@/services/bookingCalendar.service";
 import { findCoachingSettings } from "@/repositories/clubSettings.repository";
 import { clubIdentity } from "@/utils/club-identity";
@@ -80,7 +80,9 @@ export default async function ManageCoachingPage({
       </Box>
 
       {showing === "bookings" ? (
-        <CoachingBookings slots={coaching.slots} slug={slug} />
+        // Its own read, through 0158's function, because the cancelled
+        // bookings this list is for are deliberately not on the session cards.
+        <CoachingBookings rows={await getClubCoachingBookings(club.id)} slug={slug} />
       ) : showing === "settings" ? (
         <CoachingSettingsForm
           slug={slug}
@@ -90,7 +92,8 @@ export default async function ManageCoachingPage({
         />
       ) : settings?.enabled ? (
         <CoachingCalendar slots={coaching.slots} slug={slug} clubId={club.id}
-          faction={faction} canManage isMember={membership.status === "approved"} />
+          faction={faction} canManage isMember={membership.status === "approved"}
+          standing={coaching.standing} />
       ) : (
         <EmptyState
           title="Coaching is switched off"

@@ -82,6 +82,18 @@ export function formatPence(pence: number, currency = "GBP"): string {
   return formatPounds(safe / 100, currency);
 }
 
+/**
+ * Pence, written the way a price is written: £15, £12.50, never £15.00.
+ *
+ * `formatPence` always shows two decimals, which is right on a receipt and
+ * wrong on a price list beside "£15 a month". `listingCostLine` had its own
+ * copy of this arithmetic; this is that copy, named and shared.
+ */
+export function pricePence(pence: number, currency = "GBP"): string {
+  const safe = Number.isFinite(pence) ? pence : 0;
+  return formatMoney(safe / 100, currency);
+}
+
 export function formatMoney(amount: number, currency = "GBP"): string {
   const symbol = currency === "GBP" ? "£" : `${currency} `;
   const safe = Number.isFinite(amount) ? amount : 0;

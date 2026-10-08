@@ -23,7 +23,7 @@ export async function findEvents(params: { from?: string; to?: string; limit?: n
        venue_name, venue_address, venue_postcode, featured_games, logo_src, logo_alt,
        created_at,
        club_event_ticket_types(price),
-       clubs!inner(slug, name, city, logo_url, status, latitude, longitude, ages,
+       clubs!inner(slug, name, city, logo_url, logo_path, status, latitude, longitude, ages,
                    club_images(src, alt, position),
                    club_formats(formats(label))),
        club_event_results(rank, placement, member_name, army)`,
@@ -163,8 +163,12 @@ export async function saveEventPlacing(params: {
   disposition: string;
 }) {
   const supabase = await createClient();
-  const { error } = await (supabase as unknown as {
-    rpc(name: string, args: Record<string, unknown>): Promise<{ error: { message: string } | null }>;
+  // The id comes back so a list can be named against the placing that was just
+  // made. `save_event_placing` has always returned it and nothing read it.
+  const { data, error } = await (supabase as unknown as {
+    rpc(name: string, args: Record<string, unknown>): Promise<{
+      data: unknown; error: { message: string } | null;
+    }>;
   }).rpc("save_event_placing", {
     p_event: params.eventId,
     p_placing: params.placingId,
@@ -177,6 +181,7 @@ export async function saveEventPlacing(params: {
   });
 
   if (error) throw new Error(error.message);
+  return Number(data) || null;
 }
 
 export async function deleteEventPlacing(eventId: number, placingId: number) {

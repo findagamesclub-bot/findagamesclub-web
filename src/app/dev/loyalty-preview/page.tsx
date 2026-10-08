@@ -18,7 +18,7 @@ export default function LoyaltyPreviewPage() {
   if (process.env.NODE_ENV === "production") notFound();
 
   const { faction } = clubIdentity("didcot-wargames-didcot", "Didcot Wargames");
-  const tiers = [...DEFAULT_TIERS, { label: "Rock Star", pointsRequired: 2000, tone: "rainbow" }];
+  const tiers = [...DEFAULT_TIERS, { label: "Rock Star", pointsRequired: 2000, tone: "rainbow", rewards: [] }];
 
   return (
     <Container maxWidth="sm" component="main" sx={{ py: { xs: 3, md: 5 } }}>

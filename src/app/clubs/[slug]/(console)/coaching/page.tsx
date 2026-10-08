@@ -109,7 +109,8 @@ export default async function CoachingPage({
           ) : null}
 
           <CoachingCalendar slots={coaching.slots} slug={slug} clubId={club.id}
-            faction={faction} canManage={canManage} isMember={isMember} />
+            faction={faction} canManage={canManage} isMember={isMember}
+            standing={coaching.standing} />
 
           {coaching.policy ? (
             <Typography variant="body2" sx={{ color: tokens.inkMuted, mt: 3 }}>

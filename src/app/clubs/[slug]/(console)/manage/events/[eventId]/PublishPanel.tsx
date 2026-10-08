@@ -7,6 +7,9 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import GroupsIcon from "@mui/icons-material/Groups";
+// Not Groups again: "Who is coming" already wears it, and two buttons side by
+// side under one icon read as two ways into the same list.
+import GroupWorkIcon from "@mui/icons-material/GroupWork";
 import ShuffleIcon from "@mui/icons-material/Shuffle";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import BusyOverlay from "@/components/ui/BusyOverlay";
@@ -79,6 +82,10 @@ export default function PublishPanel({
             <Button component={NextLink} href={at("/pairings")} size="small" variant="outlined"
               startIcon={<ShuffleIcon />}>
               The draw
+            </Button>
+            <Button component={NextLink} href={at("/teams")} size="small" variant="outlined"
+              startIcon={<GroupWorkIcon />}>
+              Teams
             </Button>
             <Button component={NextLink} href={`/clubs/${slug}/events/${event.legacyId}`}
               size="small" variant="outlined" startIcon={<OpenInNewIcon />}>

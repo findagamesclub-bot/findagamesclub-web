@@ -29,6 +29,23 @@ export async function addNotice(eventId: number, message: string) {
   if (error) throw new Error(error.message);
 }
 
+/**
+ * Correcting one that is already up.
+ *
+ * `update (message)` has been granted on this table since 0090 and the policy
+ * has always been `for all`: the club could rewrite a notice from the day the
+ * editor shipped and nothing on the screen ever asked. Matched on the event as
+ * well as the id, so a notice id from another event cannot be reached.
+ */
+export async function updateNotice(eventId: number, id: number, message: string) {
+  const notices = await table<NoticeRow>("club_event_notices");
+  const { data, error } = await notices
+    .update({ message }).eq("id", id).eq("event_id", eventId)
+    .select("id").maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("NOT_PERMITTED");
+}
+
 export async function deleteNotice(eventId: number, id: number) {
   const notices = await table<NoticeRow>("club_event_notices");
   const { error } = await notices.delete().eq("id", id).eq("event_id", eventId);

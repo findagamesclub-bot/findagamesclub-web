@@ -1,7 +1,9 @@
 import "server-only";
 
-import { findBuildersFor, findResultArmies }
-  from "@/repositories/resultArmies.repository";
+import {
+  findBuildersFor, findMemberLists, findResultArmies, setResultList as writeList,
+} from "@/repositories/resultArmies.repository";
+import { armyRefusalFrom } from "./armyRefusals";
 import { armyFromRow, EMPTY_ARMY, type ResultArmy } from "@/utils/result-army";
 
 /** What a club records against, small enough to send to a browser. */
@@ -63,4 +65,62 @@ export async function getArmyContext(
     },
     builder: (clubId) => builders.get(clubId) ?? null,
   };
+}
+
+/**
+ * One of a member's lists, small enough to put in a picker.
+ *
+ * The faction and detachment ride along so that choosing a list fills the rest
+ * of the form in: a club typing up a podium should not have to pick Adeptus
+ * Custodes a second time after saying which Custodes list it was.
+ */
+export type MemberList = {
+  id: number;
+  profileId: string;
+  name: string;
+  factionId: string;
+  faction: string;
+  detachment: string;
+  disposition: string;
+  points: number | null;
+  version: number | null;
+};
+
+/**
+ * Every list built at one club, for the pickers on its event results.
+ *
+ * One read for the whole screen rather than one per player: a fifty-player
+ * tournament is fifty podium rows and fifty round trips would be a page that
+ * never finishes. The screen narrows each picker to the person that side of
+ * the result is filed under, and the database refuses anything else anyway.
+ *
+ * Empty rather than refused for somebody who cannot manage the club, which is
+ * what keeps this safe to call from a page the whole internet can open.
+ */
+export async function getMemberLists(clubId: number): Promise<MemberList[]> {
+  const rows = await findMemberLists(clubId).catch(() => []);
+  return rows.map((row) => ({
+    id: row.id,
+    profileId: row.profile_id,
+    name: row.name,
+    factionId: row.faction_id,
+    faction: row.faction_label || row.faction_id,
+    detachment: row.detachment,
+    disposition: row.disposition,
+    points: row.total_points,
+    version: row.version_number,
+  }));
+}
+
+/** The club naming which list was brought, or taking the naming back. */
+export async function setResultList(
+  source: "event_podium" | "event_pairing",
+  sourceId: number, side: "one" | "two", listId: number | null,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await writeList(source, sourceId, side, listId);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: armyRefusalFrom(error) };
+  }
 }

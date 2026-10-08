@@ -47,7 +47,7 @@ const on = (value: unknown): boolean => value === true || value === "true";
  * when setting it ("Off table bookings"). Deriving one from the other reads
  * badly the moment the number is in the middle of the sentence.
  */
-const EDITOR_LABELS: Record<string, string> = {"bookingDiscountPercent": "Off table bookings", "eventDiscountPercent": "Off event tickets", "merchandiseDiscountPercent": "Off merchandise", "coachingDiscountPercent": "Off coaching", "waiveGameBookingFee": "No table booking fee", "maxUpcomingBookings": "Bookings they can hold at once", "extraAdvanceBookingDates": "Extra days they can book ahead", "priorityEventAdvanceDays": "Days they get event tickets early", "lookingForGamePostLimit": "Looking-for-a-game posts at once", "lookingForGameFutureDates": "Extra days they can post ahead", "bonusMembershipApprovalPoints": "Bonus points for joining", "bonusGameBookingPoints": "Bonus points per booking", "bonusEventBookingPoints": "Bonus points per event", "bonusAnniversaryPoints": "Bonus points each year", "premiumTicketAccess": "Member-only event tickets", "priorityLeagueAccess": "Priority league entry", "merchandiseAccess": "Club merchandise", "coachingBookingAccess": "Book coaching sessions", "armyBuilderAccess": "Build and save army lists", "listCoachingAccess": "AI coaching on their army lists", "matchupAnalysisAccess": "AI match-up analysis", "opponentScoutingAccess": "AI opponent scouting", "seasonCoachAccess": "AI season coaching", "rivalryToolsAccess": "Rivalry tracking", "priorityOpponentFinderPlacement": "Listed first when finding opponents"};
+const EDITOR_LABELS: Record<string, string> = {"bookingDiscountPercent": "Off table bookings", "eventDiscountPercent": "Off event tickets", "merchandiseDiscountPercent": "Off merchandise", "coachingDiscountPercent": "Off coaching", "waiveGameBookingFee": "No table booking fee", "maxUpcomingBookings": "Bookings they can hold at once", "extraAdvanceBookingDates": "Extra days they can book ahead", "priorityEventAdvanceDays": "Days they get event tickets early", "lookingForGamePostLimit": "Looking-for-a-game posts at once", "lookingForGameFutureDates": "Extra days they can post ahead", "bonusMembershipApprovalPoints": "Bonus points for joining", "bonusGameBookingPoints": "Bonus points per booking", "bonusEventBookingPoints": "Bonus points per event", "bonusAnniversaryPoints": "Bonus points each year", "loyaltyRedemptionCapPercent": "Share of a bill points can cover", "premiumTicketAccess": "Member-only event tickets", "priorityLeagueAccess": "Priority league entry", "merchandiseAccess": "Club merchandise", "coachingBookingAccess": "Book coaching sessions", "armyBuilderAccess": "Build and save army lists", "listCoachingAccess": "AI coaching on their army lists", "matchupAnalysisAccess": "AI match-up analysis", "opponentScoutingAccess": "AI opponent scouting", "seasonCoachAccess": "AI season coaching", "rivalryToolsAccess": "Rivalry tracking", "priorityOpponentFinderPlacement": "Listed first when finding opponents"};
 
 const labelFor = (key: string) => EDITOR_LABELS[key] ?? key;
 
@@ -96,6 +96,13 @@ const RULES: Rule[] = [
   { key: "loyaltyEarnMultiplier", group: "savings",
     kind: "count", label: "Loyalty points multiplier",
     render: (v) => (num(v) > 1 ? `${num(v)}x loyalty points` : null) },
+  // The one switch that makes points a payment method at all. Five paths read
+  // it (table bookings 0043, event tickets 0050, merchandise 0038, the cart
+  // 0039, coaching 0157) and until now nothing could set it, so every club
+  // without it in their imported data offered points that could never be
+  // spent. That is what "members cannot pay with points" turns out to mean.
+  percent("loyaltyRedemptionCapPercent", "savings",
+    (n) => `Points cover up to ${n}% of a bill`),
   count("bonusMembershipApprovalPoints", "savings", (n) => `${n} bonus points when you join`),
   count("bonusGameBookingPoints", "savings", (n) => `${n} bonus points per booking`),
   count("bonusEventBookingPoints", "savings", (n) => `${n} bonus points per event`),

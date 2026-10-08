@@ -5,6 +5,7 @@ import { getProfile } from "@/services/profiles.service";
 import { getMemberContext } from "@/services/memberContext.service";
 import { getMemberRecords } from "@/services/memberRecords.service";
 import { getGrudgeTracker } from "@/services/grudgeTracker.service";
+import { getOverallRecord } from "@/services/memberOverall.service";
 
 export const metadata = { title: "Your profile" };
 
@@ -22,11 +23,13 @@ export default async function AdminProfilePage() {
   const profile = await getProfile(viewer.id);
   if (!profile) notFound();
 
-  const [context, records] = await Promise.all([
+  const [context, records, overall] = await Promise.all([
     getMemberContext(viewer.id, profile.id)
       .catch(() => ({ clubs: [], events: [], meetings: [],
                       record: { played: 0, won: 0, drawn: 0, lost: 0 } })),
     getMemberRecords(profile.id).catch(() => ({ competitions: [], podiums: [], badges: [] })),
+    getOverallRecord(profile.id).catch(() => ({
+      sources: [], total: { played: 0, wins: 0, draws: 0, losses: 0 }, rate: null })),
   ]);
   const trackers = await getGrudgeTracker(profile.id, context.clubs).catch(() => []);
 
@@ -39,6 +42,7 @@ export default async function AdminProfilePage() {
       context={context}
       records={records}
       trackers={trackers}
+      overall={overall}
     />
   );
 }

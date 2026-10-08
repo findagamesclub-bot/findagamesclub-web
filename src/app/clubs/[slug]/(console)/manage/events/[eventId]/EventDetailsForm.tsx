@@ -33,7 +33,11 @@ export default function EventDetailsForm({
 }: {
   slug: string;
   event: EditableEvent;
-  club: { venueName: string; venueAddress: string; venuePostcode: string; clubId: number };
+  club: {
+    venueName: string; venueAddress: string; venuePostcode: string; clubId: number;
+    /** The club's first photo, which an event with no picture of its own borrows. */
+    art: { src: string; alt: string } | null;
+  };
 }) {
   const [state, submit] = useActionState<EventEditState, FormData>(saveEventAction, {});
   // See useKeepScroll: saving refreshes the route and takes the scroll with it.
@@ -76,6 +80,16 @@ export default function EventDetailsForm({
                 helperText="What it is, in a couple of lines. This is what the event card shows." />
               <TextField name="price" label="Price" defaultValue={event.price} fullWidth
                 helperText='Free text, like "GBP 20" or "Pay what you can". Ticket types carry their own prices.' />
+              {/* Its own figure, not the sum of the ticket types: a club sells
+                  40 tickets to a 50 player hall and keeps ten back for the
+                  door. Both numbers are true and they answer different
+                  questions. */}
+              <TextField name="capacity" label="Number of people" type="number"
+                defaultValue={event.ticketsAvailable ?? ""} fullWidth
+                slotProps={{ htmlInput: { min: 0, max: 100000 } }}
+                error={Boolean(error("capacity"))}
+                helperText={error("capacity")
+                  ?? "How many the day is for. Usually the tickets you are selling in total. Shown on the event page."} />
               <TextField name="roundCount" label="Rounds" type="number"
                 defaultValue={event.roundCount ?? ""} fullWidth
                 slotProps={{ htmlInput: { min: 0, max: 50 } }}
@@ -171,7 +185,7 @@ export default function EventDetailsForm({
         <Box sx={{ display: "grid", gap: 2.5, alignItems: "start",
                    gridTemplateColumns: { xs: "minmax(0, 1fr)",
                                           md: "repeat(2, minmax(0, 1fr))" } }}>
-          <EventArtwork clubId={club.clubId} event={event} />
+          <EventArtwork clubId={club.clubId} event={event} clubArt={club.art} />
 
           <Panel title="Info board">
             <TextField name="infoBoard" label="Only ticket holders see this"

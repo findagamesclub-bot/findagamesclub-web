@@ -12,6 +12,9 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import MatchContextFields from "@/components/account/MatchContextFields";
 import ArmyFields from "@/components/results/ArmyFields";
+import GameField from "@/components/results/GameField";
+import { knownGames } from "@/utils/game-label";
+import { playsFortyK } from "@/utils/event-meta";
 import { useCatalogue } from "@/hooks/useCatalogue";
 import { EMPTY_ARMY, type ResultArmy } from "@/utils/result-army";
 import { useActionToast } from "@/components/ui/Toaster";
@@ -49,6 +52,7 @@ export default function ClubResultDialog({
   const [confirmation, setConfirmation] = useState("admin-confirmed");
   const [home, setHome] = useState<ResultArmy>(EMPTY_ARMY);
   const [away, setAway] = useState<ResultArmy>(EMPTY_ARMY);
+  const [title, setTitle] = useState("");
   const [seenId, setSeenId] = useState<number | null>(null);
 
   // Fetched once this is open and only for a club that records armies. One
@@ -68,7 +72,13 @@ export default function ClubResultDialog({
     // opening a second game must not carry the first one's army into it.
     setHome(result.armies.one);
     setAway(result.armies.two);
+    setTitle(result.gameTitle);
   }
+
+  // The army half belongs to Warhammer 40,000, because the catalogue behind it
+  // is 40k's. Changing the game to anything else takes the fields off and the
+  // service clears what was recorded.
+  const recordsArmy = playsFortyK([title]);
 
   // Close on success, stay open on a refusal so the typing survives it.
   useActionSuccess(state, onClose);
@@ -93,6 +103,7 @@ export default function ClubResultDialog({
             <input type="hidden" name="deployment" value={deployment} />
             <input type="hidden" name="terrain" value={terrain} />
             <input type="hidden" name="confirmation" value={confirmation} />
+            <input type="hidden" name="game" value={title} />
 
             <DialogContent dividers>
               <Stack spacing={2.5}>
@@ -105,20 +116,28 @@ export default function ClubResultDialog({
                     slotProps={{ htmlInput: { min: 0, step: "0.5" } }} />
                 </Stack>
 
+                {/* Same control and same rule as the member's own dialog.
+                    The club is more likely to be the one correcting a game
+                    somebody typed in a hurry. */}
+                <GameField value={title} options={knownGames()}
+                  onChange={setTitle} revealsArmy={result.builder !== null}
+                  hasArmy={Boolean(result.armies.one.factionId || result.armies.two.factionId
+                    || result.homeArmy || result.awayArmy)} />
+
                 <ArmyFields
-                  builder={result.builder} catalogue={catalogue}
+                  builder={recordsArmy ? result.builder : null} catalogue={catalogue}
                   loading={loading} failed={failed}
                   one={home} two={away} onOne={setHome} onTwo={setAway}
                   oneTitle={`${result.homeName}'s army`}
                   twoTitle={`${result.awayName}'s army`}
-                  fallback={
+                  fallback={recordsArmy ? (
                     <Stack direction="row" spacing={2}>
                       <TextField name="homeArmy" label={`${result.homeName}'s army`}
                         fullWidth defaultValue={result.homeArmy} />
                       <TextField name="awayArmy" label={`${result.awayName}'s army`}
                         fullWidth defaultValue={result.awayArmy} />
                     </Stack>
-                  }
+                  ) : null}
                 />
 
                 <MatchContextFields

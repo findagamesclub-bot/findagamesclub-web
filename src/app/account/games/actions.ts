@@ -31,6 +31,10 @@ export async function recordResultAction(
     // Sent empty by a player. The function ignores it from anyone who cannot
     // manage the club, so this is belt and braces rather than the rule.
     confirmation: String(data.get("confirmation") ?? ""),
+    // Absent on any screen that does not ask, which leaves the booking's own
+    // game alone. Present here, so changing it to something that is not 40k
+    // takes the recorded factions with it.
+    game: String(data.get("game") ?? "").trim() || undefined,
   });
 
   if (!result.ok) return { error: result.error };

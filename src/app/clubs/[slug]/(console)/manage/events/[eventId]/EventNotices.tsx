@@ -3,10 +3,13 @@
 import { startTransition, useActionState, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import CampaignIcon from "@mui/icons-material/Campaign";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import NoticeDialog from "./NoticeDialog";
 import Section from "@/components/ui/Section";
 import RemoveRow from "@/components/ui/RemoveRow";
 import BusyOverlay from "@/components/ui/BusyOverlay";
@@ -16,7 +19,7 @@ import { sinceLabel } from "@/utils/dates";
 import { useActionSuccess } from "@/hooks/useActionSuccess";
 import { useKeepScroll } from "@/hooks/useKeepScroll";
 import { tokens } from "@/lib/tokens";
-import type { EditableEvent } from "@/types/eventEditor";
+import type { EditableEvent, EventNotice } from "@/types/eventEditor";
 
 /**
  * Short updates, newest first.
@@ -25,6 +28,11 @@ import type { EditableEvent } from "@/types/eventEditor";
  * the standing information, a notice is "the hall has changed, use the side
  * door". Posted one at a time so a correction on the day is one box and one
  * button rather than a whole form.
+ *
+ * A notice can be corrected as well as taken down, which the client asked for.
+ * The write has been granted since 0090 and nothing reached it, so the club's
+ * only way to fix a typo was to delete the notice and post it again, which
+ * moves it to the top of a list ordered by when things were said.
  */
 export default function EventNotices({
   slug, event,
@@ -37,18 +45,20 @@ export default function EventNotices({
   const keep = useKeepScroll(state);
   useActionToast(state);
   const [message, setMessage] = useState("");
+  const [editing, setEditing] = useState<EventNotice | null>(null);
 
   // Cleared once a post lands, so the box is empty for the next one. Through
   // the shared hook rather than a hand-rolled latch: a render-time check would
   // also wipe a notice somebody started typing while the last one was still
   // saving, which is why this cannot be done during render like the dialogs.
-  useActionSuccess(state, () => setMessage(""));
+  useActionSuccess(state, () => { setMessage(""); setEditing(null); });
 
-  const remove = (noticeId: number) => {
+  const send = (noticeId: number, fields: Record<string, string> = {}) => {
     const data = new FormData();
     data.set("slug", slug);
     data.set("eventId", String(event.id));
     data.set("noticeId", String(noticeId));
+    for (const [key, value] of Object.entries(fields)) data.set(key, value);
     startTransition(() => submit(data));
   };
 
@@ -97,14 +107,26 @@ export default function EventNotices({
                     {sinceLabel(notice.createdAt)}
                   </Typography>
                 </Stack>
-                <RemoveRow what="notice" sx={{ alignSelf: "start" }}
-                  body="It comes off the event page straight away."
-                  onRemove={() => remove(notice.id)} />
+                <Stack direction="row" spacing={0.5} sx={{ alignSelf: "start" }}>
+                  <IconButton size="small" aria-label="Edit notice" disabled={busy}
+                    onClick={() => setEditing(notice)}
+                    sx={{ color: tokens.inkMuted,
+                          "&:hover": { color: tokens.brand } }}>
+                    <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+                  <RemoveRow what="notice"
+                    body="It comes off the event page straight away."
+                    onRemove={() => send(notice.id)} />
+                </Stack>
               </Box>
             ))}
           </Stack>
         </BusyOverlay>
       </Stack>
+
+      <NoticeDialog notice={editing} saving={busy}
+        onClose={() => setEditing(null)}
+        onSave={(next) => editing && send(editing.id, { intent: "edit", message: next })} />
     </Section>
   );
 }

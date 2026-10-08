@@ -115,16 +115,56 @@ function resolveConstants(source) {
   return out;
 }
 
+/**
+ * Every string literal inside one `.select( ... )`, joined.
+ *
+ * Scanned rather than matched. The old regex stopped at the first closing
+ * quote, so a select split for line length — `.select("a, " + "b(c, d)")` —
+ * was checked as far as "a, " and the rest was never looked at. It reported
+ * green on a column that does not exist, which is worse than not running:
+ * planting `zzz_not_a_column` in the second half passed. A `)` inside an
+ * embed's own string is why this counts depth outside quotes rather than
+ * looking for the next bracket.
+ */
+function selectArgument(source, from) {
+  let depth = 1;
+  let quote = null;
+  let literal = "";
+  const parts = [];
+
+  for (let i = from; i < source.length; i += 1) {
+    const ch = source[i];
+
+    if (quote) {
+      if (ch === "\\") { i += 1; continue; }
+      if (ch === quote) { parts.push(literal); literal = ""; quote = null; continue; }
+      literal += ch;
+      continue;
+    }
+
+    if (ch === '"' || ch === "'" || ch === "`") { quote = ch; continue; }
+    if (ch === "(") depth += 1;
+    if (ch === ")") { depth -= 1; if (depth === 0) break; }
+    // The column list is the FIRST argument. `.select("id", { count: "exact" })`
+    // is the common second one, and reading it turned "exact" into a column
+    // nobody had: three false names the moment this scanner reached that far.
+    if (depth === 1 && ch === ",") break;
+  }
+
+  return parts.join("");
+}
+
 for (const file of walk("src/repositories")) {
   const source = resolveConstants(readFileSync(file, "utf8"));
 
   // Which table each query is against. `.from("x")` and `table<T>("x")` both
   // appear, and a file may hold several.
   const calls = [...source.matchAll(
-    /(?:\.from\(|table<[^>]*>\(|table\()\s*["'`](\w+)["'`][\s\S]{0,400}?\.select\(\s*(["'`])([\s\S]*?)\2/g)];
+    /(?:\.from\(|table<[^>]*>\(|table\()\s*["'`](\w+)["'`][\s\S]{0,400}?\.select\(/g)];
 
-  for (const [match, table, , list] of calls) {
-    checkList(file, table, list, source.slice(0, source.indexOf(match)).split("\n").length);
+  for (const call of calls) {
+    const list = selectArgument(source, call.index + call[0].length);
+    checkList(file, call[1], list, source.slice(0, call.index).split("\n").length);
   }
 }
 

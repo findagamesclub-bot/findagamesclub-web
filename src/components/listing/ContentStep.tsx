@@ -14,6 +14,7 @@ import ForumIcon from "@mui/icons-material/ForumOutlined";
 import Panel from "@/components/members/Panel";
 import ChipListField from "@/components/members/ChipListField";
 import PhotoEditor from "./PhotoEditor";
+import LogoEditor from "./LogoEditor";
 import RemoveRow from "@/components/ui/RemoveRow";
 import StepTargetFields, { type StepTarget } from "./StepTarget";
 import StepFooter from "./StepFooter";
@@ -22,6 +23,8 @@ import { saveListingStepAction, type ListingState } from
   "@/app/clubs/[slug]/(console)/manage/listing/[step]/actions";
 import { SOCIAL_NETWORKS, socialValue, type SocialLink } from "@/utils/social-links";
 import type { ClubPhoto } from "@/hooks/useClubPhotos";
+import { type MediaOwner } from "@/utils/club-media";
+import { type LogoValue } from "@/hooks/useClubLogo";
 import { tokens } from "@/lib/tokens";
 
 export type ContentValues = {
@@ -31,6 +34,9 @@ export type ContentValues = {
   socialLinks: SocialLink[];
   categories: { id: string; label: string }[];
   photos: ClubPhoto[];
+  logo: LogoValue;
+  /** Names the monogram that stands in while there is no logo. */
+  mark: { slug: string; name: string };
 };
 
 /**
@@ -44,15 +50,23 @@ export default function ContentStep({
   target, clubId, values,
 }: {
   target: StepTarget;
-  /**
-   * Null while the club does not exist yet. Photos live under the club's own
-   * folder in Storage, and a listing being written has no folder to put them
-   * in, so the picker waits until it is approved rather than uploading into a
-   * place nothing can later delete from.
-   */
+  /** Null while the club does not exist yet, which a draft always is. */
   clubId: number | null;
   values: ContentValues;
 }) {
+  /**
+   * Where this step's files go.
+   *
+   * Photos used to wait until the club was approved, because 0087 only ever
+   * allowed `clubs/<id>/` and a listing being written has no id. That meant an
+   * admin approved a listing having never seen a picture of it, which is the
+   * thing the client minded. 0160 gives a submission its own folder with the
+   * same question asked of the writer, so both modes upload now.
+   */
+  const owner: MediaOwner | null =
+    clubId !== null ? { kind: "club", id: clubId }
+    : target.kind === "draft" ? { kind: "submission", id: target.id }
+    : null;
   const [state, submit, saving] = useActionState<ListingState, FormData>(saveListingStepAction, {});
   useActionToast(state);
 
@@ -110,14 +124,19 @@ export default function ContentStep({
         </Stack>
 
         <Stack spacing={2.5}>
-          <Panel title="Photos" icon={ImageIcon}>
-            {clubId === null ? (
-              <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-                Photos are added once your club is live. Everything else here is
-                saved with your listing.
-              </Typography>
+          <Panel title="Logo and photos" icon={ImageIcon}>
+            {owner ? (
+              <Stack spacing={2.5}>
+                <LogoEditor owner={owner} slug={values.mark.slug}
+                  name={values.mark.name} initial={values.logo} />
+                <Box sx={{ height: "1px", backgroundColor: tokens.rule }} />
+                <PhotoEditor owner={owner} initial={values.photos} />
+              </Stack>
             ) : (
-              <PhotoEditor clubId={clubId} initial={values.photos} />
+              <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
+                Pictures are added once your listing has somewhere to keep them.
+                Everything else here is saved now.
+              </Typography>
             )}
           </Panel>
 

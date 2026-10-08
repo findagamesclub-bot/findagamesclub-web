@@ -10,6 +10,7 @@ import NextLink from "next/link";
 import ChecklistIcon from "@mui/icons-material/FactCheck";
 import Panel from "@/components/members/Panel";
 import HealthBar from "./HealthBar";
+import PlanChoice, { type PlanOffer } from "./PlanChoice";
 import HealthCheck from "./HealthCheck";
 import ReviewHistory from "./ReviewHistory";
 import SubmitButton from "@/components/ui/SubmitButton";
@@ -36,7 +37,7 @@ import { mono, tokens } from "@/lib/tokens";
  * trip for both of them.
  */
 export default function SubmitStep({
-  draftId, checks, base, note, history = [], cost = null, submitNote,
+  draftId, checks, base, note, history = [], cost = null, submitNote, plan = null,
 }: {
   draftId: number;
   checks: Check[];
@@ -59,8 +60,11 @@ export default function SubmitStep({
   cost?: string | null;
   /** What happens after the button, which is not the same once there is a bill. */
   submitNote: string;
+  /** Monthly or yearly, when there is a charge and both are sold. */
+  plan?: PlanOffer | null;
 }) {
   const [state, submit] = useActionState<ListingFlowState, FormData>(submitListingAction, {});
+  const [picked, setPicked] = useState<"monthly" | "yearly">(plan?.current ?? "monthly");
   const [stopState, stop, stopping] =
     useActionState<ListingFlowState, FormData>(cancelListingAction, {});
   useActionToast(state);
@@ -141,6 +145,12 @@ export default function SubmitStep({
 
       <Box component="form" action={submit}>
         <input type="hidden" name="draft" value={draftId} />
+        {plan ? <input type="hidden" name="plan" value={picked} /> : null}
+
+        {plan ? (
+          <PlanChoice offer={plan} picked={picked} onPick={setPicked} />
+        ) : null}
+
         <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}
           sx={{ alignItems: { sm: "center" } }}>
           <SubmitButton

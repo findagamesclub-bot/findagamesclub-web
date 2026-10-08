@@ -207,8 +207,38 @@ export async function getMemberMeta(profile: string) {
   }));
 }
 
-/** What was taken to one event. */
-export async function getEventMeta(event: number) {
+/**
+ * What was taken to one event.
+ *
+ * Its own shape rather than `toDepth`, which is the tracker's two-level row
+ * and has nowhere to put a faction: it carries a thing and its parent, so a
+ * disposition row reads "Auric Champions" under "Shield Host" and the faction
+ * is dropped on the way through. On the tracker that is right, because the
+ * reader got there by picking a faction. On an event nobody picked anything,
+ * and the client's own requirement is a rate "per army faction and
+ * disposition", so the faction is the one thing that cannot go.
+ */
+export type EventArmy = {
+  factionId: string;
+  faction: string;
+  detachment: string;
+  disposition: string;
+  appearances: number;
+  games: number;
+  winRate: number | null;
+  earlySignal: boolean;
+};
+
+export async function getEventMeta(event: number): Promise<EventArmy[]> {
   const rows = await repo.findEventArmies(event).catch(() => []);
-  return rows.map((r) => toDepth(r, true));
+  return rows.map((r) => ({
+    factionId: r.faction_id,
+    faction: r.faction_label || r.faction_id,
+    detachment: r.detachment ?? "",
+    disposition: r.disposition ?? "",
+    appearances: Number(r.appearances),
+    games: Number(r.games),
+    winRate: rate(Number(r.games), Number(r.win_rate)),
+    earlySignal: r.early_signal,
+  }));
 }

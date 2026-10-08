@@ -8,10 +8,13 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import PointsField from "@/components/ui/PointsField";
 import Counter from "@/components/ui/Counter";
 import { nightLabel } from "@/utils/dates";
-import { tokens, type Faction } from "@/lib/tokens";
-import type { CoachingSlot } from "@/types/clubExtras";
+import { formatMoney } from "@/utils/format";
+import { priceCoaching } from "@/utils/coaching-pricing";
+import { mono, tokens, type Faction } from "@/lib/tokens";
+import type { CoachingSlot, CoachingStanding } from "@/types/clubExtras";
 
 /**
  * One coaching slot, as a card in the calendar grid.
@@ -31,14 +34,23 @@ import type { CoachingSlot } from "@/types/clubExtras";
 const NAMES_ON_CARD = 3;
 
 export default function SlotCard({
-  slot, slug, faction, busy, canManage, onBook, onCancel, onPaid, onStatus,
+  slot, slug, faction, busy, canManage, standing, onEdit,
+  onBook, onCancel, onPaid, onStatus,
 }: {
   slot: CoachingSlot;
   slug: string;
   faction: Faction;
   busy: boolean;
   canManage: boolean;
-  onBook: (slotId: number) => void;
+  /**
+   * What this member's tier and wallet are worth here. One read for the whole
+   * page; each card quotes itself from it. Null for a visitor, or for a club
+   * running no points scheme.
+   */
+  standing: CoachingStanding | null;
+  /** Opens the club's own dialog for this session. Absent for a member. */
+  onEdit?: () => void;
+  onBook: (slotId: number, points: number) => void;
   onCancel: (bookingId: number) => void;
   onPaid: (bookingId: number, paid: boolean) => void;
   onStatus: (slotId: number, status: string) => void;
@@ -46,10 +58,20 @@ export default function SlotCard({
   // Two different destructive acts: the club calling off a session for
   // everybody, and one member giving up their own place.
   const [confirming, setConfirming] = useState<"slot" | "mine" | null>(null);
+  const [points, setPoints] = useState(0);
 
   const full = slot.spacesLeft <= 0;
   const closed = slot.status !== "open";
   const group = slot.coachingType !== "one-to-one";
+
+  /**
+   * A quote, recomputed by `club_coaching_bookings_price` on the way in. The
+   * tier discount is in here too: `coachingDiscountPercent` has been on every
+   * tier page since stage 2 and nothing applied it until 0157, so a member on
+   * a tier that takes 10% off coaching was still charged the full price.
+   */
+  const quote = standing ? priceCoaching(standing, slot.price, points) : null;
+  const canBook = !canManage && !slot.mine && !full && !closed;
 
   return (
     <Stack
@@ -171,11 +193,20 @@ export default function SlotCard({
               </Button>
             ) : (
               <>
+                {/* Changing the session is the first thing a club reaches for
+                    and it could not be reached at all, so it leads. */}
+                {onEdit ? (
+                  <Button fullWidth variant="outlined" disabled={busy} onClick={onEdit}
+                    sx={{ borderColor: tokens.rule, color: tokens.ink,
+                          "&:hover": { borderColor: faction.base, color: faction.deep } }}>
+                    Edit
+                  </Button>
+                ) : null}
                 <Button fullWidth variant="outlined" disabled={busy}
                   onClick={() => onStatus(slot.id, slot.status === "open" ? "closed" : "open")}
                   sx={{ borderColor: tokens.rule, color: tokens.ink,
                         "&:hover": { borderColor: faction.base, color: faction.deep } }}>
-                  {slot.status === "open" ? "Close bookings" : "Reopen"}
+                  {slot.status === "open" ? "Close" : "Reopen"}
                 </Button>
                 <Button variant="text" disabled={busy}
                   onClick={() => setConfirming("slot")}
@@ -194,12 +225,44 @@ export default function SlotCard({
             Cancel my place
           </Button>
         ) : (
-          <Button fullWidth variant="contained" disabled={busy || full || closed}
-            onClick={() => onBook(slot.id)}
-            sx={{ backgroundColor: faction.base,
-                  "&:hover": { backgroundColor: faction.deep } }}>
-            {closed ? "Closed" : full ? "Full" : "Book"}
-          </Button>
+          <Stack spacing={1.25}>
+            {canBook && quote ? (
+              <PointsField
+                held={standing!.points}
+                max={quote.maxPoints}
+                value={points}
+                pointsOff={quote.pointsOff}
+                currency={standing!.currency}
+                onChange={setPoints}
+              />
+            ) : null}
+
+            {/* One line, not a breakdown. What they will actually hand over,
+                with the full price struck through only when it has moved, so
+                a session nobody has a discount on says nothing extra. */}
+            {canBook && quote && quote.basePrice > 0
+              && quote.total !== quote.basePrice ? (
+              <Stack direction="row" spacing={1}
+                sx={{ alignItems: "baseline", justifyContent: "flex-end" }}>
+                <Typography sx={{ fontFamily: mono, fontSize: "0.72rem",
+                                  color: tokens.inkMuted,
+                                  textDecoration: "line-through" }}>
+                  {formatMoney(quote.basePrice, standing!.currency)}
+                </Typography>
+                <Typography sx={{ fontFamily: mono, fontSize: "0.92rem",
+                                  fontWeight: 700, color: tokens.ink }}>
+                  {`YOU PAY ${formatMoney(quote.total, standing!.currency)}`}
+                </Typography>
+              </Stack>
+            ) : null}
+
+            <Button fullWidth variant="contained" disabled={busy || full || closed}
+              onClick={() => onBook(slot.id, points)}
+              sx={{ backgroundColor: faction.base,
+                    "&:hover": { backgroundColor: faction.deep } }}>
+              {closed ? "Closed" : full ? "Full" : "Book"}
+            </Button>
+          </Stack>
         )}
       </Box>
 

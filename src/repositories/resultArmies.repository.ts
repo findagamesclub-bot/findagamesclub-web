@@ -60,3 +60,41 @@ export const findBuildersFor = (clubs: number[]) =>
   clubs.length
     ? callRpc<BuilderRow[]>("army_builders_for", { p_clubs: clubs })
     : Promise.resolve([]);
+
+/**
+ * Every list the people on one event's results have built at this club.
+ *
+ * Through a function because the picker wants the current version's faction
+ * and detachment so that choosing a list can fill the rest of the form in, and
+ * `army_list_versions` is newer than the generated types. The function also
+ * carries the guard: a club's own team, nobody else.
+ */
+export type MemberListRow = {
+  id: number;
+  profile_id: string;
+  name: string;
+  list_type: string;
+  faction_id: string;
+  faction_label: string;
+  detachment: string;
+  disposition: string;
+  total_points: number | null;
+  points_limit: string | null;
+  version_number: number | null;
+};
+
+export const findMemberLists = (club: number, profiles?: string[]) =>
+  callRpc<MemberListRow[]>("club_member_lists",
+    { p_club: club, p_profiles: profiles ?? null });
+
+/**
+ * The club saying which of a player's own lists they brought.
+ *
+ * Event sources only, and `link_result_army_list` (0145) stays the member's
+ * own door for a club night. Null takes the link off.
+ */
+export const setResultList = (
+  source: string, sourceId: number, side: string, list: number | null,
+) =>
+  callRpc<void>("club_set_result_list",
+    { p_source: source, p_source_id: sourceId, p_side: side, p_list: list });

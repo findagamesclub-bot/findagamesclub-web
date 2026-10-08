@@ -7,18 +7,18 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import SlotCard from "./SlotCard";
 import BusyOverlay from "@/components/ui/BusyOverlay";
-import NewSlotForm from "./NewSlotForm";
+import SlotForm from "./SlotForm";
 import FilterBar from "@/components/account/FilterBar";
 import { coachingAction, type CoachingState } from "@/app/clubs/[slug]/(console)/coaching/actions";
 import {
   countCoachingSlots, filterCoachingSlots, type SlotFilter, type SlotSort,
 } from "@/utils/coaching-slot-filter";
 import { tokens, type Faction } from "@/lib/tokens";
-import type { CoachingSlot } from "@/types/clubExtras";
+import type { CoachingSlot, CoachingStanding } from "@/types/clubExtras";
 
 /** The calendar, and whatever the viewer is allowed to do to it. */
 export default function CoachingCalendar({
-  slots, slug, clubId, faction, canManage, isMember,
+  slots, slug, clubId, faction, canManage, isMember, standing = null,
 }: {
   slots: CoachingSlot[];
   slug: string;
@@ -26,6 +26,8 @@ export default function CoachingCalendar({
   faction: Faction;
   canManage: boolean;
   isMember: boolean;
+  /** One read for the page; each card quotes itself from it. */
+  standing?: CoachingStanding | null;
 }) {
   const [state, submit, busy] = useActionState<CoachingState, FormData>(coachingAction, {});
   useActionToast(state);
@@ -34,6 +36,8 @@ export default function CoachingCalendar({
   const [filter, setFilter] = useState<SlotFilter>("all");
   const [sort, setSort] = useState<SlotSort>("soonest");
   const [sifting, startSift] = useTransition();
+  /** Which session is open for changing. One dialog, not one per card. */
+  const [editing, setEditing] = useState<number | null>(null);
 
   const counts = useMemo(() => countCoachingSlots(slots), [slots]);
   const results = useMemo(
@@ -50,7 +54,7 @@ export default function CoachingCalendar({
     <Stack spacing={2.5}>
 
       {canManage ? (
-        <NewSlotForm slug={slug} clubId={clubId} faction={faction} onSubmit={submit} busy={busy} />
+        <SlotForm slug={slug} clubId={clubId} faction={faction} onSubmit={submit} busy={busy} />
       ) : null}
 
       {slots.length === 0 ? (
@@ -108,7 +112,10 @@ export default function CoachingCalendar({
                 faction={faction}
                 busy={busy}
                 canManage={canManage}
-                onBook={(slotId) => (isMember ? send({ intent: "book", slotId }) : undefined)}
+                standing={isMember ? standing : null}
+                onEdit={canManage ? () => setEditing(slot.id) : undefined}
+                onBook={(slotId, points) =>
+                  (isMember ? send({ intent: "book", slotId, points }) : undefined)}
                 onCancel={(bookingId) => send({ intent: "cancel", bookingId })}
                 onPaid={(bookingId, paid) => send({ intent: "mark-paid", bookingId, paid })}
                 onStatus={(slotId, status) => send({ intent: "set-slot-status", slotId, status })}
@@ -119,6 +126,20 @@ export default function CoachingCalendar({
         </BusyOverlay>
         </>
       )}
+
+      {/* One dialog for whichever session is being changed, rather than one
+          mounted per card. Keyed on the slot so opening a second one starts
+          from its own values instead of the first one's. */}
+      {editing !== null && slots.find((one) => one.id === editing) ? (
+        <SlotForm
+          key={editing}
+          slug={slug} clubId={clubId} faction={faction} busy={busy}
+          slot={slots.find((one) => one.id === editing)!}
+          open
+          onClose={() => setEditing(null)}
+          onSubmit={submit}
+        />
+      ) : null}
     </Stack>
   );
 }

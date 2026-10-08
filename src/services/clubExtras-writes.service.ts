@@ -156,12 +156,24 @@ function coachingError(raw: string): string {
   if (raw.includes("SLOT_PASSED")) return "That slot has already happened.";
   if (raw.includes("MEMBERS_ONLY")) return "Coaching is for approved members of the club.";
   if (raw.includes("23505")) return "You are already booked onto that slot.";
+  // The three the pricing trigger raises. Each says which of the member's own
+  // circumstances stopped it, rather than "that did not work".
+  if (raw.includes("NOT_ENOUGH_POINTS")) return "You do not have that many points.";
+  if (raw.includes("NOTHING_TO_PAY")) {
+    return "This session is already free to you, so there is nothing to put points towards.";
+  }
+  if (raw.includes("NO_REDEMPTION")) {
+    return "This club does not take points off coaching.";
+  }
+  if (raw.includes("OVER_REDEMPTION_CAP")) {
+    return "Your tier does not let points cover that much of a session.";
+  }
   return "Could not book that slot. Try again.";
 }
 
-export async function bookCoaching(slotId: number): Promise<Result> {
+export async function bookCoaching(slotId: number, points = 0): Promise<Result> {
   try {
-    const booking = await repo.bookSlot(slotId);
+    const booking = await repo.bookSlot(slotId, points);
     await notify.notifyCoachingBooked(booking.id);
     return { ok: true };
   } catch (error) {
@@ -204,6 +216,66 @@ export async function setSlotStatus(slotId: number, status: string): Promise<Res
     return { ok: true };
   } catch {
     return { ok: false, error: "Only the club can change a coaching slot." };
+  }
+}
+
+/**
+ * The club calling somebody's place off.
+ *
+ * Separate from `cancelCoaching`, which is the member giving up their own: the
+ * two read the same in SQL and mean different things, and only this one takes
+ * a reason and only this one tells anybody. 0158's trigger does the telling
+ * and flips the refund to due when they had paid.
+ */
+export async function cancelCoachingAsClub(
+  bookingId: number, reason: string,
+): Promise<Result> {
+  try {
+    await repo.setClubBookingState(bookingId, {
+      status: "cancelled",
+      cancel_reason: reason.trim().slice(0, 300),
+    });
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "That booking is not yours to cancel." };
+  }
+}
+
+/** Where a refund has got to. A label, not a transaction: nothing here moves money. */
+export async function setCoachingRefund(
+  bookingId: number, status: string,
+): Promise<Result> {
+  if (!["not_due", "due", "refunded"].includes(status)) {
+    return { ok: false, error: "That is not a refund state." };
+  }
+  try {
+    await repo.setClubBookingState(bookingId, { refund_status: status });
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "That booking is not yours to change." };
+  }
+}
+
+export async function editCoachingSlot(params: {
+  slotId: number; title: string; description: string; slotDate: string;
+  startTime: string; endTime: string; price: string; coachingType: string; capacity: number;
+}): Promise<Result> {
+  if (!params.title.trim()) return { ok: false, error: "Give the session a title." };
+  if (!params.slotDate) return { ok: false, error: "Choose a date." };
+  if (!params.startTime) return { ok: false, error: "Choose a start time." };
+
+  try {
+    await repo.updateSlot(params.slotId, { ...params, title: params.title.trim() });
+    return { ok: true };
+  } catch (error) {
+    // The capacity guard refuses a session that would hold fewer people than
+    // have already booked on to it, and the club should hear which.
+    const raw = error instanceof Error ? error.message : "";
+    if (raw.includes("SLOT_FULL")) {
+      return { ok: false,
+               error: "More people are booked on than that would leave room for." };
+    }
+    return { ok: false, error: "Only the club can change a coaching session." };
   }
 }
 

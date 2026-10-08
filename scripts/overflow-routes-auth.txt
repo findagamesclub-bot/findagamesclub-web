@@ -46,6 +46,11 @@
 /clubs/didcot-wargames-didcot/manage/events
 /clubs/didcot-wargames-didcot/manage/events?tab=drafts
 /clubs/didcot-wargames-didcot/manage/events?tab=bookings
+# The event editor and its draw. 113 is the Warhammer 40k RTT, which is
+# the one Didcot event carrying a drawn round with armies recorded on it.
+/clubs/didcot-wargames-didcot/manage/events/113
+/clubs/didcot-wargames-didcot/manage/events/113/pairings
+/clubs/didcot-wargames-didcot/manage/events/113/teams
 /clubs/didcot-wargames-didcot/manage/billing
 /clubs/didcot-wargames-didcot/manage/analytics
 /clubs/didcot-wargames-didcot/manage/analytics?tab=money
@@ -58,6 +63,9 @@
 /clubs/didcot-wargames-didcot/manage/badges?tab=awarded
 /clubs/didcot-wargames-didcot/manage/badges?q=terrain&state=retired
 /clubs/didcot-wargames-didcot/manage/badges?tab=awarded&state=retired
+/clubs/didcot-wargames-didcot/manage/reviews
+/clubs/didcot-wargames-didcot/manage/reviews?view=low
+/clubs/didcot-wargames-didcot/manage/reviews?view=reported
 /account/reports
 /account/reports?state=any
 /clubs/didcot-wargames-didcot/manage/moderation

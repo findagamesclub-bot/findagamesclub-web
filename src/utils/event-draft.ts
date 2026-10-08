@@ -22,6 +22,8 @@ export type EventDraft = {
   summary: string;
   price: string;
   roundCount: number | null;
+  /** How many people the event is for. Null when the club has not said. */
+  capacity: number | null;
   startDate: string;
   startTime: string;
   endDate: string;
@@ -100,6 +102,18 @@ export function parseEventDraft(form: FormData): Parsed<EventDraft> {
     } else roundCount = n;
   }
 
+  // How many people the day is for. Its own figure rather than the sum of the
+  // ticket types: a club sells 40 tickets to a 50 player hall and keeps ten
+  // back for the door, and the two numbers are both true.
+  let capacity: number | null = null;
+  const places = text(form, "capacity");
+  if (places) {
+    const n = Number(places);
+    if (!Number.isInteger(n) || n < 0 || n > 100000) {
+      errors.capacity = "Say how many people it is for, as a whole number.";
+    } else capacity = n;
+  }
+
   const bestcoastLink = text(form, "bestcoastLink");
   if (bestcoastLink && !externalUrl(bestcoastLink)) {
     errors.bestcoastLink = "That does not look like a web address.";
@@ -111,6 +125,7 @@ export function parseEventDraft(form: FormData): Parsed<EventDraft> {
     ok: true,
     value: {
       title, summary: text(form, "summary"), price: text(form, "price"), roundCount,
+      capacity,
       startDate, startTime, endDate, endTime,
       venueName: text(form, "venueName"),
       venueAddress: text(form, "venueAddress"),

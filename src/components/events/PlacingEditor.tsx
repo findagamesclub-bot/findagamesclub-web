@@ -2,7 +2,6 @@
 
 import { startTransition, useActionState, useState } from "react";
 import Alert from "@mui/material/Alert";
-import Autocomplete from "@mui/material/Autocomplete";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
@@ -15,17 +14,18 @@ import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import PlacingArmyFields from "./PlacingArmyFields";
+import PlacingPlayerField from "./PlacingPlayerField";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { useActionSuccess } from "@/hooks/useActionSuccess";
 import { useCatalogue } from "@/hooks/useCatalogue";
+import { usePlacingArmy } from "@/hooks/usePlacingArmy";
 import SubmitButton from "@/components/ui/SubmitButton";
 import { useActionToast } from "@/components/ui/Toaster";
 import { placingAction, type PlacingState }
   from "@/app/clubs/[slug]/(console)/events/[eventId]/placing-actions";
 import { tokens } from "@/lib/tokens";
 import type { EventPlacing } from "@/types/event";
-import type { Builder } from "@/services/resultArmies.service";
-import { NO_ARMY, type ArmyNaming } from "@/components/results/ArmyPicker";
+import type { Builder, MemberList } from "@/services/resultArmies.service";
 
 export type PlacingTarget = { placing: EventPlacing | null };
 
@@ -38,11 +38,14 @@ export type PlacingTarget = { placing: EventPlacing | null };
  * in for them, because they are working down a printed sheet in order.
  *
  * The army is free text at a club with the builder off, and the same cascade
- * as every other result screen at one that runs it. The linked army list
- * legacy shows against a placing comes out of the Army Builder, in stage 10.
+ * as every other result screen at one that runs it. Picking a member also
+ * offers whatever they have built in the Army Builder, which is what the
+ * client asked for and what the podium card has been able to draw since
+ * Milestone 2 with nothing ever writing it.
  */
 export default function PlacingEditor({
-  open, target, nextRank, roster, slug, eventKey, eventId, onClose, builder = null,
+  open, target, nextRank, roster, slug, eventKey, eventId, onClose,
+  builder = null, lists = [],
 }: {
   open: boolean;
   /** null placing means a new one. */
@@ -56,39 +59,25 @@ export default function PlacingEditor({
   onClose: () => void;
   /** Null at a club that does not record armies. */
   builder?: Builder | null;
+  /** Every list the people on this event's results have built here. */
+  lists?: MemberList[];
 }) {
   const fullScreen = useMediaQuery("(max-width:600px)");
   const [state, submit, busy] = useActionState<PlacingState, FormData>(placingAction, {});
   useActionToast(state);
 
   const placing = target?.placing ?? null;
-  const [profileId, setProfileId] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
 
   // Fetched when the dialog opens rather than with the page: an event's results
   // are read far more often than they are typed in.
   const { catalogue, loading, failed } = useCatalogue(builder, open);
 
-  const [army, setArmy] = useState<ArmyNaming>(NO_ARMY);
-  const [seenId, setSeenId] = useState<number | string | null>(null);
-
-  // A different placing opened, so the army follows it. Derived during render:
-  // an effect would paint one frame of the previous winner's army. The form
-  // itself is keyed on the same id, which is what resets the plain fields.
-  const key = placing?.id ?? "new";
-  if (open && key !== seenId) {
-    setSeenId(key);
-    // Read once, here, rather than as a `useState` initialiser: an initialiser
-    // runs on the first mount and never again, so this dialog carried the
-    // previous winner's profile link onto the next row it opened.
-    setProfileId(placing?.profileId ?? null);
-    setArmy({
-      factionId: placing?.army?.factionLabel ?? "",
-      factionLabel: placing?.army?.factionLabel ?? "",
-      detachment: placing?.army?.detachment ?? "",
-      disposition: placing?.army?.disposition ?? "",
-    });
-  }
+  // Everything the army half of this dialog holds, including the reset that
+  // follows whichever placing was opened. The form itself is keyed on the same
+  // id, which is what resets the plain fields.
+  const { profileId, setProfileId, army, setArmy, listId, pickList, theirLists } =
+    usePlacingArmy(open, placing, lists);
 
   const send = (data: FormData) => {
     data.set("slug", slug);
@@ -155,41 +144,15 @@ export default function PlacingEditor({
                 sx={{ maxWidth: 180 }}
               />
 
-              {/* Typed explicitly: a string defaultValue alongside object
-                  options makes the inferred option type collapse to string. */}
-              <Autocomplete<{ id: string; name: string }, false, false, true>
-                freeSolo
-                options={roster}
-                defaultValue={placing?.name ?? ""}
-                slotProps={{
-                  paper: {
-                    sx: { mt: 0.5, border: `1px solid ${tokens.rule}`,
-                          boxShadow: "0 10px 30px rgba(16,27,45,0.18)" },
-                  },
-                }}
-                getOptionLabel={(option) =>
-                  typeof option === "string" ? option : option.name}
-                onChange={(_event, value) =>
-                  setProfileId(typeof value === "string" || !value ? null : value.id)}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    name="name" label="Player" required
-                    helperText={roster.length
-                      ? "Pick a member so it shows on their profile, or type any name."
-                      : "Whoever finished in this place."}
-                    slotProps={{
-                      ...params.slotProps,
-                      htmlInput: { ...(params.slotProps?.htmlInput ?? {}), maxLength: 120 },
-                    }}
-                  />
-                )}
-              />
+              <PlacingPlayerField roster={roster} name={placing?.name ?? ""}
+                onPick={setProfileId} />
 
               <PlacingArmyFields
                 builder={builder} catalogue={catalogue}
                 loading={loading} failed={failed}
                 placing={placing} army={army} onChange={setArmy}
+                lists={theirLists} listId={listId}
+                playerNamed={profileId !== null} onList={pickList}
               />
             </Stack>
           </DialogContent>

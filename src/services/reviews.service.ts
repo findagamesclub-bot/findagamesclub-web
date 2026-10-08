@@ -86,3 +86,49 @@ export async function getReviewCount(clubId: number): Promise<number> {
     return 0;
   }
 }
+
+export type ConsoleReview = {
+  id: number;
+  rating: number;
+  comment: string;
+  authorName: string;
+  authorId: string | null;
+  createdAt: string;
+  /** Somebody has reported it and an admin has not answered yet. */
+  reported: boolean;
+};
+
+/**
+ * A club's own reviews, for the console.
+ *
+ * A club cannot take a review down and this page does not pretend otherwise:
+ * the only action on it is Report, which is the same `flag_content` path the
+ * public page offers and goes to a site admin rather than to the club. 0128
+ * settled that and the reason is worth repeating here, because this screen is
+ * where somebody will next ask for a delete button: a club ruling on a bad
+ * review of itself is the one conflict of interest the queue must not create.
+ */
+export async function getClubReviews(clubId: number, opts: {
+  view: repo.ReviewView; page: number; oldest: boolean; perPage: number;
+}) {
+  const from = (Math.max(1, opts.page) - 1) * opts.perPage;
+
+  const [page, counts] = await Promise.all([
+    repo.findClubReviewsPage(clubId, {
+      from, to: from + opts.perPage - 1, view: opts.view, oldest: opts.oldest,
+    }).catch(() => ({ rows: [], total: 0 })),
+    repo.countClubReviews(clubId).catch(() => ({ all: 0, low: 0, reported: 0 })),
+  ]);
+
+  const reviews: ConsoleReview[] = page.rows.map((row) => ({
+    id: row.id,
+    rating: row.rating,
+    comment: (row.comment ?? "").trim(),
+    authorName: row.author_name,
+    authorId: row.author_profile_id,
+    createdAt: row.created_at,
+    reported: row.flagged_at !== null,
+  }));
+
+  return { reviews, total: page.total, counts };
+}

@@ -16,7 +16,8 @@ declare
     'prune-notifications',
     'prune-club-audit',
     'prune-notification-deliveries',
-    'sweep-ai-jobs'];
+    'sweep-ai-jobs',
+    'award-tenure-badges'];
   missing text;
 begin
   select string_agg(w, ', ' order by w) into missing

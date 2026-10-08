@@ -20,6 +20,9 @@ import { ownerCanEdit } from "@/utils/submission-status";
 import { readinessSummary, readinessFraction } from "@/utils/listing-readiness";
 import { parseTokens } from "@/utils/listing-draft";
 import { draftValues } from "@/utils/draft-values";
+import { formatPence } from "@/utils/format";
+import { clubLogoUrl } from "@/utils/club-media";
+import { publicUrl } from "@/lib/supabase/storage";
 
 export const metadata = { title: "List your club" };
 
@@ -108,7 +111,20 @@ export default async function ListingDraftStepPage({
       ) : null}
 
       {step === "content" ? (
-        <ContentStep target={target} clubId={null} values={values.content} />
+        <ContentStep
+          target={target}
+          clubId={null}
+          values={{
+            ...values.content,
+            logo: {
+              url: clubLogoUrl({ logoPath: values.content.logoPath }, publicUrl),
+              path: values.content.logoPath,
+            },
+            // No slug until it is approved, so the monogram is keyed on the
+            // name. Same name, same colour, which is what a preview needs.
+            mark: { slug: draft.club_name, name: draft.club_name },
+          }}
+        />
       ) : null}
 
       {step === "pricing" ? (
@@ -138,6 +154,17 @@ export default async function ListingDraftStepPage({
           cost={billing?.enabled ? listingCostLine(billing) : null}
           submitNote={listingSubmitNote(
             billing ?? { enabled: false, monthly_price_pence: 0, yearly_price_pence: 0 })}
+          // Only when both are actually sold. A club offered one price is not
+          // being asked a question, and a radio with a single option is a
+          // control pretending there is a decision.
+          plan={billing?.enabled
+            && billing.monthly_price_pence > 0 && billing.yearly_price_pence > 0
+            ? {
+                current: draft.plan_interval === "yearly" ? "yearly" : "monthly",
+                monthly: `${formatPence(billing.monthly_price_pence)} a month`,
+                yearly: `${formatPence(billing.yearly_price_pence)} a year`,
+              }
+            : null}
         />
       ) : null}
     </Container>

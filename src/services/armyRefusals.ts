@@ -20,6 +20,9 @@ export const ARMY_REFUSALS: Record<string, string> = {
   ARMY_NO_UNITS: "Add at least one unit to the army list.",
   ARMY_OVER_LIMIT: "Selected units exceed the chosen points limit.",
   ARMY_NOT_YOURS: "You can only edit your own army lists.",
+  // The club's own door (0163). It may say WHICH list somebody brought, never
+  // whose: a list belonging to another player is not theirs to attach.
+  ARMY_NOT_THEIRS: "That list belongs to somebody else, so it cannot go against this result.",
   ARMY_WRONG_CLUB: "That list belongs to a different club.",
   ARMY_LIST_NOT_FOUND: "Army list not found.",
   ARMY_NO_CATALOGUE: "This club has no published catalogue to build against yet.",

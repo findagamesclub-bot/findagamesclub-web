@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import NextLink from "next/link";
 import Box from "@mui/material/Box";
 import FormControlLabel from "@mui/material/FormControlLabel";
@@ -10,11 +10,16 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import LoyaltyIcon from "@mui/icons-material/Loyalty";
 import StarIcon from "@mui/icons-material/StarBorder";
+import MilitaryTechIcon from "@mui/icons-material/MilitaryTech";
+import CakeIcon from "@mui/icons-material/CakeOutlined";
 import Panel from "@/components/members/Panel";
 import SubmitButton from "@/components/ui/SubmitButton";
 import { useActionToast } from "@/components/ui/Toaster";
 import { saveLoyaltyAction, type SettingsState } from "./actions";
+import LoyaltyLadder from "@/components/loyalty/LoyaltyLadder";
+import LoyaltyAnniversaries from "@/components/loyalty/LoyaltyAnniversaries";
 import { MILESTONE_FIELDS } from "@/utils/loyalty";
+import type { AnniversaryDraft, TierDraft } from "@/utils/loyalty-tiers";
 import { tokens } from "@/lib/tokens";
 
 /**
@@ -26,19 +31,41 @@ import { tokens } from "@/lib/tokens";
  */
 export default function LoyaltySettingsForm({
   slug, enabled: initialEnabled, pointValue, bookingPrice, milestones,
+  tiers: initialTiers, anniversaries: initialAnniversaries,
 }: {
   slug: string;
   enabled: boolean;
   pointValue: string;
   bookingPrice: string;
   milestones: Record<string, number>;
+  /** Seeded from the defaults when the club has saved none of its own. */
+  tiers: TierDraft[];
+  anniversaries: AnniversaryDraft[];
 }) {
-  const [state, submit] = useActionState<SettingsState, FormData>(saveLoyaltyAction, {});
+  const [state, submit, saving] =
+    useActionState<SettingsState, FormData>(saveLoyaltyAction, {});
   useActionToast(state);
   const [enabled, setEnabled] = useState(initialEnabled);
+  const [tiers, setTiers] = useState(initialTiers);
+  const [anniversaries, setAnniversaries] = useState(initialAnniversaries);
+
+  /**
+   * Dispatched by hand rather than through the form's `action` prop.
+   *
+   * React 19 resets an uncontrolled form once its action has run, which was
+   * harmless while nothing here could be refused. The ladder can be: two tiers
+   * at the same total comes back with a reason, and through `action` that
+   * would empty the point value, the table price and all four milestones while
+   * telling the club to fix a third thing. Same fix the listing builder needed.
+   */
+  const send = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    startTransition(() => submit(data));
+  };
 
   return (
-    <Box component="form" action={submit}>
+    <Box component="form" onSubmit={send}>
       <input type="hidden" name="slug" value={slug} />
       <input type="hidden" name="enabled" value={enabled ? "yes" : "no"} />
 
@@ -94,10 +121,17 @@ export default function LoyaltySettingsForm({
             ))}
           </Stack>
         </Panel>
+        <Panel title="The ladder" icon={MilitaryTechIcon}>
+          <LoyaltyLadder rows={tiers} onChange={setTiers} />
+        </Panel>
+
+        <Panel title="Anniversaries" icon={CakeIcon}>
+          <LoyaltyAnniversaries rows={anniversaries} onChange={setAnniversaries} />
+        </Panel>
       </Stack>
 
       <Stack direction="row" sx={{ mt: 3, justifyContent: "flex-end" }}>
-        <SubmitButton label="Save changes" pendingLabel="Saving" />
+        <SubmitButton label="Save changes" pendingLabel="Saving" pending={saving} />
       </Stack>
     </Box>
   );

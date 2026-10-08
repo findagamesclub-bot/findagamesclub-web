@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { callRpc } from "@/lib/supabase/table";
 
 /**
  * Rivalries, merchandise and coaching.
@@ -222,11 +223,24 @@ export async function countCoachingToPay(clubId: number): Promise<number> {
   return count ?? 0;
 }
 
-export async function bookSlot(slotId: number) {
+/**
+ * `loyalty_points_spent` is the one money column a member may name, and even
+ * that is only a request: `club_coaching_bookings_price` (0157) reads their
+ * balance, applies the tier's cap and writes every figure itself. Nothing sent
+ * from a browser reaches the price.
+ */
+export async function bookSlot(slotId: number, points = 0) {
   const supabase = await createClient();
+  // `loyalty_points_spent` reaches `src/types/database.ts` only once 0157 has
+  // been run and the types regenerated, so the payload is asserted rather than
+  // the whole client being cast. Drop the assertion after that.
+  const payload = {
+    slot_id: slotId,
+    loyalty_points_spent: Math.max(0, Math.trunc(points) || 0),
+  };
   const { data, error } = await supabase
     .from("club_coaching_bookings")
-    .insert({ slot_id: slotId })
+    .insert(payload as never)
     .select("id")
     .maybeSingle();
 
@@ -234,6 +248,81 @@ export async function bookSlot(slotId: number) {
   // Zero rows means RLS filtered it out - see the trap in CLAUDE.md.
   if (!data) throw new Error("MEMBERS_ONLY");
   return { id: data.id };
+}
+
+/**
+ * Every coaching booking at a club, cancelled ones included.
+ *
+ * Through `club_coaching_bookings_list` (0158) rather than a wider select, the
+ * way the event roster goes through `club_event_door_list`. The session cards
+ * read booked rows only, which is right for "who is coming" and useless for
+ * "who am I out of pocket to": a cancelled booking somebody paid for is the
+ * row a club most needs. It also keeps the money out of the card read, where
+ * a member has no business reading what the club charged somebody else.
+ */
+export type ClubCoachingBookingRow = {
+  booking_id: number;
+  slot_id: number;
+  slot_title: string;
+  slot_date: string;
+  start_time: string;
+  profile_id: string;
+  member_name: string;
+  status: string;
+  payment_status: string;
+  refund_status: string;
+  cancel_reason: string;
+  base_price: number | string;
+  loyalty_points_spent: number;
+  total_price: number | string;
+  booked_at: string;
+};
+
+export const findClubCoachingBookings = (clubId: number) =>
+  callRpc<ClubCoachingBookingRow[]>("club_coaching_bookings_list", { p_club: clubId });
+
+/** The club's own changes to somebody's booking. */
+export async function setClubBookingState(
+  bookingId: number,
+  patch: { status?: string; refund_status?: string; cancel_reason?: string;
+           payment_status?: string },
+) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("club_coaching_bookings")
+    .update(patch as never)
+    .eq("id", bookingId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  // Zero rows is RLS filtering it out, not a success. See CLAUDE.md.
+  if (!data) throw new Error("NOT_PERMITTED");
+}
+
+/**
+ * Editing a slot, which has been allowed by `club_coaching_slots_manage` since
+ * 0020 and called by nothing. The client found it from the other end: "Coaching
+ * Events ... cannot be edited."
+ */
+export async function updateSlot(slotId: number, patch: {
+  title: string; description: string; slotDate: string; startTime: string;
+  endTime: string; price: string; coachingType: string; capacity: number;
+}) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("club_coaching_slots")
+    .update({
+      title: patch.title, description: patch.description,
+      slot_date: patch.slotDate, start_time: patch.startTime, end_time: patch.endTime,
+      price: patch.price, coaching_type: patch.coachingType, capacity: patch.capacity,
+    })
+    .eq("id", slotId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) throw Object.assign(new Error(error.message), { code: error.code });
+  if (!data) throw new Error("NOT_PERMITTED");
 }
 
 export async function setBookingState(

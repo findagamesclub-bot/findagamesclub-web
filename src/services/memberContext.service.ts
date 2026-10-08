@@ -1,6 +1,10 @@
 import "server-only";
+import { clubLogoUrl } from "@/utils/club-media";
+import { publicUrl } from "@/lib/supabase/storage";
 
 import * as repo from "@/repositories/memberContext.repository";
+import * as loyalty from "@/repositories/loyalty.repository";
+import { DEFAULT_TIERS, tierFor, type LoyaltyTier } from "@/utils/loyalty";
 import { londonToday } from "./bookingCalendar.service";
 
 export type SharedClub = {
@@ -13,6 +17,14 @@ export type SharedClub = {
   joinedAt: string | null;
   /** Whole years, for "member for 2 years". */
   years: number;
+  /**
+   * Where they stand on the club's points ladder, when it runs one.
+   *
+   * Lifetime, never the spendable balance: 0156 deliberately does not return
+   * it. Null when the club has the scheme switched off, or when this reader
+   * is not in that club.
+   */
+  loyalty: { label: string; tone: string; lifetime: number } | null;
 };
 
 export type Meeting = {
@@ -98,6 +110,46 @@ const yearsSince = (iso: string | null) => {
 };
 
 /**
+ * What rung they are on at each shared club.
+ *
+ * A second wave, because it needs the club ids the first one produced, and two
+ * reads rather than one per club: a profile shared with five clubs would
+ * otherwise be ten round trips for a chip.
+ *
+ * Written onto the rows rather than returned, so a failure costs the chip and
+ * not the page: a profile that cannot say somebody's loyalty tier is still a
+ * profile.
+ */
+async function fillLoyalty(memberId: string, clubs: SharedClub[]): Promise<void> {
+  const ids = clubs.map((club) => club.id);
+  if (!ids.length) return;
+
+  const [standings, settings] = await Promise.all([
+    loyalty.findStandingsForProfile(memberId, ids).catch(() => []),
+    loyalty.findSettingsForClubs(ids).catch(() => []),
+  ]);
+  if (!standings.length) return;
+
+  const ladders = new Map<number, LoyaltyTier[]>();
+  for (const row of settings) {
+    if (!row.enabled) continue;
+    const held = Array.isArray(row.tiers) ? (row.tiers as unknown as LoyaltyTier[]) : [];
+    // Same fallback the wallet uses: a club that has saved none is running the
+    // defaults, so reading it as "no ladder" would lose everybody's rung.
+    ladders.set(row.club_id, held.length ? held : DEFAULT_TIERS);
+  }
+
+  const lifetimes = new Map(standings.map((row) => [row.club_id, row.lifetime]));
+  for (const club of clubs) {
+    const ladder = ladders.get(club.id);
+    const lifetime = lifetimes.get(club.id);
+    if (!ladder || lifetime === undefined) continue;
+    const tier = tierFor(lifetime, ladder).tier;
+    if (tier) club.loyalty = { label: tier.label, tone: tier.tone, lifetime };
+  }
+}
+
+/**
  * What one member can see about another: the clubs they share, and their own
  * record against them.
  *
@@ -122,7 +174,7 @@ export async function getMemberContext(
   const clubs: SharedClub[] = memberships.map((row) => {
     const club = (row as unknown as {
       clubs: {
-        id: number; slug: string; name: string; logo_url: string | null;
+        id: number; slug: string; name: string; logo_url: string | null; logo_path: string | null;
         club_membership_tiers: { tier_key: string; label: string }[];
       };
     }).clubs;
@@ -131,18 +183,23 @@ export async function getMemberContext(
       id: club.id,
       slug: club.slug,
       name: club.name,
-      logoUrl: club.logo_url,
+      logoUrl: clubLogoUrl(
+        { logoPath: club.logo_path, logoUrl: club.logo_url },
+        publicUrl),
       tierLabel:
         club.club_membership_tiers?.find((tier) => tier.tier_key === row.tier_key)?.label
         ?? null,
       joinedAt: row.joined_at,
       years: yearsSince(row.joined_at),
+      loyalty: null,
     };
   });
 
+  await fillLoyalty(memberId, clubs);
+
   const meetings: Meeting[] = games.map((row) => {
     const club = (row as unknown as {
-      clubs: { slug: string; name: string; logo_url: string | null };
+      clubs: { slug: string; name: string; logo_url: string | null; logo_path: string | null };
     }).clubs;
     const iBooked = row.booked_by === viewerId;
     const myScore = iBooked ? row.booked_by_score : row.opponent_score;
@@ -150,7 +207,9 @@ export async function getMemberContext(
 
     return {
       id: row.id,
-      club: { slug: club.slug, name: club.name, logoUrl: club.logo_url },
+      club: { slug: club.slug, name: club.name, logoUrl: clubLogoUrl(
+        { logoPath: club.logo_path, logoUrl: club.logo_url },
+        publicUrl) },
       date: row.session_date,
       title: row.game_title || "Table booking",
       myScore,

@@ -24,9 +24,10 @@ export default function EventHero({
    *
    * `event.ticketsAvailable` is a number the club typed once and nothing ever
    * decrements, so after four sales the hero read "50 TICKETS LEFT" beside a
-   * sales panel saying "46 LEFT" — two figures for one thing on one screen.
-   * Null when the event sells no typed tickets, and then the club's own number
-   * is the only answer there is.
+   * sales panel saying "46 LEFT", two figures for one thing on one screen.
+   * It no longer stands in for this: it is the club's stated capacity and has
+   * its own fact. Null here means the event sells no typed tickets, and then
+   * there is no remaining count to show at all.
    */
   ticketsRemaining?: number | null;
 }) {
@@ -43,7 +44,12 @@ export default function EventHero({
     : "";
 
 
-  const counted = ticketsRemaining ?? event.ticketsAvailable;
+  // Only what has actually sold. `tickets_available` used to stand in here and
+  // it is the club's stated capacity, not a remaining count: nothing has ever
+  // decremented it, which is why the cards stopped reading it in stage 12.
+  // The hero kept the fallback and kept the lie with it. It is its own fact
+  // below now, labelled for what it is.
+  const counted = ticketsRemaining;
   // Nothing is left of an event that is not happening. The client called one
   // off and the hero went on offering the last place, which is the page
   // arguing with the banner directly above it.
@@ -52,11 +58,17 @@ export default function EventHero({
 
   const facts = [
     event.price ? { label: "entry", value: event.price } : null,
+    // How many the day is for, which the club now states. A reader deciding
+    // whether to travel wants the size of the room as much as the price.
+    event.ticketsAvailable
+      ? { label: event.ticketsAvailable === 1 ? "place" : "places",
+          value: String(event.ticketsAvailable) }
+      : null,
     event.roundCount ? { label: "rounds", value: String(event.roundCount) } : null,
     // Nothing is left of an event that has been played. "50 tickets left"
     // beside a Finished badge is a number that cannot mean anything, and the
     // badge has already said what the reader needs.
-    tickets && !event.hasEnded
+    tickets && !event.hasEnded && counted !== null
       ? { label: tickets.soldOut ? "tickets" : "tickets left",
           value: tickets.soldOut ? "None" : String(counted) }
       : null,

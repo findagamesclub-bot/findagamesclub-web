@@ -52,15 +52,17 @@ export default async function EditProfilePage() {
             <Stack spacing={2}>
               <MemberBadges badges={badges} />
               <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-                Clubs give some of these out. The rest you earn by turning up
-                and by how you do in their leagues and campaigns.
+                Your clubs give these out. Some arrive on their own: first,
+                second or third when a club puts you on a podium, and one for
+                how long you have been a member.
               </Typography>
             </Stack>
           ) : (
             <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-              None yet. Clubs hand badges out for things like winning a
-              tournament, and you earn others for how long you have been a
-              member and how you do in their leagues.
+              None yet. First, second and third arrive on their own when a
+              club puts you on a podium at an event or a league, one comes a
+              year after you join, and clubs hand out their own for things
+              like painting the terrain.
             </Typography>
           )}
 

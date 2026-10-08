@@ -6,6 +6,7 @@ import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
 import { getClubDetail } from "@/services/clubDetail.service";
 import { findLoyaltySettings } from "@/repositories/clubSettings.repository";
+import { anniversaryDrafts, tierDrafts } from "@/utils/loyalty-tiers";
 
 export const metadata = { title: "Loyalty" };
 
@@ -30,7 +31,7 @@ export default async function ManageLoyaltyPage({
     <Container maxWidth="md" component="main" sx={{ py: { xs: 3, md: 4 } }}>
       <PageHead
         title="Loyalty"
-        lede="Whether members collect points, and what earns them."
+        lede="Whether members collect points, what earns them, and the ladder they climb."
       />
       <LoyaltySettingsForm
         slug={slug}
@@ -39,6 +40,8 @@ export default async function ManageLoyaltyPage({
           ? "" : String(settings.point_value)}
         bookingPrice={settings?.table_booking_price ?? ""}
         milestones={milestones}
+        tiers={tierDrafts(settings?.tiers)}
+        anniversaries={anniversaryDrafts(settings?.anniversaries)}
       />
     </Container>
   );

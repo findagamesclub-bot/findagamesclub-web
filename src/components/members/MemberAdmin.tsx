@@ -8,17 +8,16 @@ import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import IconButton from "@mui/material/IconButton";
-import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
-import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import CloseIcon from "@mui/icons-material/Close";
-import PaymentsIcon from "@mui/icons-material/Payments";
 import TuneIcon from "@mui/icons-material/Tune";
 import { changeTierAction, dismissTierRequestAction, recordPaymentAction }
   from "@/app/clubs/[slug]/membership-actions";
+import MemberTierPicker from "./MemberTierPicker";
 import PaymentHistory from "./PaymentHistory";
+import RecordPayment from "./RecordPayment";
 import { useActionToast } from "@/components/ui/Toaster";
 import { shortDate, sinceLabel } from "@/utils/dates";
 import { tokens, type Faction } from "@/lib/tokens";
@@ -74,6 +73,19 @@ export default function MemberAdmin({
 
   const tier = tiers.find((t) => t.key === tierKey) ?? null;
   const options = tier?.billingOptions ?? [];
+
+  /**
+   * What the picker is showing, which is not the same question as what the
+   * member holds. Seeded from the saved tier and re-seeded whenever that moves,
+   * so a change the club saves leaves the picker agreeing with the row rather
+   * than holding whatever was on screen before.
+   */
+  const [picked, setPicked] = useState(tierKey ?? tiers[0]?.key ?? "");
+  const [seenTier, setSeenTier] = useState(tierKey);
+  if (seenTier !== tierKey) {
+    setSeenTier(tierKey);
+    setPicked(tierKey ?? tiers[0]?.key ?? "");
+  }
 
 
   const paidThrough = shortDate(standing.paidThrough);
@@ -167,60 +179,16 @@ export default function MemberAdmin({
             ) : null}
 
             {tiers.length > 1 ? (
-              <Box component="form" action={changeTier}>
-                <input type="hidden" name="membershipId" value={membershipId} />
-                <input type="hidden" name="slug" value={slug} />
-                <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.68rem",
-                                  letterSpacing: "0.1em", color: tokens.inkMuted, mb: 1 }}>
-                  MEMBERSHIP TIER
-                </Typography>
-                <Stack direction="row" spacing={1}>
-                  <TextField select name="tierKey" size="small" label="Tier"
-                    defaultValue={tierKey ?? tiers[0]!.key} fullWidth>
-                    {tiers.map((t) => (
-                      <MenuItem key={t.key} value={t.key}>
-                        {t.label}{t.price ? ` · ${t.price}` : ""}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                  <Button type="submit" variant="outlined" loading={changingTier} sx={{ flexShrink: 0 }}>
-                    Save
-                  </Button>
-                </Stack>
-              </Box>
+              <MemberTierPicker membershipId={membershipId} slug={slug} tiers={tiers}
+                saved={tierKey} picked={picked} busy={changingTier}
+                onPick={setPicked} send={changeTier} />
             ) : null}
 
-            {options.length ? (
-              <Box component="form" action={recordPayment}>
-                <input type="hidden" name="membershipId" value={membershipId} />
-                <input type="hidden" name="slug" value={slug} />
-                <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.68rem",
-                                  letterSpacing: "0.1em", color: tokens.inkMuted, mb: 1 }}>
-                  RECORD A PAYMENT
-                </Typography>
-                <Stack spacing={1.25}>
-                  {/* Keyed on the tier so switching tier resets the choice —
-                      otherwise the select still holds the old tier's option id
-                      and the submit is rejected. */}
-                  <TextField key={tierKey ?? "none"} select name="billingOptionId" size="small"
-                    label="They paid" defaultValue={options[0]!.id} fullWidth>
-                    {options.map((o) => (
-                      <MenuItem key={o.id} value={o.id}>{o.label} · {o.price}</MenuItem>
-                    ))}
-                  </TextField>
-                  <TextField name="note" size="small" label="Note" placeholder="Cash at the door"
-                    fullWidth slotProps={{ htmlInput: { maxLength: 300 } }} />
-                  <Button type="submit" variant="contained" loading={paying}
-                    loadingPosition="start" startIcon={<PaymentsIcon />}>
-                    Record payment
-                  </Button>
-                </Stack>
-              </Box>
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                This tier has no fee, so there is nothing to record.
-              </Typography>
-            )}
+            {/* Against the tier they HOLD, which the heading says out loud.
+                The picker above can be showing a change nobody has saved. */}
+            <RecordPayment membershipId={membershipId} slug={slug} tierKey={tierKey}
+              tierLabel={tier?.label ?? ""} options={options} busy={paying}
+              send={recordPayment} />
 
             <Box>
               <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.68rem",

@@ -16,3 +16,16 @@ export function canonicalGame(label: string | null | undefined): string {
   if (!raw) return "Club game";
   return games[raw.toLowerCase()] ?? raw;
 }
+
+/**
+ * The games this app has a canonical spelling for, for a picker to offer.
+ *
+ * Derived from the same file `canonicalGame` folds against rather than typed
+ * out again, so a game added to the synonym list turns up in the dropdown
+ * without anybody remembering to. The list is deliberately short: it is what
+ * the clubs on this site actually play, and the box takes free text for
+ * everything else.
+ */
+export function knownGames(): string[] {
+  return [...new Set(Object.values(games))].sort((a, b) => a.localeCompare(b, "en-GB"));
+}

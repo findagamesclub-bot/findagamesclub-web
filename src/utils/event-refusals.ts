@@ -61,8 +61,30 @@ export function pairingRefusal(raw: string): string | null {
     return detail ? `That round is out of range: ${detail}.`
                   : "That round is higher than this event has.";
   }
+  if (raw.includes("TEAM_PLAYER_WRONG_SIDE")) {
+    return "That player is in the other team. The left-hand side of a table "
+      + "is always the first team named on the fixture.";
+  }
   if (denied(raw)) return "Only the club can change the draw.";
   return null;
+}
+
+export function teamRefusal(raw: string): string | null {
+  if (raw.includes("club_event_teams_one_name")) {
+    return "This event already has a team with that name. Give it a different one.";
+  }
+  if (raw.includes("club_event_team_players_one_account")
+      || raw.includes("club_event_team_players_one_name")) {
+    return "That player is already in another team at this event. "
+      + "Take them out of that one first.";
+  }
+  if (raw.includes("club_event_teams_name_len")) {
+    return "A team name is between 1 and 60 characters.";
+  }
+  if (raw.includes("club_event_team_players_somebody")) {
+    return "A player needs a name, or an account to take the name from.";
+  }
+  return pairingRefusal(raw);
 }
 
 export function rosterRefusal(raw: string): string | null {

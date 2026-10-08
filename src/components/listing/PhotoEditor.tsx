@@ -13,7 +13,9 @@ import ArrowDownIcon from "@mui/icons-material/ArrowDownward";
 import BusyOverlay from "@/components/ui/BusyOverlay";
 import RemoveRow from "@/components/ui/RemoveRow";
 import { useClubPhotos, type ClubPhoto } from "@/hooks/useClubPhotos";
-import { MAX_CLUB_IMAGES, clubImageUrl } from "@/utils/club-media";
+import {
+  MAX_CLUB_IMAGES, clubImageUrl, type MediaOwner,
+} from "@/utils/club-media";
 import { publicUrl } from "@/lib/supabase/storage";
 import { mono, tokens } from "@/lib/tokens";
 
@@ -27,13 +29,14 @@ import { mono, tokens } from "@/lib/tokens";
  * on a phone.
  */
 export default function PhotoEditor({
-  clubId, initial,
+  owner, initial,
 }: {
-  clubId: number;
+  /** The club, or the listing being written when there is no club yet. */
+  owner: MediaOwner;
   initial: ClubPhoto[];
 }) {
   const { photos, removed, busy, error, room, add, remove, move, describe } =
-    useClubPhotos(clubId, initial);
+    useClubPhotos(owner, initial);
   const picker = useRef<HTMLInputElement>(null);
 
   return (

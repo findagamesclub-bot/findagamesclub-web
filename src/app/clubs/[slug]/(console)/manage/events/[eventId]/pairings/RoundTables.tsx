@@ -7,6 +7,7 @@ import Typography from "@mui/material/Typography";
 import RemoveRow from "@/components/ui/RemoveRow";
 import { display, mono, tokens } from "@/lib/tokens";
 import type { PairingMatch } from "@/types/eventEditor";
+import type { PairingArmy } from "@/services/eventPairingArmies.service";
 
 /**
  * One round's tables.
@@ -16,13 +17,27 @@ import type { PairingMatch } from "@/types/eventEditor";
  * 360px is a horizontal scroll nobody can use while holding dice.
  */
 export default function RoundTables({
-  matches, busy, onEdit, onRemove,
+  matches, busy, armies, recordsArmies, onEdit, onArmies, onRemove,
 }: {
   matches: PairingMatch[];
   busy: boolean;
+  /** What is recorded, keyed `<matchId>:<side>`. Empty at most clubs. */
+  armies: Record<string, PairingArmy>;
+  /** False at a club that does not run the army builder, which hides all of it. */
+  recordsArmies: boolean;
   onEdit: (match: PairingMatch) => void;
+  onArmies: (match: PairingMatch) => void;
   onRemove: (match: PairingMatch) => void;
 }) {
+  // The faction and no more. The full line read "Chaos Knights · Traitoris
+  // Lance · Purge the Foe v Adeptus Custodes · Shield Host", which is one line
+  // on a desktop and wraps mid-phrase at 360: the "v" that separates the two
+  // sides lands between two dots and the eye reads "Purge the Foe v Adeptus"
+  // as one army. The row answers what was brought; the dialog answers the
+  // detail, and a pair of faction names fits on one line at any width.
+  const said = (match: PairingMatch, side: "one" | "two") =>
+    armies[`${match.id}:${side}`]?.factionLabel ?? "";
+
   return (
     <Stack spacing={1}>
       {matches.map((match) => {
@@ -56,6 +71,17 @@ export default function RoundTables({
                   BYE
                 </Typography>
               ) : null}
+
+              {/* What is recorded, so the club can see its own work without
+                  opening twenty dialogs to check. Silent when there is
+                  nothing, because "not said" is the ordinary case. */}
+              {recordsArmies && (said(match, "one") || said(match, "two")) ? (
+                <Typography variant="body2"
+                  sx={{ fontSize: "0.78rem", color: tokens.inkMuted }}>
+                  {[said(match, "one"), said(match, "two")]
+                    .filter(Boolean).join(" v ")}
+                </Typography>
+              ) : null}
             </Stack>
 
             <Stack direction="row" spacing={1} sx={{ alignItems: "center",
@@ -73,6 +99,12 @@ export default function RoundTables({
                 onClick={() => onEdit(match)} sx={{ flexShrink: 0 }}>
                 Edit
               </Button>
+              {recordsArmies ? (
+                <Button size="small" variant="outlined" disabled={busy}
+                  onClick={() => onArmies(match)} sx={{ flexShrink: 0 }}>
+                  Armies
+                </Button>
+              ) : null}
               {/* The board asks before it removes, so the bin does not ask
                   twice. */}
               <RemoveRow what="table" confirm={false} disabled={busy}

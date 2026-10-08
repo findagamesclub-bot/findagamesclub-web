@@ -31,6 +31,9 @@ export async function clubResultAction(
     deployment: String(data.get("deployment") ?? ""),
     terrain: String(data.get("terrain") ?? ""),
     confirmation: String(data.get("confirmation") ?? ""),
+    // Absent leaves the booking's own game alone. Present and not 40k clears
+    // the factions, because the cascade they came from is 40k's.
+    game: String(data.get("game") ?? "").trim() || undefined,
   });
 
   if (!result.ok) return { error: result.error };

@@ -4,7 +4,7 @@ import * as repo from "@/repositories/clubs.repository";
 import { countApprovedPublicByClub } from "@/repositories/memberships.repository";
 import * as taxonomy from "@/repositories/taxonomy.repository";
 import { findOrigin } from "@/services/location.service";
-import { clubImageUrl } from "@/utils/club-media";
+import { clubImageUrl, clubLogoUrl } from "@/utils/club-media";
 import { publicUrl } from "@/lib/supabase/storage";
 import { formatMeeting } from "@/utils/format";
 import { haversineMiles, parseLocation } from "@/utils/geo";
@@ -572,7 +572,9 @@ function toSummary(
     distanceMiles: distanceMiles ?? null,
     isFeatured: row.spotlight,
     image: firstImage(row),
-    logoUrl: row.logo_url,
+    logoUrl: clubLogoUrl(
+        { logoPath: row.logo_path, logoUrl: row.logo_url },
+        publicUrl),
     rating: extras?.rating ?? null,
     socialLinks: (row.club_social_links ?? [])
       .slice()

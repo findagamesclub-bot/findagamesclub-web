@@ -136,6 +136,8 @@ export default async function ListingStepPage({
               src: image.src,
               alt: image.alt,
             })),
+            logo: { url: club.logoUrl, path: club.logoPath },
+            mark: { slug: club.slug, name: club.name },
           }}
         />
       ) : null}

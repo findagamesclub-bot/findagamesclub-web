@@ -137,9 +137,15 @@ export async function noticeAction(
   if ("error" in gate) return { error: gate.error };
 
   const noticeId = Number(data.get("noticeId")) || null;
-  const result = noticeId
-    ? await editor.removeNotice(gate.event.id, noticeId)
-    : await editor.addNotice(gate.event.id, String(data.get("message") ?? ""));
+  const message = String(data.get("message") ?? "");
+  // Three jobs on one action, the way the placing and membership panels do it:
+  // two useActionState hooks in one component can disagree about which notice
+  // is the current one, and the older of the two wins.
+  const result = !noticeId
+    ? await editor.addNotice(gate.event.id, message)
+    : String(data.get("intent") ?? "") === "edit"
+      ? await editor.editNotice(gate.event.id, noticeId, message)
+      : await editor.removeNotice(gate.event.id, noticeId);
   if (!result.ok) return { error: result.error };
 
   await refresh(gate.slug, gate.event.legacyId, gate.event.id);

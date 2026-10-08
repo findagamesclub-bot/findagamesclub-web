@@ -22,17 +22,23 @@ import SubmitButton from "@/components/ui/SubmitButton";
  */
 export default function FeaturedBookForm({
   clubs, today, defaultPricePence, defaultDays, act, working,
+  prefillClubId = null, requestId = null,
 }: {
   clubs: { id: number; name: string; city: string }[];
   today: string;
   defaultPricePence: number;
   defaultDays: number;
+  /** Arrived from a club's own request, so the club is already decided. */
+  prefillClubId?: number | null;
+  /** Carried so booking the slot answers the request in the same press. */
+  requestId?: number | null;
   /** The board owns the action state, because booking and removing share it. */
   act: (data: FormData) => void;
   working: boolean;
 }) {
   const [, start] = useTransition();
-  const [club, setClub] = useState<{ id: number; name: string; city: string } | null>(null);
+  const [club, setClub] = useState<{ id: number; name: string; city: string } | null>(
+    () => clubs.find((one) => one.id === prefillClubId) ?? null);
 
   return (
     <Panel title="Book a slot" icon={StarIcon}>
@@ -42,6 +48,7 @@ export default function FeaturedBookForm({
           const data = new FormData(event.currentTarget);
           data.set("intent", "book");
           data.set("club", String(club?.id ?? 0));
+          if (requestId) data.set("requestId", String(requestId));
           start(() => act(data));
         }}>
         <Stack spacing={2}>

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { table } from "@/lib/supabase/table";
+import { callRpc, table } from "@/lib/supabase/table";
 import type { PairingMatch, PairingRound } from "@/types/eventEditor";
 
 /**
@@ -78,6 +78,31 @@ export async function findRounds(eventId: number): Promise<PairingRound[]> {
 }
 
 /**
+ * Who a published round reaches.
+ *
+ * Through a function rather than a select because `draw_public` arrived in
+ * 0163 and `src/types/database.ts` has not been regenerated since 0151, which
+ * is what `npm run check:columns` is there to notice. The write is an ordinary
+ * update: the column grant and 0090's policy decide it, the same as every
+ * other field on an event.
+ */
+export const findDrawPublic = (eventId: number) =>
+  callRpc<boolean>("event_draw_public", { p_event: eventId });
+
+/** Whether a round has been published at all, without reading one. */
+export const findHasDraw = (eventId: number) =>
+  callRpc<boolean>("event_has_draw", { p_event: eventId });
+
+export async function setDrawPublic(eventId: number, open: boolean) {
+  const events = await table<{ id: number }>("club_events");
+  const { data, error } = await events
+    .update({ draw_public: open }).eq("id", eventId)
+    .select("id").maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("NOT_PERMITTED");
+}
+
+/**
  * The round row, made if it is not there yet.
  *
  * A unique index covers `(event_id, round)`, so two people building round two
@@ -122,6 +147,11 @@ export type MatchFields = {
   score_one: number | null;
   score_two: number | null;
   position: number;
+  /**
+   * The fixture this table belongs to at a team event (0168). Absent on an
+   * ordinary draw, which is every event that is not run as teams.
+   */
+  team_match_id?: number | null;
 };
 
 export async function insertMatches(

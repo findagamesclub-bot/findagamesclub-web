@@ -18,6 +18,9 @@ export type ClubResult = {
   date: string;
   time: string | null;
   title: string;
+  /** As stored. Empty on a booking nobody named a game on; `title` carries
+   *  the placeholder the card shows. */
+  gameTitle: string;
   /** Whoever booked the table. Their score is the first of the pair. */
   homeName: string;
   awayName: string;
@@ -60,6 +63,7 @@ export async function getClubResults(clubId: number, limit = 40): Promise<ClubRe
       date: row.session_date,
       time: row.session_time,
       title: row.game_title || "Table booking",
+      gameTitle: row.game_title || "",
       homeName: nameOf(r.booker, "A member"),
       awayName: nameOf(away, row.opponent_name?.trim() || "an opponent"),
       homeScore: row.booked_by_score,

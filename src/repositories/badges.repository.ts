@@ -9,14 +9,23 @@ import { callRpc } from "@/lib/supabase/table";
  * names a table: the guard is `club_can(club, 'members.manage')` and it lives
  * in one place rather than being re-stated in a policy and again here.
  *
- * Competition and tenure badges are not in this file at all. They are derived
- * from data the app already has (`competition-badges.ts`, `tenure-badges.ts`)
- * and a round trip to fetch them would be a round trip to fetch nothing new.
+ * The automatic ones are ordinary rows here, not a separate idea: tenure since
+ * 0162 and the podium since 0167, each carrying the band it is given for. Only
+ * the three in `competition-badges.ts` are still derived, because each is true
+ * only while it is true.
  */
 
 export type ClubBadgeRow = {
   id: number; label: string; description: string;
   icon: string; tone: string; active: boolean; awarded: number;
+  /**
+   * The years of membership this one is given for, or null for a badge the
+   * club hands out itself. Through `club_badges_for`, so the generated types
+   * lagging 0162 does not matter here.
+   */
+  tenure_years: number | null;
+  /** 1, 2 or 3 for a podium badge, null for one the club hands out itself. */
+  podium_rank: number | null;
 };
 
 export type MemberBadgeRow = {

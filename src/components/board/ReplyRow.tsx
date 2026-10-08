@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
 import IconButton from "@mui/material/IconButton";
@@ -7,6 +8,8 @@ import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import CloseIcon from "@mui/icons-material/Close";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import Counter from "@/components/ui/Counter";
 import { initialsOf } from "@/utils/format";
 import { messageTime } from "@/utils/dates";
@@ -36,6 +39,9 @@ export default function ReplyRow({
   isReported: (type: string, id: number) => boolean;
 }) {
   const lead = replies[0];
+  /** Which of somebody else's replies is being asked about. */
+  const [asking, setAsking] = useState<number | null>(null);
+  const held = replies.find((one) => one.id === asking) ?? null;
 
   return (
     <Box sx={{ position: "relative", pl: { xs: 3, sm: 4 }, pb: last ? 0 : 2.5 }}>
@@ -83,15 +89,11 @@ export default function ReplyRow({
                   </Typography>
                 )}
 
-                {/* Your own words only. The club can still take a whole thread
-                    down from the post above, but picking single replies out of
-                    somebody else's conversation is not a control worth putting
-                    on every line. */}
-                {/* Somebody else's reply, so the only thing to offer is
-                    reporting it. Appears on hover and on focus, the same way
-                    Delete does, because a Report button on every line of a
-                    conversation reads as an accusation. */}
-                {!reply.isMine && !reply.pending ? (
+                {/* Reporting is for people who cannot act. A manager who can
+                    take the reply down themselves reporting it to themselves
+                    would be a strange thing to offer, which is the rule the
+                    thread's own Remove button already follows. */}
+                {!reply.isMine && !reply.canRemove && !reply.pending ? (
                   <Box className="reply-remove"
                     sx={{ opacity: 0, transition: "opacity 140ms ease",
                           "&:focus-within": { opacity: 1 },
@@ -104,14 +106,30 @@ export default function ReplyRow({
                       reported={isReported("reply", reply.id)} />
                   </Box>
                 ) : null}
-                {reply.isMine && !reply.pending ? (
-                  <Tooltip title="Delete your reply">
+                {/* The club can take a reply down, which it could not before:
+                    a thread could only be removed whole, so a single line
+                    somebody should not have written meant losing everybody
+                    else's. The client asked for it.
+
+                    Two meanings, so two icons: a cross dismisses your own
+                    words, a bin takes somebody else's down. One glyph for both
+                    is the mistake rule 11 is about, and the two differ in what
+                    they cost. Yours goes without asking, because it is yours
+                    and removal is soft; somebody else's asks, because on a
+                    touch device every one of these is permanently visible and
+                    a mis-tap would take a stranger's words off the page. */}
+                {reply.canRemove && !reply.pending ? (
+                  <Tooltip title={reply.isMine ? "Delete your reply" : "Take this reply down"}>
                     <IconButton
                       className="reply-remove"
                       size="small"
                       disabled={busy}
-                      onClick={() => onRemove(reply.id)}
-                      aria-label="Delete your reply"
+                      onClick={() => (reply.isMine
+                        ? onRemove(reply.id)
+                        : setAsking(reply.id))}
+                      aria-label={reply.isMine
+                        ? "Delete your reply"
+                        : `Take down the reply by ${lead.authorName}`}
                       sx={{ p: 0.25, opacity: 0, transition: "opacity 140ms ease",
                             color: tokens.inkMuted,
                             "&:focus-visible": { opacity: 1 },
@@ -119,7 +137,9 @@ export default function ReplyRow({
                             "@media (hover: none)": { opacity: 1 },
                             "&:hover": { color: tokens.danger } }}
                     >
-                      <CloseIcon sx={{ fontSize: 14 }} />
+                      {reply.isMine
+                        ? <CloseIcon sx={{ fontSize: 14 }} />
+                        : <DeleteOutlineIcon sx={{ fontSize: 15 }} />}
                     </IconButton>
                   </Tooltip>
                 ) : null}
@@ -128,6 +148,20 @@ export default function ReplyRow({
           ))}
         </Stack>
       </Stack>
+
+      <ConfirmDialog
+        open={held !== null}
+        title="Take this reply down?"
+        body={held
+          ? `It comes off the thread for everybody, ${lead.authorName} included, and they are not told. The rest of the conversation stays where it is.`
+          : ""}
+        confirmLabel="Take it down"
+        cancelLabel="Leave it"
+        destructive
+        busy={busy}
+        onConfirm={() => { if (held) onRemove(held.id); setAsking(null); }}
+        onClose={() => setAsking(null)}
+      />
     </Box>
   );
 }

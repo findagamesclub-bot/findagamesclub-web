@@ -18,6 +18,11 @@ export type EventFields = {
   summary: string;
   price: string;
   round_count: number | null;
+  // How many people the day is for. 0090 grants it, 0009 created it, and no
+  // screen has ever set it: the directory used to read it as "tickets left"
+  // and stage 12 took that reader away, leaving a column with neither a reader
+  // nor a writer. It is the club's stated capacity now.
+  tickets_available: number | null;
   start_date: string;
   start_time: string | null;
   end_date: string | null;

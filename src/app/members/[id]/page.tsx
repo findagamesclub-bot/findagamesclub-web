@@ -4,6 +4,7 @@ import { getMemberMeta } from "@/services/meta.service";
 import { getProfile } from "@/services/profiles.service";
 import { getMemberContext } from "@/services/memberContext.service";
 import { getMemberRecords } from "@/services/memberRecords.service";
+import { getOverallRecord } from "@/services/memberOverall.service";
 import { getHeldBadges } from "@/services/memberBadges.service";
 import { getGrudgeTracker } from "@/services/grudgeTracker.service";
 import { getCurrentProfile } from "@/services/auth.service";
@@ -28,7 +29,7 @@ export default async function MemberPage({ params }: PageProps<"/members/[id]">)
 
   // Where they play, and how the reader has done against them. Both are
   // limited by policy to what the reader may already see.
-  const [context, records, held, armies] = await Promise.all([
+  const [context, records, held, armies, overall] = await Promise.all([
     getMemberContext(viewer.id, profile.id)
       .catch(() => ({ clubs: [], events: [], meetings: [],
                       record: { played: 0, won: 0, drawn: 0, lost: 0 } })),
@@ -42,6 +43,11 @@ export default async function MemberPage({ params }: PageProps<"/members/[id]">)
     // say who may see them, so a reader who shares no club with them gets an
     // empty list and the panel draws nothing.
     getMemberMeta(profile.id).catch(() => []),
+    // Everything they have played, across club nights, event draws and league
+    // tables. One definer read rather than three, because the three tables
+    // have three select policies and this is one audience.
+    getOverallRecord(profile.id).catch(() => ({
+      sources: [], total: { played: 0, wins: 0, draws: 0, losses: 0 }, rate: null })),
   ]);
 
   // Their playing record, one card per club the reader also belongs to. Read
@@ -58,6 +64,7 @@ export default async function MemberPage({ params }: PageProps<"/members/[id]">)
       records={{ ...records, badges: [...held, ...records.badges] }}
       trackers={trackers}
       armies={armies}
+      overall={overall}
     />
   );
 }

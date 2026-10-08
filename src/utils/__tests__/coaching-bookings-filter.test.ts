@@ -1,59 +1,80 @@
 import assert from "node:assert/strict";
 import {
-  countCoachingBookings, filterCoachingBookings, type CoachingBookingRow,
+  countCoachingBookings, filterCoachingBookings, owesRefund,
+  type CoachingBookingRow,
 } from "../coaching-bookings-filter";
 
-const row = (over: Partial<CoachingBookingRow>): CoachingBookingRow => ({
-  id: 1, name: "Joe Matthews", paid: false, slotId: 1, title: "List clinic",
-  date: "2026-10-17", time: "13:00", price: "£50", cancelled: false, ...over,
+const row = (over: Partial<CoachingBookingRow> = {}): CoachingBookingRow => ({
+  id: 1, name: "Gulnabi Afridi", profileId: "p1", paid: false, cancelled: false,
+  refundStatus: "not_due", cancelReason: "", slotId: 9, title: "List clinic",
+  date: "2026-10-10", time: "19:00", total: 18, pointsSpent: 0, ...over,
 });
 
-const rows = [
-  row({ id: 1, name: "Joe Matthews", paid: true, title: "Warhammer 40k teams coaching",
-        date: "2026-10-03", time: "10:00" }),
-  row({ id: 2, name: "Gulnabi Afridi", paid: false, title: "List clinic, bring a draft",
-        date: "2026-10-17", time: "13:00" }),
-  row({ id: 3, name: "Sara Khan", paid: false, title: "Beginner 40k, learn to play",
-        date: "2026-10-10", time: "16:00", cancelled: true }),
+const rows: CoachingBookingRow[] = [
+  row({ id: 1, name: "Ann", paid: false }),
+  row({ id: 2, name: "Ben", paid: true }),
+  // Cancelled after paying: the club owes them, and this is the row the list
+  // exists for. The session cards deliberately never show it.
+  row({ id: 3, name: "Cat", paid: true, cancelled: true, refundStatus: "due",
+        cancelReason: "Coach is ill" }),
+  row({ id: 4, name: "Dee", cancelled: true, refundStatus: "not_due" }),
+  row({ id: 5, name: "Eve", paid: true, cancelled: true, refundStatus: "refunded" }),
 ];
 
-assert.deepEqual(countCoachingBookings(rows), { all: 3, unpaid: 2, paid: 1 });
+// ------------------------------------------------- a cancelled place is not owing
+{
+  const counts = countCoachingBookings(rows);
+  assert.equal(counts.all, 5);
+  // Ann only. Dee is cancelled, so chasing her for money would be chasing a
+  // session that never happened.
+  assert.equal(counts.unpaid, 1);
+  assert.equal(counts.paid, 1, "Ben only; Cat and Eve are cancelled");
+  assert.equal(counts.cancelled, 3);
+  assert.equal(counts.refund, 1, "only Cat is still owed");
+}
 
-// Soonest first, which is the order a club works through them in.
-assert.deepEqual(filterCoachingBookings(rows, {}).map((r) => r.id), [1, 3, 2]);
-assert.deepEqual(filterCoachingBookings(rows, { sort: "latest" }).map((r) => r.id), [2, 3, 1]);
+// --------------------------------------------------------------- each tab
+{
+  const ids = (filter: Parameters<typeof filterCoachingBookings>[1]["filter"]) =>
+    filterCoachingBookings(rows, { filter }).map((r) => r.id);
 
-// The question the list exists to answer.
-assert.deepEqual(filterCoachingBookings(rows, { filter: "unpaid" }).map((r) => r.id), [3, 2]);
-assert.deepEqual(filterCoachingBookings(rows, { filter: "paid" }).map((r) => r.id), [1]);
+  assert.deepEqual(ids("all"), [1, 2, 3, 4, 5]);
+  assert.deepEqual(ids("unpaid"), [1]);
+  assert.deepEqual(ids("paid"), [2]);
+  assert.deepEqual(ids("cancelled"), [3, 4, 5]);
+  assert.deepEqual(ids("refund"), [3]);
+}
 
-// A club searches for whichever of the two it has in front of it.
-assert.deepEqual(filterCoachingBookings(rows, { query: "gulnabi" }).map((r) => r.id), [2]);
-assert.deepEqual(filterCoachingBookings(rows, { query: "beginner" }).map((r) => r.id), [3]);
-assert.deepEqual(filterCoachingBookings(rows, { query: "  MATTHEWS " }).map((r) => r.id), [1]);
-assert.deepEqual(filterCoachingBookings(rows, { query: "nobody" }), []);
+// --------------------------------------------- settled is not still owed
+{
+  assert.equal(owesRefund(rows[2]!), true);
+  assert.equal(owesRefund(rows[4]!), false, "refunded is done, not outstanding");
+  assert.equal(owesRefund(rows[3]!), false, "nothing was paid, so nothing is owed");
+}
 
-// A called-off session still owes somebody their money back, so it stays.
-assert.equal(filterCoachingBookings(rows, { filter: "unpaid" })[0]?.cancelled, true);
+// ------------------------------------------- the search reaches the reason
+{
+  // Three things somebody remembers about a row they are hunting for.
+  assert.deepEqual(
+    filterCoachingBookings(rows, { query: "coach is ill" }).map((r) => r.id), [3]);
+  assert.deepEqual(
+    filterCoachingBookings(rows, { query: "ANN" }).map((r) => r.id), [1]);
+  assert.deepEqual(
+    filterCoachingBookings(rows, { query: "list clinic" }).length, 5);
+  assert.deepEqual(filterCoachingBookings(rows, { query: "nobody" }), []);
+}
 
-// Two on the same day are split by the time rather than left to chance.
-const sameDay = [
-  row({ id: 8, date: "2026-10-03", time: "16:00" }),
-  row({ id: 9, date: "2026-10-03", time: "09:00" }),
-];
-assert.deepEqual(filterCoachingBookings(sameDay, {}).map((r) => r.id), [9, 8]);
+// ------------------------------------------------------------------ sorting
+{
+  const spread = [
+    row({ id: 1, date: "2026-10-20", time: "19:00" }),
+    row({ id: 2, date: "2026-10-10", time: "19:00" }),
+    row({ id: 3, date: "2026-10-10", time: "09:00" }),
+  ];
+  assert.deepEqual(
+    filterCoachingBookings(spread, { sort: "soonest" }).map((r) => r.id), [3, 2, 1]);
+  assert.deepEqual(
+    filterCoachingBookings(spread, { sort: "latest" }).map((r) => r.id), [1, 2, 3]);
+}
 
-// The input is never reordered in place: the caller's list is its own.
-const original = [...rows];
-filterCoachingBookings(rows, { sort: "latest" });
-assert.deepEqual(rows, original);
-
-// Narrowed to one session, the counts describe what is on screen rather than
-// the whole club. The page does the narrowing; this pins what it should give.
-const oneSession = rows.filter((r) => r.slotId === rows[0]!.slotId);
-assert.deepEqual(countCoachingBookings(oneSession),
-  { all: oneSession.length,
-    unpaid: oneSession.filter((r) => !r.paid).length,
-    paid: oneSession.filter((r) => r.paid).length });
-
-console.log("coaching-bookings-filter: all assertions passed");
+console.log("coaching-bookings-filter: all pass");

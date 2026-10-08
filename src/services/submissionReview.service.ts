@@ -2,6 +2,7 @@ import "server-only";
 
 import * as repo from "@/repositories/submissions.repository";
 import { submissionRefusal } from "@/utils/submission-refusals";
+import * as media from "@/repositories/submissionMedia.repository";
 import { QUEUE_TABS, STATUS_LABELS, STATUS_TONES } from "@/utils/submission-status";
 import { eventLabel, eventTone } from "@/utils/submission-history";
 import { recipient } from "@/services/mail-recipient.service";
@@ -325,6 +326,28 @@ export async function approve(
   }
 
   const row = await repo.findSubmission(id).catch(() => null);
+
+  // The pictures follow the club. 0100 already wrote the rows, pointing at the
+  // submission's folder; this is the half it could not do, because the Storage
+  // API is an HTTP call and cannot run inside that transaction. A club can only
+  // delete files under its own id, so a photo left behind in the submission
+  // folder is one its owner could take off the page and never off the disk.
+  try {
+    await media.moveSubmissionMedia(id, created.club_id);
+
+    const logoPath = String(
+      (row?.payload as { logo_path?: unknown } | null)?.logo_path ?? "",
+    ).trim();
+    if (logoPath) {
+      const moved = await media.moveSubmissionLogo(id, created.club_id, logoPath);
+      await media.setApprovedClubLogo(created.club_id, moved);
+    }
+  } catch (error) {
+    // Never fails the approval. The bucket is public, so a file that did not
+    // move still renders from where it is and the club page is right.
+    console.error("[listing] approved but its pictures did not move:", error);
+  }
+
   if (row) void notify.approved(row, created.slug);
 
   return { ok: true, slug: created.slug, name: created.name };

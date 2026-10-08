@@ -5,10 +5,11 @@ import type { Badge } from "@/utils/competition-badges";
 /**
  * What a member has, however they got it.
  *
- * Three sources land here and a reader does not care which: a club's own
- * badge, a year badge from the join date, and a competition badge from the
- * standings. `BadgeChip` draws all three the same way, and a badge with no
- * icon of its own takes the one its tone implies.
+ * Two sources land here and a reader does not care which: a badge the club
+ * awarded, which since 0162 includes the length-of-membership ones it gives
+ * out nightly, and a competition badge derived from the standings. `BadgeChip`
+ * draws both the same way, and a badge with no icon of its own takes the one
+ * its tone implies.
  */
 export default function MemberBadges({
   badges,

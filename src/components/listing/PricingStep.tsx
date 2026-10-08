@@ -4,7 +4,6 @@ import { startTransition, useActionState, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import FormControlLabel from "@mui/material/FormControlLabel";
-import Radio from "@mui/material/Radio";
 import RadioGroup from "@mui/material/RadioGroup";
 import Stack from "@mui/material/Stack";
 import Switch from "@mui/material/Switch";
@@ -16,16 +15,18 @@ import CardMembershipIcon from "@mui/icons-material/CardMembership";
 import LoyaltyIcon from "@mui/icons-material/Loyalty";
 import Panel from "@/components/members/Panel";
 import RemoveRow from "@/components/ui/RemoveRow";
-import TierPerks from "./TierPerks";
+import TierCard, { type TierDraft } from "./TierCard";
 import StepTargetFields, { type StepTarget } from "./StepTarget";
 import StepFooter from "./StepFooter";
 import { useActionToast } from "@/components/ui/Toaster";
 import { saveListingStepAction, type ListingState } from
   "@/app/clubs/[slug]/(console)/manage/listing/[step]/actions";
-import { mono, tokens } from "@/lib/tokens";
+import { optionRows } from "@/utils/billing-options";
+import { tokens } from "@/lib/tokens";
 
 export type PricingModelRow = { label: string; price: string; notes: string };
 
+/** A tier as the read path hands it over, with its options still as json. */
 export type TierRow = {
   key: string;
   label: string;
@@ -33,11 +34,14 @@ export type TierRow = {
   duration: string;
   description: string;
   isBasic: boolean;
-  /** Members holding this tier. One with any cannot be removed. */
   held: number;
-  /** Carried through untouched: this screen does not edit them yet. */
   benefits: string;
   billing: string;
+};
+
+/** Broken json must not wipe a club's prices, so it reads as none. */
+const parse = (raw: string): unknown => {
+  try { return JSON.parse(raw); } catch { return []; }
 };
 
 /**
@@ -47,6 +51,12 @@ export type TierRow = {
  * safe and removing one is not. Each row says how many members hold it, and
  * the remove button is gone when anybody does, rather than letting somebody
  * find that out from an error.
+ *
+ * A tier's price is no longer a box on this screen. It is the first of its
+ * payment options, which is legacy's own rule and the only shape where the
+ * price on the club page and the prices a member can be charged cannot
+ * disagree. The incoming headline seeds the first option for a club that has
+ * only ever had one price.
  */
 export default function PricingStep({
   target, models: initialModels, tiers: initialTiers, loyaltyEnabled,
@@ -77,13 +87,17 @@ export default function PricingStep({
     startTransition(() => submit(data));
   };
   const [models, setModels] = useState(initialModels);
-  const [tiers, setTiers] = useState(initialTiers);
+  const [tiers, setTiers] = useState<TierDraft[]>(() => initialTiers.map((t) => ({
+    key: t.key, label: t.label, description: t.description, isBasic: t.isBasic,
+    held: t.held, benefits: t.benefits,
+    options: optionRows(parse(t.billing), t.price, t.duration),
+  })));
   const [basic, setBasic] = useState(initialTiers.find((t) => t.isBasic)?.key ?? "");
   const [loyalty, setLoyalty] = useState(loyaltyEnabled);
 
   const setModel = (index: number, patch: Partial<PricingModelRow>) =>
     setModels((held) => held.map((m, i) => (i === index ? { ...m, ...patch } : m)));
-  const setTier = (index: number, patch: Partial<TierRow>) =>
+  const setTier = (index: number, patch: Partial<TierDraft>) =>
     setTiers((held) => held.map((t, i) => (i === index ? { ...t, ...patch } : t)));
 
   return (
@@ -137,62 +151,17 @@ export default function PricingStep({
         <Panel title="Membership tiers" icon={CardMembershipIcon}>
           <Stack spacing={1.5}>
             <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-              One of these is the tier people land on by joining, and prices are
-              in pounds. Renaming a tier is safe; a tier somebody holds cannot be
-              removed.
+              One of these is the tier people land on by joining. Each can be
+              sold more than one way, so a monthly, a yearly and a one-off price
+              all live on the same tier. Renaming a tier is safe; a tier
+              somebody holds cannot be removed.
             </Typography>
 
             <RadioGroup value={basic} onChange={(e) => setBasic(e.target.value)}>
               {tiers.map((tier, index) => (
-                <Stack key={tier.key} spacing={1}
-                  sx={{ p: 1.5, mb: 1, borderRadius: 1.5,
-                        border: `1px solid ${basic === tier.key ? tokens.brass : tokens.rule}`,
-                        backgroundColor: tokens.paper }}>
-                  <input type="hidden" name="tierKey" value={tier.key} />
-                  <input type="hidden" name="tierBilling" value={tier.billing} />
-                  <input type="hidden" name="tierBasic" value={basic === tier.key ? "yes" : "no"} />
-
-                  <Box sx={{ display: "grid", gap: 1.5, alignItems: "start",
-                         gridTemplateColumns: {
-                           xs: "minmax(0, 1fr)",
-                           sm: "minmax(0, 1.4fr) minmax(0, 0.6fr) minmax(0, 0.8fr) auto" } }}>
-                    <TextField size="small" label="Name" name="tierLabel" value={tier.label}
-                      onChange={(e) => setTier(index, { label: e.target.value })} />
-                    <TextField size="small" label="Price" name="tierPrice" value={tier.price}
-                      onChange={(e) => setTier(index, { price: e.target.value })} />
-                    <TextField size="small" label="Per" name="tierDuration" value={tier.duration}
-                      onChange={(e) => setTier(index, { duration: e.target.value })}
-                      placeholder="month" />
-                    <RemoveRow what="tier" disabled={tier.held > 0}
-                      confirm={Boolean(tier.label || tier.price || tier.duration
-                                       || tier.description)}
-                      body={<>
-                        {tier.label ? `"${tier.label}"` : "This tier"} comes off your
-                        club page, and the perks set on it go with it. Nothing changes
-                        until you save.
-                      </>}
-                      onRemove={() => setTiers((held) => held.filter((_, i) => i !== index))} />
-                  </Box>
-
-                  <TextField size="small" fullWidth label="What it includes"
-                    name="tierDescription" value={tier.description} multiline
-                    onChange={(e) => setTier(index, { description: e.target.value })} />
-
-                  <TierPerks name="tierBenefits" value={tier.benefits}
-                    onChange={(benefits) => setTier(index, { benefits })} />
-
-                  <Stack direction="row" spacing={2}
-                    sx={{ alignItems: "center", flexWrap: "wrap" }}>
-                    <FormControlLabel value={tier.key} control={<Radio size="small" />}
-                      label={<Typography variant="body2">People join on this one</Typography>} />
-                    {tier.held > 0 ? (
-                      <Typography sx={{ fontFamily: mono, fontSize: "0.62rem",
-                                        color: tokens.brass }}>
-                        {tier.held} MEMBER{tier.held === 1 ? "" : "S"} HOLD THIS
-                      </Typography>
-                    ) : null}
-                  </Stack>
-                </Stack>
+                <TierCard key={tier.key} tier={tier} basic={basic}
+                  onChange={(patch) => setTier(index, patch)}
+                  onRemove={() => setTiers((held) => held.filter((_, i) => i !== index))} />
               ))}
             </RadioGroup>
 
@@ -200,8 +169,8 @@ export default function PricingStep({
               sx={{ alignSelf: "flex-start" }}
               onClick={() => setTiers((held) => [...held, {
                 key: `tier-${crypto.randomUUID().slice(0, 8)}`,
-                label: "", price: "", duration: "", description: "",
-                isBasic: false, held: 0, benefits: "{}", billing: "[]",
+                label: "", description: "", isBasic: false, held: 0,
+                benefits: "{}", options: [],
               }])}>
               Add a tier
             </Button>

@@ -21,7 +21,7 @@ export type GameRow = {
   result_deployment: string | null;
   result_terrain: string | null;
   result_confirmation: string | null;
-  clubs: { slug: string; name: string; logo_url: string | null };
+  clubs: { slug: string; name: string; logo_url: string | null; logo_path: string | null };
   booker: { full_name: string | null } | null;
   opponent: { full_name: string | null } | null;
 };
@@ -54,7 +54,7 @@ const COLUMNS = `
   booked_by, opponent_profile_id, opponent_name,
   booked_by_score, opponent_score, booked_by_army, opponent_army, result_at,
   result_mission, result_deployment, result_terrain, result_confirmation,
-  clubs!inner(slug, name, logo_url),
+  clubs!inner(slug, name, logo_url, logo_path),
   booker:profiles!club_bookings_booked_by_fkey(full_name),
   opponent:profiles!club_bookings_opponent_profile_id_fkey(full_name)`;
 
@@ -104,6 +104,8 @@ export async function saveResult(params: {
   /** `{ one, two }` in the booking's own order, or empty for a club with the
    *  army builder off. */
   armies?: Record<string, unknown>;
+  /** Undefined leaves the booking's own game alone. */
+  game?: string;
 }) {
   const supabase = await createClient();
   const { error } = await (supabase as unknown as {
@@ -121,6 +123,7 @@ export async function saveResult(params: {
     // Ignored by the function for anyone who cannot manage the club, which is
     // where the rule belongs. Sent anyway so the club's choice reaches it.
     p_confirmation: params.confirmation,
+    p_game: params.game ?? null,
   });
 
   if (error) throw new Error(error.message);

@@ -75,6 +75,21 @@ export type MerchOrder = {
   total: number;
 };
 
+/**
+ * What a member's tier and wallet are worth against coaching.
+ *
+ * One read for the page rather than one per slot: every card prices itself
+ * from this with `priceCoaching`, which is the same quote the trigger
+ * recomputes at booking time.
+ */
+export type CoachingStanding = {
+  points: number;
+  pointValue: number | null;
+  capPercent: number;
+  discountPercent: number;
+  currency: string;
+};
+
 export type CoachingSlot = {
   id: number;
   title: string;

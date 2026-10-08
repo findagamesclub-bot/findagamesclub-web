@@ -35,6 +35,14 @@ create table if not exists storage.objects (
   owner uuid, created_at timestamptz default now(), metadata jsonb);
 create or replace function storage.foldername(name text) returns text[]
   language sql immutable as $$ select string_to_array(name, '/') $$;
+-- Supabase grants the API roles usage on `storage` and execute on its helpers,
+-- which is what lets a storage POLICY call `storage.foldername` at all: the
+-- helpers behind those policies are invoker functions, so they run as the
+-- caller. Without this every storage policy in the chain is untestable here,
+-- and a helper that reads a path looks correct because nothing can call it.
+grant usage on schema storage to anon, authenticated, service_role;
+grant execute on function storage.foldername(text) to anon, authenticated, service_role;
+grant select on storage.buckets, storage.objects to anon, authenticated, service_role;
 do $$ begin create publication supabase_realtime; exception when duplicate_object then null; end $$;
 -- pg_cron, enough of it to test the scheduling itself.
 --

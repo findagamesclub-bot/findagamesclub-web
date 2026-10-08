@@ -94,6 +94,7 @@ export async function saveEvent(
       summary: draft.summary,
       price: draft.price,
       round_count: draft.roundCount,
+      tickets_available: draft.capacity,
       start_date: draft.startDate,
       // Empty is not a time the column will take, and "not said" is a real
       // answer: plenty of clubs list a day and sort the hour out later.
@@ -204,6 +205,27 @@ export async function addNotice(eventId: number, note: string): Promise<Result> 
     return { ok: true, notice: "Posted." };
   } catch (error) {
     return { ok: false, error: refusalOf(error, "That did not post. Try again.") };
+  }
+}
+
+/**
+ * The same words, corrected.
+ *
+ * Same two rules as posting one, in one place rather than two, because a
+ * notice that is too long to post is too long to edit into.
+ */
+export async function editNotice(
+  eventId: number, id: number, note: string,
+): Promise<Result> {
+  const body = note.trim();
+  if (!body) return { ok: false, error: "A notice cannot be empty. Remove it instead." };
+  if (body.length > 2000) return { ok: false, error: "That notice is too long. Trim it." };
+
+  try {
+    await notices.updateNotice(eventId, id, body);
+    return { ok: true, notice: "Notice updated." };
+  } catch (error) {
+    return { ok: false, error: refusalOf(error, "That did not save. Try again.") };
   }
 }
 

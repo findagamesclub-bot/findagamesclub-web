@@ -4,6 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 
 import { getCurrentProfile } from "@/services/auth.service";
 import { FEATURED_TAG, featureClub, unfeatureClub } from "@/services/featured.service";
+import { answerFeatured } from "@/services/featuredRequests.service";
 
 export type FeaturedState = { error?: string; notice?: string };
 
@@ -45,8 +46,39 @@ export async function featuredAction(
   });
   if (!result.ok) return { error: result.error };
 
+  // Booked in answer to a club asking. Marked against the slot that just
+  // appeared rather than a second button saying what the admin already did,
+  // and quietly: 0155 already writes to the owner when the slot itself lands.
+  const asked = Number(data.get("requestId") ?? 0);
+  if (asked && result.slotId) {
+    const tied = await answerFeatured(asked, result.slotId, "");
+    if (!tied.ok) console.error("[featured] slot booked but the request stayed open");
+  }
+
   refresh();
   return { notice: "Booked. It leads the homepage for the dates you set." };
+}
+
+/** Turn one down, with the reason the club is told. */
+export async function declineFeaturedRequest(
+  _prev: FeaturedState, data: FormData,
+): Promise<FeaturedState> {
+  const viewer = await getCurrentProfile();
+  if (!viewer || viewer.role !== "admin") {
+    return { error: "Only an admin can answer a featured request." };
+  }
+
+  const id = Number(data.get("requestId") ?? 0);
+  if (!id) return { error: "That request is not here any more." };
+
+  const reason = String(data.get("reason") ?? "").trim();
+  if (!reason) return { error: "Give a reason. It is what they will be told." };
+
+  const result = await answerFeatured(id, null, reason);
+  if (!result.ok) return { error: result.error };
+
+  revalidatePath("/admin/featured");
+  return { notice: "Turned down, and they have been told why." };
 }
 
 /**

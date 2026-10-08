@@ -4,7 +4,7 @@ import Typography from "@mui/material/Typography";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import LinkButton from "@/components/ui/LinkButton";
 import MetaRows from "@/components/meta/MetaRows";
-import type { Depth } from "@/services/meta.service";
+import type { EventArmy } from "@/services/meta.service";
 import { PER_PAGE } from "@/utils/paging";
 import { mono, tokens } from "@/lib/tokens";
 
@@ -15,9 +15,15 @@ import { mono, tokens } from "@/lib/tokens";
  * the event and win rate percentage per army faction and disposition taken.
  * If the event is not warhammer 40k, this should be hidden."
  *
- * The win rates are honest about being empty. An event's results come from its
- * rounds, and the draw has no army screen yet (DEFERRED.md), so today this
- * answers what people brought. Printing 0% instead would say every army lost.
+ * The faction leads the card. It did not until the M3 revision: the row was
+ * drawn through the tracker's two-level shape, which carries a thing and its
+ * parent, so a card read "Lions of the Emperor" over "Disruption" and the
+ * faction those belong to was never on the screen at all. The client spotted
+ * it from a screenshot of their own test event.
+ *
+ * The win rates are honest about being empty. A rate needs a scored table in
+ * the draw, so an event whose results are only finishing places answers what
+ * people brought and says so. Printing 0% instead would say every army lost.
  *
  * Two shapes, one component. `top` cuts it to a few cards for the event page,
  * because a fifty-player RTT is fifty armies and the event page has six other
@@ -25,7 +31,7 @@ import { mono, tokens } from "@/lib/tokens";
  * the armies page renders.
  */
 export default function EventArmyMeta({ rows, top, href }: {
-  rows: Depth[];
+  rows: EventArmy[];
   /** Cards to show before handing off to `href`. Absent means all of them. */
   top?: number;
   /** Where the rest live. Only drawn when there is a rest. */
@@ -45,8 +51,13 @@ export default function EventArmyMeta({ rows, top, href }: {
 
       <MetaRows
         rows={shown.map((row) => ({
-          label: row.parent,
-          parent: row.label || undefined,
+          label: row.faction,
+          // A detachment and the disposition inside it, in that order,
+          // because a disposition belongs to a detachment and never to a
+          // faction. Either may be missing: a club typing up a podium often
+          // knows the army and not the rest.
+          parent: [row.detachment, row.disposition].filter(Boolean).join(" · ")
+            || undefined,
           winRate: row.winRate,
           games: row.games,
           earlySignal: row.earlySignal,

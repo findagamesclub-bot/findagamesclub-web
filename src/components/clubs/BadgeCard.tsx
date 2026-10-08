@@ -50,6 +50,20 @@ export default function BadgeCard({
             RETIRED
           </Typography>
         )}
+        {/* Same treatment as RETIRED, brass rather than muted: one is a thing
+            this badge stopped being, the other is a thing it is. What earns it
+            is in the description below, so this only has to say which kind it
+            is while somebody scans a grid of them. Both ladders wear it, the
+            years and the podium, because from an owner's side they are the
+            same fact: this one goes out without you. */}
+        {badge.tenure_years || badge.podium_rank ? (
+          <Typography sx={{ fontFamily: mono, fontSize: "0.58rem", fontWeight: 700,
+                            letterSpacing: "0.1em", color: tokens.brass,
+                            border: `1px solid ${tokens.brass}`, borderRadius: 0.75,
+                            px: 0.75, py: 0.25 }}>
+            AUTOMATIC
+          </Typography>
+        ) : null}
       </Stack>
       {badge.description ? (
         <Typography sx={{ fontSize: "0.9rem", color: tokens.inkMuted }}>

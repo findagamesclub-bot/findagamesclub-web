@@ -48,7 +48,7 @@ export async function getClubsForPicker() {
 export async function featureClub(params: {
   club: number; from: string; to: string | null;
   pricePence: number | null; note: string;
-}): Promise<FeaturedResult> {
+}): Promise<FeaturedResult & { slotId?: number }> {
   let slotId: number;
   try {
     slotId = await repo.featureClub(params);
@@ -70,7 +70,10 @@ export async function featureClub(params: {
   } catch (error) {
     console.error("[featured] could not write to the club about a new slot", error);
   }
-  return { ok: true };
+  // Handed back so a booking made in answer to a club's request can be tied to
+  // it. The slot is the answer, so the request is marked against this id rather
+  // than the admin pressing a second button to say what they just did.
+  return { ok: true, slotId };
 }
 
 /**

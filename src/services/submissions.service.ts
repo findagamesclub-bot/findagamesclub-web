@@ -1,6 +1,7 @@
 import "server-only";
 
 import * as repo from "@/repositories/submissions.repository";
+import * as clubs from "@/repositories/clubs.repository";
 import { parseProfileStep, type FieldErrors } from "@/utils/listing-draft";
 import {
   contentReading, pricingReading, profileColumns, scheduleReading,
@@ -258,6 +259,8 @@ export async function saveDraftStep(
 
   const payload: Record<string, unknown> = { ...(current.payload ?? {}) };
   const patch: Record<string, unknown> = { last_step: step };
+  /** Files this step took off the listing, deleted once the save has landed. */
+  let dropped: string[] = [];
 
   if (step === "profile") {
     const parsed = parseProfileStep(form);
@@ -277,8 +280,11 @@ export async function saveDraftStep(
     payload.facilities = read.facilities;
     payload.payment_methods = read.payment_methods;
     payload.images = read.images;
+    // Only when it was changed, the same rule the live editor follows.
+    if (read.logo) payload.logo_path = read.logo.path;
     payload.social_links = read.social_links;
     payload.categories = read.categories;
+    dropped = read.removed;
 
   } else if (step === "pricing") {
     const read = pricingReading(form);
@@ -304,6 +310,18 @@ export async function saveDraftStep(
   } catch (error) {
     return { ok: false, error: submissionRefusal(error) };
   }
+
+  // After the rows that pointed at them are stored, never on the click. The
+  // same order the live editor uses, and for the same reason: a file deleted
+  // before the save leaves a listing pointing at nothing.
+  if (dropped.length) {
+    try {
+      await clubs.removeClubMedia({ kind: "submission", id }, dropped);
+    } catch (error) {
+      console.error("[listing] draft photos removed but their files stayed:", error);
+    }
+  }
+
   return { ok: true };
 }
 
@@ -381,4 +399,27 @@ export async function cancelListing(id: number, ownerName = ""): Promise<SaveRes
   }
 
   return { ok: true };
+}
+
+/**
+ * Which plan this listing is asking for, chosen before it is sent.
+ *
+ * 0112 reads `plan_interval` to open the subscription at the right price, and
+ * until 0161 the column was not in anybody's grant list, so every listing
+ * became monthly and the yearly price was advertised and unreachable. The
+ * policy that governs the write is the ordinary one: theirs, and only while it
+ * is theirs to edit.
+ */
+export async function chooseSubmissionPlan(
+  id: number, interval: string,
+): Promise<SaveResult> {
+  if (interval !== "monthly" && interval !== "yearly") {
+    return { ok: false, error: "Pick monthly or yearly." };
+  }
+  try {
+    await repo.saveSubmissionDraft(id, { plan_interval: interval });
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: submissionRefusal(error) };
+  }
 }

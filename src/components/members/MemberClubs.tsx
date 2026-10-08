@@ -5,7 +5,7 @@ import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import ClubLogo from "@/components/clubs/ClubLogo";
 import { shortDate } from "@/utils/dates";
-import { display, mono, tokens } from "@/lib/tokens";
+import { display, metalOf, mono, tokens } from "@/lib/tokens";
 import type { SharedClub } from "@/services/memberContext.service";
 
 /**
@@ -41,11 +41,28 @@ export default function MemberClubs({ clubs }: { clubs: SharedClub[] }) {
             </Typography>
           </Box>
 
-          {club.tierLabel ? (
-            <Chip size="small" label={club.tierLabel}
-              sx={{ bgcolor: tokens.brassSoft, color: "#5c4310", fontWeight: 700,
-                    fontSize: "0.68rem", flexShrink: 0 }} />
-          ) : null}
+          {/* Two different facts, side by side and told apart by how they are
+              drawn. The membership tier is what they pay for, so it sits in
+              brass like every other paid thing; the loyalty rung is a rank, so
+              it is struck in its own metal, which is the one place in this app
+              where colour means rank rather than identity. */}
+          <Stack direction="row" spacing={0.75}
+            sx={{ alignItems: "center", flexShrink: 0, flexWrap: "wrap" }} useFlexGap>
+            {club.tierLabel ? (
+              <Chip size="small" label={club.tierLabel}
+                sx={{ bgcolor: tokens.brassSoft, color: "#5c4310", fontWeight: 700,
+                      fontSize: "0.68rem" }} />
+            ) : null}
+
+            {club.loyalty ? (
+              <Chip size="small"
+                label={`${club.loyalty.label} · ${club.loyalty.lifetime.toLocaleString("en-GB")}`}
+                sx={{ bgcolor: metalOf(club.loyalty.tone).soft,
+                      color: metalOf(club.loyalty.tone).ink,
+                      border: `1px solid ${metalOf(club.loyalty.tone).base}`,
+                      fontWeight: 700, fontSize: "0.68rem" }} />
+            ) : null}
+          </Stack>
         </Stack>
       ))}
     </Stack>

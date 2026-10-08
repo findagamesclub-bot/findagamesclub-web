@@ -1,14 +1,18 @@
 /**
- * Badges a member earns from a club's competitions.
+ * Badges a member earns from a club's competitions, and still earns on read.
  *
- * The rules are legacy's, unchanged (club_store.py:22907), so a member who had
- * a badge on the old site keeps it here:
+ * The rules are legacy's (club_store.py:22907) minus the two 0167 turned into
+ * stored rows. What is left is the three that cannot be stored, because each
+ * is true only while it is true:
  *
- *   finished first in a completed competition   Champion
  *   first in one still running                  Current Leader
- *   second or third in a completed one          Podium Finish
  *   five or more played, some won, none lost    Undefeated Run
  *   four or more played in a campaign           Campaign Veteran
+ *
+ * Champion and Podium Finish are gone from here. A finished podium is a real
+ * `club_badges` row now, given automatically and owned by the club, and
+ * leaving the derived pair in place would have put two badges for one win side
+ * by side on the same profile. One tag, one vocabulary.
  *
  * Six at most, best first, one of each kind per competition.
  */
@@ -38,8 +42,6 @@ const ORDER: Record<BadgeTone, number> = {
   champion: 0, leader: 1, podium: 2, streak: 3, campaign: 4,
 };
 
-const PLACES = ["", "1st", "2nd", "3rd"];
-
 export function competitionBadges(entries: BadgeSource[]): Badge[] {
   const badges: Badge[] = [];
   const seen = new Set<string>();
@@ -54,14 +56,10 @@ export function competitionBadges(entries: BadgeSource[]): Badge[] {
     const id = entry.competitionId;
     const title = entry.title.trim() || entry.typeLabel || "Competition";
 
-    if (entry.completed && entry.rank === 1) {
-      add(`${id}::champion`, `${entry.typeLabel || "League"} Champion`, title, "champion");
-    } else if (!entry.completed && entry.rank === 1) {
+    // Running, not finished: a finished first place is the stored First place
+    // badge 0167 gives out, and this is the thing that is true today.
+    if (!entry.completed && entry.rank === 1) {
       add(`${id}::leader`, "Current Leader", title, "leader");
-    }
-
-    if (entry.completed && (entry.rank === 2 || entry.rank === 3)) {
-      add(`${id}::podium`, "Podium Finish", `${title} · ${PLACES[entry.rank]}`, "podium");
     }
 
     // Legacy's wording: a run, not a season. Five games with no loss earns it

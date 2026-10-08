@@ -3,7 +3,8 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { table } from "@/lib/supabase/table";
-import { CLUB_MEDIA, isClubMediaPath } from "@/utils/club-media";
+import { callRpc } from "@/lib/supabase/table";
+import { CLUB_MEDIA, isOwnMediaPath, type MediaOwner } from "@/utils/club-media";
 import type { Tables } from "@/types/database";
 
 /** The only place that queries the clubs tables. Returns rows; the service maps them. */
@@ -19,7 +20,7 @@ export type ClubRow = Tables<"clubs"> & {
 };
 
 const LIST_COLUMNS =
-  "id, slug, name, city, neighbourhood, summary, spotlight, status, logo_url, " +
+  "id, slug, name, city, neighbourhood, summary, spotlight, status, logo_url, logo_path, " +
   "tables_available, member_count, ages, price_drop_in, legacy_created_at, search_haystack, " +
   "venue_postcode, venue_postcode_district, venue_postcode_area, " +
   "latitude, longitude, club_images(src, alt, position, storage_path), " +
@@ -384,8 +385,8 @@ export async function replaceClubImages(clubId: number, rows: {
  * after the rows that pointed at them are gone. A path that is already gone
  * is the outcome we wanted, so it is not an error.
  */
-export async function removeClubMedia(clubId: number, paths: string[]) {
-  const mine = paths.filter((path) => isClubMediaPath(path, clubId));
+export async function removeClubMedia(owner: MediaOwner, paths: string[]) {
+  const mine = paths.filter((path) => isOwnMediaPath(path, owner));
   if (!mine.length) return;
 
   const supabase = await createClient();
@@ -508,4 +509,18 @@ export async function resumeClub(clubId: number) {
   const { error } = await supabase.rpc("resume_club_listing" as never,
     { p_club: clubId } as never);
   if (error) throw new Error(error.message);
+}
+
+/**
+ * Set or clear the club's logo, through 0160's writer.
+ *
+ * Not a column update: clearing has to retire the imported `logo_url` in the
+ * same statement, or a club that removes its logo finds the old one still on
+ * every card. The function is also what checks the club, so a path naming
+ * somebody else's folder has nowhere to land.
+ */
+export async function setClubLogo(clubId: number, path: string) {
+  // Through callRpc until the types are regenerated past 0160, same as every
+  // other function added in the migration that introduced it.
+  await callRpc<void>("set_club_logo", { p_club: clubId, p_path: path });
 }

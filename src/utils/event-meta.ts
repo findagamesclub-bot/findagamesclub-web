@@ -55,7 +55,26 @@ export function mayHaveArmyMeta(input: {
   games: readonly string[] | null | undefined;
   today: string;
 }): boolean {
-  if (!hasStarted(input.startDate, input.today)) return false;
-  const named = (input.games ?? []).length > 0;
-  return !named || playsFortyK(input.games);
+  return hasStarted(input.startDate, input.today) && eventRecordsArmies(input.games);
+}
+
+/**
+ * Whether an event's own screens should offer the army fields at all.
+ *
+ * The same reading as the panel above with the date taken out, because the
+ * club types the armies in before anybody reads them: a tournament organiser
+ * collects lists at the door and the draw is on screen while the event is
+ * still running.
+ *
+ * The club's army builder switch decides this first. This is the second half
+ * the client asked for: "cater for non Warhammer 40k events, where these
+ * details will not be applicable". A 40k club running a Blood Bowl weekend
+ * names Blood Bowl on the event, and a faction cascade on those tables is a
+ * set of boxes nobody can fill in.
+ */
+export function eventRecordsArmies(
+  games: readonly string[] | null | undefined,
+): boolean {
+  const named = (games ?? []).length > 0;
+  return !named || playsFortyK(games);
 }

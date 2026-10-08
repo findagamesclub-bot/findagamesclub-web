@@ -104,6 +104,9 @@ export default function EventRow({
       <Menu anchorEl={menu} open={Boolean(menu)} onClose={() => setMenu(null)}
         slotProps={{ paper: { sx: { minWidth: 200 } } }}>
         <MenuItem component={NextLink} href={from("/pairings")}>The draw</MenuItem>
+        {/* Below the draw, because a club reads down to the thing it runs on
+            the day and teams are set up once, weeks before. */}
+        <MenuItem component={NextLink} href={from("/teams")}>Teams</MenuItem>
         <MenuItem component={NextLink} href={from("/roster")}>
           Who is coming{event.bookings ? ` (${event.bookings})` : ""}
         </MenuItem>

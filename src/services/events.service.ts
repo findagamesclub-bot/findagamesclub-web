@@ -1,4 +1,6 @@
 import "server-only";
+import { clubLogoUrl } from "@/utils/club-media";
+import { publicUrl } from "@/lib/supabase/storage";
 
 import * as repo from "@/repositories/events.repository";
 import * as clubsRepo from "@/repositories/clubs.repository";
@@ -33,7 +35,7 @@ type Row = Awaited<ReturnType<typeof repo.findEvents>>[number];
 function toSummary(row: Row): EventSummary {
   const club = (row as unknown as {
     clubs: {
-      slug: string; name: string; city: string; logo_url: string | null;
+      slug: string; name: string; city: string; logo_url: string | null; logo_path: string | null;
       latitude: number | null; longitude: number | null; ages: string | null;
       club_images: { src: string; alt: string; position: number }[] | null;
       club_formats: { formats: { label: string } | null }[] | null;
@@ -103,7 +105,9 @@ function toSummary(row: Row): EventSummary {
     weekday,
     hasEnded: hasEnded(row.end_date, row.start_date, row.end_time),
     createdAt: row.created_at,
-    club: { slug: club.slug, name: club.name, city: club.city, logoUrl: club.logo_url },
+    club: { slug: club.slug, name: club.name, city: club.city, logoUrl: clubLogoUrl(
+        { logoPath: club.logo_path, logoUrl: club.logo_url },
+        publicUrl) },
     coordinates:
       club.latitude !== null && club.longitude !== null
         ? { latitude: club.latitude, longitude: club.longitude }

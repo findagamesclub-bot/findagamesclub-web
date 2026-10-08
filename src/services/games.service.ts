@@ -1,4 +1,6 @@
 import "server-only";
+import { clubLogoUrl } from "@/utils/club-media";
+import { publicUrl } from "@/lib/supabase/storage";
 
 import { findOwnedClubs } from "@/repositories/ownerInbox.repository";
 import { isLocked, safeDeployment, toConfirmation, type ConfirmationState }
@@ -11,6 +13,7 @@ import { londonToday } from "./bookingCalendar.service";
 import { suggestOpponents, winRate, type Suggestion } from "@/utils/opponent-finder";
 import { intensityOf, type Intensity } from "@/utils/rivalry-intensity";
 import { canonicalGame } from "@/utils/game-label";
+import { playsFortyK } from "@/utils/event-meta";
 
 /**
  * What a game says when nobody is on the other side of it yet.
@@ -28,6 +31,12 @@ export type MyGame = {
   date: string;
   time: string | null;
   title: string;
+  /**
+   * The game as it is stored, which is empty on a booking nobody named one on.
+   * `title` carries the placeholder "Table booking" for the card to show, and
+   * saving that back as the game would write the placeholder into the column.
+   */
+  gameTitle: string;
   /** The other person, whether they hold an account here or not. */
   opponentId: string | null;
   opponentName: string;
@@ -123,11 +132,14 @@ export async function getMyGames(profileId: string, page = 1): Promise<MyGame[]>
       club: {
         slug: row.clubs.slug,
         name: row.clubs.name,
-        logoUrl: row.clubs.logo_url,
+        logoUrl: clubLogoUrl(
+        { logoPath: row.clubs.logo_path, logoUrl: row.clubs.logo_url },
+        publicUrl),
       },
       date: row.session_date,
       time: row.session_time,
       title: row.game_title ? canonicalGame(row.game_title) : "Table booking",
+      gameTitle: row.game_title ? canonicalGame(row.game_title) : "",
       opponentId: other.id,
       opponentName: other.name?.trim() || UNNAMED_OPPONENT,
       myScore,
@@ -190,6 +202,8 @@ export async function recordResult(params: {
    * row always reads the same regardless of who filled the form in.
    */
   armies?: { one?: unknown; two?: unknown };
+  /** Undefined leaves the booking's own game alone. */
+  game?: string;
 }): Promise<{ ok: boolean; error?: string }> {
   const { myScore, theirScore } = params;
   if (!Number.isFinite(myScore) || !Number.isFinite(theirScore)) {
@@ -214,16 +228,39 @@ export async function recordResult(params: {
       deployment: safeDeployment(params.deployment),
       terrain: (params.terrain ?? "").trim(),
       confirmation: (params.confirmation ?? "").trim(),
-      armies: params.armies
-        ? (params.iBooked
-            ? { one: params.armies.one, two: params.armies.two }
-            : { one: params.armies.two, two: params.armies.one })
-        : {},
+      game: params.game,
+      armies: (() => {
+        const kept = armiesFor(params.game, params.armies);
+        if (!params.armies) return kept;
+        return params.iBooked
+          ? { one: kept.one, two: kept.two }
+          : { one: kept.two, two: kept.one };
+      })(),
     });
     return { ok: true };
   } catch (error) {
     return { ok: false, error: resultRefusal(error, params.bookingId) };
   }
+}
+
+/**
+ * What an army is worth on a game that is not Warhammer 40,000.
+ *
+ * Nothing, so the row goes. The cascade is 40k's: factions, detachments and
+ * the dispositions inside them all come out of one catalogue, and a club that
+ * plays Blood Bowl on a Tuesday has no business being asked for a detachment.
+ * The screen hides the fields; this is the half that cannot be got round by a
+ * stale tab, because an empty army is what `put_result_army` deletes on.
+ *
+ * `canonicalGame` is the one place that knows "warhammer 40k" and "Warhammer
+ * 40,000" are the same thing, and it lives here rather than in SQL because the
+ * import script and the directory already share that list.
+ */
+function armiesFor(
+  game: string | undefined, armies: { one?: unknown; two?: unknown } | undefined,
+): { one?: unknown; two?: unknown } {
+  if (game !== undefined && !playsFortyK([game])) return { one: {}, two: {} };
+  return armies ?? {};
 }
 
 /**
@@ -245,6 +282,8 @@ export async function recordClubResult(params: {
   confirmation?: string;
   /** Already in the booking's order: `one` is whoever booked. */
   armies?: { one?: unknown; two?: unknown };
+  /** Undefined leaves the booking's own game alone. */
+  game?: string;
 }): Promise<{ ok: boolean; error?: string }> {
   if (!Number.isFinite(params.homeScore) || !Number.isFinite(params.awayScore)) {
     return { ok: false, error: "Put a number in both boxes." };
@@ -264,7 +303,8 @@ export async function recordClubResult(params: {
       deployment: safeDeployment(params.deployment),
       terrain: (params.terrain ?? "").trim(),
       confirmation: (params.confirmation ?? "").trim(),
-      armies: params.armies ?? {},
+      game: params.game,
+      armies: armiesFor(params.game, params.armies),
     });
     return { ok: true };
   } catch (error) {
@@ -283,6 +323,7 @@ const RESULT_ERRORS: [string, string][] = [
   ["RESULT_SCORES_RANGE", "Those scores are out of range."],
   ["RESULT_BAD_STATE", "Choose one of the four states."],
   ["RESULT_BAD_DEPLOYMENT", "Choose a deployment from the list."],
+  ["RESULT_GAME_TOO_LONG", "That game name is too long. Shorten it."],
   // The wording 0030 used, kept so a database that has not run 0044 yet still
   // says something sensible.
   ["Only the players", "Only the players or the club can record that result."],

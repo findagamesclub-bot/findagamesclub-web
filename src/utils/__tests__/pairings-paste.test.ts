@@ -51,3 +51,26 @@ assert.equal(pasteSummary(parsePastedPairings("1\tAnn\tBen\n2\t\tDan")),
   "1 table · 1 line to look at");
 
 console.log("pairings-paste: all assertions passed");
+
+// A paste that numbers some lines and not others. The un-numbered ones used to
+// take their position in the list, which collides with a number another line
+// claimed outright: the dialog's own worked example produced two table ones.
+{
+  const mixed = parsePastedPairings("1, Ann Shah, Ben Lowe\nCal Reed vs Dee Khan");
+  assert.deepEqual(mixed.map((m) => m.table), ["1", "2"],
+    "the un-numbered line takes the next free number, not its own index");
+
+  const claimedLater = parsePastedPairings("Ann vs Ben\n1, Cal, Dee");
+  assert.deepEqual(claimedLater.map((m) => m.table), ["2", "1"],
+    "and it looks ahead, so a number claimed further down is still skipped");
+
+  const noneNumbered = parsePastedPairings("Ann vs Ben\nCal vs Dee\nEve vs Fay");
+  assert.deepEqual(noneNumbered.map((m) => m.table), ["1", "2", "3"],
+    "a list with no numbers at all is unchanged");
+
+  const allNumbered = parsePastedPairings("5, Ann, Ben\n6, Cal, Dee");
+  assert.deepEqual(allNumbered.map((m) => m.table), ["5", "6"],
+    "and so is one where every line says its own");
+}
+
+console.log("pairings-paste: mixed numbering passed");

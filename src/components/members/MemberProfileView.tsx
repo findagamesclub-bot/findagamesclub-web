@@ -19,6 +19,9 @@ import MemberBadges from "./MemberBadges";
 import MemberPanels from "./MemberPanels";
 import BackToTop from "@/components/ui/BackToTop";
 import SportsScoreIcon from "@mui/icons-material/SportsScore";
+import ScoreboardIcon from "@mui/icons-material/ScoreboardOutlined";
+import OverallRecord from "./OverallRecord";
+import type { OverallRecord as Overall } from "@/services/memberOverall.service";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 
 /**
@@ -35,6 +38,7 @@ export default function MemberProfileView({
   records,
   trackers,
   armies,
+  overall,
   editHref = "/account/profile",
   embedded = false,
 }: {
@@ -55,6 +59,8 @@ export default function MemberProfileView({
   /** Their playing record at each club the reader shares with them. */
   trackers?: ClubTracker[];
   armies?: MemberArmy[];
+  /** Everything they have played, from club nights, events and leagues. */
+  overall?: Overall;
 }) {
   const { faction } = clubIdentity(profile.id, profile.fullName);
 
@@ -70,7 +76,8 @@ export default function MemberProfileView({
     Boolean(records?.competitions.length) ||
     Boolean(records?.podiums.length) ||
     Boolean(context?.events.length) ||
-    Boolean(trackers?.length) || Boolean(armies?.length);
+    Boolean(trackers?.length) || Boolean(armies?.length) ||
+    Boolean(overall?.total.played);
 
   const Shell = embedded ? Box : Container;
 
@@ -104,6 +111,19 @@ export default function MemberProfileView({
         {records?.badges.length ? (
           <Panel title="Badges" icon={EmojiEventsIcon}>
             <MemberBadges badges={records.badges} />
+          </Panel>
+        ) : null}
+
+        {/* How they have done, before what they bring and long before how
+            the reader has done against them. Event and league results were on
+            three different screens and nothing added them up, which is what
+            the client asked for. Hidden outright when they have played
+            nothing: a panel of noughts is not an empty state, it is a record
+            of defeats nobody suffered. */}
+        {overall?.total.played ? (
+          <Panel title="Overall record" icon={ScoreboardIcon}>
+            <OverallRecord record={overall}
+              name={profile.fullName.trim().split(" ")[0] || profile.fullName} />
           </Panel>
         ) : null}
 

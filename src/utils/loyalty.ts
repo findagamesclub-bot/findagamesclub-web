@@ -10,7 +10,13 @@
  * Defaults are legacy's, at club_store.py:48-62. A club overrides any of them.
  */
 
-export type LoyaltyTier = { label: string; pointsRequired: number; tone: string };
+export type LoyaltyTier = {
+  label: string;
+  pointsRequired: number;
+  tone: string;
+  /** What reaching it gets them, as the club wrote it. One line each. */
+  rewards: string[];
+};
 export type Anniversary = { years: number; points: number };
 
 export const DEFAULT_MILESTONES = {
@@ -50,12 +56,20 @@ export const DEFAULT_ANNIVERSARIES: Anniversary[] = [
   { years: 10, points: 100 },
 ];
 
+/**
+ * The ladder a club starts on, which it is then free to rewrite.
+ *
+ * Legacy falls back to these whenever a club has saved none
+ * (`LOYALTY_DEFAULT_TIERS`, club_store.py:63), and the editor seeds from them
+ * for the same reason: a club should be able to rename Bronze rather than
+ * invent a ladder from an empty box.
+ */
 export const DEFAULT_TIERS: LoyaltyTier[] = [
-  { label: "Bronze", pointsRequired: 0, tone: "bronze" },
-  { label: "Silver", pointsRequired: 100, tone: "silver" },
-  { label: "Gold", pointsRequired: 250, tone: "gold" },
-  { label: "Platinum", pointsRequired: 500, tone: "platinum" },
-  { label: "Legend", pointsRequired: 1000, tone: "legend" },
+  { label: "Bronze", pointsRequired: 0, tone: "bronze", rewards: [] },
+  { label: "Silver", pointsRequired: 100, tone: "silver", rewards: [] },
+  { label: "Gold", pointsRequired: 250, tone: "gold", rewards: [] },
+  { label: "Platinum", pointsRequired: 500, tone: "platinum", rewards: [] },
+  { label: "Legend", pointsRequired: 1000, tone: "legend", rewards: [] },
 ];
 
 /**

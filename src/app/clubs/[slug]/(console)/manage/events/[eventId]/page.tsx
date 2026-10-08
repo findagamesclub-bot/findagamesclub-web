@@ -64,6 +64,9 @@ export default async function EventEditorPage({
         <EventDetailsForm slug={slug} event={event} club={{
           venueName: club.venue.name ?? "", venueAddress: club.venue.address ?? "",
           venuePostcode: club.venue.postcode ?? "", clubId: club.id,
+          // The same first photo `eventArt` falls back to, so the editor and
+          // the public page cannot show different pictures.
+          art: club.images.map((i) => ({ src: i.src, alt: i.alt }))[0] ?? null,
         }} />
         <TicketTypes slug={slug} event={event} tiers={tiers} />
         <EventNotices slug={slug} event={event} />

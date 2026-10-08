@@ -72,8 +72,8 @@ export default async function ClubBadgesPage({
       <PageHead
         title="Badges"
         lede={showing === "awarded"
-          ? "Everybody holding one of your badges, and why. Year badges are not here because nobody hands those out."
-          : "Things this club gives out: a tournament win, or painting the terrain nobody else will. Members earn their year badges on their own."}
+          ? "Everybody holding one of your badges, and why. The automatic ones are in here too: a year badge the night a member reaches it, and first, second or third as soon as you record a podium."
+          : "Things this club gives out, like painting the terrain nobody else will. First, second and third go out on their own when you record an event result or finish a league, and the year badges do the same. Rename, retire or hand any of them out yourself."}
       />
 
       <Box sx={{ mb: 3 }}>

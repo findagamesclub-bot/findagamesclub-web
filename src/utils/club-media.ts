@@ -37,11 +37,55 @@ export type MediaKind = "logo" | "photos" | "shop" | "events";
 export function clubMediaPath(
   clubId: number, kind: MediaKind, fileName: string, unique: string,
 ): string {
-  const dot = fileName.lastIndexOf(".");
-  const extension = (dot > -1 ? fileName.slice(dot + 1) : "")
-    .toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "jpg";
+  return `clubs/${clubId}/${kind}/${unique}.${extensionOf(fileName)}`;
+}
 
-  return `clubs/${clubId}/${kind}/${unique}.${extension}`;
+/** The extension, trusting nothing about the name the browser handed us. */
+function extensionOf(fileName: string): string {
+  const dot = fileName.lastIndexOf(".");
+  return (dot > -1 ? fileName.slice(dot + 1) : "")
+    .toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "jpg";
+}
+
+/**
+ * `submissions/<submission id>/<kind>/<uuid>.<ext>`
+ *
+ * Where a photo goes while the club it belongs to does not exist yet. 0160's
+ * storage policy reads folder 2 the same way 0087 reads a club's, and asks the
+ * question `club_submissions_edit` asks instead of `club_can`.
+ *
+ * Approving moves these across into the club's own folder, because a club has
+ * to be able to delete its own photographs and the club policy only ever
+ * matches `clubs/<id>/`.
+ */
+export function submissionMediaPath(
+  submissionId: number, kind: MediaKind, fileName: string, unique: string,
+): string {
+  return `submissions/${submissionId}/${kind}/${unique}.${extensionOf(fileName)}`;
+}
+
+/** Whichever of the two a builder step is pointed at. */
+export type MediaOwner =
+  | { kind: "club"; id: number }
+  | { kind: "submission"; id: number };
+
+/** The path for a file, wherever this builder happens to be writing. */
+export function mediaPathFor(
+  owner: MediaOwner, kind: MediaKind, fileName: string, unique: string,
+): string {
+  return owner.kind === "club"
+    ? clubMediaPath(owner.id, kind, fileName, unique)
+    : submissionMediaPath(owner.id, kind, fileName, unique);
+}
+
+/** Whether a path names a file this owner may name for deletion. */
+export function isOwnMediaPath(path: string, owner: MediaOwner): boolean {
+  const parts = path.split("/");
+  const root = owner.kind === "club" ? "clubs" : "submissions";
+  return parts.length >= 3
+    && parts[0] === root
+    && parts[1] === String(owner.id)
+    && parts.every((part) => part !== "" && part !== "." && part !== "..");
 }
 
 /** Why this file cannot be used, in words for the person holding it. */
@@ -82,6 +126,27 @@ export function clubImageUrl(
   const path = image.storagePath?.trim();
   if (path) return publicUrl(CLUB_MEDIA, path);
   return image.src?.trim() ?? "";
+}
+
+/**
+ * The URL for a club's logo, whichever way it was stored.
+ *
+ * Same two-column shape as `clubImageUrl` and for the same reason: eleven
+ * clubs came across from the old site with an absolute `logo_url` to a file
+ * nobody here owns, and a logo uploaded through the builder lands in our own
+ * bucket as `logo_path`. Ours wins where both are set, because that is the one
+ * the club chose most recently.
+ *
+ * `ClubLogo` renders this in about twenty places and reads one field, so the
+ * resolving happens once at the service boundary rather than at every call.
+ */
+export function clubLogoUrl(
+  club: { logoPath?: string | null; logoUrl?: string | null },
+  publicUrl: (bucket: string, path: string) => string,
+): string | null {
+  const path = club.logoPath?.trim();
+  if (path) return publicUrl(CLUB_MEDIA, path);
+  return club.logoUrl?.trim() || null;
 }
 
 /**

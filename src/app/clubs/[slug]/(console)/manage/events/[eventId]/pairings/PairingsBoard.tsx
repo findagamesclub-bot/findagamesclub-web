@@ -2,9 +2,7 @@
 
 import { startTransition, useActionState, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
-import Typography from "@mui/material/Typography";
 import BusyOverlay from "@/components/ui/BusyOverlay";
 import EmptyState from "@/components/ui/EmptyState";
 import NavTabs from "@/components/ui/NavTabs";
@@ -14,12 +12,18 @@ import RoundTables from "./RoundTables";
 import RoundTools from "./RoundTools";
 import PasteDialog from "./PasteDialog";
 import MatchDialog from "./MatchDialog";
+import DrawAudience from "./DrawAudience";
+import ArmiesDialog, { type ArmyFields } from "./ArmiesDialog";
+import TeamFixtures from "./TeamFixtures";
 import ScoresDialog from "./ScoresDialog";
 import { pairingsAction, type PairingsState } from "./actions";
 import { nextSearch, withSearch } from "@/utils/filter-url";
-import { tokens, type Faction } from "@/lib/tokens";
+import { type Faction } from "@/lib/tokens";
 import type { PairingMatch, PairingRound } from "@/types/eventEditor";
-import type { Player } from "@/utils/pairings-draw";
+import { roundTabs, type Player } from "@/utils/pairings-draw";
+import type { Builder, MemberList } from "@/services/resultArmies.service";
+import type { PairingArmy } from "@/services/eventPairingArmies.service";
+import type { EventTeam, TeamFixture } from "@/types/eventTeams";
 
 /**
  * Every round of an event, one tab each.
@@ -29,7 +33,8 @@ import type { Player } from "@/utils/pairings-draw";
  * scores go in one dialog for the whole round rather than one per table.
  */
 export default function PairingsBoard({
-  slug, eventId, rounds, roster, roundCount, faction, showing,
+  slug, eventId, rounds, roster, roundCount, faction, showing, drawPublic,
+  builder, lists, armies, teamEvent, teams, fixtures,
 }: {
   slug: string;
   eventId: number;
@@ -38,6 +43,24 @@ export default function PairingsBoard({
   roundCount: number | null;
   faction: Faction;
   showing?: number;
+  /** Whether a round on show reaches the street or only the people coming. */
+  drawPublic: boolean;
+  /** Null at a club that does not record armies, which hides all of that. */
+  builder: Builder | null;
+  /** Lists built at this club, narrowed per side by the dialog. */
+  lists: MemberList[];
+  /** What is already recorded, keyed `<matchId>:<side>`. */
+  armies: Record<string, PairingArmy>;
+  /**
+   * The switch on the Teams page, and the only answer to the question. Turning
+   * it off really does put this page back to one player per table: a fixture's
+   * tables are ordinary tables either way, so they are still here and still
+   * scored, they just stop being grouped.
+   */
+  teamEvent: boolean;
+  teams: EventTeam[];
+  /** Every fixture on the event, narrowed to the open round here. */
+  fixtures: TeamFixture[];
 }) {
   const [state, submit, busy] = useActionState<PairingsState, FormData>(pairingsAction, {});
   useActionToast(state);
@@ -58,22 +81,19 @@ export default function PairingsBoard({
   const [editing, setEditing] = useState<PairingMatch | null | undefined>(undefined);
   const [clearing, setClearing] = useState(false);
   const [removing, setRemoving] = useState<PairingMatch | null>(null);
+  const [arming, setArming] = useState<PairingMatch | null>(null);
+  const [droppingFixture, setDroppingFixture] = useState<TeamFixture | null>(null);
+
+  const asTeams = teamEvent;
 
   const current = useMemo(
     () => rounds.find((r) => r.round === round) ?? null, [rounds, round]);
 
-  // Rounds that exist, plus the next one to build. An event that says it has
-  // five rounds offers all five, because a club drawing round four before
-  // round three has finished is ordinary.
-  const tabs = useMemo(() => {
-    const known = rounds.map((r) => r.round);
-    const upTo = roundCount && roundCount > 0
-      ? roundCount
-      : Math.max(...known, 0) + 1;
-    const all = new Set<number>([...known]);
-    for (let n = 1; n <= Math.max(upTo, 1); n++) all.add(n);
-    return [...all].sort((a, b) => a - b);
-  }, [rounds, roundCount]);
+  const roundFixtures = useMemo(
+    () => fixtures.filter((fixture) => fixture.round === round),
+    [fixtures, round]);
+
+  const tabs = useMemo(() => roundTabs(rounds, roundCount), [rounds, roundCount]);
 
   const send = (fields: Record<string, string>, extra?: (data: FormData) => void) => {
     const data = new FormData();
@@ -87,7 +107,22 @@ export default function PairingsBoard({
   };
 
   const matches = current?.matches ?? [];
-  const played = matches.filter((m) => m.scoreOne !== null || m.scoreTwo !== null).length;
+
+  // At a team event the tables that count are the ones under a fixture. The
+  // round's flat list can still hold tables from an individual draw made
+  // before the event was switched over, and counting those said "2 tables, 2
+  // played" directly above "Round 2 has not been drawn". Drawing the round
+  // clears them, so this is only ever wrong in the window before that, which
+  // is exactly the window somebody is looking at it.
+  const shown = asTeams ? roundFixtures.flatMap((fixture) => fixture.tables) : matches;
+  const played = shown.filter((m) => m.scoreOne !== null || m.scoreTwo !== null).length;
+
+  // A round switched to teams still holds whatever the individual draw put
+  // there, and drawing clears the round outright. Without this the first press
+  // after switching an event over would take eight scored tables with it and
+  // say nothing: the counter reads zero because none of them is under a
+  // fixture, so there would have been nothing on screen to warn about.
+  const leftovers = asTeams && !shown.length && matches.length > 0;
 
   return (
     <Stack spacing={2.5}>
@@ -106,20 +141,41 @@ export default function PairingsBoard({
       />
 
       <RoundTools
-        round={round} tables={matches.length} played={played}
-        roster={roster.length} busy={busy}
+        round={round} tables={shown.length} played={played}
+        roster={roster.length} busy={busy} drawPublic={drawPublic}
+        teams={asTeams ? teams.length : null}
         published={current?.published ?? null}
         onPublish={(on) => send({ intent: "publish", published: on ? "yes" : "no" })}
-        onDraw={() => (matches.length ? setClearing(true) : send({ intent: "generate" }))}
+        onDraw={() => (shown.length || leftovers
+          ? setClearing(true)
+          : send({ intent: asTeams ? "generate-teams" : "generate" }))}
         onPaste={() => setPasting(true)}
         onAdd={() => setEditing(null)}
         onScores={() => setScoring(true)}
       />
 
       <BusyOverlay busy={busy} variant="dim" label="Saving">
-        {matches.length ? (
+        {asTeams ? (
+          roundFixtures.length ? (
+            <TeamFixtures fixtures={roundFixtures} busy={busy}
+              armies={armies} recordsArmies={builder !== null}
+              onEdit={(match) => setEditing(match)}
+              onArmies={(match) => setArming(match)}
+              onRemove={(match) => setRemoving(match)}
+              onRemoveFixture={(fixture) => setDroppingFixture(fixture)} />
+          ) : (
+            <EmptyState
+              title={`Round ${round} has not been drawn`}
+              description={teams.length >= 2
+                ? "Make the draw and the teams are shuffled against each other, with a table for board one, board two and so on inside every fixture."
+                : "You need at least two teams before a round can be drawn. Build them on the Teams page."}
+            />
+          )
+        ) : matches.length ? (
           <RoundTables matches={matches} busy={busy}
+            armies={armies} recordsArmies={builder !== null}
             onEdit={(match) => setEditing(match)}
+            onArmies={(match) => setArming(match)}
             onRemove={(match) => setRemoving(match)} />
         ) : (
           <EmptyState
@@ -146,7 +202,8 @@ export default function PairingsBoard({
           }} />
       ) : null}
 
-      <ScoresDialog open={scoring} saving={busy} round={round} matches={matches}
+      <ScoresDialog open={scoring} saving={busy} round={round}
+        matches={shown as PairingMatch[]}
         onClose={() => setScoring(false)}
         onSave={(rows) => {
           setScoring(false);
@@ -159,13 +216,46 @@ export default function PairingsBoard({
           });
         }} />
 
+      <ArmiesDialog match={arming} builder={builder} lists={lists}
+        recorded={armies} saving={busy}
+        onClose={() => setArming(null)}
+        onSave={(fields: ArmyFields) => {
+          setArming(null);
+          send({ intent: "save-armies", ...fields });
+        }} />
+
       <ConfirmDialog
         open={clearing}
-        title={`Make the round ${round} draw again?`}
-        body="Everybody coming is shuffled and put on a fresh table. The tables you have now, and any scores on them, are replaced."
-        confirmLabel="Make it again" destructive
-        onConfirm={() => { setClearing(false); send({ intent: "generate" }); }}
+        title={leftovers
+          ? `Replace the round ${round} draw with a team draw?`
+          : `Make the round ${round} draw again?`}
+        body={leftovers
+          ? `Round ${round} was drawn one player per table before this event ran as teams. Those ${matches.length} tables, and any scores on them, are replaced by a team draw.`
+          : asTeams
+            ? "The teams are shuffled against each other again and fresh tables made inside every fixture. The fixtures you have now, and any scores on their tables, are replaced."
+            : "Everybody coming is shuffled and put on a fresh table. The tables you have now, and any scores on them, are replaced."}
+        confirmLabel={leftovers ? "Replace it" : "Make it again"} destructive
+        onConfirm={() => {
+          setClearing(false);
+          send({ intent: asTeams ? "generate-teams" : "generate" });
+        }}
         onClose={() => setClearing(false)}
+      />
+
+      <ConfirmDialog
+        open={Boolean(droppingFixture)}
+        title="Remove this fixture?"
+        body={droppingFixture
+          ? `${droppingFixture.teamOneName} against ${droppingFixture.teamTwoName || "nobody"} comes off the draw, along with every table under it and any score on those.`
+          : ""}
+        confirmLabel="Remove fixture" destructive busy={busy}
+        onConfirm={() => {
+          if (droppingFixture) {
+            send({ intent: "remove-fixture", fixtureId: String(droppingFixture.id) });
+          }
+          setDroppingFixture(null);
+        }}
+        onClose={() => setDroppingFixture(null)}
       />
 
       <ConfirmDialog
@@ -182,12 +272,9 @@ export default function PairingsBoard({
         onClose={() => setRemoving(null)}
       />
 
-      <Box sx={{ pt: 1 }}>
-        <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-          A draw stays hidden until you switch it on. Once the event has finished it is public
-          either way, the same as the standings.
-        </Typography>
-      </Box>
+      <DrawAudience open={drawPublic} busy={busy}
+        onChange={(open) =>
+          send({ intent: "draw-audience", drawPublic: open ? "yes" : "no" })} />
     </Stack>
   );
 }

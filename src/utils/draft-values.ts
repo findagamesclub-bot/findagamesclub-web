@@ -58,9 +58,18 @@ export function draftValues(payload: Record<string, unknown>) {
       categories: rows(payload.categories).map((r) => ({
         id: text(r.id), label: text(r.label),
       })),
-      // Always empty: photos wait until the club exists, because a listing
-      // being written has no folder in Storage to put them in.
-      photos: [] as never[],
+      // Read back out of the payload now that a listing has a folder of its
+      // own (0160). They were always stored and always discarded here, because
+      // nothing could put one in: the builder said "photos are added once your
+      // club is live" and an admin approved having seen none.
+      photos: rows(payload.images).map((r, index) => ({
+        key: `saved-${index}`,
+        preview: "",
+        path: text(r.storage_path) || null,
+        src: text(r.src),
+        alt: text(r.alt),
+      })),
+      logoPath: text(payload.logo_path) || null,
     },
 
     pricing: {

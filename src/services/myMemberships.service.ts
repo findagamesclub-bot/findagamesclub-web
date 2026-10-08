@@ -1,4 +1,6 @@
 import "server-only";
+import { clubLogoUrl } from "@/utils/club-media";
+import { publicUrl } from "@/lib/supabase/storage";
 
 import { findMine, requestTier } from "@/repositories/myMemberships.repository";
 import { findClubBasics } from "@/repositories/memberships.repository";
@@ -69,7 +71,7 @@ export async function getMyMemberships(profileId: string): Promise<MyClubMembers
   return rows.map((row) => {
     const club = (row as unknown as {
       clubs: {
-        id: number; slug: string; name: string; city: string; logo_url: string | null;
+        id: number; slug: string; name: string; city: string; logo_url: string | null; logo_path: string | null;
         club_membership_tiers: Parameters<typeof toMembershipTiers>[0];
       };
     }).clubs;
@@ -83,7 +85,9 @@ export async function getMyMemberships(profileId: string): Promise<MyClubMembers
       status: row.status as MyClubMembership["status"],
       club: {
         id: club.id, slug: club.slug, name: club.name,
-        city: club.city, logoUrl: club.logo_url,
+        city: club.city, logoUrl: clubLogoUrl(
+        { logoPath: club.logo_path, logoUrl: club.logo_url },
+        publicUrl),
       },
       tierKey: row.tier_key,
       tierLabel: mine?.label ?? null,

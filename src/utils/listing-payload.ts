@@ -1,3 +1,4 @@
+import { headlineOf, normaliseOptions } from "./billing-options";
 import { SOCIAL_NETWORKS, normaliseSocialUrl } from "./social-links";
 import { isHalfRange } from "./time-range";
 import type { ProfileStep } from "./listing-draft";
@@ -70,6 +71,14 @@ export type ContentReading = {
   facilities: string[];
   payment_methods: string[];
   images: { storage_path: string | null; src: string; alt: string }[];
+  /**
+   * Null when nobody touched the logo, which has to leave it alone.
+   *
+   * A club imported with a logo has a URL and no path, so a field that was
+   * always posted would clear the logo of every club that opened this step to
+   * change something else. The editor posts it only once it has been changed.
+   */
+  logo: { path: string } | null;
   social_links: { label: string; url: string }[];
   categories: { id: string | null; label: string }[];
   /** Files the club took out, for the caller to delete after the rows are gone. */
@@ -108,6 +117,7 @@ export function contentReading(form: FormData): ContentReading {
     facilities: list(form, "facilities"),
     payment_methods: list(form, "paymentMethods"),
     images,
+    logo: form.has("logoPath") ? { path: String(form.get("logoPath") ?? "") } : null,
     social_links,
     categories,
     removed: form.getAll("removedPhoto").map(String).filter(Boolean),
@@ -135,19 +145,31 @@ export function pricingReading(form: FormData): Reading<PricingReading> {
     notes: at(form, "modelNotes", index),
   })).filter((m) => m.label);
 
-  const tiers = form.getAll("tierKey").map((_, index) => ({
-    tier_key: at(form, "tierKey", index),
-    label: at(form, "tierLabel", index),
-    price: at(form, "tierPrice", index),
-    price_duration: at(form, "tierDuration", index),
-    description: at(form, "tierDescription", index),
-    is_basic: at(form, "tierBasic", index) === "yes",
-    // `benefits` and `billing_options` ride back out as the JSON they came in
-    // as. This screen does not edit them, and a save that dropped them would
-    // quietly strip every perk the club has set up.
-    benefits: json("tierBenefits", index, {}),
-    billing_options: json("tierBilling", index, []),
-  })).filter((t) => t.tier_key && t.label);
+  const tiers = form.getAll("tierKey").map((_, index) => {
+    const tier_key = at(form, "tierKey", index);
+    // The payment options are what the owner edits; the tier's own price is
+    // derived from the first of them and never typed separately. That is
+    // legacy's rule (`primary_billing_option`, club_store.py:13811) and it is
+    // the whole answer to a tier reading "Life Member · £120" above a payment
+    // list offering £15 a month.
+    const billing_options = normaliseOptions(
+      json("tierBilling", index, []), tier_key,
+      at(form, "tierPrice", index), at(form, "tierDuration", index));
+
+    return {
+      tier_key,
+      label: at(form, "tierLabel", index),
+      ...headlineOf(billing_options,
+        at(form, "tierPrice", index), at(form, "tierDuration", index)),
+      description: at(form, "tierDescription", index),
+      is_basic: at(form, "tierBasic", index) === "yes",
+      // `benefits` rides back out as the JSON it came in as. This screen does
+      // not edit it, and a save that dropped it would quietly strip every perk
+      // the club has set up.
+      benefits: json("tierBenefits", index, {}),
+      billing_options,
+    };
+  }).filter((t) => t.tier_key && t.label);
 
   if (tiers.length && !tiers.some((t) => t.is_basic)) {
     return { ok: false, error: "One tier has to be the one people join on." };

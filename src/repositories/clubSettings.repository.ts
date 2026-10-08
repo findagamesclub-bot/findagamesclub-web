@@ -60,6 +60,9 @@ export async function saveLoyaltySettings(clubId: number, patch: {
   table_booking_price: string | null;
   /** What each thing earns. Legacy's four keys, kept as its own JSON shape. */
   milestones: Record<string, number>;
+  /** The club's own ladder, already sorted and de-duplicated. */
+  tiers: { label: string; pointsRequired: number; tone: string; rewards: string[] }[];
+  anniversaries: { years: number; points: number }[];
 }) {
   await upsertSettings("club_loyalty_settings", clubId,
     { ...patch, updated_at: new Date().toISOString() });

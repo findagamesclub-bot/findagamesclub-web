@@ -10,6 +10,7 @@ import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import InfoIcon from "@mui/icons-material/Info";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import TableRestaurantIcon from "@mui/icons-material/TableRestaurant";
+import GroupWorkIcon from "@mui/icons-material/GroupWork";
 import Section from "@/components/ui/Section";
 import EventPlacings from "@/components/events/EventPlacings";
 import EventNoticeboard from "@/components/events/EventNoticeboard";
@@ -19,14 +20,17 @@ import EventTags from "@/components/events/EventTags";
 import SectionNav from "@/components/ui/SectionNav";
 import ManageStrip from "@/components/ui/ManageStrip";
 import EventPairings from "@/components/events/EventPairings";
+import EventTeams from "@/components/events/EventTeams";
+import EventTeamDraw from "@/components/events/EventTeamDraw";
 import EventArmyMeta from "@/components/events/EventArmyMeta";
 import FacilityChips from "@/components/clubs/FacilityChips";
 import EventHero from "@/components/events/EventHero";
 import { getEventDetail } from "@/services/eventDetail.service";
 import { getEventMeta } from "@/services/meta.service";
-import { mayHaveArmyMeta } from "@/utils/event-meta";
+import { eventRecordsArmies, mayHaveArmyMeta } from "@/utils/event-meta";
 import { londonToday } from "@/services/bookingCalendar.service";
 import { getBuilderFor } from "@/services/armyBuilder.service";
+import { getMemberLists } from "@/services/resultArmies.service";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getMyMembership } from "@/services/memberships.service";
 import { getBuyableTickets, getTicketStanding } from "@/services/tickets.service";
@@ -117,20 +121,26 @@ export default async function EventPage({
 
   // Only for the results editor, so a winner can be linked to their profile
   // and the placing shows on it. Members-only by RLS, and a manager passes.
-  // One wave with the club's army switch, which the same editor reads.
-  const [members, builder] = event.canManageClub
+  // One wave with the club's army switch and its army lists, which the same
+  // editor reads: the club names which list somebody brought in the dialog it
+  // records the placing in.
+  const [members, builder, armyLists] = event.canManageClub
     ? await Promise.all([
         getRoster(event.clubId).catch(() => []),
         getBuilderFor(event.clubId).catch(() => null),
+        getMemberLists(event.clubId).catch(() => []),
       ])
-    : [[], null];
+    : [[], null, []];
   const placingRoster = members
     .filter((m) => m.status === "approved")
     .map((m) => ({ id: m.profileId, name: m.fullName }));
 
   // Two short strings, not the catalogue itself: the dialog fetches that when
   // it opens.
+  // The event's own games as well as the club's switch: the army fields are
+  // 40k's, and an event that names another game should not offer them.
   const records = builder?.enabled && builder.editionId && builder.catalogueVersion
+    && eventRecordsArmies(event.featuredGames)
     ? { editionId: builder.editionId, catalogueVersion: builder.catalogueVersion }
     : null;
 
@@ -180,6 +190,10 @@ export default async function EventPage({
         <ManageStrip links={[
           { label: "Edit event", href: `/clubs/${slug}/manage/events/${event.id}` },
           { label: "The draw", href: `/clubs/${slug}/manage/events/${event.id}/pairings` },
+          ...(event.teams.length
+            ? [{ label: "Teams",
+                 href: `/clubs/${slug}/manage/events/${event.id}/teams` }]
+            : []),
           { label: `Who is coming (${attendees.length})`,
             href: `/clubs/${slug}/manage/events/${event.id}/roster` },
         ]} />
@@ -250,6 +264,17 @@ export default async function EventPage({
         </Section>
       ) : null}
 
+      {/* Who entered, and how the teams stand. Above the individual results
+          because at a team event the team is the unit: somebody reading this
+          page wants to know how their team did before how they did. Public,
+          like the ticket types are: a tournament publishes who is playing. */}
+      {event.teams.length ? (
+        <Section title="Teams" icon={GroupWorkIcon} navLabel="Teams">
+          <EventTeams teams={event.teams} fixtures={event.teamFixtures}
+            faction={faction} viewerName={viewer?.full_name ?? null} />
+        </Section>
+      ) : null}
+
       {/* The club sees the section even when it is empty, because an empty
           results section is the prompt to fill it in — but only once the event
           has actually been played. Standings on a tournament nobody has turned
@@ -267,7 +292,7 @@ export default async function EventPage({
             viewerName={viewer?.full_name ?? null}
             admin={event.canManageClub
               ? { slug, eventKey: event.legacyId, eventId: event.id,
-                  roster: placingRoster, builder: records }
+                  roster: placingRoster, builder: records, lists: armyLists }
               : undefined}
           />
         </Section>
@@ -278,13 +303,28 @@ export default async function EventPage({
           draw is only any use to somebody playing in it. */}
       {/* Called what the console calls it, so a member and the club are talking
           about the same thing. */}
-      {event.pairings.length ? (
+      {event.pairings.length || event.teamFixtures.length || event.drawLocked ? (
         <Section title="The draw" icon={TableRestaurantIcon} navLabel="The draw">
-          <EventPairings
-            pairings={event.pairings}
-            faction={faction}
-            viewerName={viewer?.full_name ?? null}
-          />
+          {/* A team event's draw is the fixtures: the flat list of tables
+              underneath says who plays whom and never says which team they
+              are playing for, which is the whole question. */}
+          {event.teamFixtures.length ? (
+            <EventTeamDraw
+              fixtures={event.teamFixtures}
+              faction={faction}
+              viewerName={viewer?.full_name ?? null}
+            />
+          ) : event.pairings.length ? (
+            <EventPairings
+              pairings={event.pairings}
+              faction={faction}
+              viewerName={viewer?.full_name ?? null}
+            />
+          ) : (
+            <LockedNote
+              title="This part is for people who are coming"
+              body="The club has drawn the tables. Book a place and the draw appears here, whether or not you are a member." />
+          )}
         </Section>
       ) : null}
 

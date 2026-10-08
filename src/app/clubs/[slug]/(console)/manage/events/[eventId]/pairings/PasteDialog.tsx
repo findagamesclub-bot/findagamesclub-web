@@ -54,10 +54,31 @@ export default function PasteDialog({
             helperText="Straight out of a spreadsheet, or typed. A table number is optional, and one name on a line is a bye."
           />
 
-          <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-            Four shapes are understood: a table number and two names, two names,
-            &quot;Ann vs Ben&quot;, or a row out of a CSV.
-          </Typography>
+          {/* The list of four shapes named them and showed none of them, and
+              the client asked for a line they could copy. A worked example is
+              what a format description is for: read it once and you know
+              whether your spreadsheet will paste. Set in mono, because the
+              thing being demonstrated is a layout of columns. */}
+          <Stack spacing={1}
+            sx={{ p: 1.75, borderRadius: 1.5, backgroundColor: tokens.surface,
+                  border: `1px solid ${tokens.rule}` }}>
+            <Typography sx={{ fontFamily: mono, fontSize: "0.62rem", fontWeight: 700,
+                              letterSpacing: "0.1em", color: tokens.inkMuted }}>
+              FOUR SHAPES, ALL UNDERSTOOD
+            </Typography>
+            <Box component="pre" sx={{ m: 0, fontFamily: mono, fontSize: "0.78rem",
+                                       lineHeight: 1.7, color: tokens.ink,
+                                       whiteSpace: "pre-wrap" }}>
+{`1   Ann Shah      Ben Lowe     a table number and two names
+Ann Shah          Ben Lowe     two names, tables numbered from 1
+Ann Shah vs Ben Lowe           typed by hand
+1, Ann Shah, Ben Lowe          straight out of a CSV`}
+            </Box>
+            <Typography variant="caption" sx={{ color: tokens.inkMuted }}>
+              The gaps above are tabs, which is what a spreadsheet pastes. One
+              name on a line is a bye.
+            </Typography>
+          </Stack>
 
           {parsed.length ? (
             <Stack spacing={1}>

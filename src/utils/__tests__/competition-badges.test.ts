@@ -9,26 +9,19 @@ const make = (over: Partial<BadgeSource> & { competitionId: number }): BadgeSour
 
 const labels = (rows: ReturnType<typeof competitionBadges>) => rows.map((b) => b.label);
 
-// Winning a finished competition is a Champion; leading a running one is not.
-assert.deepEqual(
-  labels(competitionBadges([make({ competitionId: 1, completed: true, rank: 1 })])),
-  ["League Champion"]);
+// Leading a competition that is still running is the one place badge left
+// here. A finished first, second or third is a stored badge 0167 gives out, so
+// deriving one too would put two badges for the same win on one profile.
 assert.deepEqual(
   labels(competitionBadges([make({ competitionId: 1, rank: 1 })])),
   ["Current Leader"]);
-
-// The type label is used, so a campaign champion says campaign.
 assert.deepEqual(
-  labels(competitionBadges([
-    make({ competitionId: 2, typeLabel: "Campaign", type: "campaign", completed: true, rank: 1 }),
-  ])),
-  ["Campaign Champion"]);
-
-// Second and third in a finished competition, with the place spelled out.
-const podium = competitionBadges([make({ competitionId: 3, completed: true, rank: 2 })]);
-assert.deepEqual(labels(podium), ["Podium Finish"]);
-assert.match(podium[0].context, /2nd$/);
-// Fourth earns nothing.
+  competitionBadges([make({ competitionId: 1, completed: true, rank: 1 })]), []);
+assert.deepEqual(
+  competitionBadges([make({ competitionId: 3, completed: true, rank: 2 })]), []);
+assert.deepEqual(
+  competitionBadges([make({ competitionId: 3, completed: true, rank: 3 })]), []);
+// And fourth earned nothing before and earns nothing now.
 assert.deepEqual(competitionBadges([make({ competitionId: 3, completed: true, rank: 4 })]), []);
 
 // Undefeated needs five games, at least one win, and no losses.
@@ -50,18 +43,19 @@ assert.deepEqual(
 assert.deepEqual(
   competitionBadges([make({ competitionId: 5, type: "league", played: 9 })]), []);
 
-// One competition can earn more than one, ordered best first.
+// One competition can still earn more than one, ordered best first.
 assert.deepEqual(
   labels(competitionBadges([
     make({ competitionId: 6, type: "campaign", typeLabel: "Campaign",
-           completed: true, rank: 1, played: 6, wins: 5, losses: 0 }),
+           rank: 1, played: 6, wins: 5, losses: 0 }),
   ])),
-  ["Campaign Champion", "Undefeated Run", "Campaign Veteran"]);
+  ["Current Leader", "Undefeated Run", "Campaign Veteran"]);
 
-// Never more than six.
+// Never more than six. Eight competitions somebody is leading at once is not
+// realistic, but the cap is what stops a profile turning into a wall of chips.
 assert.equal(
   competitionBadges(Array.from({ length: 8 }, (_x, i) =>
-    make({ competitionId: i, completed: true, rank: 1 }))).length,
+    make({ competitionId: i, rank: 1 }))).length,
   6);
 
 console.log("competition-badges ok");

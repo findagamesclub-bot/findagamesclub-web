@@ -19,7 +19,7 @@ export type MyMembershipRow = {
   requested_tier_key: string | null;
   tier_requested_at: string | null;
   clubs: {
-    id: number; slug: string; name: string; city: string; logo_url: string | null;
+    id: number; slug: string; name: string; city: string; logo_url: string | null; logo_path: string | null;
     club_membership_tiers: TierRow[];
   };
 };
@@ -41,7 +41,7 @@ type Chain = {
 const COLUMNS = `
   id, status, tier_key, tier_assigned_at, joined_at, created_at, decline_reason,
   requested_tier_key, tier_requested_at,
-  clubs!inner(id, slug, name, city, logo_url,
+  clubs!inner(id, slug, name, city, logo_url, logo_path,
     club_membership_tiers(tier_key, label, price, price_duration, description,
                           is_basic, position, benefits, billing_options))`;
 

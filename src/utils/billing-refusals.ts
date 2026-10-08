@@ -25,6 +25,14 @@ const MESSAGES: [string, string][] = [
   ["CLAIM_ALREADY_ANSWERED",
    "Somebody has already answered this one. Reload to see where it got to."],
   ["CLAIM_NEEDS_REASON", "Give a reason. It is what they will be told."],
+  ["PLAN_UNKNOWN", "Pick monthly or yearly."],
+  ["NO_SUBSCRIPTION",
+   "There is nothing to bill on this listing yet, so there is no plan to change."],
+  ["ALREADY_ASKED",
+   "You have already asked to be featured. We will come back to you."],
+  ["REQUEST_NOT_FOUND", "That request is not here any more."],
+  ["REQUEST_ANSWERED",
+   "Somebody has already answered this one. Reload to see where it got to."],
 ];
 
 export function billingRefusal(error: unknown): string {

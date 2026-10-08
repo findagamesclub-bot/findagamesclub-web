@@ -26,6 +26,33 @@ export function getRounds(eventId: number): Promise<PairingRound[]> {
   return repo.findRounds(eventId);
 }
 
+/**
+ * Whether a published round is for the whole street or only for the room.
+ *
+ * The gate has never been membership, whatever the old switch label said: a
+ * ticket is what opens the draw, so somebody who booked a place without
+ * joining has always seen it. This is the case underneath that, which the
+ * client asked for: an open event where the draw belongs on the page beside
+ * the standings, the way Best Coast publishes one.
+ */
+export function getDrawPublic(eventId: number): Promise<boolean> {
+  return repo.findDrawPublic(eventId).catch(() => false);
+}
+
+export async function setDrawPublic(
+  eventId: number, open: boolean,
+): Promise<Result> {
+  try {
+    await repo.setDrawPublic(eventId, open);
+    return { ok: true,
+      notice: open
+        ? "Anybody can see a published round now."
+        : "Published rounds are back to the people coming." };
+  } catch (error) {
+    return { ok: false, error: refusalOf(error, "That did not save. Try again.") };
+  }
+}
+
 /** Names off the roster, for the pickers and the draw. */
 export async function getRoster(eventId: number) {
   return findRosterPlayers(eventId);
@@ -99,13 +126,24 @@ export async function removeMatch(pairingId: number, id: number): Promise<Result
   }
 }
 
+/**
+ * On show, or back to the club's own team.
+ *
+ * The toast says what the switch says and nothing about who: "Members can see
+ * this draw" was the old wording and it names a rule the code does not have,
+ * which is what sent the client looking for a way to let non-members in. Who a
+ * round on show reaches is the setting at the foot of the page, said once,
+ * under the switch.
+ */
 export async function publishRound(
   eventId: number, pairingId: number, published: boolean,
 ): Promise<Result> {
   try {
     await repo.setRoundPublished(eventId, pairingId, published);
     return { ok: true,
-      notice: published ? "Members can see this draw." : "Hidden from members." };
+      notice: published
+        ? "This round is on show."
+        : "This round is back to your team only." };
   } catch (error) {
     return { ok: false, error: refusalOf(error, "That did not save. Try again.") };
   }

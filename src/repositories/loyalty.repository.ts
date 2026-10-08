@@ -15,6 +15,40 @@ export async function findSettings(clubId: number) {
 }
 
 /**
+ * What rung somebody is on at each of several clubs.
+ *
+ * Through `member_loyalty_standing` (0156) rather than the table, because
+ * `club_loyalty_transactions_read` is own-rows-or-a-manager: a profile page
+ * read through RLS shows a clubmate nothing. The function hands back the
+ * lifetime total and nothing else, so the spendable balance never leaves the
+ * ledger.
+ */
+export async function findStandingsForProfile(
+  profileId: string, clubIds: number[],
+): Promise<{ club_id: number; lifetime: number }[]> {
+  if (!clubIds.length) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .rpc("member_loyalty_standing" as never,
+         { p_profile: profileId, p_clubs: clubIds } as never);
+  if (error) throw new Error(`Failed to load loyalty standings: ${error.message}`);
+  return (data ?? []) as { club_id: number; lifetime: number }[];
+}
+
+/** The ladders those clubs run, so the totals can be turned into a rung. */
+export async function findSettingsForClubs(clubIds: number[]) {
+  if (!clubIds.length) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("club_loyalty_settings")
+    .select("club_id, enabled, tiers")
+    .in("club_id", clubIds);
+
+  if (error) throw new Error(`Failed to load the loyalty programmes: ${error.message}`);
+  return data ?? [];
+}
+
+/**
  * Pay any anniversaries that have come round, then read the wallet.
  *
  * In that order, and on every read, because legacy works them out lazily too.

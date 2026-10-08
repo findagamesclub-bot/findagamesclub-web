@@ -1,4 +1,5 @@
 import type { MembershipTier } from "./clubDetail";
+import type { EventTeam, TeamFixture } from "./eventTeams";
 
 /** One army as it was fielded, from the result row's jsonb. */
 export type ResultArmy = {
@@ -9,6 +10,8 @@ export type ResultArmy = {
   mvpUnits: string[];
   /** Present only when the player had a saved list attached. */
   list: {
+    /** Null on an imported result: legacy stored the name and not the row. */
+    id: number | null;
     name: string | null;
     pointsLimit: string | null;
     totalPoints: number | null;
@@ -132,4 +135,13 @@ export type ClubEventDetail = {
    */
   hasNoticeboard: boolean;
   pairings: EventPairing[];
+  /** There is a draw on show and this reader has not earned it. */
+  drawLocked: boolean;
+  /**
+   * The teams at a team event, empty everywhere else. Who is playing is part
+   * of a tournament's public face, so these are not behind a ticket; the
+   * fixtures are, exactly as the individual draw is.
+   */
+  teams: EventTeam[];
+  teamFixtures: TeamFixture[];
 };

@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/services/auth.service";
 import { carryListingFrom, listingBackTarget } from "@/utils/back-link";
 import {
-  cancelListing, deleteListing, restartListing, startListing, submitListing,
+  cancelListing, chooseSubmissionPlan, deleteListing, restartListing, startListing,
+  submitListing,
 } from "@/services/submissions.service";
 
 export type ListingFlowState = { error?: string; notice?: string };
@@ -46,6 +47,14 @@ export async function submitListingAction(
 
   const id = Number(data.get("draft") ?? 0);
   if (!id) return { error: "That listing is not here any more." };
+
+  // Before sending, because once it is in the queue the row is frozen and the
+  // price the subscription opens at is read from this column.
+  const plan = String(data.get("plan") ?? "");
+  if (plan) {
+    const chosen = await chooseSubmissionPlan(id, plan);
+    if (!chosen.ok) return { error: chosen.error ?? "Pick monthly or yearly." };
+  }
 
   const result = await submitListing(id, viewer.full_name ?? "");
   if (!result.ok) return { error: result.error ?? "Could not send that. Try again." };

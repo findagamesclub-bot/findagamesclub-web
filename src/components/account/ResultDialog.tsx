@@ -17,9 +17,12 @@ import { recordResultAction, clearResultAction, type ResultState }
   from "@/app/account/games/actions";
 import MatchContextFields from "./MatchContextFields";
 import ArmyFields from "@/components/results/ArmyFields";
+import GameField from "@/components/results/GameField";
 import { useCatalogue } from "@/hooks/useCatalogue";
 import { type ResultArmy } from "@/utils/result-army";
 import { confirmationLabel, toConfirmation } from "@/utils/result-meta";
+import { playsFortyK } from "@/utils/event-meta";
+import { knownGames } from "@/utils/game-label";
 import { mono, tokens } from "@/lib/tokens";
 import type { MyGame } from "@/services/games.service";
 
@@ -54,6 +57,7 @@ export default function ResultDialog({
   const [deployment, setDeployment] = useState(game.deployment);
   const [terrain, setTerrain] = useState(game.terrain);
   const [confirmation, setConfirmation] = useState(game.confirmation);
+  const [title, setTitle] = useState(game.gameTitle);
 
   /**
    * Take the server's version whenever this is shut.
@@ -79,6 +83,7 @@ export default function ResultDialog({
     setDeployment(game.deployment);
     setTerrain(game.terrain);
     setConfirmation(game.confirmation);
+    setTitle(game.gameTitle);
   }
 
   // Settled or disputed results belong to the club. Saying so up front beats a
@@ -89,6 +94,13 @@ export default function ResultDialog({
   // does not run the builder has no builder to fetch, and sees the two free
   // text boxes it has always seen.
   const { catalogue, loading, failed } = useCatalogue(game.builder, open);
+
+  // The army half belongs to Warhammer 40,000, because the catalogue it reads
+  // is 40k's. Anything else, and the fields come off: the service clears what
+  // was recorded as well, so a game changed from 40k does not keep a faction
+  // nobody can see. `canonicalGame` inside `playsFortyK` is what makes
+  // "warhammer 40k" and "Warhammer 40,000" the same answer.
+  const recordsArmy = playsFortyK([title]);
 
   const [state, submit, busy] = useActionState<ResultState, FormData>(recordResultAction, {});
   const [clearState, clear, clearing] = useActionState<ResultState, FormData>(clearResultAction, {});
@@ -140,6 +152,7 @@ export default function ResultDialog({
           <input type="hidden" name="deployment" value={deployment} />
           <input type="hidden" name="terrain" value={terrain} />
           <input type="hidden" name="confirmation" value={canManageClub ? confirmation : ""} />
+          <input type="hidden" name="game" value={title} />
 
           <DialogContent dividers>
             <Stack spacing={2.5}>
@@ -152,23 +165,35 @@ export default function ResultDialog({
                   slotProps={{ htmlInput: { min: 0, step: "0.5" } }} />
               </Stack>
 
-              {/* A club that does not run the builder sees the two boxes it
-                  has always seen. Nothing about this dialog changes for them,
-                  which is the point of the switch being the club's. */}
+              {/* In front of the army fields, because it is what decides
+                  whether they appear. A club night is one table and one game,
+                  and the game was typed when the table was booked, so this
+                  opens with that and is usually left alone. */}
+              <GameField value={title} options={knownGames()}
+                onChange={setTitle} disabled={readOnly}
+                revealsArmy={game.builder !== null}
+                hasArmy={Boolean(game.armies.mine.factionId || game.armies.theirs.factionId
+                  || game.myArmy || game.theirArmy)} />
+
+              {/* Two switches, not one. The club decides whether it records
+                  armies at all; the game decides whether these particular
+                  fields mean anything. A club that plays 40k on Thursdays and
+                  Blood Bowl on Tuesdays was being asked for a detachment on
+                  both, which is the client's own example. */}
               <ArmyFields
-                builder={game.builder} catalogue={catalogue}
+                builder={recordsArmy ? game.builder : null} catalogue={catalogue}
                 loading={loading} failed={failed}
                 one={mine} two={theirs}
                 onOne={setMine} onTwo={setTheirs}
                 twoTitle={`${game.opponentName}'s army`}
-                fallback={
+                fallback={recordsArmy ? (
                   <Stack direction="row" spacing={2}>
                     <TextField name="myArmy" label="Your army" fullWidth
                       defaultValue={game.myArmy} placeholder="Death Guard" />
                     <TextField name="theirArmy" label="Their army" fullWidth
                       defaultValue={game.theirArmy} placeholder="Custodes" />
                   </Stack>
-                }
+                ) : null}
               />
 
               <MatchContextFields

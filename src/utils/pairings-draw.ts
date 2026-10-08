@@ -93,3 +93,22 @@ export function drawSummary(matches: DrawnMatch[]): string {
   if (byes) parts.push("one bye");
   return parts.join(" and ");
 }
+
+/**
+ * Which round tabs the console offers.
+ *
+ * Every round that exists, plus the next one to build, plus every number in
+ * between: a club drawing round four before round three has finished is
+ * ordinary at a tournament where one half of the hall runs ahead. An event
+ * that says it has five rounds offers all five from the start, because the
+ * organiser knows how many there are before any of them are drawn.
+ */
+export function roundTabs(
+  rounds: readonly { round: number }[], roundCount: number | null,
+): number[] {
+  const known = rounds.map((round) => round.round);
+  const upTo = roundCount && roundCount > 0 ? roundCount : Math.max(...known, 0) + 1;
+  const all = new Set<number>(known);
+  for (let n = 1; n <= Math.max(upTo, 1); n += 1) all.add(n);
+  return [...all].sort((a, b) => a - b);
+}

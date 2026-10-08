@@ -110,6 +110,8 @@ export type ClubDetail = {
   summary: string | null;
   description: string | null;
   logoUrl: string | null;
+  /** The stored file behind it, for the editor. Null for an imported logo. */
+  logoPath: string | null;
   isFeatured: boolean;
   announcement: string | null;
 

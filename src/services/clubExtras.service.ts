@@ -7,7 +7,10 @@ import { ticketBlockedReason } from "@/utils/ticket-eligibility";
 import { formatPrice } from "@/utils/format";
 import { betterOffer } from "@/utils/shop-pricing";
 import type { MembershipTier } from "@/types/clubDetail";
-import type { CoachingSlot, MerchItem, MerchOrder, Rivalry, ShopStanding } from "@/types/clubExtras";
+import type {
+  CoachingSlot, CoachingStanding, MerchItem, MerchOrder, Rivalry, ShopStanding,
+} from "@/types/clubExtras";
+import type { CoachingBookingRow } from "@/utils/coaching-bookings-filter";
 
 /** Rivalries, the club shop and the coaching calendar. */
 
@@ -181,6 +184,65 @@ export async function isCoachingOn(clubId: number): Promise<boolean> {
   return Boolean(settings?.enabled);
 }
 
+/**
+ * What this member's tier and wallet are worth against coaching.
+ *
+ * The same three reads `getShopStanding` makes, against a different benefit
+ * key: `coachingDiscountPercent`, which `tier-benefits.ts` has advertised on
+ * every tier page since stage 2 and which nothing applied until 0157.
+ */
+/**
+ * Every coaching booking at a club, for the club's own list.
+ *
+ * Through 0158's function, so the cancelled ones are in it. Numeric columns
+ * arrive over PostgREST as strings, which is the trap `club_event_door_list`
+ * already paid for: adding two of those concatenates.
+ */
+export async function getClubCoachingBookings(
+  clubId: number,
+): Promise<CoachingBookingRow[]> {
+  const rows = await repo.findClubCoachingBookings(clubId).catch(() => []);
+
+  return rows.map((row) => ({
+    id: row.booking_id,
+    name: row.member_name,
+    profileId: row.profile_id,
+    paid: row.payment_status === "paid",
+    cancelled: row.status === "cancelled",
+    refundStatus: (["not_due", "due", "refunded"].includes(row.refund_status)
+      ? row.refund_status : "not_due") as CoachingBookingRow["refundStatus"],
+    cancelReason: row.cancel_reason ?? "",
+    slotId: row.slot_id,
+    title: row.slot_title,
+    date: row.slot_date,
+    time: row.start_time,
+    total: Number(row.total_price) || 0,
+    pointsSpent: Number(row.loyalty_points_spent) || 0,
+  }));
+}
+
+export async function getCoachingStanding(
+  clubId: number, profileId: string,
+): Promise<CoachingStanding> {
+  const [tier, settings, wallet] = await Promise.all([
+    repo.findMemberTier(clubId, profileId),
+    loyaltyRepo.findSettings(clubId),
+    repo.findPointBalance(clubId, profileId),
+  ]);
+
+  const benefits = (tier?.benefits ?? {}) as Record<string, unknown>;
+  const clamp = (v: unknown) => Math.max(0, Math.min(100, Math.floor(Number(v ?? 0)) || 0));
+
+  return {
+    points: wallet,
+    pointValue: settings?.enabled && settings.point_value !== null
+      ? Number(settings.point_value) : null,
+    capPercent: clamp(benefits.loyaltyRedemptionCapPercent),
+    discountPercent: clamp(benefits.coachingDiscountPercent),
+    currency: "GBP",
+  };
+}
+
 export async function getCoaching(clubId: number, viewerId: string | null, from: string) {
   // Sequential on purpose. Slots are members-only and anon has no grant on the
   // table at all, so fetching them alongside the settings threw for every
@@ -192,10 +254,16 @@ export async function getCoaching(clubId: number, viewerId: string | null, from:
 
   // The true count, past RLS. The nested bookings below only carry the people
   // this reader may see, which for an ordinary member is themselves.
-  const seats = new Map(
-    (await repo.findCoachingSeats(clubId).catch(() => []))
-      .map((row) => [row.slot_id, row.taken]),
-  );
+  // One wave, not two: the standing needs the club and the viewer, both of
+  // which are already in hand, so it rides along with the seat count rather
+  // than costing a round trip of its own.
+  const [seatRows, standing] = await Promise.all([
+    repo.findCoachingSeats(clubId).catch(() => []),
+    viewerId
+      ? getCoachingStanding(clubId, viewerId).catch(() => null)
+      : Promise.resolve(null),
+  ]);
+  const seats = new Map(seatRows.map((row) => [row.slot_id, row.taken]));
 
   const mapped: CoachingSlot[] = slots.map((slot) => {
     const bookings = (slot as unknown as {
@@ -237,6 +305,7 @@ export async function getCoaching(clubId: number, viewerId: string | null, from:
     intro: settings.intro_text,
     policy: settings.policy_text,
     slots: mapped,
+    standing,
   };
 }
 

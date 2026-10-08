@@ -123,3 +123,35 @@ const valueOf = (fields: Record<string, string | string[]>): EventDraft => {
 }
 
 console.log("event-draft: all assertions passed");
+
+// How many the day is for. Its own figure, not the sum of the ticket types: a
+// club sells 40 tickets to a 50 player hall and keeps ten back for the door.
+{
+  const base = { title: "Open day", startDate: "2026-11-14" };
+  const form = (extra: Record<string, string>) => {
+    const data = new FormData();
+    for (const [k, v] of Object.entries({ ...base, ...extra })) data.set(k, v);
+    return data;
+  };
+
+  const said = parseEventDraft(form({ capacity: "50" }));
+  assert.ok(said.ok);
+  assert.equal(said.ok && said.value.capacity, 50);
+
+  const silent = parseEventDraft(form({}));
+  assert.ok(silent.ok);
+  assert.equal(silent.ok && silent.value.capacity, null,
+    "not said is a real answer, and nought is a different one");
+
+  const zero = parseEventDraft(form({ capacity: "0" }));
+  assert.equal(zero.ok && zero.value.capacity, 0);
+
+  const wrong = parseEventDraft(form({ capacity: "forty" }));
+  assert.equal(wrong.ok, false);
+  assert.ok(!wrong.ok && wrong.errors.capacity, "and a typo is named on the field");
+
+  const fractional = parseEventDraft(form({ capacity: "12.5" }));
+  assert.equal(fractional.ok, false, "half a person is not a capacity");
+}
+
+console.log("event-draft: capacity passed");

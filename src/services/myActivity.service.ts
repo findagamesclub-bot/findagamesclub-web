@@ -1,11 +1,13 @@
 import "server-only";
+import { clubLogoUrl } from "@/utils/club-media";
+import { publicUrl } from "@/lib/supabase/storage";
 
 import { needsQuote } from "@/utils/merch-bag";
 
 import { findMyCoaching, findMyOrders, findOpenSlots } from "@/repositories/myActivity.repository";
 import { londonToday } from "./bookingCalendar.service";
 
-type Club = { slug: string; name: string; logo_url: string | null };
+type Club = { slug: string; name: string; logo_url: string | null; logo_path: string | null };
 
 export type MyCoaching = {
   id: number;
@@ -67,7 +69,9 @@ export async function getMyCoaching(profileId: string): Promise<MyCoaching[]> {
         club: {
           slug: slot.clubs.slug,
           name: slot.clubs.name,
-          logoUrl: slot.clubs.logo_url,
+          logoUrl: clubLogoUrl(
+        { logoPath: slot.clubs.logo_path, logoUrl: slot.clubs.logo_url },
+        publicUrl),
         },
         title: slot.title,
         description: slot.description ?? "",
@@ -108,7 +112,9 @@ export async function getMyOrders(profileId: string): Promise<MyOrder[]> {
 
     return {
       id: row.id,
-      club: { slug: club.slug, name: club.name, logoUrl: club.logo_url },
+      club: { slug: club.slug, name: club.name, logoUrl: clubLogoUrl(
+        { logoPath: club.logo_path, logoUrl: club.logo_url },
+        publicUrl) },
       status: row.status,
       placedAt: row.created_at,
       updatedAt: row.status_updated_at,
@@ -177,7 +183,9 @@ export async function getOpenCoaching(
       club: {
         slug: slot.clubs.slug,
         name: slot.clubs.name,
-        logoUrl: slot.clubs.logo_url,
+        logoUrl: clubLogoUrl(
+        { logoPath: slot.clubs.logo_path, logoUrl: slot.clubs.logo_url },
+        publicUrl),
       },
       title: slot.title,
       date: slot.slot_date,

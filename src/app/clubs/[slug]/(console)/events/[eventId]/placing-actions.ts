@@ -32,6 +32,12 @@ export async function placingAction(
   }
 
   const placingId = Number(data.get("placingId"));
+  // Absent when the club does not record armies, which is a different
+  // instruction from "no list": one leaves what is there alone, the other
+  // takes it off.
+  const listField = data.get("listId");
+  const listId = listField === null ? undefined : Number(listField) || null;
+
   const result = await placings.savePlacing({
     eventId,
     placingId: Number.isFinite(placingId) && placingId > 0 ? placingId : null,
@@ -41,6 +47,7 @@ export async function placingAction(
     faction: String(data.get("faction") ?? ""),
     detachment: String(data.get("detachment") ?? ""),
     disposition: String(data.get("disposition") ?? ""),
+    listId,
   });
 
   refresh();

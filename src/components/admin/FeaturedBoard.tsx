@@ -29,6 +29,7 @@ import type { FeaturedSlotRow } from "@/repositories/featured.repository";
  */
 export default function FeaturedBoard({
   slots, clubs, today, defaultPricePence, defaultDays, showing,
+  prefillClubId = null, requestId = null,
 }: {
   slots: FeaturedSlotRow[];
   clubs: { id: number; name: string; city: string }[];
@@ -39,6 +40,8 @@ export default function FeaturedBoard({
    *  a list; stacking them put a form of five fields above the thing the page
    *  is usually opened to look at. */
   showing: "slots" | "book";
+  prefillClubId?: number | null;
+  requestId?: number | null;
 }) {
   const [state, act, working] =
     useActionState<FeaturedState, FormData>(featuredAction, {});
@@ -63,6 +66,8 @@ export default function FeaturedBoard({
     <Stack spacing={2.5}>
       {showing === "book" ? (
         <FeaturedBookForm
+          prefillClubId={prefillClubId}
+          requestId={requestId}
           clubs={clubs} today={today}
           defaultPricePence={defaultPricePence} defaultDays={defaultDays}
           act={act} working={working} />

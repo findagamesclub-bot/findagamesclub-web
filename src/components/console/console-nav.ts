@@ -2,6 +2,7 @@ import DashboardIcon from "@mui/icons-material/SpaceDashboard";
 import GroupsIcon from "@mui/icons-material/Groups";
 import MilitaryTechIcon from "@mui/icons-material/MilitaryTech";
 import BadgeIcon from "@mui/icons-material/AssignmentInd";
+import StarIcon from "@mui/icons-material/StarBorder";
 import EditIcon from "@mui/icons-material/EditNote";
 import EventSeatIcon from "@mui/icons-material/EventSeat";
 import ScoreboardIcon from "@mui/icons-material/Scoreboard";
@@ -63,6 +64,12 @@ export function consoleGroups(
         // Points at step one and stays lit across all five.
         { label: "Listing", href: at("/manage/listing/profile"),
           owns: at("/manage/listing"), icon: EditIcon, needs: "listing.edit" },
+        // Straight after Listing, because both are about the club's public
+        // face. There was nowhere in the console to read your own reviews at
+        // all before this: they were on the public page among the events and
+        // the leagues, which is a poor place to go looking for them.
+        { label: "Reviews", href: at("/manage/reviews"), icon: StarIcon,
+          needs: "listing.edit" },
         { label: "Team", href: at("/manage/team"), icon: BadgeIcon,
           needs: "team.manage" },
         // `billing.manage` is owner-only in the capability matrix, which is the

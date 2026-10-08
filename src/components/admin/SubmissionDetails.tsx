@@ -6,6 +6,7 @@ import CategoryIcon from "@mui/icons-material/Category";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import ScheduleIcon from "@mui/icons-material/Schedule";
 import Panel from "@/components/members/Panel";
+import SubmissionPhotos from "./SubmissionPhotos";
 import LongText from "@/components/ui/LongText";
 import { mono, tokens } from "@/lib/tokens";
 import type { draftValues } from "@/utils/draft-values";
@@ -92,6 +93,13 @@ export default function SubmissionDetails({ values }: { values: Values }) {
             value={joined(content.categories.map((c) => c.label))} />
         </Stack>
       </Panel>
+
+      <SubmissionPhotos
+        name={profile.name}
+        logoPath={content.logoPath}
+        photos={content.photos.map((photo) => ({
+          path: photo.path, src: photo.src, alt: photo.alt,
+        }))} />
 
       <Panel title="What it costs" icon={PaymentsIcon}>
         <Stack spacing={1.25}>

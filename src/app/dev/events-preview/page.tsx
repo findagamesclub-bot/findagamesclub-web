@@ -93,6 +93,42 @@ export default async function EventsPreviewPage({
       tickets: 1, total: 30, createdAt: "2026-08-15T09:00:00Z" },
   ];
 
+  const teams = [
+    { id: 1, name: "Oxford Oathsworn", position: 0, finalRank: 1,
+      placement: "Winners", captainProfileId: null,
+      players: [
+        { id: 11, profileId: null, name: "Ada Marchetti", position: 0 },
+        { id: 12, profileId: null, name: "Joe Matthews", position: 1 },
+      ] },
+    { id: 2, name: "Didcot Dreadnoughts", position: 1, finalRank: 2,
+      placement: "Runners up", captainProfileId: null,
+      players: [
+        { id: 21, profileId: null, name: "Tom Allen", position: 0 },
+        { id: 22, profileId: null, name: "Priya Raman", position: 1 },
+      ] },
+  ];
+
+  const fixtures = [
+    { id: 1, pairingId: 1, round: 1, tableLabel: "A",
+      teamOne: 1, teamOneName: "Oxford Oathsworn",
+      teamTwo: 2, teamTwoName: "Didcot Dreadnoughts",
+      scoreOne: 125, scoreTwo: 115, gamesOne: 1, gamesTwo: 1, position: 0,
+      published: true,
+      tables: [
+        { id: 101, tableLabel: "A1", playerOne: "Ada Marchetti", playerOneId: null,
+          playerTwo: "Tom Allen", playerTwoId: null,
+          scoreOne: 80, scoreTwo: 60, position: 0 },
+        { id: 102, tableLabel: "A2", playerOne: "Joe Matthews", playerOneId: null,
+          playerTwo: "Priya Raman", playerTwoId: null,
+          scoreOne: 45, scoreTwo: 55, position: 1 },
+      ] },
+    { id: 2, pairingId: 1, round: 1, tableLabel: "B",
+      teamOne: 1, teamOneName: "Abingdon Anvils",
+      teamTwo: null, teamTwoName: "",
+      scoreOne: null, scoreTwo: null, gamesOne: 0, gamesTwo: 0, position: 1,
+      published: true, tables: [] },
+  ];
+
   return (
     <Container maxWidth="lg" component="main" sx={{ py: 4 }}>
       <Stack spacing={5}>
@@ -114,7 +150,25 @@ export default async function EventsPreviewPage({
           <Typography variant="overline" color="text.secondary">Pairings</Typography>
           <PairingsBoard slug="didcot-wargames-didcot" eventId={1} rounds={rounds}
             roster={roster.map((row) => ({ profileId: null, name: row.fullName }))}
-            roundCount={5} faction={faction} showing={1} />
+            roundCount={5} faction={faction} showing={1} drawPublic={false}
+            builder={null} lists={[]} armies={{}}
+            teamEvent={false} teams={[]} fixtures={[]} />
+        </Stack>
+
+        <Divider />
+
+        <Stack spacing={2}>
+          <Typography variant="overline" color="text.secondary">
+            The same round as a team event
+          </Typography>
+          {/* The one shape the overflow sweep could not otherwise reach: a
+              fixture header and its tables are two levels of row inside one
+              card, and at 360 that is where a team name and a score meet. */}
+          <PairingsBoard slug="didcot-wargames-didcot" eventId={1} rounds={rounds}
+            roster={roster.map((row) => ({ profileId: null, name: row.fullName }))}
+            roundCount={5} faction={faction} showing={1} drawPublic={false}
+            builder={null} lists={[]} armies={{}}
+            teamEvent teams={teams} fixtures={fixtures} />
         </Stack>
 
         <Divider />
