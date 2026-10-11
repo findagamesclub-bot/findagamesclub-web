@@ -33,6 +33,7 @@ export default function TicketPointsField({
       name="redeemPoints"
       held={standing.points}
       max={price.maxPoints}
+      capPercent={standing.redemptionCapPercent}
       value={points}
       pointsOff={price.pointsOff}
       currency={standing.currency}

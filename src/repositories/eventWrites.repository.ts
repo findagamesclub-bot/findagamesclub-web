@@ -36,9 +36,12 @@ export type EventFields = {
   facilities: string[];
   info_board: string;
   bestcoast_link: string;
-  logo_src: string | null;
-  logo_alt: string | null;
-  logo_path: string | null;
+  // Optional since 0173: an event's pictures are a list and a trigger mirrors
+  // the first onto these, so `saveEvent` no longer names them. The insert
+  // paths still do.
+  logo_src?: string | null;
+  logo_alt?: string | null;
+  logo_path?: string | null;
 };
 
 /**

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/services/auth.service";
 import { saveOwnProfile } from "@/services/profiles.service";
+import { rotateMyMemberCode } from "@/services/memberCodes.service";
 import { SOCIAL_NETWORKS } from "@/utils/social-links";
 
 export type ProfileFormState = { error?: string };
@@ -45,4 +46,31 @@ export async function saveProfileAction(
   revalidatePath(`/members/${viewer.id}`);
   if (done !== `/members/${viewer.id}`) revalidatePath(done);
   redirect(done);
+}
+
+export type MemberCodeState = {
+  error?: string;
+  notice?: string;
+  /** The new one, so the panel shows it without waiting for a re-render. */
+  code?: string;
+};
+
+/**
+ * A new member code, on request.
+ *
+ * No `revalidatePath`: nothing else on the site renders somebody's own code,
+ * and the panel is handed the new one directly. Revalidating would redraw the
+ * badges, the records and the whole profile form to move eight characters.
+ */
+export async function memberCodeAction(
+  _prev: MemberCodeState,
+  data: FormData,
+): Promise<MemberCodeState> {
+  const viewer = await getCurrentProfile();
+  if (!viewer) return { error: "Your session has expired. Sign in and try again." };
+  if (String(data.get("intent") ?? "") !== "rotate") return {};
+
+  const result = await rotateMyMemberCode();
+  if (!result.ok) return { error: result.error };
+  return { notice: "New member code ready.", code: result.code };
 }

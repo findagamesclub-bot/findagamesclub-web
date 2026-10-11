@@ -49,7 +49,7 @@ export default async function ClubModerationPage({
     <Container maxWidth="lg" component="main" sx={{ py: { xs: 3, md: 4 } }}>
       <PageHead
         title="Reported"
-        lede="Things members have reported at your club. Read it in context, then leave it up or take it down. Taking something down keeps the thread together, and the person who wrote it is never told who reported them."
+        lede="Board posts, replies and messages members have reported at your club. Read it in context, then leave it up or take it down. Taking something down keeps the thread together, and the person who wrote it is never told who reported them."
       />
 
       <ModerationQueue

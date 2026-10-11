@@ -28,10 +28,11 @@ type Row = { name: string; profileId: string };
 /**
  * A team, and the order it plays in.
  *
- * The order is the point of this dialog, not an afterthought: board one plays
- * board one, so moving somebody up the list is the captain deciding who takes
+ * The order is the point of this dialog, not an afterthought: the draw starts
+ * by pairing first against first, so moving somebody up the list is the
+ * captain deciding who takes
  * the hardest game. That is why the rows have arrows rather than being sorted
- * by name, and why the number beside each one is set in mono as a board and
+ * by name, and why the number beside each one is set in mono as a position and
  * not drawn as a bullet.
  *
  * Names take free text and offer the roster, the same as the draw's own table
@@ -71,7 +72,7 @@ export default function TeamDialog({
   const names = roster.map((player) => player.name);
   const filled = rows.filter((row) => row.name.trim());
 
-  // Somebody typed into two boards is a team that cannot be drawn, so it is
+  // Somebody typed twice is a team that cannot be drawn, so it is
   // said here rather than refused after the save.
   const twice = filled
     .map((row) => row.name.trim().toLowerCase())
@@ -125,8 +126,8 @@ export default function TeamDialog({
                     freeSolo options={names} value={row.name} sx={{ flex: 1, minWidth: 0 }}
                     onInputChange={(_event, next) => set(index, next)}
                     renderInput={(params) => (
-                      // Labelled Player, not "Board 2": the mono number to
-                      // its left is already the board, and a field whose
+                      // Labelled Player, not "Player 2": the mono number to
+                      // its left is already the playing order, and a field whose
                       // label repeats the thing beside it is two elements
                       // doing one job.
                       <TextField {...params} label="Player" fullWidth />
@@ -138,16 +139,16 @@ export default function TeamDialog({
                       icon button everywhere else, so the size stays and the
                       gap is what stops a mis-tap on a phone. */}
                   <Stack direction="row" spacing={0.5} sx={{ pt: 0.75 }}>
-                    <IconButton size="small" aria-label={`Move board ${index + 1} up`}
+                    <IconButton size="small" aria-label={`Move player ${index + 1} up`}
                       disabled={index === 0} onClick={() => move(index, index - 1)}>
                       <ArrowUpwardIcon fontSize="small" />
                     </IconButton>
-                    <IconButton size="small" aria-label={`Move board ${index + 1} down`}
+                    <IconButton size="small" aria-label={`Move player ${index + 1} down`}
                       disabled={index === rows.length - 1}
                       onClick={() => move(index, index + 1)}>
                       <ArrowDownwardIcon fontSize="small" />
                     </IconButton>
-                    <IconButton size="small" aria-label={`Take board ${index + 1} off`}
+                    <IconButton size="small" aria-label={`Take player ${index + 1} off`}
                       disabled={rows.length === 1}
                       onClick={() => setRows(rows.filter((_r, i) => i !== index))}>
                       <CloseIcon fontSize="small" />
@@ -159,19 +160,21 @@ export default function TeamDialog({
 
             <Button startIcon={<AddIcon />} sx={{ mt: 1.5 }}
               onClick={() => setRows([...rows, { name: "", profileId: "" }])}>
-              Add a board
+              Add a player
             </Button>
 
             <Typography variant="caption" sx={{ display: "block", mt: 1,
                                                 color: tokens.inkMuted }}>
-              Board one plays the other team&apos;s board one, and so on down. Every
-              team should have the same number.
+              This is the order the draw starts from: the first here plays the
+              other team&apos;s first, the second plays their second, and so on.
+              Change any table afterwards on the draw. Every team should have
+              the same number of players.
             </Typography>
           </Box>
 
           {twice ? (
             <Typography variant="body2" sx={{ color: tokens.danger }}>
-              That is the same player on two boards.
+              That is the same player twice.
             </Typography>
           ) : null}
         </Stack>
@@ -185,7 +188,7 @@ export default function TeamDialog({
             teamId: team ? String(team.id) : "",
             name,
             position: String(team?.position ?? nextPosition),
-            // The captain is whoever is on board one and has an account, which
+            // The captain is whoever is first and has an account, which
             // is who a club means by it. A field asking the same question
             // twice is a field that can disagree with the list above it.
             captainProfileId: idOf(filled[0]?.name ?? ""),

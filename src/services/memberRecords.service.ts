@@ -174,10 +174,12 @@ export function groupUnlinked(rows: UnlinkedName[]): UnlinkedPerson[] {
 export async function linkMany(
   rows: { kind: "standing" | "result"; id: number }[],
   profileId: string,
+  /** Given when the person is not one of this club's own members. */
+  code: string | null = null,
 ): Promise<{ ok: boolean; done: number; error?: string }> {
   let done = 0;
   for (const row of rows) {
-    const result = await linkName(row.kind, row.id, profileId);
+    const result = await linkName(row.kind, row.id, profileId, code);
     if (!result.ok) {
       // Stops rather than carrying on: whatever refused the first one refuses
       // the rest, and a half-attached person is worse than an untouched one.
@@ -230,18 +232,23 @@ export async function linkName(
   kind: "standing" | "result",
   id: number,
   profileId: string | null,
+  code: string | null = null,
 ): Promise<{ ok: boolean; error?: string }> {
   try {
-    if (kind === "standing") await repo.linkStanding(id, profileId);
-    else await repo.linkResult(id, profileId);
+    if (kind === "standing") await repo.linkStanding(id, profileId, code);
+    else await repo.linkResult(id, profileId, code);
     return { ok: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     if (message.includes("not your club")) {
       return { ok: false, error: "Only the club can match its own results." };
     }
-    if (message.includes("not an approved member")) {
-      return { ok: false, error: "That person is not an approved member of this club." };
+    if (message.includes("MEMBER_CODE_NEEDED")) {
+      return {
+        ok: false,
+        error: "That person is not one of your members. Ask them for their member "
+          + "code and paste it in.",
+      };
     }
     return { ok: false, error: "Could not save that. Try again." };
   }

@@ -11,6 +11,7 @@ import { getClubDetail } from "@/services/clubDetail.service";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
 import { getRoster } from "@/services/memberships.service";
+import { namesFor } from "@/services/profiles.service";
 import { getMatchedNames, getUnlinkedNames, groupUnlinked }
   from "@/services/memberRecords.service";
 import MatchedList from "@/components/clubs/MatchedList";
@@ -58,9 +59,16 @@ export default async function ClubResultsPage({
 
   const members = roster.map((member) => ({ id: member.profileId, name: member.fullName }));
   const byId = new Map(members.map((member) => [member.id, member.name]));
+
+  // Somebody linked by their member code is not on this club's roster, so the
+  // map above has no name for them and the row read "A member" with no way of
+  // telling who. That is the one thing this list exists to let an owner check,
+  // so the leftovers are looked up by id. Usually nothing to fetch.
+  const strangers = await namesFor(
+    matched.map((row) => row.memberId).filter((id) => id && !byId.has(id)));
   const done = matched.map((row) => ({
     ...row,
-    memberName: byId.get(row.memberId) ?? "A member",
+    memberName: byId.get(row.memberId) ?? strangers.get(row.memberId) ?? "A member",
   }));
   const people = groupUnlinked(rows);
 

@@ -132,6 +132,10 @@ const MAP = {
   "claim-approved": "running",
   "claim-declined": "running",
   "content-reported": "running",
+  // 0177. Somebody put their own name to a result the club typed, which is
+  // the club's record being written by a person outside the club. Work for
+  // whoever runs it, and the only way a wrong claim gets noticed.
+  "event-name-claimed": "running",
   "listing-approved": "running",
   "listing-changes-needed": "running",
   "listing-declined": "running",

@@ -230,6 +230,7 @@ export default function SlotCard({
               <PointsField
                 held={standing!.points}
                 max={quote.maxPoints}
+                capPercent={standing!.capPercent}
                 value={points}
                 pointsOff={quote.pointsOff}
                 currency={standing!.currency}

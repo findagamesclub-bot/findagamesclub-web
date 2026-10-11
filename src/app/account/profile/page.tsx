@@ -5,6 +5,7 @@ import Typography from "@mui/material/Typography";
 import PageHead from "@/components/ui/PageHead";
 import Panel from "@/components/members/Panel";
 import MemberBadges from "@/components/members/MemberBadges";
+import MemberCodePanel from "@/components/members/MemberCodePanel";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import LinkButton from "@/components/ui/LinkButton";
 import ProfileForm from "@/components/members/ProfileForm";
@@ -12,6 +13,7 @@ import { getCurrentProfile } from "@/services/auth.service";
 import { getOwnDraft } from "@/services/profiles.service";
 import { getHeldBadges } from "@/services/memberBadges.service";
 import { getMemberRecords } from "@/services/memberRecords.service";
+import { getMyMemberCode } from "@/services/memberCodes.service";
 import { tokens } from "@/lib/tokens";
 
 export const metadata = { title: "Your profile" };
@@ -31,11 +33,12 @@ export default async function EditProfilePage() {
   const draft = await getOwnDraft(viewer.id);
   if (!draft) redirect("/auth/sign-in");
 
-  // One wave. Neither read needs the other, and both are small.
-  const [held, records] = await Promise.all([
+  // One wave. None of them needs the others, and all three are small.
+  const [held, records, memberCode] = await Promise.all([
     getHeldBadges(viewer.id).catch(() => []),
     getMemberRecords(viewer.id)
       .catch(() => ({ competitions: [], podiums: [], badges: [] })),
+    getMyMemberCode(),
   ]);
   const badges = [...held, ...records.badges];
 
@@ -76,6 +79,8 @@ export default async function EditProfilePage() {
             </LinkButton>
           </Box>
         </Panel>
+
+        <MemberCodePanel code={memberCode} />
 
         <ProfileForm draft={draft} />
       </Stack>

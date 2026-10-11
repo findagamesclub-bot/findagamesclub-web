@@ -48,6 +48,12 @@ declare
   w record; v_club bigint; v_spring bigint; v_may bigint; v_comp bigint;
   v_badges integer; v_badge bigint;
 begin
+  -- 0174 made the podium triggers CONSTRAINT triggers deferred to commit, so
+  -- that a save which deletes and re-inserts a whole standings table recounts
+  -- once at the end rather than revoking and re-awarding as it goes. Inside
+  -- one transaction that means they never fire, so this asks for them now and
+  -- the assertions below read what a committed save would leave.
+  set constraints all immediate;
   select * into w from who;
   select id into v_club from c;
   select id into v_spring from public.club_events where legacy_id = '2026-04-04-spring-rtt';

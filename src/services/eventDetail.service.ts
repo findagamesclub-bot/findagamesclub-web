@@ -7,6 +7,11 @@ import { findDrawPublic, findHasDraw, findRounds }
 import { findNotices } from "@/repositories/eventNotices.repository";
 import { findTeamDraw, findTeamEvent, findTeams }
   from "@/repositories/eventTeams.repository";
+import { findEventImages } from "@/repositories/eventImages.repository";
+import { clubImageUrl } from "@/utils/club-media";
+import { publicUrl } from "@/lib/supabase/storage";
+import { getRoundArmiesForReaders } from "./eventPairingArmies.service";
+import { listFromSnapshot } from "@/utils/army-snapshot";
 import { toMembershipTiers } from "@/utils/membership-tiers";
 import { formatPrice } from "@/utils/format";
 import { eventArt } from "@/utils/event-art";
@@ -44,27 +49,17 @@ function toArmy(raw: unknown): ResultArmy | null {
   if (!raw || typeof raw !== "object") return null;
   const a = raw as Record<string, unknown>;
 
-  const snapshot = a.armyListVersionSnapshot as Record<string, unknown> | undefined;
-  const rawUnits = Array.isArray(snapshot?.units) ? (snapshot!.units as Record<string, unknown>[]) : [];
-
+  // Read through the shared snapshot reader, so a placing and a table of the
+  // draw cannot disagree about the same list on the same page.
   return {
     factionLabel: (a.factionLabel as string) || null,
     detachment: (a.detachment as string) || null,
     disposition: (a.disposition as string) || null,
     mvpUnits: Array.isArray(a.mvpUnits) ? (a.mvpUnits as string[]).filter(Boolean) : [],
-    list: snapshot
-      ? {
-          id: typeof a.armyListId === "number" ? a.armyListId : null,
-          name: (a.armyListName as string) || null,
-          pointsLimit: (snapshot.pointsLimit as string) || null,
-          totalPoints: typeof snapshot.totalPoints === "number" ? snapshot.totalPoints : null,
-          units: rawUnits.map((u) => ({
-            name: String(u.unitName ?? ""),
-            quantity: Number(u.quantity ?? 1),
-            points: Number(u.linePoints ?? u.unitPoints ?? 0),
-          })).filter((u) => u.name),
-        }
-      : null,
+    list: listFromSnapshot(a.armyListVersionSnapshot, {
+      id: typeof a.armyListId === "number" ? a.armyListId : null,
+      name: (a.armyListName as string) || null,
+    }),
   };
 }
 
@@ -115,25 +110,39 @@ function pairScore(one: unknown, two: unknown): string | null {
  */
 async function readPairings(eventId: number, forClub: boolean): Promise<EventPairing[]> {
   const rounds = await findRounds(eventId).catch(() => []);
-  return rounds
+  const shown = rounds
     // A round the club has not finished building belongs to the club. The
     // policy says the same thing; this is what stops it reaching the page for
     // somebody the policy does let read it, which a manager is.
-    .filter((round) => round.published || forClub)
-    .map((round) => ({
-      id: round.id,
-      round: round.round,
-      label: round.label || null,
-      published: round.published,
-      matches: round.matches.map((match) => ({
-        table: match.tableLabel || null,
-        playerOne: match.playerOne,
-        playerTwo: match.playerTwo,
-        // Both or neither. One score on its own is half a result and reads as
-        // a walkover that nobody recorded.
-        score: pairScore(match.scoreOne, match.scoreTwo),
-      })).filter((match) => match.playerOne || match.playerTwo),
-    }));
+    .filter((round) => round.published || forClub);
+
+  // The armies need the match ids the rounds produced, so this cannot join the
+  // page's own wave. One read for every table on the event rather than one per
+  // round, which is what the console already does. 0172 is what lets a reader
+  // who is not in the club see them at all: before it the tables were public
+  // on a published round and the armies on them were not, so a visitor read a
+  // tournament that looked like nobody had recorded an army.
+  const armies = await getRoundArmiesForReaders(
+    shown.flatMap((round) => round.matches.map((match) => match.id)));
+
+  return shown.map((round) => ({
+    id: round.id,
+    round: round.round,
+    label: round.label || null,
+    published: round.published,
+    matches: round.matches.map((match) => ({
+      table: match.tableLabel || null,
+      playerOne: match.playerOne,
+      playerTwo: match.playerTwo,
+      // Both or neither. One score on its own is half a result and reads as
+      // a walkover that nobody recorded.
+      score: pairScore(match.scoreOne, match.scoreTwo),
+      scoreOne: match.scoreOne,
+      scoreTwo: match.scoreTwo,
+      armyOne: armies[`${match.id}:one`] ?? null,
+      armyTwo: armies[`${match.id}:two`] ?? null,
+    })).filter((match) => match.playerOne || match.playerTwo),
+  }));
 }
 
 function directions(name: string | null, address: string | null, postcode: string | null) {
@@ -236,7 +245,12 @@ export async function getEventDetail(
   // Stage 3 nothing could have its own, so this only ever read the club's and
   // an uploaded poster went nowhere.
   const image = eventArt(
-    { logoSrc: row.logo_src, logoAlt: row.logo_alt, title: row.title }, clubArt);
+    {
+      logoSrc: clubImageUrl(
+        { src: row.logo_src, storagePath: row.logo_path }, publicUrl),
+      logoAlt: row.logo_alt,
+      title: row.title,
+    }, clubArt);
 
   return {
     id: row.id,
@@ -277,6 +291,15 @@ export async function getEventDetail(
     myBookingReference: myBookings[0]?.reference ?? null,
     myBookingCount: myBookings.length,
     myCancelledReference: myCancelled?.reference ?? null,
+
+    // Resolved here rather than in the component, the same way `clubImageUrl`
+    // is resolved once at the service boundary for a club: half of these are
+    // an imported URL and half are a path in our own bucket, and nothing
+    // drawing them should have to know which.
+    images: (await findEventImages(row.id).catch(() => []) ?? []).map((image) => ({
+      src: clubImageUrl({ src: image.src, storagePath: image.storage_path }, publicUrl),
+      alt: (image.alt ?? "").trim() || row.title,
+    })).filter((image) => image.src),
 
     canSeePrivate,
     infoBoard: canSeePrivate ? row.info_board : null,

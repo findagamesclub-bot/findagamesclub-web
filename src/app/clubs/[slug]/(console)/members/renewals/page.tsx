@@ -13,6 +13,7 @@ import { getClubRenewals } from "@/services/renewals.service";
 import { countRenewals } from "@/utils/renewal-filter";
 import { clubIdentity } from "@/utils/club-identity";
 import { backTarget } from "@/utils/back-link";
+import { londonToday } from "@/services/bookingCalendar.service";
 
 export async function generateMetadata({ params }: PageProps<"/clubs/[slug]/members/renewals">) {
   const { slug } = await params;
@@ -82,7 +83,7 @@ export default async function ClubRenewalsPage({
         </Box>
       ) : null}
 
-      <RenewalBrowser rows={rows} slug={club.slug}
+      <RenewalBrowser rows={rows} slug={club.slug} today={londonToday()}
         tiers={club.membershipTiers} faction={faction} />
     </Container>
   );

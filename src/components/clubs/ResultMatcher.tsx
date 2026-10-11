@@ -8,6 +8,7 @@ import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+import MemberCodeField, { type Linked } from "@/components/results/MemberCodeField";
 import { useActionToast } from "@/components/ui/Toaster";
 import { acceptSuggestionsAction, linkPersonAction, type LinkState }
   from "@/app/clubs/[slug]/(console)/manage/results/actions";
@@ -42,7 +43,13 @@ function PersonBlock({
   const [state, submit, busy] = useActionState<LinkState, FormData>(linkPersonAction, {});
   useActionToast(state);
   const [picked, setPicked] = useState<Member | null>(suggestion);
+  // Somebody from another club, found by the code they handed over. Kept apart
+  // from `picked` because the roster picker cannot show a person who is not on
+  // the roster, so the two need different places to say who they found.
+  const [byCode, setByCode] = useState<Linked | null>(null);
   const [expanded, setExpanded] = useState(false);
+
+  const who = byCode ?? picked;
 
   const shown = expanded ? person.rows : person.rows.slice(0, SHOW_ROWS);
   const hidden = person.rows.length - shown.length;
@@ -51,7 +58,8 @@ function PersonBlock({
     <Box component="form" action={submit}
       sx={{ px: 2.25, py: 2, borderTop: `1px solid ${tokens.rule}` }}>
       <input type="hidden" name="slug" value={slug} />
-      <input type="hidden" name="profileId" value={picked?.id ?? ""} />
+      <input type="hidden" name="profileId" value={who?.id ?? ""} />
+      <input type="hidden" name="memberCode" value={byCode?.code ?? ""} />
       <input type="hidden" name="rows"
         value={person.rows.map((row) => `${row.kind}:${row.id}`).join(",")} />
 
@@ -71,6 +79,7 @@ function PersonBlock({
         <Autocomplete
           options={roster}
           value={picked}
+          disabled={Boolean(byCode)}
           onChange={(_event, value) => setPicked(value)}
           getOptionLabel={(option) => option.name}
           isOptionEqualToValue={(option, value) => option.id === value.id}
@@ -92,12 +101,22 @@ function PersonBlock({
             row already says how many results there are, so a second number
             here read as "match two people". */}
         <Button type="submit" size="small" variant="contained" loading={busy}
-          disabled={!picked}
+          disabled={!who}
           sx={{ flexShrink: 0, minWidth: 96, bgcolor: faction.base,
                 "&:hover": { bgcolor: faction.deep } }}>
           Match
         </Button>
       </Stack>
+
+      <Box sx={{ mb: 1.5 }}>
+        <MemberCodeField
+          slug={slug} linked={byCode} onFound={setByCode}
+          onClear={() => setByCode(null)}
+          unlinkedNote={picked
+            ? ""
+            : "A visitor who played here will not be on the list above."}
+        />
+      </Box>
 
       {/* The rows stay readable. An owner about to attach twelve results to
           somebody should be able to see what they are. */}

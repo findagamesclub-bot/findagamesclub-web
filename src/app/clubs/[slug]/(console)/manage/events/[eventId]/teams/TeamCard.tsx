@@ -9,9 +9,9 @@ import type { EventTeam } from "@/types/eventTeams";
 import type { TeamStanding } from "@/utils/team-standings";
 
 /**
- * One team, with its boards in the order they play.
+ * One team, with its players in the order they play.
  *
- * The board number is the point of the list, so it carries the mono treatment
+ * The playing order is the point of the list, so it carries the mono treatment
  * figures get everywhere else here and the name reads as the thing beside it.
  * A player with no account is shown exactly the same, because at the door that
  * is most of them and dimming them would read as something being wrong.
@@ -76,7 +76,7 @@ export default function TeamCard({
             ? `${standing!.won}-${standing!.drawn}-${standing!.lost} · `
               + `${standing!.points} PTS · ${standing!.tablesWon} `
               + `${standing!.tablesWon === 1 ? "TABLE" : "TABLES"} WON`
-            : `${team.players.length} ${team.players.length === 1 ? "BOARD" : "BOARDS"} · NOT PLAYED YET`}
+            : `${team.players.length} ${team.players.length === 1 ? "PLAYER" : "PLAYERS"} · NOT PLAYED YET`}
         </Typography>
 
         <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: "wrap" }}>

@@ -173,6 +173,39 @@ export async function drawRound(
   }
 }
 
+/**
+ * The club's own score for a fixture, or clearing it back to the total.
+ *
+ * Both or neither, decided here as well as in SQL: a form field is a claim,
+ * and a half-typed pair would otherwise reach a constraint and come back as a
+ * 23514 rather than as words.
+ */
+export async function scoreFixture(
+  eventId: number, id: number, one: string, two: string,
+): Promise<Result> {
+  const blank = one.trim() === "" && two.trim() === "";
+  if (!blank && (one.trim() === "" || two.trim() === "")) {
+    return { ok: false, error: "Score both teams, or clear both to go back to the players' total." };
+  }
+
+  const read = (raw: string) => Math.floor(Number(raw.trim()));
+  if (!blank && ([one, two].some((raw) => !/^\d{1,4}$/.test(raw.trim())))) {
+    return { ok: false, error: "A team score is a whole number, 0 or more." };
+  }
+
+  try {
+    await repo.saveTeamMatchPoints(id, blank ? null : read(one), blank ? null : read(two));
+    return {
+      ok: true,
+      notice: blank
+        ? "Back to the players' total."
+        : "Team score saved.",
+    };
+  } catch (error) {
+    return { ok: false, error: refusalOf(error, "That did not save. Try again.") };
+  }
+}
+
 export async function removeFixture(eventId: number, id: number): Promise<Result> {
   try {
     await repo.deleteFixture(eventId, id);

@@ -3,7 +3,8 @@ import { clubLogoUrl } from "@/utils/club-media";
 import { publicUrl } from "@/lib/supabase/storage";
 
 import { findOwnedClubs } from "@/repositories/ownerInbox.repository";
-import { isLocked, safeDeployment, toConfirmation, type ConfirmationState }
+import { isLocked, matchSetupFor, safeDeployment, toConfirmation,
+  type ConfirmationState }
   from "@/utils/result-meta";
 
 import * as repo from "@/repositories/games.repository";
@@ -222,11 +223,19 @@ export async function recordResult(params: {
       opponentScore: params.iBooked ? theirScore : myScore,
       bookedByArmy: params.iBooked ? params.myArmy : params.theirArmy,
       opponentArmy: params.iBooked ? params.theirArmy : params.myArmy,
-      mission: (params.mission ?? "").trim(),
-      // Never sent raw: the column has a check constraint, and a stale value
-      // from an old page would be a 23514 rather than a message.
-      deployment: safeDeployment(params.deployment),
-      terrain: (params.terrain ?? "").trim(),
+      // Emptied for a game that does not show those fields, the same way
+      // `armiesFor` empties the army half. Hiding a field is not the same as
+      // emptying it: without this a 40k result corrected to Blood Bowl keeps
+      // a mission and a deployment nobody can see or edit.
+      //
+      // `safeDeployment` still runs on what comes back, because the column has
+      // a check constraint and a stale value from an old page would be a 23514
+      // rather than a message.
+      ...matchSetupFor(params.game, {
+        mission: (params.mission ?? "").trim(),
+        deployment: safeDeployment(params.deployment),
+        terrain: (params.terrain ?? "").trim(),
+      }),
       confirmation: (params.confirmation ?? "").trim(),
       game: params.game,
       armies: (() => {
@@ -299,9 +308,11 @@ export async function recordClubResult(params: {
       opponentScore: params.awayScore,
       bookedByArmy: params.homeArmy,
       opponentArmy: params.awayArmy,
-      mission: (params.mission ?? "").trim(),
-      deployment: safeDeployment(params.deployment),
-      terrain: (params.terrain ?? "").trim(),
+      ...matchSetupFor(params.game, {
+        mission: (params.mission ?? "").trim(),
+        deployment: safeDeployment(params.deployment),
+        terrain: (params.terrain ?? "").trim(),
+      }),
       confirmation: (params.confirmation ?? "").trim(),
       game: params.game,
       armies: armiesFor(params.game, params.armies),

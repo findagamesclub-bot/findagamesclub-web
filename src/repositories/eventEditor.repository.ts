@@ -84,6 +84,8 @@ function toEvent(
     logoSrc: text(row.logo_src),
     logoAlt: text(row.logo_alt),
     logoPath: text(row.logo_path),
+    // Filled in by the service, which reads them through 0173's function.
+    images: [],
     status: row.status,
     publishedAt: row.published_at,
     cancelReason: text(row.cancel_reason),

@@ -44,7 +44,11 @@ export default function EventTeams({ teams, fixtures, faction, viewerName }: {
     <Stack spacing={1.5}>
       <Typography variant="caption" sx={{ color: tokens.inkMuted }}>
         {placed
-          ? "The club has given out the places. Points are what the teams' own tables added up to."
+          // Not "what the tables added up to" any more. Since 0176 a club can
+          // score a fixture itself, so the figure in this column is whichever
+          // of the two the club runs on, and naming only one of them is the
+          // stale-copy fault that keeps turning up.
+          ? "The club has given out the places. Points are what each round was scored at."
           : played
             ? "How it stands so far. The club gives out the places at the end, so this is the running order and not the result."
             : "Nobody has played yet, so this is just who entered."}

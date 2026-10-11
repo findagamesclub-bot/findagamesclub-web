@@ -92,7 +92,7 @@ export default async function PairingsPage({
         // to follow the event: "everybody coming is shuffled onto a table" is
         // not what happens at a team event and reads as the wrong page.
         lede={teamEvent
-          ? "Which team plays which, and who plays whom inside it, round by round. Wargamers call these the pairings. Make the draw and your teams are shuffled against each other, with a table for board one, board two and so on."
+          ? "Which team plays which, and who plays whom inside it, round by round. Wargamers call these the pairings. Make the draw and your teams are shuffled against each other, with a table for each pair of players. Change any table afterwards, and score a fixture yourself if your format does not total the players."
           : "Who plays whom, on which table, round by round. Wargamers call these the pairings. Make the draw and everybody coming is shuffled onto a table, two at a time."}
       />
 

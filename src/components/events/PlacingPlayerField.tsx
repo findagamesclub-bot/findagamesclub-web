@@ -20,7 +20,7 @@ export default function PlacingPlayerField({
 }: {
   roster: { id: string; name: string }[];
   name: string;
-  onPick: (profileId: string | null) => void;
+  onPick: (member: { id: string; name: string } | null) => void;
 }) {
   return (
     <Autocomplete<{ id: string; name: string }, false, false, true>
@@ -35,13 +35,13 @@ export default function PlacingPlayerField({
       }}
       getOptionLabel={(option) => typeof option === "string" ? option : option.name}
       onChange={(_event, value) =>
-        onPick(typeof value === "string" || !value ? null : value.id)}
+        onPick(typeof value === "string" || !value ? null : value)}
       renderInput={(params) => (
         <TextField
           {...params}
           name="name" label="Player" required
           helperText={roster.length
-            ? "Pick a member so it shows on their profile and their army lists appear below, or type any name."
+            ? "Pick a member, or type any name off the results sheet."
             : "Whoever finished in this place."}
           slotProps={{
             ...params.slotProps,

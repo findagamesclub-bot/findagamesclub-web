@@ -316,6 +316,8 @@ export default async function ClubMembersPage({
                     tierKey={m.tierKey}
                     requestedTierKey={m.requestedTierKey}
                     tierRequestedAt={m.tierRequestedAt}
+                    joinedAt={m.joinedAt}
+                    today={londonToday()}
                     tiers={club.membershipTiers}
                     standing={standing(payments.get(m.membershipId) ?? [], m.tierKey, m.tierAssignedAt)}
                     payments={payments.get(m.membershipId) ?? []}

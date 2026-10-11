@@ -19,9 +19,19 @@ import { tokens } from "@/lib/tokens";
  * control belongs in front of it.
  */
 export default function GameField({
-  value, options, onChange, disabled = false, revealsArmy, hasArmy = false,
+  value, recorded, options, onChange, disabled = false, revealsArmy,
+  hasArmy = false, hasSetup = false,
 }: {
   value: string;
+  /**
+   * The game as it is stored, so the warning can tell a change from an open.
+   *
+   * Without it the warning fired the moment a dialog opened on any result
+   * whose stored game is not 40k but which carries 40k detail from before
+   * that rule existed. On a settled result, where the field is disabled and
+   * Save is off, it was warning about a save nobody could make.
+   */
+  recorded: string;
   /** The games the club lists, in its own order. */
   options: string[];
   onChange: (game: string) => void;
@@ -42,9 +52,32 @@ export default function GameField({
    * without being told. This is what makes it said out loud.
    */
   hasArmy?: boolean;
+  /**
+   * Whether a mission, deployment or terrain is recorded on this result.
+   *
+   * Cleared by the same move for the same reason, and unlike the army half it
+   * does not depend on the club recording armies: the setup fields are 40k's
+   * own and go whatever the club has switched on.
+   */
+  hasSetup?: boolean;
 }) {
   const named = canonicalGame(value);
-  const clears = revealsArmy && hasArmy && named !== "Warhammer 40,000";
+  // Only once the game has actually moved. "Saving now also clears" is about
+  // a change somebody just made, not about data that was already like that.
+  const moved = named !== canonicalGame(recorded);
+  const off = moved && named !== "Warhammer 40,000";
+  const losesArmy = off && revealsArmy && hasArmy;
+  const losesSetup = off && hasSetup;
+  const clears = losesArmy || losesSetup;
+
+  // Named rather than lumped together, because a club reading this has to know
+  // what it is about to lose. "Details" would be a word for both and a warning
+  // about neither.
+  const going = losesArmy && losesSetup
+    ? "the armies and the mission, deployment and terrain"
+    : losesArmy
+      ? "the armies"
+      : "the mission, deployment and terrain";
 
   return (
     <Autocomplete
@@ -64,7 +97,7 @@ export default function GameField({
           {...params}
           label="Game"
           helperText={clears
-            ? "Saving now also clears the armies recorded on this result. Put the game back to Warhammer 40,000 to keep them."
+            ? `Saving now also clears ${going} recorded on this result. Put the game back to Warhammer 40,000 to keep them.`
             : revealsArmy
               ? named === "Warhammer 40,000"
                 ? "Faction, detachment and disposition are below."

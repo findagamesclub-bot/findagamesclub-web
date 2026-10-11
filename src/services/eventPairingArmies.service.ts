@@ -3,7 +3,9 @@ import "server-only";
 import * as repo from "@/repositories/eventPairingArmies.repository";
 import { setResultList } from "./resultArmies.service";
 import { pairingRefusal } from "@/utils/event-refusals";
+import { listFromSnapshot } from "@/utils/army-snapshot";
 import type { Result } from "./eventEditor.service";
+import type { ResultArmy } from "@/types/event";
 
 /**
  * The armies on a draw, which is the half stage 8 built and never gave a
@@ -46,6 +48,56 @@ export type PairingArmy = {
   listId: number | null;
   listName: string;
 };
+
+/**
+ * The same army, in the shape a reader's components already take.
+ *
+ * `PairingArmy` is the console's shape: it leads with `factionId` because the
+ * dialog has to seed a picker with it. A reader never picks anything, and the
+ * placing card and the round result have to agree about a list, so the public
+ * side reuses `ResultArmy` rather than growing a second army type.
+ */
+export function readerArmy(row: {
+  faction_label: string; detachment: string; disposition: string;
+  list_id: number | null; list_name: string; snapshot: unknown;
+  mvp_units: string[] | null;
+}): ResultArmy | null {
+  const faction = (row.faction_label ?? "").trim();
+  const list = listFromSnapshot(row.snapshot, {
+    id: row.list_id, name: row.list_name,
+  });
+
+  // A row with no faction and no list is a row `put_result_army` would have
+  // deleted. Returning an empty army would draw an "army" line saying nothing.
+  if (!faction && !list) return null;
+
+  return {
+    factionLabel: faction || null,
+    detachment: (row.detachment ?? "").trim() || null,
+    disposition: (row.disposition ?? "").trim() || null,
+    mvpUnits: (row.mvp_units ?? []).filter(Boolean),
+    list,
+  };
+}
+
+/**
+ * What each side of each table played, keyed `<matchId>:<side>`.
+ *
+ * The reader's half of `getRoundArmies`, which answers the console. One read
+ * for the whole event, same as that one: five rounds of twenty tables is one
+ * query, not two hundred.
+ */
+export async function getRoundArmiesForReaders(
+  matchIds: number[],
+): Promise<Record<string, ResultArmy>> {
+  const rows = await repo.findPairingArmies(matchIds).catch(() => []);
+  const out: Record<string, ResultArmy> = {};
+  for (const row of rows) {
+    const army = readerArmy(row);
+    if (army) out[`${row.source_id}:${row.side}`] = army;
+  }
+  return out;
+}
 
 export async function getRoundArmies(
   matchIds: number[],

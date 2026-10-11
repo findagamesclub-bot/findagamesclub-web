@@ -9,6 +9,7 @@ import { formatPounds } from "@/utils/format";
 import type { BagTotal } from "@/utils/merch-bag";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { ShopStanding } from "@/types/clubExtras";
+import { pointsCapNote } from "@/utils/points-cap";
 
 /** Everything that comes off the price, and the button that commits to it. */
 export default function BagSummary({
@@ -125,7 +126,8 @@ function PointsField({
         value={points || ""}
         onChange={(event) =>
           onPoints(Math.max(0, Math.min(bag.maxPoints, Number(event.target.value) || 0)))}
-        helperText={`You have ${standing.points}. Up to ${bag.maxPoints} on this order.`}
+        helperText={pointsCapNote(standing.points, bag.maxPoints,
+          standing.redemptionCapPercent)}
         slotProps={{ htmlInput: { min: 0, max: bag.maxPoints } }}
       />
     );

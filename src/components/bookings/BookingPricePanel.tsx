@@ -6,6 +6,7 @@ import Typography from "@mui/material/Typography";
 import { formatPounds } from "@/utils/format";
 import { priceBooking, type BookingStanding } from "@/utils/booking-pricing";
 import { tokens } from "@/lib/tokens";
+import { pointsCapNote } from "@/utils/points-cap";
 
 /**
  * What this table costs you, and what you can pay with.
@@ -35,7 +36,8 @@ export default function BookingPricePanel({
           value={points || ""}
           onChange={(event) =>
             onPoints(Math.max(0, Math.min(price.maxPoints, Number(event.target.value) || 0)))}
-          helperText={`You have ${standing.points}. Up to ${price.maxPoints} on this booking.`}
+          helperText={pointsCapNote(standing.points, price.maxPoints,
+            standing.redemptionCapPercent)}
           slotProps={{ htmlInput: { min: 0, max: price.maxPoints } }}
         />
       ) : (

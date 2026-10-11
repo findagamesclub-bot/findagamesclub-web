@@ -40,6 +40,10 @@ export type EventDraft = {
   logoSrc: string;
   logoAlt: string;
   logoPath: string;
+  /** Every picture, first one first. The first is the hero (0173). */
+  images: { src: string; path: string | null; alt: string }[];
+  /** Files behind pictures taken off the list, deleted once the save lands. */
+  removedImages: string[];
 };
 
 export const EVENT_STATUSES = ["draft", "published", "cancelled"] as const;
@@ -141,6 +145,23 @@ export function parseEventDraft(form: FormData): Parsed<EventDraft> {
       logoSrc: text(form, "logoSrc"),
       logoAlt: text(form, "logoAlt"),
       logoPath: text(form, "logoPath"),
+      // Posted as one hidden field per picture, in the order they appear, the
+      // same shape `PhotoEditor` already uses. Anything that is not the shape
+      // this expects is dropped rather than saved as a row nothing can draw:
+      // what comes out of a form is a claim, not a fact.
+      removedImages: form.getAll("removedEventPhoto").map(String).filter(Boolean),
+      images: form.getAll("eventPhoto").flatMap((raw) => {
+        if (typeof raw !== "string") return [];
+        try {
+          const shot = JSON.parse(raw) as Record<string, unknown>;
+          const src = typeof shot.src === "string" ? shot.src : "";
+          const path = typeof shot.path === "string" && shot.path ? shot.path : null;
+          if (!src && !path) return [];
+          return [{ src, path, alt: typeof shot.alt === "string" ? shot.alt : "" }];
+        } catch {
+          return [];
+        }
+      }),
     },
   };
 }

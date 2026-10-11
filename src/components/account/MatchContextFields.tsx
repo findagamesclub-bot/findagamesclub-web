@@ -22,9 +22,15 @@ import { tokens } from "@/lib/tokens";
  * All of it is optional. Somebody who only wants to put a score in should not
  * have to fill in a form about it, which is why this sits under a quiet
  * heading rather than above the scores.
+ *
+ * The three setup fields are 40k's own vocabulary and only appear for a 40k
+ * game. The result state is not setup: it is the club's ruling on the game and
+ * applies whatever was played, so it stays. The client asked for exactly that
+ * split: "any other game result should just record the score and the result
+ * state".
  */
 export default function MatchContextFields({
-  mission, deployment, terrain, confirmation, canManageClub,
+  mission, deployment, terrain, confirmation, canManageClub, recordsSetup,
   onMission, onDeployment, onTerrain, onConfirmation,
 }: {
   mission: string;
@@ -33,6 +39,8 @@ export default function MatchContextFields({
   confirmation: string;
   /** Only the club may set the state, which is legacy's rule. */
   canManageClub: boolean;
+  /** Whether mission, deployment and terrain mean anything for this game. */
+  recordsSetup: boolean;
   onMission: (value: string) => void;
   onDeployment: (value: string) => void;
   onTerrain: (value: string) => void;
@@ -40,46 +48,55 @@ export default function MatchContextFields({
 }) {
   const chosen = CONFIRMATIONS.find((c) => c.value === confirmation);
 
+  // Nothing to draw: a non-40k game for somebody who is not the club. An
+  // empty Stack is still a gap in a spaced column.
+  if (!recordsSetup && !canManageClub) return null;
+
   return (
     <Stack spacing={2} sx={{ pt: 0.5 }}>
-      <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.66rem",
-                        letterSpacing: "0.12em", color: tokens.inkMuted, fontWeight: 700 }}>
-        MATCH CONTEXT · OPTIONAL
-      </Typography>
+      {recordsSetup ? (
+        <>
+          <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.66rem",
+                            letterSpacing: "0.12em", color: tokens.inkMuted,
+                            fontWeight: 700 }}>
+            MATCH CONTEXT · OPTIONAL
+          </Typography>
 
-      <Autocomplete
-        freeSolo
-        options={MISSION_SUGGESTIONS}
-        value={mission}
-        onInputChange={(_event, value) => onMission(value)}
-        renderInput={(params) => (
-          <TextField {...params} label="Mission" size="small"
-            helperText="Type your own, or pick one." />
-        )}
-      />
-
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-        <TextField select label="Deployment" size="small" fullWidth
-          value={deployment}
-          onChange={(event) => onDeployment(event.target.value)}>
-          <MenuItem value="">Not recorded</MenuItem>
-          {DEPLOYMENTS.map((option) => (
-            <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
-          ))}
-        </TextField>
-
-        <Box sx={{ width: "100%" }}>
           <Autocomplete
             freeSolo
-            options={TERRAIN_SUGGESTIONS}
-            value={terrain}
-            onInputChange={(_event, value) => onTerrain(value)}
+            options={MISSION_SUGGESTIONS}
+            value={mission}
+            onInputChange={(_event, value) => onMission(value)}
             renderInput={(params) => (
-              <TextField {...params} label="Terrain" size="small" />
+              <TextField {...params} label="Mission" size="small"
+                helperText="Type your own, or pick one." />
             )}
           />
-        </Box>
-      </Stack>
+
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField select label="Deployment" size="small" fullWidth
+              value={deployment}
+              onChange={(event) => onDeployment(event.target.value)}>
+              <MenuItem value="">Not recorded</MenuItem>
+              {DEPLOYMENTS.map((option) => (
+                <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+              ))}
+            </TextField>
+
+            <Box sx={{ width: "100%" }}>
+              <Autocomplete
+                freeSolo
+                options={TERRAIN_SUGGESTIONS}
+                value={terrain}
+                onInputChange={(_event, value) => onTerrain(value)}
+                renderInput={(params) => (
+                  <TextField {...params} label="Terrain" size="small" />
+                )}
+              />
+            </Box>
+          </Stack>
+        </>
+      ) : null}
 
       {/* Shown to the club only. A player's save always puts the state back to
           Submitted, so an edit after an agreement cannot pass itself off as

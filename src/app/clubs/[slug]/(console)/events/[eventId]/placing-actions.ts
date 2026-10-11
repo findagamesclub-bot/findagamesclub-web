@@ -44,6 +44,9 @@ export async function placingAction(
     rank: Number(data.get("rank")),
     name: String(data.get("name") ?? ""),
     profileId: String(data.get("profileId") ?? "") || null,
+    // Empty for one of the club's own members, who need none. 0177 checks it
+    // rather than trusting that the browser resolved the code into an id.
+    memberCode: String(data.get("memberCode") ?? "") || null,
     faction: String(data.get("faction") ?? ""),
     detachment: String(data.get("detachment") ?? ""),
     disposition: String(data.get("disposition") ?? ""),

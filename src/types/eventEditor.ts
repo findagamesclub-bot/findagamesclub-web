@@ -27,6 +27,16 @@ export type EventFacts = {
 };
 
 /** One event as its own club sees it: drafts, cancellations and all. */
+/** One of an event's pictures, as the editor and the public page both read it. */
+export type EventImage = {
+  id: number;
+  /** An imported URL to a file nobody here owns. Empty when ours. */
+  src: string;
+  /** Our own bucket path. Null on an imported picture. */
+  storagePath: string | null;
+  alt: string;
+};
+
 export type EditableEvent = {
   id: number;
   legacyId: string;
@@ -51,6 +61,12 @@ export type EditableEvent = {
   logoSrc: string;
   logoAlt: string;
   logoPath: string;
+  /**
+   * Every picture, first one first. `logoSrc` and friends mirror whichever is
+   * first (0173), so the hero and the directory card keep reading what they
+   * always read.
+   */
+  images: EventImage[];
   status: EventStatus;
   publishedAt: string | null;
   cancelReason: string;

@@ -10,6 +10,9 @@ const ERRORS: [string, string][] = [
   ["PLACING_NOT_FOUND", "That placing has already been removed."],
   ["PLACING_RANK_RANGE", "A place has to be between 1 and 999."],
   ["PLACING_NAME_MISSING", "Say who finished there."],
+  ["MEMBER_CODE_NEEDED",
+    "That person is not one of your members and has no ticket for this event. "
+    + "Ask them for their member code and paste it in."],
 ];
 
 function refusal(error: unknown, where: string): string {
@@ -35,6 +38,8 @@ export async function savePlacing(params: {
   rank: number;
   name: string;
   profileId: string | null;
+  /** The code the club was given, when the player is not one of their own. */
+  memberCode?: string | null;
   faction: string;
   detachment: string;
   disposition: string;

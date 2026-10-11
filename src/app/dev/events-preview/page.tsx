@@ -10,6 +10,7 @@ import RosterBoard from
   "@/app/clubs/[slug]/(console)/manage/events/[eventId]/roster/RosterBoard";
 import BookingsBoard from "@/app/clubs/[slug]/(console)/manage/events/BookingsBoard";
 import EventPairings from "@/components/events/EventPairings";
+import EventPlacings from "@/components/events/EventPlacings";
 import { readFilters } from "@/services/clubBookings.service";
 import { clubIdentity } from "@/utils/club-identity";
 import type { ManageEvent } from "@/utils/event-manage-filter";
@@ -25,6 +26,57 @@ import { tokens } from "@/lib/tokens";
  * states that matter most are the awkward ones: a draft with no date, a round
  * with a bye in it, somebody who walked in without paying.
  */
+/**
+ * Two armies with everything filled in, so the preview shows the longest line
+ * a table of the draw can produce rather than the tidiest.
+ */
+const PREVIEW_ARMY_ONE = {
+  factionLabel: "Chaos Knights",
+  detachment: "Traitoris Lance",
+  disposition: "Purge the Foe",
+  mvpUnits: ["Knight Desecrator"],
+  list: {
+    id: 1, name: "Autumn League List", pointsLimit: "2000", totalPoints: 1985,
+    units: [
+      { name: "Knight Desecrator", quantity: 1, points: 450 },
+      { name: "War Dog Brigand", quantity: 3, points: 375 },
+      { name: "Knight Rampager", quantity: 1, points: 430 },
+    ],
+  },
+};
+
+const PREVIEW_ARMY_TWO = {
+  factionLabel: "Adeptus Custodes",
+  detachment: "Shield Host",
+  disposition: "Priority Assets",
+  mvpUnits: [],
+  list: null,
+};
+
+/**
+ * A field of eight, so the podium cards and the rest-of-the-field rows both
+ * render. Fourth place carries a list and fifth carries nothing, which is the
+ * pair the row has to tell apart.
+ */
+const PREVIEW_PLACINGS = [
+  { id: 1, rank: 1, placement: "1st", name: "Gulnabi Afridi", isMember: true,
+    profileId: null, army: PREVIEW_ARMY_ONE },
+  { id: 2, rank: 2, placement: "2nd", name: "Tom Allen", isMember: false,
+    profileId: null, army: PREVIEW_ARMY_TWO },
+  { id: 3, rank: 3, placement: "3rd", name: "Joe Matthews", isMember: true,
+    profileId: null, army: PREVIEW_ARMY_TWO },
+  { id: 4, rank: 4, placement: "4th", name: "Peter Hill", isMember: true,
+    profileId: null, army: PREVIEW_ARMY_ONE },
+  { id: 5, rank: 5, placement: "5th", name: "Hugo S", isMember: false,
+    profileId: null, army: null },
+  { id: 6, rank: 6, placement: "6th", name: "David M", isMember: true,
+    profileId: null, army: PREVIEW_ARMY_TWO },
+  { id: 7, rank: 7, placement: "7th", name: "Pete H", isMember: false,
+    profileId: null, army: PREVIEW_ARMY_ONE },
+  { id: 8, rank: 8, placement: "8th", name: "Joe Gary", isMember: true,
+    profileId: null, army: null },
+];
+
 export default async function EventsPreviewPage({
   searchParams,
 }: PageProps<"/dev/events-preview">) {
@@ -113,6 +165,10 @@ export default async function EventsPreviewPage({
       teamOne: 1, teamOneName: "Oxford Oathsworn",
       teamTwo: 2, teamTwoName: "Didcot Dreadnoughts",
       scoreOne: 125, scoreTwo: 115, gamesOne: 1, gamesTwo: 1, position: 0,
+      // The client's own example: the players totalled 125 to 115 and the
+      // club scores the fixture 5 to 4. Both are on the header, so the sweep
+      // measures the longest that line gets.
+      pointsOne: 5, pointsTwo: 4,
       published: true,
       tables: [
         { id: 101, tableLabel: "A1", playerOne: "Ada Marchetti", playerOneId: null,
@@ -126,6 +182,7 @@ export default async function EventsPreviewPage({
       teamOne: 1, teamOneName: "Abingdon Anvils",
       teamTwo: null, teamTwoName: "",
       scoreOne: null, scoreTwo: null, gamesOne: 0, gamesTwo: 0, position: 1,
+      pointsOne: null, pointsTwo: null,
       published: true, tables: [] },
   ];
 
@@ -184,15 +241,35 @@ export default async function EventsPreviewPage({
           <EventPairings
             pairings={rounds.map((r) => ({
               id: r.id, round: r.round, label: r.label, published: r.published,
-              matches: r.matches.map((m) => ({
+              matches: r.matches.map((m, i) => ({
                 table: m.tableLabel, playerOne: m.playerOne, playerTwo: m.playerTwo,
                 score: m.scoreOne !== null && m.scoreTwo !== null
                   ? `${m.scoreOne} - ${m.scoreTwo}` : null,
+                scoreOne: m.scoreOne, scoreTwo: m.scoreTwo,
+                // The first table of every round carries armies and the rest
+                // do not, so the sweep measures the long line, the list
+                // control and the bare row on one screen.
+                armyOne: i === 0 ? PREVIEW_ARMY_ONE : null,
+                armyTwo: i === 0 ? PREVIEW_ARMY_TWO : null,
               })),
             }))}
             faction={faction}
             viewerName="Gulnabi Afridi"
           />
+        </Stack>
+
+        <Divider />
+
+        <Stack spacing={2}>
+          <Typography variant="overline" color="text.secondary">
+            A results table big enough to page
+          </Typography>
+          {/* Eight placings, because `EventPlacings` only draws `PlacingRow`
+              past six: below that the whole field is podium cards, so the row
+              could be changed and never seen. Didcot's real events have two
+              and three placings, which is exactly how it stayed unmeasured. */}
+          <EventPlacings placings={PREVIEW_PLACINGS} faction={faction}
+            viewerName="Hugo S" />
         </Stack>
 
         <Divider />

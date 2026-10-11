@@ -5,8 +5,22 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Collapse from "@mui/material/Collapse";
 import FormControlLabel from "@mui/material/FormControlLabel";
+import InputAdornment from "@mui/material/InputAdornment";
 import Stack from "@mui/material/Stack";
 import Switch from "@mui/material/Switch";
+
+/**
+ * The one percent field whose noun invites the wrong reading.
+ *
+ * Every other one is "N% off something", where a percentage is the only thing
+ * it could be. This one caps what points may cover, and points are counted, so
+ * "10" reads as ten points. It is ten per cent of whatever the bill comes to,
+ * which is why the number the member sees moves with the basket.
+ */
+const PERCENT_HELP: Record<string, string> = {
+  loyaltyRedemptionCapPercent:
+    "A share of each bill, not a number of points. 0 for none.",
+};
 
 const NEEDS_BUILDER = [
   "listCoachingAccess", "matchupAnalysisAccess",
@@ -113,7 +127,17 @@ export default function TierPerks({
                         const next = Number(event.target.value);
                         set(perk.key, Number.isFinite(next) && next > 0 ? next : 0);
                       }}
-                      helperText={perk.kind === "percent" ? "A percentage. 0 for none." : undefined}
+                      slotProps={perk.kind === "percent" ? {
+                        // A bare 10 in a box with a long label reads as ten of
+                        // whatever the label's noun is. The client read this
+                        // one as ten loyalty points and asked where the limit
+                        // was being set; it is a share of the bill.
+                        input: {
+                          endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                        },
+                      } : undefined}
+                      helperText={PERCENT_HELP[perk.key]
+                        ?? (perk.kind === "percent" ? "A percentage. 0 for none." : undefined)}
                     />
                   )
                 ))}

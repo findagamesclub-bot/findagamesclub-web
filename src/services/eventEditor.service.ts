@@ -3,6 +3,8 @@ import "server-only";
 import * as repo from "@/repositories/eventEditor.repository";
 import * as notices from "@/repositories/eventNotices.repository";
 import * as writes from "@/repositories/eventWrites.repository";
+import { findEventImages, saveEventImages } from "@/repositories/eventImages.repository";
+import { removeClubMedia } from "@/repositories/clubs.repository";
 import { londonToday } from "./bookingCalendar.service";
 import { publishRefusal, type EventDraft, type EventStatus } from "@/utils/event-draft";
 import { eventRefusal } from "@/utils/event-refusals";
@@ -58,8 +60,26 @@ export async function listEvents(clubId: number): Promise<{
   };
 }
 
-export function getEvent(clubId: number, eventId: number): Promise<EditableEvent | null> {
-  return repo.findEditableEvent(clubId, eventId);
+export async function getEvent(
+  clubId: number, eventId: number,
+): Promise<EditableEvent | null> {
+  const event = await repo.findEditableEvent(clubId, eventId);
+  if (!event) return null;
+
+  // A second read rather than an embed, because 0173's table is newer than
+  // the generated types. Empty rather than thrown: an event whose pictures
+  // will not load should still be editable, and the mirror means the hero is
+  // on the row either way.
+  const rows = await findEventImages(event.id).catch(() => []);
+  return {
+    ...event,
+    images: (rows ?? []).map((row) => ({
+      id: row.id,
+      src: row.src ?? "",
+      storagePath: row.storage_path,
+      alt: row.alt ?? "",
+    })),
+  };
 }
 
 // ------------------------------------------------------------------ writes
@@ -110,12 +130,31 @@ export async function saveEvent(
       facilities: draft.facilities,
       info_board: draft.infoBoard,
       bestcoast_link: draft.bestcoastLink,
-      logo_src: draft.logoSrc || null,
-      // A picture a screen reader cannot describe is a picture with no alt, so
-      // the event's own name stands in.
-      logo_alt: draft.logoSrc ? (draft.logoAlt || draft.title) : null,
-      logo_path: draft.logoPath || null,
     });
+
+    // Written after the event's own fields and never beside them: 0173's
+    // trigger mirrors the first picture onto `logo_src`, `logo_alt` and
+    // `logo_path`, so writing those here as well would be two mechanisms for
+    // one fact and the one that lost would depend on statement order.
+    //
+    // A picture a screen reader cannot describe is a picture with no alt, so
+    // the event's own name stands in for a blank one.
+    await saveEventImages(eventId, draft.images.map((shot) => ({
+      src: shot.src,
+      path: shot.path,
+      alt: shot.alt.trim() || draft.title,
+    })));
+
+    // Only once the rows that pointed at them are gone. Deleting on the click
+    // would break the event page for anybody who removes a picture and then
+    // leaves without saving: the row still names the path and the file is
+    // gone. Never fails the save, because a file left behind is clutter
+    // nobody sees and a refused save is work somebody loses.
+    if (draft.removedImages.length) {
+      await removeClubMedia({ kind: "club", id: clubId }, draft.removedImages)
+        .catch((error) => console.error("[event images] file not removed:", error));
+    }
+
     return { ok: true, notice: "Saved." };
   } catch (error) {
     return { ok: false, error: refusalOf(error, "That did not save. Try again.") };

@@ -8,12 +8,14 @@ import EmptyState from "@/components/ui/EmptyState";
 import NavTabs from "@/components/ui/NavTabs";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { useActionToast } from "@/components/ui/Toaster";
+import { useActionSuccess } from "@/hooks/useActionSuccess";
 import RoundTables from "./RoundTables";
 import RoundTools from "./RoundTools";
 import PasteDialog from "./PasteDialog";
 import MatchDialog from "./MatchDialog";
 import DrawAudience from "./DrawAudience";
 import ArmiesDialog, { type ArmyFields } from "./ArmiesDialog";
+import FixtureScoreDialog from "./FixtureScoreDialog";
 import TeamFixtures from "./TeamFixtures";
 import ScoresDialog from "./ScoresDialog";
 import { pairingsAction, type PairingsState } from "./actions";
@@ -83,6 +85,12 @@ export default function PairingsBoard({
   const [removing, setRemoving] = useState<PairingMatch | null>(null);
   const [arming, setArming] = useState<PairingMatch | null>(null);
   const [droppingFixture, setDroppingFixture] = useState<TeamFixture | null>(null);
+  const [scoringFixture, setScoringFixture] = useState<TeamFixture | null>(null);
+
+  // Below the state it closes over, not beside the toast at the top: a hook
+  // referencing a setter declared later is the temporal dead zone `BadgeBoard`
+  // already paid for, and `react-hooks` is what caught it here.
+  useActionSuccess(state, () => setScoringFixture(null));
 
   const asTeams = teamEvent;
 
@@ -162,12 +170,13 @@ export default function PairingsBoard({
               onEdit={(match) => setEditing(match)}
               onArmies={(match) => setArming(match)}
               onRemove={(match) => setRemoving(match)}
-              onRemoveFixture={(fixture) => setDroppingFixture(fixture)} />
+              onRemoveFixture={(fixture) => setDroppingFixture(fixture)}
+              onScoreFixture={(fixture) => setScoringFixture(fixture)} />
           ) : (
             <EmptyState
               title={`Round ${round} has not been drawn`}
               description={teams.length >= 2
-                ? "Make the draw and the teams are shuffled against each other, with a table for board one, board two and so on inside every fixture."
+                ? "Make the draw and the teams are shuffled against each other, with a table for each pair of players inside every fixture. Change any of them afterwards."
                 : "You need at least two teams before a round can be drawn. Build them on the Teams page."}
             />
           )
@@ -240,6 +249,23 @@ export default function PairingsBoard({
           send({ intent: asTeams ? "generate-teams" : "generate" });
         }}
         onClose={() => setClearing(false)}
+      />
+
+      {/* Closed on the answer landing, never on the click: a refusal here
+          would otherwise take the typed figures with it and then explain why.
+          Sixth time that has been written down. */}
+      <FixtureScoreDialog
+        fixture={scoringFixture}
+        open={Boolean(scoringFixture)}
+        busy={busy}
+        onClose={() => setScoringFixture(null)}
+        send={(data) => {
+          data.set("slug", slug);
+          data.set("eventId", String(eventId));
+          data.set("round", String(round));
+          data.set("pairingId", String(current?.id ?? 0));
+          startTransition(() => submit(data));
+        }}
       />
 
       <ConfirmDialog

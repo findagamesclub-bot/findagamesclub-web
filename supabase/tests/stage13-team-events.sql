@@ -30,6 +30,12 @@ declare
   v_red bigint; v_blue bigint; v_one bigint; v_two bigint;
   v_row public.club_event_team_matches; v_bad boolean;
 begin
+  -- 0174 made the podium triggers CONSTRAINT triggers deferred to commit, so
+  -- that a save which deletes and re-inserts a whole standings table recounts
+  -- once at the end rather than revoking and re-awarding as it goes. Inside
+  -- one transaction that means they never fire, so this asks for them now and
+  -- the assertions below read what a committed save would leave.
+  set constraints all immediate;
   select * into w from who;
   select id into v_event from public.club_events where legacy_id = '2026-06-06-team-bash';
 

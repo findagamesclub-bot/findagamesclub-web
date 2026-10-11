@@ -26,6 +26,10 @@ export type PairingArmyRow = {
   disposition: string;
   list_id: number | null;
   list_name: string;
+  list_version_number: number | null;
+  /** The units as they were on the day, frozen by 0145. */
+  snapshot: unknown;
+  mvp_units: string[] | null;
 };
 
 export async function findPairingArmies(matchIds: number[]) {
@@ -33,7 +37,7 @@ export async function findPairingArmies(matchIds: number[]) {
   const rows = await table<PairingArmyRow>("game_result_armies");
   const { data, error } = await rows
     .select(`source_id, side, faction_id, faction_label, detachment, disposition,
-             list_id, list_name`)
+             list_id, list_name, list_version_number, snapshot, mvp_units`)
     .eq("source_type", "event_pairing")
     .in("source_id", matchIds);
   if (error) throw new Error(error.message);

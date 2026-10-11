@@ -4,6 +4,7 @@ import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { formatMoney } from "@/utils/format";
+import { pointsCapNote } from "@/utils/points-cap";
 import { mono, tokens } from "@/lib/tokens";
 
 /**
@@ -25,7 +26,7 @@ import { mono, tokens } from "@/lib/tokens";
  * tampered field buys nothing.
  */
 export default function PointsField({
-  name = "points", held, max, value, pointsOff, currency = "GBP", onChange,
+  name = "points", held, max, capPercent, value, pointsOff, currency = "GBP", onChange,
 }: {
   /** The form field, so a server action can read it. */
   name?: string;
@@ -33,6 +34,12 @@ export default function PointsField({
   held: number;
   /** The most that may go towards this one thing. Zero renders nothing. */
   max: number;
+  /**
+   * The share of a bill the member's tier lets points cover, so the helper can
+   * say why the maximum is what it is. Without it a cap of 10% reads as a cap
+   * of 10 points, which is exactly how the client read it.
+   */
+  capPercent: number;
   value: number;
   /** What the chosen points are worth, already priced by the caller. */
   pointsOff: number;
@@ -51,7 +58,7 @@ export default function PointsField({
         value={value || ""}
         onChange={(event) =>
           onChange(Math.max(0, Math.min(max, Number(event.target.value) || 0)))}
-        helperText={`You have ${held.toLocaleString("en-GB")}. Up to ${max} on this one.`}
+        helperText={pointsCapNote(held, max, capPercent)}
         slotProps={{ htmlInput: { min: 0, max } }}
       />
 

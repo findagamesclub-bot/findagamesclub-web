@@ -51,6 +51,10 @@
 /clubs/didcot-wargames-didcot/manage/events/113
 /clubs/didcot-wargames-didcot/manage/events/113/pairings
 /clubs/didcot-wargames-didcot/manage/events/113/teams
+# The results editor moved off the public event page into the console, so it
+# is swept here now rather than riding along with the event's own page.
+/clubs/didcot-wargames-didcot/manage/events/115/placings
+/clubs/didcot-wargames-didcot/manage/events/115/pairings
 /clubs/didcot-wargames-didcot/manage/billing
 /clubs/didcot-wargames-didcot/manage/analytics
 /clubs/didcot-wargames-didcot/manage/analytics?tab=money

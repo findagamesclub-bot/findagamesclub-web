@@ -11,6 +11,14 @@ export const CLUB_MEDIA = "club-media";
 /** Legacy's own limit: `_normalise_images(..., limit=10)`. */
 export const MAX_CLUB_IMAGES = 10;
 
+/**
+ * An event's own, which the client asked for: "do we only allow upload of one
+ * image for an event? Could we allow up to 5?" Enforced by 0173's trigger and
+ * by `save_event_images`; this is the same number said early enough to tell
+ * somebody before they pick six files.
+ */
+export const MAX_EVENT_IMAGES = 5;
+
 export const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 /** The bucket's limit, checked here so a phone is told before it uploads. */

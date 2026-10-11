@@ -1,5 +1,6 @@
 import "server-only";
 
+import { callRpc } from "@/lib/supabase/table";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Tables } from "@/types/database";
@@ -344,3 +345,17 @@ export async function countApprovedPublicByClub(clubIds: number[]) {
   for (const row of data ?? []) counts.set(row.club_id, (counts.get(row.club_id) ?? 0) + 1);
   return counts;
 }
+
+/**
+ * When somebody actually joined.
+ *
+ * Through `set_membership_joined_at` (0171) rather than an ordinary update,
+ * even though the column grant and `club_memberships_manage` would allow one.
+ * The year badges are awarded from this date, so the write and the re-award
+ * have to be the same statement: a club that pressed Save and then waited
+ * overnight for the badge would read as a feature that did not work.
+ */
+export const setJoinedAt = (membershipId: number, joined: string) =>
+  callRpc<string>("set_membership_joined_at", {
+    p_membership: membershipId, p_joined: joined,
+  });

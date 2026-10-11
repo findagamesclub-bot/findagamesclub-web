@@ -1,5 +1,5 @@
 import "server-only";
-import { clubLogoUrl } from "@/utils/club-media";
+import { clubLogoUrl, clubImageUrl } from "@/utils/club-media";
 import { publicUrl } from "@/lib/supabase/storage";
 
 import * as repo from "@/repositories/events.repository";
@@ -49,7 +49,12 @@ function toSummary(row: Row): EventSummary {
   // Same rule as the event page: its own poster wins, the club's photo stands
   // in. A card and the page it opens should not show different pictures.
   const image = eventArt(
-    { logoSrc: row.logo_src, logoAlt: row.logo_alt, title: row.title }, clubArt);
+    {
+      logoSrc: clubImageUrl(
+        { src: row.logo_src, storagePath: row.logo_path }, publicUrl),
+      logoAlt: row.logo_alt,
+      title: row.title,
+    }, clubArt);
 
   const results = (row as unknown as {
     club_event_results: { rank: number | null; member_name: string; army: unknown }[] | null;

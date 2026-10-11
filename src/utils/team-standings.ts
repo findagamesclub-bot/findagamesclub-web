@@ -12,16 +12,42 @@
  * usually totals; the column next to it is there so a club running the other
  * way can read their own answer off the same table. Neither decides anything
  * on its own, for the reason above.
+ *
+ * A fixture the club scored itself (0176) counts at the club's figure, not the
+ * players' total. That is the point of typing one: a format that scores a
+ * round 5 to 4 wants 5 and 4 in this table, not 200 and 190. The players'
+ * total is still on the fixture, so nothing is lost by preferring it here.
  */
 
 export type StandingFixture = {
   teamOne: number | null;
   teamTwo: number | null;
+  /** The players' total, added up from the tables. */
   scoreOne: number | null;
   scoreTwo: number | null;
   gamesOne: number;
   gamesTwo: number;
+  /** The club's own score, where they typed one. Both or neither. */
+  pointsOne?: number | null;
+  pointsTwo?: number | null;
 };
+
+/**
+ * What a fixture counts for, which is the club's own score when there is one.
+ *
+ * Both or neither, which the column constraint also says: one side typed and
+ * the other not would otherwise silently mix a club's 5 with a players'
+ * total of 190 in the same fixture.
+ */
+export function fixtureScores(
+  fixture: StandingFixture,
+): { one: number | null; two: number | null } {
+  const typed = fixture.pointsOne !== null && fixture.pointsOne !== undefined
+    && fixture.pointsTwo !== null && fixture.pointsTwo !== undefined;
+  return typed
+    ? { one: fixture.pointsOne!, two: fixture.pointsTwo! }
+    : { one: fixture.scoreOne, two: fixture.scoreTwo };
+}
 
 export type TeamStanding = {
   teamId: number;
@@ -68,11 +94,12 @@ export function teamStandings(
   };
 
   for (const fixture of fixtures) {
+    const { one, two } = fixtureScores(fixture);
     // A fixture nobody has played is not a draw, and a bye is not a win.
-    if (fixture.scoreOne === null || fixture.scoreTwo === null) continue;
+    if (one === null || two === null) continue;
     if (fixture.teamOne === null || fixture.teamTwo === null) continue;
-    count(fixture.teamOne, fixture.scoreOne, fixture.scoreTwo, fixture.gamesOne);
-    count(fixture.teamTwo, fixture.scoreTwo, fixture.scoreOne, fixture.gamesTwo);
+    count(fixture.teamOne, one, two, fixture.gamesOne);
+    count(fixture.teamTwo, two, one, fixture.gamesTwo);
   }
 
   // The club's own order once it has said one, and the running order until

@@ -133,6 +133,8 @@ export default function MembersPreviewPage() {
                 slug="didcot-wargames-didcot"
                 memberName={m.fullName}
                 tierKey={m.tierKey}
+                joinedAt={m.joinedAt}
+                today={new Date(NOW).toISOString().slice(0, 10)}
                 tiers={tiers}
                 standing={standings[i]!}
                 payments={i === 0 ? samplePayments : []}

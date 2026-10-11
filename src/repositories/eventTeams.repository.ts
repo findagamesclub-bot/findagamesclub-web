@@ -25,7 +25,9 @@ type FixtureRow = {
   team_one: number | null; team_one_name: string | null;
   team_two: number | null; team_two_name: string | null;
   score_one: number | null; score_two: number | null;
-  games_one: number; games_two: number; position: number; published: boolean;
+  games_one: number; games_two: number;
+  points_one: number | null; points_two: number | null;
+  position: number; published: boolean;
   tables: TeamTable[] | null;
 };
 
@@ -59,11 +61,22 @@ export async function findTeamDraw(eventId: number): Promise<TeamFixture[]> {
     scoreTwo: row.score_two,
     gamesOne: row.games_one,
     gamesTwo: row.games_two,
+    pointsOne: row.points_one,
+    pointsTwo: row.points_two,
     position: row.position,
     published: row.published,
     tables: row.tables ?? [],
   }));
 }
+
+/**
+ * The club's own score for one fixture, or null to go back to the players'
+ * total. Through a function because the guard is the club's (0176).
+ */
+export const saveTeamMatchPoints = (
+  matchId: number, one: number | null, two: number | null,
+) => callRpc<null>("set_team_match_points",
+  { p_match: matchId, p_one: one, p_two: two });
 
 /** Whether this event runs as teams, through a function for the reason above. */
 export const findTeamEvent = (eventId: number) =>

@@ -57,10 +57,26 @@ export type EventPairing = {
     playerTwo: string;
     /** The result, once somebody has entered it. Null while the round is live. */
     score: string | null;
+    /**
+     * Each side's own score, so a player's figure can sit beside their own
+     * name. `score` stays for anything that wants the pair on one line.
+     */
+    scoreOne: number | null;
+    scoreTwo: number | null;
+    /** What each side brought, once the club has recorded it. */
+    armyOne: ResultArmy | null;
+    armyTwo: ResultArmy | null;
   }[];
 };
 
 export type ClubEventDetail = {
+  /**
+   * Every picture the club put on the event, first one first. The first is
+   * also the banner, which `art` resolves, so a gallery that drew all of them
+   * would show it twice: `ClubGallery` renders nothing below two for exactly
+   * that reason.
+   */
+  images: { src: string; alt: string }[];
   id: number;
   legacyId: string;
   clubSlug: string;

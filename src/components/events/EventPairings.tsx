@@ -4,7 +4,6 @@ import { useDeferredValue, useMemo, useState } from "react";
 import Accordion from "@mui/material/Accordion";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import AccordionSummary from "@mui/material/AccordionSummary";
-import Box from "@mui/material/Box";
 import InputAdornment from "@mui/material/InputAdornment";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
@@ -13,9 +12,12 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import SearchIcon from "@mui/icons-material/Search";
 import BusyOverlay from "@/components/ui/BusyOverlay";
 import EmptyState from "@/components/ui/EmptyState";
+import ArmyListDialog from "./ArmyListDialog";
+import PairingTable from "./PairingTable";
+import { armySummary } from "@/utils/army-snapshot";
 import { fold } from "@/utils/text";
 import { mono, tokens, type Faction } from "@/lib/tokens";
-import type { EventPairing } from "@/types/event";
+import type { EventPairing, ResultArmy } from "@/types/event";
 
 /** Above this a tournament is big enough that scanning for a name is the job. */
 const SEARCHABLE = 12;
@@ -50,6 +52,7 @@ export default function EventPairings({
 
   const total = pairings.reduce((sum, round) => sum + round.matches.length, 0);
   const [open, setOpen] = useState<number | false>(pairings.length - 1);
+  const [list, setList] = useState<{ player: string; army: ResultArmy } | null>(null);
 
   const rounds = useMemo(() => pairings.map((round) => ({
     ...round,
@@ -57,7 +60,12 @@ export default function EventPairings({
       ? round.matches.filter((m) =>
           fold(m.playerOne).includes(needle)
           || fold(m.playerTwo).includes(needle)
-          || fold(m.table ?? "").includes(needle))
+          || fold(m.table ?? "").includes(needle)
+          // The armies are on the row now, so a reader looking for who took
+          // Custodes should find them here rather than only on the results
+          // table further down the page.
+          || fold(armySummary(m.armyOne)).includes(needle)
+          || fold(armySummary(m.armyTwo)).includes(needle))
       : round.matches,
   })), [pairings, needle]);
 
@@ -67,7 +75,7 @@ export default function EventPairings({
     <Stack spacing={2}>
       {total > SEARCHABLE ? (
         <TextField
-          size="small" fullWidth placeholder="Find a player or a table"
+          size="small" fullWidth placeholder="Find a player, a table or an army"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           slotProps={{
@@ -129,69 +137,11 @@ export default function EventPairings({
 
                 <AccordionDetails sx={{ p: 0 }}>
                   {round.matches.length ? (
-                    round.matches.map((m, i) => {
-                      const mine = Boolean(me)
-                        && (fold(m.playerOne) === me || fold(m.playerTwo) === me);
-
-                      return (
-                        <Box key={`${round.id}-${i}`}
-                          sx={{ display: "grid", gap: 1.5, px: 2, py: 1.25,
-                                alignItems: "baseline",
-                                gridTemplateColumns: { xs: "56px minmax(0, 1fr)",
-                                                       sm: "72px minmax(0, 1fr) auto" },
-                                borderTop: `1px solid ${tokens.rule}`,
-                                backgroundColor: mine ? faction.soft : tokens.surface }}>
-                          <Typography sx={{ fontFamily: mono, fontSize: "0.72rem",
-                                            color: mine ? faction.deep : tokens.inkMuted }}>
-                            {(m.table ?? "").trim() || "—"}
-                          </Typography>
-                          {/* A bye is one name, not a name against nobody.
-                              "Lone Walkin v" with the row trailing off is what
-                              this read as, while the club's own draw page next
-                              door had always said BYE underneath. Two screens
-                              showing the same round have to word it the same
-                              way. */}
-                          <Stack spacing={0.2} sx={{ minWidth: 0 }}>
-                            <Typography variant="body2"
-                              sx={{ minWidth: 0, fontWeight: mine ? 700 : 400 }}>
-                              {m.playerTwo.trim()
-                                ? `${m.playerOne} v ${m.playerTwo}`
-                                : m.playerOne}
-                            </Typography>
-                            {m.playerTwo.trim() ? null : (
-                              <Typography sx={{ fontFamily: mono, fontSize: "0.62rem",
-                                                letterSpacing: "0.08em",
-                                                color: mine ? faction.deep : tokens.inkMuted }}>
-                                BYE
-                              </Typography>
-                            )}
-                          </Stack>
-                          {/* The result where there is one, otherwise the
-                              reader's own marker. A played round with no score
-                              on it looks undrawn, which is what it read as
-                              before this: the scores were on the row all along
-                              and were being thrown away on the way out of the
-                              database. */}
-                          {m.score ? (
-                            <Typography sx={{ fontFamily: mono, fontSize: "0.72rem",
-                                              fontWeight: 700, letterSpacing: "0.04em",
-                                              color: mine ? faction.deep : tokens.ink,
-                                              whiteSpace: "nowrap" }}>
-                              {m.score}
-                            </Typography>
-                          ) : mine ? (
-                            // Named, not only tinted: a coloured row says
-                            // nothing to a reader who cannot see the tint.
-                            <Typography sx={{ fontFamily: mono, fontSize: "0.64rem",
-                                              fontWeight: 700, letterSpacing: "0.1em",
-                                              color: faction.deep,
-                                              display: { xs: "none", sm: "block" } }}>
-                              YOUR TABLE
-                            </Typography>
-                          ) : null}
-                        </Box>
-                      );
-                    })
+                    round.matches.map((m, i) => (
+                      <PairingTable key={`${round.id}-${i}`} match={m} faction={faction}
+                        me={me}
+                        onOpenList={(player, army) => setList({ player, army })} />
+                    ))
                   ) : (
                     <Typography variant="body2"
                       sx={{ px: 2, py: 1.5, color: tokens.inkMuted,
@@ -205,6 +155,16 @@ export default function EventPairings({
           </Stack>
         </BusyOverlay>
       )}
+
+      {/* One dialog for the section rather than one per table: twenty tables
+          is forty mounted dialogs, and only one is ever open. */}
+      <ArmyListDialog
+        open={list !== null}
+        onClose={() => setList(null)}
+        player={list?.player ?? ""}
+        army={list?.army ?? null}
+        faction={faction}
+      />
     </Stack>
   );
 }

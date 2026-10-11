@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { NO_ARMY, type ArmyNaming } from "@/components/results/ArmyPicker";
 import type { MemberList } from "@/services/resultArmies.service";
+import type { Linked } from "@/components/results/MemberCodeField";
 import type { EventPlacing } from "@/types/event";
 
 /**
@@ -21,7 +22,10 @@ import type { EventPlacing } from "@/types/event";
  */
 export function usePlacingArmy(open: boolean, placing: EventPlacing | null,
                                lists: MemberList[]) {
-  const [profileId, setProfileId] = useState<string | null>(null);
+  // The account this row points at, not just its id: the linked line names
+  // them, and a code brings the name back with it.
+  const [linked, setLinked] = useState<Linked | null>(null);
+  const profileId = linked?.id ?? null;
   const [army, setArmy] = useState<ArmyNaming>(NO_ARMY);
   const [listId, setListId] = useState<number | null>(null);
   const [seen, setSeen] = useState<number | string | null>(null);
@@ -32,7 +36,9 @@ export function usePlacingArmy(open: boolean, placing: EventPlacing | null,
     // Read here rather than as a `useState` initialiser: an initialiser runs
     // on the first mount and never again, so this dialog carried the previous
     // winner's profile link onto the next row it opened.
-    setProfileId(placing?.profileId ?? null);
+    // No name: all a saved row stores is the id, and the typed name is the
+    // club's own wording rather than the account's.
+    setLinked(placing?.profileId ? { id: placing.profileId } : null);
     setArmy({
       factionId: placing?.army?.factionLabel ?? "",
       factionLabel: placing?.army?.factionLabel ?? "",
@@ -61,5 +67,5 @@ export function usePlacingArmy(open: boolean, placing: EventPlacing | null,
     });
   };
 
-  return { profileId, setProfileId, army, setArmy, listId, pickList, theirLists };
+  return { linked, setLinked, profileId, army, setArmy, listId, pickList, theirLists };
 }

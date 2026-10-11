@@ -78,7 +78,7 @@ export default function ClubResultDialog({
   // The army half belongs to Warhammer 40,000, because the catalogue behind it
   // is 40k's. Changing the game to anything else takes the fields off and the
   // service clears what was recorded.
-  const recordsArmy = playsFortyK([title]);
+  const isFortyK = playsFortyK([title]);
 
   // Close on success, stay open on a refusal so the typing survives it.
   useActionSuccess(state, onClose);
@@ -119,18 +119,19 @@ export default function ClubResultDialog({
                 {/* Same control and same rule as the member's own dialog.
                     The club is more likely to be the one correcting a game
                     somebody typed in a hurry. */}
-                <GameField value={title} options={knownGames()}
+                <GameField value={title} recorded={result.gameTitle} options={knownGames()}
                   onChange={setTitle} revealsArmy={result.builder !== null}
                   hasArmy={Boolean(result.armies.one.factionId || result.armies.two.factionId
-                    || result.homeArmy || result.awayArmy)} />
+                    || result.homeArmy || result.awayArmy)}
+                  hasSetup={Boolean(mission || deployment || terrain)} />
 
                 <ArmyFields
-                  builder={recordsArmy ? result.builder : null} catalogue={catalogue}
+                  builder={isFortyK ? result.builder : null} catalogue={catalogue}
                   loading={loading} failed={failed}
                   one={home} two={away} onOne={setHome} onTwo={setAway}
                   oneTitle={`${result.homeName}'s army`}
                   twoTitle={`${result.awayName}'s army`}
-                  fallback={recordsArmy ? (
+                  fallback={isFortyK ? (
                     <Stack direction="row" spacing={2}>
                       <TextField name="homeArmy" label={`${result.homeName}'s army`}
                         fullWidth defaultValue={result.homeArmy} />
@@ -143,6 +144,7 @@ export default function ClubResultDialog({
                 <MatchContextFields
                   mission={mission} deployment={deployment} terrain={terrain}
                   confirmation={confirmation} canManageClub
+                  recordsSetup={isFortyK}
                   onMission={setMission} onDeployment={setDeployment}
                   onTerrain={setTerrain}
                   onConfirmation={(value) => setConfirmation(toConfirmation(value))}

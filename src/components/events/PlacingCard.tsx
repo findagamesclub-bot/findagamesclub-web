@@ -6,6 +6,7 @@ import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import { armySummary } from "@/utils/army-snapshot";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { EventPlacing } from "@/types/event";
 
@@ -67,8 +68,7 @@ export default function PlacingCard({
           {p.army ? (
             <>
               <Typography variant="body2" color="text.secondary">
-                {[p.army.factionLabel, p.army.detachment, p.army.disposition]
-                  .filter(Boolean).join(" · ")}
+                {armySummary(p.army)}
               </Typography>
 
               {p.army.mvpUnits.length ? (

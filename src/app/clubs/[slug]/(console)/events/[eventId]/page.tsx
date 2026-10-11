@@ -1,5 +1,8 @@
 import { notFound } from "next/navigation";
 import Box from "@mui/material/Box";
+import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
+import ClubGallery from "@/components/clubs/ClubGallery";
+import LinkButton from "@/components/ui/LinkButton";
 import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -15,6 +18,7 @@ import Section from "@/components/ui/Section";
 import EventPlacings from "@/components/events/EventPlacings";
 import EventNoticeboard from "@/components/events/EventNoticeboard";
 import EventCalledOff from "@/components/events/EventCalledOff";
+import ClaimNamesNotice from "@/components/events/ClaimNamesNotice";
 import LockedNote from "@/components/events/LockedNote";
 import EventTags from "@/components/events/EventTags";
 import SectionNav from "@/components/ui/SectionNav";
@@ -26,16 +30,14 @@ import EventArmyMeta from "@/components/events/EventArmyMeta";
 import FacilityChips from "@/components/clubs/FacilityChips";
 import EventHero from "@/components/events/EventHero";
 import { getEventDetail } from "@/services/eventDetail.service";
+import { countClaimableNames } from "@/services/memberCodes.service";
 import { getEventMeta } from "@/services/meta.service";
-import { eventRecordsArmies, mayHaveArmyMeta } from "@/utils/event-meta";
+import { mayHaveArmyMeta } from "@/utils/event-meta";
 import { londonToday } from "@/services/bookingCalendar.service";
-import { getBuilderFor } from "@/services/armyBuilder.service";
-import { getMemberLists } from "@/services/resultArmies.service";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getMyMembership } from "@/services/memberships.service";
 import { getBuyableTickets, getTicketStanding } from "@/services/tickets.service";
 import { getAttendees } from "@/services/eventBookings.service";
-import { getRoster } from "@/services/memberships.service";
 import { getEventRoster, getEventThreads } from "@/services/eventBoard.service";
 import EventCommunity from "@/components/events/EventCommunity";
 import EventTickets from "@/components/tickets/EventTickets";
@@ -119,30 +121,18 @@ export default async function EventPage({
       : Promise.resolve([]),
   ]);
 
-  // Only for the results editor, so a winner can be linked to their profile
-  // and the placing shows on it. Members-only by RLS, and a manager passes.
-  // One wave with the club's army switch and its army lists, which the same
-  // editor reads: the club names which list somebody brought in the dialog it
-  // records the placing in.
-  const [members, builder, armyLists] = event.canManageClub
-    ? await Promise.all([
-        getRoster(event.clubId).catch(() => []),
-        getBuilderFor(event.clubId).catch(() => null),
-        getMemberLists(event.clubId).catch(() => []),
-      ])
-    : [[], null, []];
-  const placingRoster = members
-    .filter((m) => m.status === "approved")
-    .map((m) => ({ id: m.profileId, name: m.fullName }));
+  // The roster, the army switch and the club's army lists used to be read
+  // here for the results editor. The editor is in the console now, so this
+  // page is three queries lighter for the club and reads exactly what a
+  // member reads.
 
-  // Two short strings, not the catalogue itself: the dialog fetches that when
-  // it opens.
-  // The event's own games as well as the club's switch: the army fields are
-  // 40k's, and an event that names another game should not offer them.
-  const records = builder?.enabled && builder.editionId && builder.catalogueVersion
-    && eventRecordsArmies(event.featuredGames)
-    ? { editionId: builder.editionId, catalogueVersion: builder.catalogueVersion }
-    : null;
+  // Asked only of somebody holding a ticket, because that is the first thing
+  // the function checks and almost nobody reading an event page holds one. So
+  // this costs a round trip for the handful of people it is for and nothing
+  // at all for everybody else.
+  const claimable = viewer && event.myBookingCount > 0
+    ? await countClaimableNames(event.id)
+    : 0;
 
   const cancelled = event.status === "cancelled";
   const { faction, monogram } = clubIdentity(event.clubSlug, event.clubName);
@@ -198,6 +188,11 @@ export default async function EventPage({
             href: `/clubs/${slug}/manage/events/${event.id}/roster` },
         ]} />
       ) : null}
+
+      {/* Under the hero rather than beside the results: it is the one thing on
+          this page that is about the reader rather than about the event. */}
+      <ClaimNamesNotice slug={slug} eventKey={eventId} eventId={event.id}
+        count={claimable} />
 
       {/* The navLabels on the sections below were written for this and had
           nothing reading them. A tournament page runs to seven sections, and
@@ -286,15 +281,24 @@ export default async function EventPage({
           note={!event.placings.length && event.canManageClub
             ? "Nobody is on the results yet. Record the winner and any other places you want to show."
             : undefined}>
+          {/* Read-only for everybody, the club included. Recording a place is
+              done in the console beside the draw, because that is the same
+              evening's work and doing half of it on the page members read was
+              what the client asked about. */}
           <EventPlacings
             placings={event.placings}
             faction={faction}
             viewerName={viewer?.full_name ?? null}
-            admin={event.canManageClub
-              ? { slug, eventKey: event.legacyId, eventId: event.id,
-                  roster: placingRoster, builder: records, lists: armyLists }
-              : undefined}
           />
+
+          {event.canManageClub ? (
+            <Box sx={{ mt: 2 }}>
+              <LinkButton href={`/clubs/${slug}/manage/events/${event.id}/placings`}
+                variant="outlined" size="small">
+                {event.placings.length ? "Edit the results" : "Record the results"}
+              </LinkButton>
+            </Box>
+          ) : null}
         </Section>
       ) : null}
 
@@ -344,6 +348,18 @@ export default async function EventPage({
           trail={trail}
           hasAttendees={attendees.length > 0}
         />
+      ) : null}
+
+      {/* The same gallery the club page uses, with the same lightbox, arrows
+          and counter: an event's photos are photos and should open the way
+          every other photo on the site opens. It draws nothing below two,
+          because the first one is already the banner above and showing it
+          twice is the clutter 16c was about. */}
+      {event.images.length > 1 ? (
+        <Section title="Photos" icon={PhotoLibraryIcon} navLabel="Photos">
+          <ClubGallery images={event.images} slug={event.clubSlug}
+            name={event.clubName} />
+        </Section>
       ) : null}
 
       {/* The same chips the club page and the map use. An event lists its own

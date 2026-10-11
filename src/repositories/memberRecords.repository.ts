@@ -139,8 +139,12 @@ const rpc = async (name: string, args: Record<string, unknown>) => {
   if (error) throw new Error(error.message);
 };
 
-export const linkStanding = (standingId: number, profileId: string | null) =>
-  rpc("link_standing_member", { p_standing: standingId, p_profile: profileId });
+export const linkStanding = (
+  standingId: number, profileId: string | null, code: string | null = null,
+) => rpc("link_standing_member",
+  { p_standing: standingId, p_profile: profileId, p_code: code });
 
-export const linkResult = (resultId: number, profileId: string | null) =>
-  rpc("link_event_result_member", { p_result: resultId, p_profile: profileId });
+export const linkResult = (
+  resultId: number, profileId: string | null, code: string | null = null,
+) => rpc("link_event_result_member",
+  { p_result: resultId, p_profile: profileId, p_code: code });

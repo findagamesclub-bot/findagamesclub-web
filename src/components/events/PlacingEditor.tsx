@@ -15,6 +15,7 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import PlacingArmyFields from "./PlacingArmyFields";
 import PlacingPlayerField from "./PlacingPlayerField";
+import MemberCodeField from "@/components/results/MemberCodeField";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { useActionSuccess } from "@/hooks/useActionSuccess";
 import { useCatalogue } from "@/hooks/useCatalogue";
@@ -76,7 +77,7 @@ export default function PlacingEditor({
   // Everything the army half of this dialog holds, including the reset that
   // follows whichever placing was opened. The form itself is keyed on the same
   // id, which is what resets the plain fields.
-  const { profileId, setProfileId, army, setArmy, listId, pickList, theirLists } =
+  const { linked, setLinked, profileId, army, setArmy, listId, pickList, theirLists } =
     usePlacingArmy(open, placing, lists);
 
   const send = (data: FormData) => {
@@ -131,6 +132,9 @@ export default function PlacingEditor({
         <form action={send} key={placing?.id ?? "new"}>
           <input type="hidden" name="placingId" value={placing?.id ?? ""} />
           <input type="hidden" name="profileId" value={profileId ?? ""} />
+          {/* The server checks the code itself rather than trusting that the
+              browser resolved it, so it has to travel with the save. */}
+          <input type="hidden" name="memberCode" value={linked?.code ?? ""} />
 
           <DialogContent dividers>
             <Stack spacing={2.5}>
@@ -144,8 +148,16 @@ export default function PlacingEditor({
                 sx={{ maxWidth: 180 }}
               />
 
-              <PlacingPlayerField roster={roster} name={placing?.name ?? ""}
-                onPick={setProfileId} />
+              <Box>
+                <PlacingPlayerField roster={roster} name={placing?.name ?? ""}
+                  onPick={setLinked} />
+                <MemberCodeField
+                  slug={slug} linked={linked} onFound={setLinked}
+                  onClear={() => setLinked(null)}
+                  unlinkedNote={"Leave it and the result still shows, under this "
+                    + "name, with nobody's profile behind it."}
+                />
+              </Box>
 
               <PlacingArmyFields
                 builder={builder} catalogue={catalogue}

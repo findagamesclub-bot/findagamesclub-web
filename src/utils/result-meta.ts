@@ -9,6 +9,8 @@
  * enforces both.
  */
 
+import { playsFortyK } from "./event-meta";
+
 export const DEPLOYMENTS = [
   { value: "search-and-destroy", label: "Search and Destroy" },
   { value: "dawn-of-war", label: "Dawn of War" },
@@ -74,4 +76,40 @@ export function isLocked(value: unknown): boolean {
 export function safeDeployment(value: unknown): string {
   const clean = String(value ?? "").trim().toLowerCase();
   return DEPLOYMENTS.some((d) => d.value === clean) ? clean : "";
+}
+
+/**
+ * Whether the match setup fields mean anything for this game.
+ *
+ * Mission, deployment and terrain are 40k's own vocabulary: a Blood Bowl
+ * result has no deployment and the six this file lists are 40k's six. The
+ * client asked for them to be "hidden unless Warhammer 40k game is selected.
+ * Any other game result should just record the score and the result state."
+ *
+ * The result state is NOT setup. It is the club's ruling on the game and
+ * applies whatever was played, which is why it is not in here.
+ */
+export function recordsMatchSetup(game: string | null | undefined): boolean {
+  return playsFortyK([game ?? ""]);
+}
+
+export type MatchSetup = { mission: string; deployment: string; terrain: string };
+
+const NO_SETUP: MatchSetup = { mission: "", deployment: "", terrain: "" };
+
+/**
+ * What to store for a game that no longer shows those fields.
+ *
+ * Hiding a field is not the same as emptying it. Without this, a 40k result
+ * corrected to Blood Bowl keeps a mission and a deployment nobody can see or
+ * edit, and the tracker goes on counting them. Same shape and the same reason
+ * as `armiesFor` in `games.service`, which 0165 added for the army half.
+ *
+ * An undefined game means "not being changed", so the setup is left alone.
+ */
+export function matchSetupFor(
+  game: string | undefined, setup: MatchSetup,
+): MatchSetup {
+  if (game !== undefined && !recordsMatchSetup(game)) return NO_SETUP;
+  return setup;
 }

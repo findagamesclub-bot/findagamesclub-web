@@ -15,6 +15,7 @@ type EventRow = Pick<TableRow<"club_events">,
   | "end_time" | "event_type" | "event_types" | "formats" | "featured_games" | "facilities"
   | "round_count" | "price" | "tickets_available" | "venue_name" | "venue_address"
   | "venue_postcode" | "info_board" | "bestcoast_link" | "logo_src" | "logo_alt"
+  | "logo_path"
 > & {
   status: string;
   cancel_reason: string | null;
@@ -43,7 +44,7 @@ export async function findEvent(clubSlug: string, legacyId: string) {
       `id, legacy_id, title, summary, start_date, start_time, end_date, end_time,
        event_type, event_types, formats, featured_games, facilities, round_count,
        price, tickets_available, venue_name, venue_address, venue_postcode,
-       info_board, bestcoast_link, logo_src, logo_alt, status, cancel_reason,
+       info_board, bestcoast_link, logo_src, logo_alt, logo_path, status, cancel_reason,
        clubs!inner(id, slug, name, owner_id, venue_name, venue_address, venue_postcode,
                    latitude, longitude, club_images(src, alt, position),
                    club_membership_tiers(tier_key, label, price, price_duration, description,

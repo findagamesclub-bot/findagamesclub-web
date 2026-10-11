@@ -39,6 +39,17 @@ export default function ReportButton({
   /** This reader already has an open report on it. */
   reported?: boolean;
 }) {
+  // Who actually reads this one. 0128 moved board posts, replies, event board
+  // posts and messages to the club's own team and left this copy saying "it
+  // goes to an admin, not to the club" for all six kinds. The client read that,
+  // reported a board post, looked in their own queue and found nothing, and
+  // asked for board reports to go to the club. They already do. The sentence
+  // was the only thing still saying otherwise.
+  //
+  // A review is the one kind that is always a site admin's: a club ruling on a
+  // review of itself is the conflict of interest the queue exists to avoid.
+  const toAdmin = type === "review";
+
   const small = useMediaQuery("(max-width:599px)");
   const [state, act, busy] = useActionState<ReportState, FormData>(reportAction, {});
   useActionToast(state);
@@ -87,8 +98,11 @@ export default function ReportButton({
       {already ? (
         <Button variant="text" size="small" disabled
           startIcon={label ? <Flag /> : undefined}
-          title={`You reported this ${what}. An admin is looking at it.`}
-          aria-label={`You reported this ${what}. An admin is looking at it.`}
+          // Where it went depends on who wrote it, which this button cannot
+          // know, so it points at the page that does rather than naming the
+          // wrong reader.
+          title={`You reported this ${what}. Your reports page says what happened to it.`}
+          aria-label={`You reported this ${what}. Your reports page says what happened to it.`}
           sx={{ fontSize: "0.78rem",
                 // Disabled, so MUI's own muting would take it below the
                 // contrast floor. The colour is set back explicitly.
@@ -125,14 +139,19 @@ export default function ReportButton({
               start(() => act(data));
             }}>
             <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-              An admin reads it and decides. Nothing disappears in the meantime,
-              and the person who wrote it is not told who reported it.
+              {toAdmin
+                ? "A site admin reads it and decides, never the club itself. Nothing disappears in the meantime, and the person who wrote it is not told who reported it."
+                : "The club's own team reads it and decides. If one of them wrote it, a site admin gets it instead. Nothing disappears in the meantime, and the person who wrote it is not told who reported it."}
             </Typography>
 
             <TextField label="What is wrong with it" value={reason} multiline minRows={3}
               autoFocus required
               onChange={(e) => setReason(e.target.value.slice(0, 500))}
-              helperText="A line is enough. It goes to an admin, not to the club." />
+              // Just the field. Who reads the report is said in the paragraph
+              // above, where there is room for the whole rule: a long helper
+              // under a full-width box wraps into something that reads as a
+              // warning.
+              helperText="A line is enough." />
 
             <Stack direction="row" spacing={1.5} sx={{ justifyContent: "flex-end", pb: 1 }}>
               <Button variant="text" onClick={() => setOpen(false)} disabled={busy}>

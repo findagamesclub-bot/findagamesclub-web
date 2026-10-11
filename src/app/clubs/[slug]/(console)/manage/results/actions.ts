@@ -22,7 +22,8 @@ export async function linkNameAction(
 
   if (!id || !slug) return { error: "Something went wrong. Reload and try again." };
 
-  const result = await linkName(kind, id, profileId);
+  const result = await linkName(kind, id, profileId,
+    String(data.get("memberCode") ?? "") || null);
   if (!result.ok) return { error: result.error };
 
   revalidatePath(`/clubs/${slug}/manage/results`);
@@ -54,7 +55,10 @@ export async function linkPersonAction(
 
   if (!rows.length) return { error: "Nothing to match." };
 
-  const result = await linkMany(rows, profileId);
+  // Empty for one of the club's own members, who need none. 0177 checks it
+  // rather than trusting that the browser resolved the code into an id.
+  const result = await linkMany(rows, profileId,
+    String(data.get("memberCode") ?? "") || null);
   revalidatePath(`/clubs/${slug}/manage/results`);
 
   if (!result.ok) {

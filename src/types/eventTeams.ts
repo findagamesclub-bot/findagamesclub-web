@@ -51,6 +51,13 @@ export type TeamFixture = {
   scoreTwo: number | null;
   gamesOne: number;
   gamesTwo: number;
+  /**
+   * The club's own score for this fixture, where a format does not decide it
+   * by totalling the players: 5 against 4 rather than 200 against 190. Null
+   * means they have not said, and the players' total stands (0176).
+   */
+  pointsOne: number | null;
+  pointsTwo: number | null;
   position: number;
   /** Whether the round it belongs to is on show. */
   published: boolean;

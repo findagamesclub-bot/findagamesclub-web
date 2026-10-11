@@ -50,7 +50,7 @@ export default async function TeamsPage({
 
       <PageHead
         title="Teams"
-        lede="Who plays for whom, and in what order. Board one plays the other team's board one, so the list is the captain's call. Once the teams are in, every round is drawn from them."
+        lede="Who plays for whom, and in what order. The draw starts by pairing first against first, so the list is the captain's call, and any table can be changed on the draw afterwards. Once the teams are in, every round is drawn from them."
       />
 
       <TeamBoard slug={slug} eventId={event.id} teamEvent={teamEvent}

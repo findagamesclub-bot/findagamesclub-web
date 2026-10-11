@@ -1,6 +1,8 @@
 import "server-only";
 
 import * as repo from "@/repositories/memberships.repository";
+import { JOIN_DATE_ERRORS, JOIN_DATE_MESSAGES, joinDateProblem } from "@/utils/join-date";
+import { londonToday } from "./bookingCalendar.service";
 import * as notify from "./membership-notify.service";
 import type { ClubMember, MyMembership } from "@/types/membership";
 
@@ -282,5 +284,32 @@ export async function dismissTierRequest(membershipId: number) {
     return { ok: true as const };
   } catch {
     return { ok: false as const, error: "Only the club owner can clear that request." };
+  }
+}
+
+/**
+ * The club correcting when a member joined.
+ *
+ * Checked here as well as in SQL, because a refusal that arrives after a round
+ * trip is a refusal the field could have given straight away, and the database
+ * has to refuse regardless: the anon key is public.
+ */
+export async function setJoinDate(membershipId: number, joined: string) {
+  const problem = joinDateProblem(joined, londonToday());
+  if (problem) return { ok: false as const, error: JOIN_DATE_MESSAGES[problem] };
+
+  try {
+    await repo.setJoinedAt(membershipId, joined.trim());
+    return { ok: true as const };
+  } catch (error) {
+    const raw = error instanceof Error ? error.message : String(error);
+    for (const [code, said] of Object.entries(JOIN_DATE_ERRORS)) {
+      if (raw.includes(code)) return { ok: false as const, error: said };
+    }
+    if (raw.includes("NOT_PERMITTED") || raw.includes("row-level security")) {
+      return { ok: false as const, error: "Only the club can change a join date." };
+    }
+    console.error("[join date] unexpected refusal:", raw);
+    return { ok: false as const, error: "That did not save. Try again." };
   }
 }

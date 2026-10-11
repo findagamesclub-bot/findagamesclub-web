@@ -104,3 +104,13 @@ export async function saveOwnProfile(id: string, draft: ProfileDraft) {
 
   return { ok: true as const };
 }
+
+/**
+ * Names for a handful of accounts, by id.
+ *
+ * Catches rather than throws: this fills in a label beside a row that is
+ * already readable, so a failure should cost the name and not the page.
+ */
+export async function namesFor(ids: string[]): Promise<Map<string, string>> {
+  return repo.findProfileNames(ids).catch(() => new Map<string, string>());
+}

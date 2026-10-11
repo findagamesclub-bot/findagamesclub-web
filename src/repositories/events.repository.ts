@@ -21,6 +21,7 @@ export async function findEvents(params: { from?: string; to?: string; limit?: n
        event_types, formats, facilities,
        price, round_count, tickets_available, bestcoast_link,
        venue_name, venue_address, venue_postcode, featured_games, logo_src, logo_alt,
+       logo_path,
        created_at,
        club_event_ticket_types(price),
        clubs!inner(slug, name, city, logo_url, logo_path, status, latitude, longitude, ages,
@@ -158,6 +159,7 @@ export async function saveEventPlacing(params: {
   rank: number;
   name: string;
   profileId: string | null;
+  memberCode?: string | null;
   faction: string;
   detachment: string;
   disposition: string;
@@ -178,6 +180,7 @@ export async function saveEventPlacing(params: {
     p_faction: params.faction,
     p_detachment: params.detachment,
     p_disposition: params.disposition,
+    p_code: params.memberCode ?? null,
   });
 
   if (error) throw new Error(error.message);

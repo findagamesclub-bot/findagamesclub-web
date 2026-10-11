@@ -71,6 +71,11 @@ export async function pairingsAction(
         // while somebody added a team draws the teams that exist now.
         return teams.drawRound(event.id, round, await teams.getTeams(event.id));
 
+      case "score-fixture":
+        return teams.scoreFixture(event.id, Number(data.get("fixtureId")) || 0,
+          String(data.get("teamPointsOne") ?? ""),
+          String(data.get("teamPointsTwo") ?? ""));
+
       case "remove-fixture":
         return teams.removeFixture(event.id, Number(data.get("fixtureId")) || 0);
 

@@ -28,23 +28,33 @@ export type ClubPhoto = {
  * on the site renders wider than 1200. Uploading the original would fail on
  * exactly the phones most likely to be used on a club night.
  */
-export function useClubPhotos(owner: MediaOwner, initial: ClubPhoto[]) {
+/**
+ * `max` is the one thing that differs between a club and an event: ten photos
+ * for a club (0087), five for an event (0173). The cap is counted in the
+ * database either way; this is where somebody is told, which is the split 0087
+ * already describes.
+ */
+export function useClubPhotos(
+  owner: MediaOwner, initial: ClubPhoto[], max: number = MAX_CLUB_IMAGES,
+) {
   const [photos, setPhotos] = useState<ClubPhoto[]>(initial);
   const [busy, setBusy] = useState(false);
   /** Paths whose files go once the save that drops their rows succeeds. */
   const [removed, setRemoved] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const room = MAX_CLUB_IMAGES - photos.length;
+  const room = max - photos.length;
 
   async function add(files: File[], kind: MediaKind = "photos") {
     setError(null);
     if (!files.length) return;
 
     if (files.length > room) {
+      // Said in words rather than a bare figure, and the figure comes from
+      // the cap rather than being typed into the sentence twice.
       setError(room > 0
-        ? `Ten photos at most, so only ${room} more will fit.`
-        : "Ten photos at most. Remove one to add another.");
+        ? `${max} photos at most, so only ${room} more will fit.`
+        : `${max} photos at most. Remove one to add another.`);
       if (room < 1) return;
     }
 
@@ -88,6 +98,12 @@ export function useClubPhotos(owner: MediaOwner, initial: ClubPhoto[]) {
     const going = photos.find((p) => p.key === key);
     if (!going) return;
 
+    // The cap refusal names how much room was left when it fired, so leaving
+    // it up after a removal tells somebody "only 2 more will fit" about a
+    // list that now has room for three. A refusal outliving the condition it
+    // described reads as a rule that is still biting.
+    setError(null);
+
     setPhotos((held) => held.filter((p) => p.key !== key));
     if (going.preview.startsWith("blob:")) URL.revokeObjectURL(going.preview);
 
@@ -95,7 +111,8 @@ export function useClubPhotos(owner: MediaOwner, initial: ClubPhoto[]) {
     if (path) setRemoved((held) => [...held, path]);
   }
 
-  const move = (key: string, by: -1 | 1) =>
+  const move = (key: string, by: -1 | 1) => {
+    setError(null);
     setPhotos((held) => {
       const at = held.findIndex((p) => p.key === key);
       const to = at + by;
@@ -106,6 +123,7 @@ export function useClubPhotos(owner: MediaOwner, initial: ClubPhoto[]) {
       next[to] = moving;
       return next;
     });
+  };
 
   const describe = (key: string, alt: string) =>
     setPhotos((held) => held.map((p) => (p.key === key ? { ...p, alt } : p)));

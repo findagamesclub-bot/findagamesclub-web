@@ -5,6 +5,7 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import RoundTables from "./RoundTables";
+import { fixtureScores } from "@/utils/team-standings";
 import { display, mono, tokens } from "@/lib/tokens";
 import type { PairingMatch } from "@/types/eventEditor";
 import type { TeamFixture } from "@/types/eventTeams";
@@ -20,11 +21,16 @@ import type { PairingArmy } from "@/services/eventPairingArmies.service";
  * parent: Edit, Armies and the bin all keep working exactly as they do on an
  * individual draw.
  *
- * The score is never typed here. It is the sum of the tables below it, kept by
- * 0168's trigger, so a club types a table and the block above it moves.
+ * The score shown is the club's own where they have typed one, and the sum of
+ * the tables below otherwise. 0168 refused to let a team score be typed at
+ * all, on the grounds that it could then disagree with the games under it;
+ * 0176 keeps both instead, because they answer two different questions. When a
+ * club has scored a fixture itself the players' total sits beside it, so
+ * nothing is hidden and the figure can always be checked.
  */
 export default function TeamFixtures({
-  fixtures, busy, armies, recordsArmies, onEdit, onArmies, onRemove, onRemoveFixture,
+  fixtures, busy, armies, recordsArmies, onEdit, onArmies, onRemove,
+  onRemoveFixture, onScoreFixture,
 }: {
   fixtures: TeamFixture[];
   busy: boolean;
@@ -34,12 +40,18 @@ export default function TeamFixtures({
   onArmies: (match: PairingMatch) => void;
   onRemove: (match: PairingMatch) => void;
   onRemoveFixture: (fixture: TeamFixture) => void;
+  onScoreFixture: (fixture: TeamFixture) => void;
 }) {
   return (
     <Stack spacing={2}>
       {fixtures.map((fixture) => {
         const bye = fixture.teamTwo === null;
-        const scored = fixture.scoreOne !== null && fixture.scoreTwo !== null;
+        const { one, two } = fixtureScores(fixture);
+        const scored = one !== null && two !== null;
+        // Both figures exist and differ, so the total is worth showing beside
+        // the one the club typed.
+        const typed = fixture.pointsOne !== null && fixture.pointsTwo !== null;
+        const totalled = fixture.scoreOne !== null && fixture.scoreTwo !== null;
         const played = fixture.tables.filter(
           (table) => table.scoreOne !== null || table.scoreTwo !== null).length;
 
@@ -82,14 +94,31 @@ export default function TeamFixtures({
               <Stack direction="row" spacing={1.5} sx={{ alignItems: "center",
                        justifySelf: "end",
                        gridColumn: { xs: "1 / -1", sm: "auto" } }}>
-                {/* Added up from the tables, so it is a figure and not a
-                    control. Muted until somebody has played, because a fixture
-                    nobody has started is not a nil-nil draw. */}
-                <Typography sx={{ fontFamily: mono, fontSize: "1rem", fontWeight: 700,
-                                  whiteSpace: "nowrap", flexShrink: 0,
-                                  color: scored ? tokens.ink : tokens.inkMuted }}>
-                  {scored ? `${fixture.scoreOne} - ${fixture.scoreTwo}` : "not played"}
-                </Typography>
+                {/* Muted until somebody has played, because a fixture nobody
+                    has started is not a nil-nil draw. */}
+                <Stack sx={{ alignItems: "flex-end", flexShrink: 0 }}>
+                  <Typography sx={{ fontFamily: mono, fontSize: "1rem", fontWeight: 700,
+                                    whiteSpace: "nowrap",
+                                    color: scored ? tokens.ink : tokens.inkMuted }}>
+                    {scored ? `${one} - ${two}` : "not played"}
+                  </Typography>
+                  {/* Only when the two differ: repeating the same pair under
+                      itself is a second line saying nothing. */}
+                  {typed && totalled ? (
+                    <Typography sx={{ fontFamily: mono, fontSize: "0.6rem",
+                                      letterSpacing: "0.06em", color: tokens.inkMuted,
+                                      whiteSpace: "nowrap" }}>
+                      {`PLAYERS ${fixture.scoreOne}-${fixture.scoreTwo}`}
+                    </Typography>
+                  ) : null}
+                </Stack>
+
+                {bye ? null : (
+                  <Button size="small" disabled={busy} sx={{ flexShrink: 0 }}
+                    onClick={() => onScoreFixture(fixture)}>
+                    Score
+                  </Button>
+                )}
 
                 <Button size="small" disabled={busy}
                   sx={{ flexShrink: 0, color: tokens.danger }}

@@ -29,10 +29,12 @@ const PAGE = PER_PAGE.cards;
  * whole set is already on the page for the counts.
  */
 export default function RenewalBrowser({
-  rows, slug, tiers, faction,
-}: {
+  rows, slug, tiers, faction, today,
+  }: {
   rows: Row[];
   slug: string;
+  /** The club's own day, carried down rather than read in the browser. */
+  today: string;
   tiers: MembershipTier[];
   faction: Faction;
 }) {
@@ -111,7 +113,7 @@ export default function RenewalBrowser({
                        lg: "repeat(3, minmax(0, 1fr))",
                      } }}>
             {paged.shown.map((row) => (
-              <RenewalRow key={row.member.membershipId} row={row}
+              <RenewalRow key={row.member.membershipId} row={row} today={today}
                 slug={slug} tiers={tiers} faction={faction} />
             ))}
           </Box>

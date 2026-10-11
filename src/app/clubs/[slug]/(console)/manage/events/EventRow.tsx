@@ -104,6 +104,12 @@ export default function EventRow({
       <Menu anchorEl={menu} open={Boolean(menu)} onClose={() => setMenu(null)}
         slotProps={{ paper: { sx: { minWidth: 200 } } }}>
         <MenuItem component={NextLink} href={from("/pairings")}>The draw</MenuItem>
+        {/* Directly under the draw, because they are the same evening's work:
+            the rounds while it runs, the places when it finishes. It used to
+            be done by leaving the console for the public page. */}
+        <MenuItem component={NextLink} href={from("/placings")}>
+          Results and placings
+        </MenuItem>
         {/* Below the draw, because a club reads down to the thing it runs on
             the day and teams are set up once, weeks before. */}
         <MenuItem component={NextLink} href={from("/teams")}>Teams</MenuItem>

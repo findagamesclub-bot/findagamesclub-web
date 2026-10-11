@@ -23,10 +23,12 @@ import type { MembershipTier } from "@/types/clubDetail";
  * days ago" is a job; "Paid to 26 Sep" is not.
  */
 export default function RenewalRow({
-  row, slug, tiers, faction,
+  row, slug, tiers, faction, today,
 }: {
   row: Row;
   slug: string;
+  /** The club's own day, carried down so no date is read in the browser. */
+  today: string;
   tiers: MembershipTier[];
   faction: Faction;
 }) {
@@ -84,6 +86,8 @@ export default function RenewalRow({
           tierKey={row.member.tierKey}
           requestedTierKey={row.member.requestedTierKey}
           tierRequestedAt={row.member.tierRequestedAt}
+          joinedAt={row.member.joinedAt}
+          today={today}
           tiers={tiers}
           standing={row.standing}
           payments={row.payments}

@@ -50,7 +50,7 @@ export default function TeamBoard({
   const [removing, setRemoving] = useState<EventTeam | null>(null);
 
   // Closed by the answer landing, never by the click. A team is a name and
-  // four boards, and the refusal that actually happens is somebody already
+  // four players, and the refusal that actually happens is somebody already
   // being in another team: closing on the click threw the whole team away and
   // then explained why. Same rule the placing editor learned.
   useActionSuccess(state, () => { setEditing(undefined); setPlacing(null); });
@@ -119,8 +119,8 @@ export default function TeamBoard({
               fixes it by finding somebody rather than by being blocked. */}
           {uneven ? (
             <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-              Your teams do not all have the same number of boards. The draw
-              still works, and the extra boards sit with nobody to play.
+              Your teams do not all have the same number of players. The draw
+              still works, and the extra players sit with nobody to play.
             </Typography>
           ) : null}
 
@@ -141,7 +141,7 @@ export default function TeamBoard({
             ) : (
               <EmptyState
                 title="No teams yet"
-                description="Make a team, give it a name, and list who plays on which board. Board one plays the other team's board one, so the order is the captain's call."
+                description="Make a team, give it a name, and list its players in the order they play. The draw starts by pairing first against first, so the order is the captain's call."
               />
             )}
           </BusyOverlay>

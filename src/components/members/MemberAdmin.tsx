@@ -13,8 +13,9 @@ import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import CloseIcon from "@mui/icons-material/Close";
 import TuneIcon from "@mui/icons-material/Tune";
-import { changeTierAction, dismissTierRequestAction, recordPaymentAction }
+import { changeTierAction, dismissTierRequestAction, recordPaymentAction, setJoinDateAction }
   from "@/app/clubs/[slug]/membership-actions";
+import MemberJoinDate from "./MemberJoinDate";
 import MemberTierPicker from "./MemberTierPicker";
 import PaymentHistory from "./PaymentHistory";
 import RecordPayment from "./RecordPayment";
@@ -36,6 +37,10 @@ type Props = {
   standing: PaymentStanding;
   payments: MembershipPayment[];
   faction: Faction;
+  /** What is stored as their join date, which the club can put right. */
+  joinedAt?: string | null;
+  /** The club's own day, for the years this dialog counts. */
+  today: string;
   /**
    * The roster card says nothing about money, so this carries its own standing
    * line. The Memberships card already states it underneath, and the same date
@@ -58,7 +63,8 @@ function initials(name: string): string {
  */
 export default function MemberAdmin({
   membershipId, slug, memberName, tierKey, requestedTierKey = null,
-  tierRequestedAt = null, tiers, standing, payments, faction, showStatus = true,
+  tierRequestedAt = null, tiers, standing, payments, faction,
+  joinedAt = null, today, showStatus = true,
 }: Props) {
   const [open, setOpen] = useState(false);
   const fullScreen = useMediaQuery("(max-width:600px)");
@@ -66,10 +72,12 @@ export default function MemberAdmin({
   const [tierState, changeTier, changingTier] = useActionState(changeTierAction, {});
   const [dismissState, dismiss, dismissing] = useActionState(dismissTierRequestAction, {});
   const [payState, recordPayment, paying] = useActionState(recordPaymentAction, {});
+  const [joinState, setJoinDate, savingJoin] = useActionState(setJoinDateAction, {});
 
   useActionToast(tierState);
   useActionToast(payState);
   useActionToast(dismissState);
+  useActionToast(joinState);
 
   const tier = tiers.find((t) => t.key === tierKey) ?? null;
   const options = tier?.billingOptions ?? [];
@@ -177,6 +185,14 @@ export default function MemberAdmin({
                 </Stack>
               </Box>
             ) : null}
+
+            {/* Before the tier and the money, because it is the oldest fact
+                about a membership and because the job this exists for, a club
+                correcting the room on the day it lists, is done once per
+                member and then never again. */}
+            <MemberJoinDate membershipId={membershipId} slug={slug}
+              joinedAt={joinedAt} today={today} busy={savingJoin}
+              send={setJoinDate} />
 
             {tiers.length > 1 ? (
               <MemberTierPicker membershipId={membershipId} slug={slug} tiers={tiers}

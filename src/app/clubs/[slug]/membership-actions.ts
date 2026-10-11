@@ -164,3 +164,31 @@ export async function dismissTierRequestAction(
   if (!result.ok) return { error: result.error };
   return { notice: "Request cleared." };
 }
+
+/**
+ * The club putting a member's join date right.
+ *
+ * Its own action rather than another intent on `changeTierAction`: the two
+ * answer different questions and the dialog gives each of them its own
+ * spinner, which a shared pending flag cannot do.
+ */
+export async function setJoinDateAction(
+  _prev: MembershipState,
+  data: FormData,
+): Promise<MembershipState> {
+  const viewer = await getCurrentProfile();
+  if (!viewer) return { error: "Sign in first." };
+
+  const membershipId = Number(data.get("membershipId"));
+  const slug = String(data.get("slug") ?? "");
+  const joined = String(data.get("joinedAt") ?? "");
+  if (!membershipId || !slug) {
+    return { error: "Something went wrong. Reload and try again." };
+  }
+
+  const result = await memberships.setJoinDate(membershipId, joined);
+  if (!result.ok) return { error: result.error };
+
+  refresh(slug);
+  return { notice: "Join date saved." };
+}

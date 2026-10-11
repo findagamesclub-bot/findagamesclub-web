@@ -100,7 +100,7 @@ export default function ResultDialog({
   // was recorded as well, so a game changed from 40k does not keep a faction
   // nobody can see. `canonicalGame` inside `playsFortyK` is what makes
   // "warhammer 40k" and "Warhammer 40,000" the same answer.
-  const recordsArmy = playsFortyK([title]);
+  const isFortyK = playsFortyK([title]);
 
   const [state, submit, busy] = useActionState<ResultState, FormData>(recordResultAction, {});
   const [clearState, clear, clearing] = useActionState<ResultState, FormData>(clearResultAction, {});
@@ -169,11 +169,12 @@ export default function ResultDialog({
                   whether they appear. A club night is one table and one game,
                   and the game was typed when the table was booked, so this
                   opens with that and is usually left alone. */}
-              <GameField value={title} options={knownGames()}
+              <GameField value={title} recorded={game.gameTitle} options={knownGames()}
                 onChange={setTitle} disabled={readOnly}
                 revealsArmy={game.builder !== null}
                 hasArmy={Boolean(game.armies.mine.factionId || game.armies.theirs.factionId
-                  || game.myArmy || game.theirArmy)} />
+                  || game.myArmy || game.theirArmy)}
+                hasSetup={Boolean(mission || deployment || terrain)} />
 
               {/* Two switches, not one. The club decides whether it records
                   armies at all; the game decides whether these particular
@@ -181,12 +182,12 @@ export default function ResultDialog({
                   Blood Bowl on Tuesdays was being asked for a detachment on
                   both, which is the client's own example. */}
               <ArmyFields
-                builder={recordsArmy ? game.builder : null} catalogue={catalogue}
+                builder={isFortyK ? game.builder : null} catalogue={catalogue}
                 loading={loading} failed={failed}
                 one={mine} two={theirs}
                 onOne={setMine} onTwo={setTheirs}
                 twoTitle={`${game.opponentName}'s army`}
-                fallback={recordsArmy ? (
+                fallback={isFortyK ? (
                   <Stack direction="row" spacing={2}>
                     <TextField name="myArmy" label="Your army" fullWidth
                       defaultValue={game.myArmy} placeholder="Death Guard" />
@@ -199,6 +200,7 @@ export default function ResultDialog({
               <MatchContextFields
                 mission={mission} deployment={deployment} terrain={terrain}
                 confirmation={confirmation} canManageClub={canManageClub}
+                recordsSetup={isFortyK}
                 onMission={setMission} onDeployment={setDeployment}
                 onTerrain={setTerrain}
                 onConfirmation={(value) => setConfirmation(toConfirmation(value))}

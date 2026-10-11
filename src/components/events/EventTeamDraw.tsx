@@ -7,6 +7,7 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import BusyOverlay from "@/components/ui/BusyOverlay";
 import { fold } from "@/utils/text";
+import { fixtureScores } from "@/utils/team-standings";
 import { display, mono, tokens, type Faction } from "@/lib/tokens";
 import type { TeamFixture } from "@/types/eventTeams";
 
@@ -76,7 +77,11 @@ export default function EventTeamDraw({ fixtures, faction, viewerName }: {
 
                 {list.map((fixture) => {
                   const bye = fixture.teamTwo === null;
-                  const scored = fixture.scoreOne !== null && fixture.scoreTwo !== null;
+                  // The club's own score where they typed one, the players'
+                  // total otherwise (0176). A reader should see the figure the
+                  // tournament actually runs on.
+                  const { one, two } = fixtureScores(fixture);
+                  const scored = one !== null && two !== null;
 
                   return (
                     <Box key={fixture.id}
@@ -100,8 +105,7 @@ export default function EventTeamDraw({ fixtures, faction, viewerName }: {
                         <Typography sx={{ fontFamily: mono, fontSize: "0.9rem",
                                           fontWeight: 700, whiteSpace: "nowrap",
                                           color: scored ? tokens.ink : tokens.inkMuted }}>
-                          {bye ? "BYE" : scored
-                            ? `${fixture.scoreOne} - ${fixture.scoreTwo}` : "to play"}
+                          {bye ? "BYE" : scored ? `${one} - ${two}` : "to play"}
                         </Typography>
                       </Stack>
 

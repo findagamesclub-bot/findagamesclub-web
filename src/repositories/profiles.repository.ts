@@ -20,6 +20,26 @@ export async function findProfileById(id: string) {
 }
 
 /**
+ * Names for a handful of accounts, by id.
+ *
+ * For screens that hold profile ids and need to say whose they are. The club
+ * roster answers that for a club's own members and answers nothing for a
+ * visitor linked by their member code, which is exactly the row somebody opens
+ * that screen to check.
+ */
+export async function findProfileNames(ids: string[]): Promise<Map<string, string>> {
+  const wanted = [...new Set(ids.filter(Boolean))];
+  if (!wanted.length) return new Map();
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profiles").select("id, full_name").in("id", wanted);
+
+  if (error) throw new Error(`Failed to load names: ${error.message}`);
+  return new Map((data ?? []).map((row) => [row.id, row.full_name]));
+}
+
+/**
  * Only the ten columns the person owns. `role`, `legacy_id` and `is_active` are
  * revoked from `authenticated` at the column level in migration 0001, so
  * including them here would fail at the database rather than silently succeed.

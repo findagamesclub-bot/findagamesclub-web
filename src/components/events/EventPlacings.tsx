@@ -15,10 +15,11 @@ import Pager from "@/components/ui/Pager";
 import PlacingCard from "./PlacingCard";
 import PlacingRow from "./PlacingRow";
 import PlacingEditor, { type PlacingTarget } from "./PlacingEditor";
+import ArmyListDialog from "./ArmyListDialog";
 import { usePagedList } from "@/hooks/usePagedList";
 import { fold } from "@/utils/text";
 import { tokens, type Faction } from "@/lib/tokens";
-import type { EventPlacing } from "@/types/event";
+import type { EventPlacing, ResultArmy } from "@/types/event";
 import type { Builder, MemberList } from "@/services/resultArmies.service";
 import { PER_PAGE } from "@/utils/paging";
 
@@ -67,6 +68,7 @@ export default function EventPlacings({
   viewerName?: string | null;
 }) {
   const [target, setTarget] = useState<PlacingTarget | null>(null);
+  const [list, setList] = useState<{ player: string; army: ResultArmy } | null>(null);
   const [query, setQuery] = useState("");
   const settled = useDeferredValue(query);
   const busy = settled !== query;
@@ -152,7 +154,8 @@ export default function EventPlacings({
                 {paged.shown.map((p, i) => (
                   <PlacingRow key={p.id} p={p} faction={faction} striped={i % 2 === 1}
                     mine={Boolean(me) && fold(p.name) === me}
-                    onEdit={admin ? () => setTarget({ placing: p }) : undefined} />
+                    onEdit={admin ? () => setTarget({ placing: p }) : undefined}
+                    onOpenList={(player, army) => setList({ player, army })} />
                 ))}
               </Box>
 
@@ -171,6 +174,18 @@ export default function EventPlacings({
           ) : null}
         </Stack>
       </BusyOverlay>
+
+      {/* The podium cards render their list inline, which is the detail a
+          reader came for at the top of a table. The rest of the field opens
+          the same list here instead, because forty of those cards is a page
+          nobody scrolls. */}
+      <ArmyListDialog
+        open={list !== null}
+        onClose={() => setList(null)}
+        player={list?.player ?? ""}
+        army={list?.army ?? null}
+        faction={faction}
+      />
 
       {admin ? (
         <>
