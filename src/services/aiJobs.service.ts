@@ -171,3 +171,8 @@ export async function getClubSpend(club: number) {
   const spent = await repo.monthSpend(club).catch(() => 0);
   return Number(spent) || 0;
 }
+
+/** What the club itself is shown: runs, not pounds. */
+export async function getClubAiUsage(club: number): Promise<repo.ClubAiUsage> {
+  return repo.clubUsage(club).catch(() => ({ runs: 0, members: 0, usedPercent: null }));
+}

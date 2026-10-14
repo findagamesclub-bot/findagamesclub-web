@@ -101,7 +101,8 @@ export default function BookingNight({
         <Box sx={{ flex: 1, minWidth: 0 }} />
 
         {canManage
-          ? <ManageNight faction={faction} session={session} queue={queue} slug={slug} people={people} />
+          ? <ManageNight faction={faction} session={session} queue={queue} slug={slug}
+              clubId={clubId} people={people} />
           : null}
 
         <BookingActions

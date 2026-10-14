@@ -11,6 +11,8 @@
  * this list exists for, and it is exactly what the client could not reach.
  */
 
+import type { Priced } from "./price-lines";
+
 export type RefundStatus = "not_due" | "due" | "refunded";
 
 export type CoachingBookingRow = {
@@ -32,6 +34,8 @@ export type CoachingBookingRow = {
   /** What they were charged after their tier and their points, from 0157. */
   total: number;
   pointsSpent: number;
+  /** The whole sum, so the club can answer "why is it that much". */
+  priced: Priced;
 };
 
 export type BookingFilter = "all" | "unpaid" | "paid" | "cancelled" | "refund";

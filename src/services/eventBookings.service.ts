@@ -54,6 +54,16 @@ function toBooking(row: Row, money?: PaymentStanding): EventBooking {
     discountAmount: Number(row.tier_discount_amount ?? 0),
     total: Number(row.total ?? 0),
     currency: row.currency ?? "GBP",
+    priced: {
+      subtotal: Number(row.subtotal ?? 0),
+      tierLabel: row.membership_tier_label || null,
+      tierPercent: Number(row.tier_discount_percent ?? 0),
+      tierAmount: Number(row.tier_discount_amount ?? 0),
+      points: Number(row.loyalty_points_spent ?? 0),
+      pointsAmount: Number(row.loyalty_discount_amount ?? 0),
+      total: Number(row.total ?? 0),
+      currency: row.currency ?? "GBP",
+    },
     createdAt: row.created_at,
     // Unpaid is the honest default for a booking whose standing could not be
     // read: nothing here takes payment, so "not paid yet" is where every

@@ -1,7 +1,9 @@
 import { notFound, redirect } from "next/navigation";
+import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import NextLink from "next/link";
 import EmptyState from "@/components/ui/EmptyState";
 import ClubSectionHeader from "@/components/clubs/ClubSectionHeader";
 import RivalryTable from "@/components/clubs/RivalryTable";
@@ -10,15 +12,29 @@ import { getClubDetail } from "@/services/clubDetail.service";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
 import { getMyMembership } from "@/services/memberships.service";
+import { getProfile } from "@/services/profiles.service";
 import { getClubRivalries } from "@/services/games.service";
 import { clubIdentity } from "@/utils/club-identity";
 import { backTarget } from "@/utils/back-link";
 import { tokens } from "@/lib/tokens";
 
-export async function generateMetadata({ params }: PageProps<"/clubs/[slug]/rivalries">) {
+export async function generateMetadata({
+  params, searchParams,
+}: PageProps<"/clubs/[slug]/rivalries">) {
   const { slug } = await params;
+  const query = await searchParams;
   const club = await getClubDetail(slug);
-  return { title: club ? `Rivalries · ${club.name}` : "Club not found" };
+  if (!club) return { title: "Club not found" };
+
+  // The narrowed list is a different page, so the tab says so. A link to one
+  // person's rivalries that reads as the club's whole list is a link that
+  // arrives saying the wrong thing in somebody else's bookmarks.
+  const memberId = typeof query.member === "string" ? query.member : "";
+  const name = memberId ? (await getProfile(memberId).catch(() => null))?.fullName : null;
+
+  return { title: name
+    ? `${name}'s rivalries · ${club.name}`
+    : `Rivalries · ${club.name}` };
 }
 
 /**
@@ -27,6 +43,12 @@ export async function generateMetadata({ params }: PageProps<"/clubs/[slug]/riva
  * Members only, like the roster it sits beside: it is a list of the club's
  * people and their results, which is not a visitor's business. The function
  * behind it checks membership itself, since it reads past RLS.
+ *
+ * `?member=` narrows it to one person, which is what the button on their
+ * profile means by "Joe's rivals": that button said one thing and landed on
+ * every pairing at the club. In the address rather than in state, the same
+ * call the badges list makes, so the narrowed list can be sent to somebody,
+ * survives a refresh, and is undone by the back button.
  */
 export default async function ClubRivalriesPage({
   params, searchParams,
@@ -45,8 +67,26 @@ export default async function ClubRivalriesPage({
   if (!canManage && membership.status !== "approved") notFound();
 
   const { faction } = clubIdentity(club.slug, club.name);
-  const back = backTarget(query.from, club);
-  const rivalries = await getClubRivalries(club.id).catch(() => []);
+  const everything = await getClubRivalries(club.id).catch(() => []);
+
+  const memberId = typeof query.member === "string" ? query.member : "";
+  const rivalries = memberId
+    ? everything.filter((row) => row.one.id === memberId || row.two.id === memberId)
+    : everything;
+
+  // The name comes out of the rows where there are any, because both sides
+  // carry it. Only a member with no pairings at all costs a second read, and
+  // that is exactly the case where the heading has nothing else to say.
+  const fromRows = rivalries[0]
+    ? (rivalries[0].one.id === memberId ? rivalries[0].one.name : rivalries[0].two.name)
+    : "";
+  const memberName = !memberId ? ""
+    : fromRows || (await getProfile(memberId).catch(() => null))?.fullName || "This member";
+  const isSelf = memberId === viewer.id;
+
+  const back = memberId
+    ? { href: `/members/${memberId}`, label: isSelf ? "Your profile" : memberName }
+    : backTarget(query.from, club);
 
   const games = rivalries.reduce((total, row) => total + row.played, 0);
   const level = rivalries.filter((row) => row.level && row.played > 1).length;
@@ -55,14 +95,17 @@ export default async function ClubRivalriesPage({
   return (
     <Container maxWidth="md" component="main" sx={{ py: { xs: 4, md: 6 } }}>
       <ClubSectionHeader
-        title="Rivalries"
+        title={memberId
+          ? (isSelf ? "Your rivalries" : `${memberName.trim().split(" ")[0] || memberName}'s rivalries`)
+          : "Rivalries"}
         clubName={club.name}
         clubSlug={club.slug}
         back={back}
         faction={faction}
-        note={rivalries.length
-          ? "Ranked by games played, so the pairs who keep meeting come first."
-          : null}
+        note={!rivalries.length ? null
+          : memberId
+            ? `Every pair ${isSelf ? "you have" : `${memberName} has`} a result with at ${club.name}, ranked by games played.`
+            : "Ranked by games played, so the pairs who keep meeting come first."}
         stats={[
           { label: rivalries.length === 1 ? "pairing" : "pairings",
             value: String(rivalries.length), emphasis: true },
@@ -75,15 +118,40 @@ export default async function ClubRivalriesPage({
         ]}
       />
 
+      {/* The way back out of the narrowing, said once above the list. Without
+          it the only route to the club's own list is the browser's back
+          button, which is not a control. */}
+      {memberId ? (
+        <Box sx={{ mb: 2.5 }}>
+          <NextLink href={`/clubs/${slug}/rivalries`} style={{ textDecoration: "none" }}>
+            <Typography variant="body2" sx={{ color: tokens.brand, fontWeight: 600 }}>
+              Show everyone at {club.name}
+            </Typography>
+          </NextLink>
+        </Box>
+      ) : null}
+
       {rivalries.length ? (
         <Stack spacing={3}>
-          <MyRivalries slug={slug} rivalries={rivalries} viewerId={viewer.id} faction={faction} />
+          {/* Your own shortcuts, and only on the club's full list. On a list
+              already narrowed to one person they are either the same rows
+              again or a second person's rivalries above the first's, which is
+              the ambiguity this page is being fixed for. */}
+          {memberId ? null : (
+            <MyRivalries slug={slug} rivalries={rivalries} viewerId={viewer.id} faction={faction} />
+          )}
           <RivalryTable slug={slug} rivalries={rivalries} viewerId={viewer.id} faction={faction} />
           <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
             Built from table bookings and competition rounds with a result on
             them. Add the score after a game and it counts here.
           </Typography>
         </Stack>
+      ) : memberId ? (
+        <EmptyState
+          title={isSelf ? "You have no rivalries here yet" : `${memberName} has no rivalries here yet`}
+          description={`A pairing appears once two members finish a game at ${club.name} with a score on it.`}
+          action={{ label: "See everyone at the club", href: `/clubs/${slug}/rivalries` }}
+        />
       ) : (
         <EmptyState
           title="No rivalries yet"

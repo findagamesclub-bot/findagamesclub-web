@@ -88,6 +88,51 @@ export function teamRefusal(raw: string): string | null {
 }
 
 export function rosterRefusal(raw: string): string | null {
+  // Adding somebody to the list goes through the same three guards a member's
+  // own checkout does, so these are the sentences for them. Specific first:
+  // `TICKET_NOT_ELIGIBLE` is raised as `insufficient_privilege`, which the
+  // catch-all below would otherwise answer with "reload and try again" about
+  // a rule that reloading will not change.
+  if (raw.includes("TICKET_NOT_ELIGIBLE")) {
+    return "They cannot have that ticket. It is members only, or it needs a tier "
+      + "they are not on. Pick one that is open to everybody, or approve their "
+      + "membership first.";
+  }
+  if (raw.includes("TICKETS_SOLD_OUT")) {
+    return "There are not that many of that ticket left. Check what is still "
+      + "available and try a smaller number.";
+  }
+  if (raw.includes("EVENT_CANCELLED")) {
+    return "This event has been called off, so nobody else can be put on the list.";
+  }
+  if (raw.includes("EVENT_NOT_ON_SALE")) {
+    return "This event is not on sale, so nobody else can be put on the list.";
+  }
+  if (raw.includes("EVENT_FINISHED")) {
+    return "This event has been and gone, so nobody else can be added to it.";
+  }
+  if (raw.includes("NAME_REQUIRED")) {
+    return "A place needs a name on it, so you know who to call up on the day.";
+  }
+  if (raw.includes("EMAIL_REQUIRED")
+      || raw.includes("club_event_bookings_email_check")) {
+    return "A place needs an address on it. Everything about a booking is "
+      + "posted to it, so a place with nowhere to write to cannot be told if "
+      + "the event is called off. Name a member and their own account address "
+      + "is used, or type one in.";
+  }
+  if (raw.includes("BOOKING_LINK_NOT_ALLOWED")) {
+    return "That account is nobody at your club yet, so it needs their member "
+      + "code. They find it on their own profile page and it works whichever "
+      + "club they belong to.";
+  }
+  if (raw.includes("BOOKING_NOT_FOUND")) {
+    return "That booking is not on this event any more. Reload and try again.";
+  }
+  if (raw.includes("TICKET_NOT_FOUND")) {
+    return "That ticket is not on this event any more. Reload and try again.";
+  }
+
   // The update is matched on the states it is valid from, so a list that
   // loaded a minute ago is the likely cause rather than a permission problem.
   if (denied(raw)) {

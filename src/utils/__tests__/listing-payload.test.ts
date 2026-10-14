@@ -183,9 +183,11 @@ const form = (pairs: [string, string][]) => {
 // --- step 4 ----------------------------------------------------------------
 
 {
+  // A draft's own step, which still carries the noticeboard and says so.
   const read = scheduleReading(form([
     ["nightId", "31"], ["nightDay", "Thursday"], ["nightTime", "19:00 - 22:00"],
     ["nightLabel", "Club night"],
+    ["noticesPosted", "1"],
     ["notice", "We meet weekly."], ["notice", "  "],
   ]));
 
@@ -194,6 +196,25 @@ const form = (pairs: [string, string][]) => {
     assert.equal(read.value.sessions[0]!.id, "31", "an existing night keeps its id");
     assert.deepEqual(read.value.announcements, [{ message: "We meet weekly." }]);
   }
+}
+
+{
+  // A live club's step, which does not: its board moved to its own console
+  // page in 0185. Null and [] have to stay different, because the save takes
+  // [] as "the club deleted every notice" and null as "do not touch them".
+  // Without this the first owner to fix a club night would clear the board.
+  const absent = scheduleReading(form([
+    ["nightDay", "Thursday"], ["nightTime", "19:00 - 22:00"], ["nightLabel", "Club night"],
+  ]));
+  assert.ok(absent.ok);
+  if (absent.ok) assert.equal(absent.value.announcements, null);
+
+  const emptied = scheduleReading(form([
+    ["nightDay", "Thursday"], ["nightTime", "19:00 - 22:00"], ["nightLabel", "Club night"],
+    ["noticesPosted", "1"],
+  ]));
+  assert.ok(emptied.ok);
+  if (emptied.ok) assert.deepEqual(emptied.value.announcements, []);
 }
 
 {

@@ -78,3 +78,42 @@ export function eventRecordsArmies(
   const named = (games ?? []).length > 0;
   return !named || playsFortyK(games);
 }
+
+/**
+ * Why a club is looking at no event analytics, in their own words.
+ *
+ * Three different rules can empty that panel and it simply vanished for all
+ * three, so the only question left on screen was the client's: "When does the
+ * event analytics show? I have added placings, but no analytics are showing
+ * yet?" A rule that hides a section has to be readable on the screen that
+ * hides it, which this codebase has now learned on the draw, the moderation
+ * queue and the admin's own queue.
+ *
+ * Null means there is nothing to explain, either because rows exist or because
+ * the reader is not the club and an empty panel would be noise to them.
+ */
+export function armyMetaWait(input: {
+  startDate: string | null | undefined;
+  games: readonly string[] | null | undefined;
+  today: string;
+  /** How many army rows came back. */
+  rows: number;
+}): string | null {
+  if (input.rows > 0) return null;
+
+  if (!eventRecordsArmies(input.games)) {
+    return "This event does not list Warhammer 40,000, so there are no factions "
+      + "to count. Analytics are a 40k thing.";
+  }
+
+  if (!hasStarted(input.startDate, input.today)) {
+    return "Analytics appear once the event has started. Everything recorded "
+      + "before then is kept and counted on the day.";
+  }
+
+  // Started, plays 40k, and still nothing: the armies have not been typed in.
+  // Naming a faction is what makes a placing countable, and a placing on its
+  // own is not, which is the half the client could not see from the screen.
+  return "Nothing to count yet. A finishing place counts once it names a "
+    + "faction, and a table of the draw counts once its armies are recorded.";
+}

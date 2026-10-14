@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
@@ -5,6 +8,8 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import ClubLogo from "@/components/clubs/ClubLogo";
+import PriceBreakdown from "@/components/ui/PriceBreakdown";
+import OrderDetailDialog from "./OrderDetailDialog";
 import { shortDate } from "@/utils/dates";
 import { display, mono, tokens } from "@/lib/tokens";
 import type { MyOrder } from "@/services/myActivity.service";
@@ -25,10 +30,12 @@ const SHOW_ITEMS = 3;
  * One kit order.
  *
  * Clubs hand kit over in person, so the status that matters is whether the
- * club still has it. What a tier or loyalty points took off is spelled out,
- * since that is why the total is not the sum of the lines above it.
+ * club still has it. What a tier and what points took off are named
+ * separately, since that is why the total is not the sum of the lines above
+ * it, and since they are two different people's money.
  */
 export default function OrderCard({ order }: { order: MyOrder }) {
+  const [showing, setShowing] = useState(false);
   const state = STATUS[order.status]
     ?? { label: order.status, tone: tokens.inkMuted, bg: tokens.surface };
   const pieces = order.items.reduce((n, item) => n + item.quantity, 0);
@@ -73,13 +80,19 @@ export default function OrderCard({ order }: { order: MyOrder }) {
                               fontWeight: 700, flexShrink: 0 }}>
               {`${item.quantity}×`}
             </Typography>
-            <Typography variant="body2" sx={{ flex: 1, minWidth: 0 }} noWrap>
-              {item.name}
-            </Typography>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="body2" noWrap>{item.name}</Typography>
+              {item.variantLabel ? (
+                <Typography sx={{ fontFamily: mono, fontSize: "0.64rem",
+                                  letterSpacing: "0.06em", color: tokens.inkMuted }} noWrap>
+                  {item.variantLabel.toUpperCase()}
+                </Typography>
+              ) : null}
+            </Box>
             <Typography sx={{ fontFamily: mono, flexShrink: 0,
                               fontSize: item.quoted ? "0.72rem" : "0.84rem",
                               color: item.quoted ? tokens.inkMuted : undefined }}>
-              {item.quoted ? "To be priced" : money(item.lineTotal)}
+              {item.quoted ? "To be priced" : money(item.grossTotal)}
             </Typography>
           </Stack>
         ))}
@@ -97,11 +110,7 @@ export default function OrderCard({ order }: { order: MyOrder }) {
           <Typography sx={{ fontFamily: mono, fontSize: "0.66rem", color: tokens.inkMuted }}>
             {`${pieces} ITEM${pieces === 1 ? "" : "S"}`}
           </Typography>
-          {order.saved > 0 ? (
-            <Typography variant="body2" sx={{ color: "#1B5E20" }} noWrap>
-              {`${money(order.saved)} off${order.tierLabel ? ` as ${order.tierLabel}` : ""}`}
-            </Typography>
-          ) : null}
+          <PriceBreakdown priced={order.priced} compact />
         </Box>
 
         {/* An order where the club named no price is not an order for nothing.
@@ -112,12 +121,20 @@ export default function OrderCard({ order }: { order: MyOrder }) {
           {allQuoted ? "To be confirmed" : money(order.total)}
         </Typography>
 
+        <Button size="small" variant="text" onClick={() => setShowing(true)}
+          sx={{ minWidth: 0, px: 0.5, flexShrink: 0 }}>
+          Details
+        </Button>
+
         <NextLink href={`/clubs/${order.club.slug}/shop`} style={{ textDecoration: "none" }}>
-          <Button size="small" variant="text" sx={{ minWidth: 0, px: 0.5, flexShrink: 0 }}>
+          <Button size="small" variant="text"
+            sx={{ minWidth: 0, px: 0.5, flexShrink: 0, color: tokens.inkMuted }}>
             Shop
           </Button>
         </NextLink>
       </Stack>
+
+      <OrderDetailDialog order={order} open={showing} onClose={() => setShowing(false)} />
     </Stack>
   );
 }

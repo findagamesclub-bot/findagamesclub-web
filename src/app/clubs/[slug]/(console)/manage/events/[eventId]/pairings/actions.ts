@@ -1,4 +1,5 @@
 "use server";
+import { readArmies } from "@/utils/result-form";
 
 import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/services/auth.service";
@@ -76,6 +77,10 @@ export async function pairingsAction(
           String(data.get("teamPointsOne") ?? ""),
           String(data.get("teamPointsTwo") ?? ""));
 
+      case "add-fixture":
+        return teams.addFixture(event.id, round,
+          Number(data.get("teamOne")) || 0, Number(data.get("teamTwo")) || 0);
+
       case "remove-fixture":
         return teams.removeFixture(event.id, Number(data.get("fixtureId")) || 0);
 
@@ -91,6 +96,10 @@ export async function pairingsAction(
           playerTwo: String(data.get("playerTwo") ?? ""),
           playerTwoId: String(data.get("playerTwoId") ?? "") || null,
           position: Number(data.get("position")) || 0,
+          // The fixture a new table belongs to at a team event. Absent on an
+          // ordinary draw, and absent on an edit, where the table already
+          // knows which fixture it is under.
+          teamMatchId: Number(data.get("teamMatchId")) || null,
         });
 
       case "save-scores": {
@@ -98,18 +107,26 @@ export async function pairingsAction(
         const scores = data.getAll("scoreMatchId").map((_, index) => {
           const one = at("scoreOne", index);
           const two = at("scoreTwo", index);
+          const pOne = at("pointsOne", index);
+          const pTwo = at("pointsTwo", index);
           return {
             id: Number(at("scoreMatchId", index)),
             // Both boxes empty is a table nobody has finished, not a nil-nil,
             // and clearing them is how a mis-entered result is taken back.
             scoreOne: one === "" ? null : Math.floor(Number(one)),
             scoreTwo: two === "" ? null : Math.floor(Number(two)),
+            // The format's own figure for the table, which a team event asks
+            // for beside the victory points and nothing else sends.
+            pointsOne: pOne === "" ? null : Math.floor(Number(pOne)),
+            pointsTwo: pTwo === "" ? null : Math.floor(Number(pTwo)),
           };
         }).filter((row) => Number.isFinite(row.id) && row.id > 0);
 
         if (scores.some((row) =>
           (row.scoreOne !== null && !Number.isFinite(row.scoreOne))
-          || (row.scoreTwo !== null && !Number.isFinite(row.scoreTwo)))) {
+          || (row.scoreTwo !== null && !Number.isFinite(row.scoreTwo))
+          || (row.pointsOne !== null && !Number.isFinite(row.pointsOne))
+          || (row.pointsTwo !== null && !Number.isFinite(row.pointsTwo)))) {
           return { ok: false as const, error: "A score has to be a whole number." };
         }
         return pairings.saveScores(pairingId, scores);
@@ -123,20 +140,25 @@ export async function pairingsAction(
         if (!matchId) {
           return { ok: false as const, error: "Save the table first, then say what was played." };
         }
-        // Each side is four strings and a list id. A form cannot post a shape,
-        // so they arrive as named fields rather than as one blob: a key
-        // nobody types is a key nobody can see has gone missing.
-        const side = (which: string) => ({
-          factionId: String(data.get(`${which}FactionId`) ?? ""),
-          factionLabel: String(data.get(`${which}Faction`) ?? ""),
-          detachment: String(data.get(`${which}Detachment`) ?? ""),
-          disposition: String(data.get(`${which}Disposition`) ?? ""),
-        });
+        // Both armies arrive as one JSON field, which is what `ArmyFields`
+        // on a table booking has always done: a side is nine things now
+        // rather than four, and nine named fields per side is eighteen keys
+        // nobody types and any of which can go missing unnoticed.
+        const sides = readArmies(data.get("armies"));
+        if (!sides) {
+          return { ok: false as const,
+                   error: "Something went wrong with the armies. Reload and try again." };
+        }
         const list = (which: string) => Number(data.get(`${which}List`)) || null;
 
         return armies.saveMatchArmies(matchId,
-          { one: side("one"), two: side("two") },
-          { one: list("one"), two: list("two") });
+          sides,
+          { one: list("one"), two: list("two") },
+          {
+            mission: String(data.get("mission") ?? ""),
+            deployment: String(data.get("deployment") ?? ""),
+            terrain: String(data.get("terrain") ?? ""),
+          });
       }
 
       case "draw-audience":

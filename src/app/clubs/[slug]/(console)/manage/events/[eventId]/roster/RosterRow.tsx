@@ -23,9 +23,11 @@ import { display, mono, tokens, type Faction } from "@/lib/tokens";
  * menu where it cannot be hit by accident.
  */
 export default function RosterRow({
-  row, busy, faction, onCheckIn, onPayment, onCancel, onEdit, onRefund,
+  row, busy, faction, members = [], onCheckIn, onPayment, onCancel, onEdit, onRefund,
 }: {
   row: DoorRow;
+  /** The club's own members, so an account can be named rather than an id. */
+  members?: { id: string; name: string }[];
   /** True only for the row being saved, so one spinner marks one action. */
   busy: boolean;
   faction: Faction;
@@ -36,6 +38,15 @@ export default function RosterRow({
   onRefund: (status: RefundStatus) => void;
 }) {
   const [menu, setMenu] = useState<HTMLElement | null>(null);
+  // The account's own name, but only when it is not the name on the door.
+  // A member who booked for themselves is the ordinary case and says nothing.
+  const account = row.profileId
+    ? members.find((m) => m.id === row.profileId)?.name ?? ""
+    : "";
+  const bookedBy = account
+    && account.trim().toLowerCase() !== row.fullName.trim().toLowerCase()
+    ? account
+    : "";
   const cancelled = row.status === "cancelled";
   const paid = row.paymentStatus !== "unpaid";
 
@@ -59,6 +70,19 @@ export default function RosterRow({
                     backgroundColor: faction.soft, color: faction.deep }} />
           ) : null}
         </Stack>
+        {/* Only where the account behind the place belongs to somebody else,
+            which is the one case a club cannot otherwise see: a member who
+            bought a ticket and put a friend's name on it leaves their own
+            account on it, and every result from that place would go to them.
+            Saying it on every row instead would be noise on a door list where
+            most places have no account at all. */}
+        {bookedBy ? (
+          <Typography sx={{ fontFamily: mono, fontSize: "0.62rem",
+                            letterSpacing: "0.08em", color: tokens.brass }}>
+            {`BOOKED UNDER ${bookedBy.toUpperCase()}`}
+          </Typography>
+        ) : null}
+
         <Typography sx={{ fontFamily: mono, fontSize: "0.62rem", letterSpacing: "0.08em",
                           color: tokens.inkMuted }} noWrap>
           {[row.reference, `${row.tickets} ${row.tickets === 1 ? "ticket" : "tickets"}`,

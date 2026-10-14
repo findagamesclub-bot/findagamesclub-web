@@ -102,9 +102,17 @@ export async function report(
       ok: true,
       // Reporting the same thing twice is a no-op in SQL, and saying so is
       // kinder than a second "thanks" that suggests two reports were filed.
+      //
+      // Neither sentence names a reader, and that is the point. Both used to
+      // say "an admin will look", which 0128 made wrong for five of the six
+      // kinds: a board post, a reply, an event board post, an event reply and
+      // a message all go to the club's own team unless the club wrote them.
+      // Who gets it depends on the author, which this layer does not know, so
+      // it points at the page that does. Same answer the button's own tooltip
+      // already gives, in the same words.
       notice: flag === null
-        ? "You have already reported that one. An admin will look."
-        : "Thanks. An admin will look at it.",
+        ? "You have already reported that one. Your reports page says what happened to it."
+        : "Thanks. Your reports page says what happens to it.",
     };
   } catch (error) {
     return { ok: false, error: explain(error, "That could not be reported.") };

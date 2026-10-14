@@ -112,12 +112,13 @@ export default async function EventsPreviewPage({
     { id: 1, round: 1, label: "Round 1", published: true, matches: [
       { id: 1, tableLabel: "1", playerOne: "Ada Marchetti", playerOneId: null,
         playerTwo: "Joe Matthews", playerTwoId: null,
-        scoreOne: 78, scoreTwo: 61, position: 0 },
+        scoreOne: 78, scoreTwo: 61, pointsOne: null, pointsTwo: null, position: 0 },
       { id: 2, tableLabel: "2", playerOne: "sara khan", playerOneId: null,
         playerTwo: "Gulnabi Afridi", playerTwoId: null,
-        scoreOne: null, scoreTwo: null, position: 1 },
+        scoreOne: null, scoreTwo: null, pointsOne: null, pointsTwo: null, position: 1 },
       { id: 3, tableLabel: "3", playerOne: "Ben Shah", playerOneId: null,
-        playerTwo: "", playerTwoId: null, scoreOne: null, scoreTwo: null, position: 2 },
+        playerTwo: "", playerTwoId: null, scoreOne: null, scoreTwo: null,
+        pointsOne: null, pointsTwo: null, position: 2 },
     ] },
     { id: 2, round: 2, label: "Round 2", published: false, matches: [] },
   ];
@@ -146,13 +147,13 @@ export default async function EventsPreviewPage({
   ];
 
   const teams = [
-    { id: 1, name: "Oxford Oathsworn", position: 0, finalRank: 1,
+    { id: 1, name: "Oxford Oathsworn", position: 0, finalRank: 1, finalScore: 17,
       placement: "Winners", captainProfileId: null,
       players: [
         { id: 11, profileId: null, name: "Ada Marchetti", position: 0 },
         { id: 12, profileId: null, name: "Joe Matthews", position: 1 },
       ] },
-    { id: 2, name: "Didcot Dreadnoughts", position: 1, finalRank: 2,
+    { id: 2, name: "Didcot Dreadnoughts", position: 1, finalRank: 2, finalScore: null,
       placement: "Runners up", captainProfileId: null,
       players: [
         { id: 21, profileId: null, name: "Tom Allen", position: 0 },
@@ -173,10 +174,10 @@ export default async function EventsPreviewPage({
       tables: [
         { id: 101, tableLabel: "A1", playerOne: "Ada Marchetti", playerOneId: null,
           playerTwo: "Tom Allen", playerTwoId: null,
-          scoreOne: 80, scoreTwo: 60, position: 0 },
+          scoreOne: 80, scoreTwo: 60, pointsOne: 3, pointsTwo: 1, position: 0 },
         { id: 102, tableLabel: "A2", playerOne: "Joe Matthews", playerOneId: null,
           playerTwo: "Priya Raman", playerTwoId: null,
-          scoreOne: 45, scoreTwo: 55, position: 1 },
+          scoreOne: 45, scoreTwo: 55, pointsOne: null, pointsTwo: null, position: 1 },
       ] },
     { id: 2, pairingId: 1, round: 1, tableLabel: "B",
       teamOne: 1, teamOneName: "Abingdon Anvils",
@@ -208,7 +209,7 @@ export default async function EventsPreviewPage({
           <PairingsBoard slug="didcot-wargames-didcot" eventId={1} rounds={rounds}
             roster={roster.map((row) => ({ profileId: null, name: row.fullName }))}
             roundCount={5} faction={faction} showing={1} drawPublic={false}
-            builder={null} lists={[]} armies={{}}
+            builder={null} lists={[]} armies={{}} setup={{}}
             teamEvent={false} teams={[]} fixtures={[]} />
         </Stack>
 
@@ -224,7 +225,7 @@ export default async function EventsPreviewPage({
           <PairingsBoard slug="didcot-wargames-didcot" eventId={1} rounds={rounds}
             roster={roster.map((row) => ({ profileId: null, name: row.fullName }))}
             roundCount={5} faction={faction} showing={1} drawPublic={false}
-            builder={null} lists={[]} armies={{}}
+            builder={null} lists={[]} armies={{}} setup={{}}
             teamEvent teams={teams} fixtures={fixtures} />
         </Stack>
 
@@ -243,6 +244,12 @@ export default async function EventsPreviewPage({
               id: r.id, round: r.round, label: r.label, published: r.published,
               matches: r.matches.map((m, i) => ({
                 table: m.tableLabel, playerOne: m.playerOne, playerTwo: m.playerTwo,
+                // Side one is linked to an account and side two is not, so one
+                // screen shows a name that is a link to a profile beside a
+                // typed name that is not. That pair is the whole of the rule,
+                // and a fixture with only one of them measures half of it.
+                playerOneId: i === 0 ? "00000000-0000-0000-0000-0000000000aa" : null,
+                playerTwoId: null,
                 score: m.scoreOne !== null && m.scoreTwo !== null
                   ? `${m.scoreOne} - ${m.scoreTwo}` : null,
                 scoreOne: m.scoreOne, scoreTwo: m.scoreTwo,
@@ -251,6 +258,13 @@ export default async function EventsPreviewPage({
                 // control and the bare row on one screen.
                 armyOne: i === 0 ? PREVIEW_ARMY_ONE : null,
                 armyTwo: i === 0 ? PREVIEW_ARMY_TWO : null,
+                // One table with a setup and the rest without, which is the
+                // pair the setup line has to tell apart. A fixture that only
+                // ever has one of the two states ships the other unmeasured.
+                setup: i === 0
+                  ? { mission: "Take and Hold", deployment: "dawn-of-war",
+                      terrain: "UKTC" }
+                  : null,
               })),
             }))}
             faction={faction}
@@ -305,8 +319,21 @@ export default async function EventsPreviewPage({
 
         <Stack spacing={2}>
           <Typography variant="overline" color="text.secondary">The roster for one event</Typography>
+          {/* Two ticket types, one capped and one not, so the dialog's "N of
+              X left" line and its "no limit" line are both measurable on one
+              screen. One member, so the optional link has something in it. */}
           <RosterBoard slug="didcot-wargames-didcot" eventId={1} rows={roster}
-            faction={faction} />
+            faction={faction} canAdd
+            members={[{ id: "00000000-0000-0000-0000-0000000000aa",
+                        name: "Gulnabi Afridi" }]}
+            tickets={[
+              { id: 1, label: "Standard", price: "GBP 20", quantityAvailable: 40,
+                audience: "all", audienceLabel: "Open to all", minimumTierKey: "",
+                position: 1, taken: 17 },
+              { id: 2, label: "VIP", price: "GBP 50", quantityAvailable: null,
+                audience: "members", audienceLabel: "Members only",
+                minimumTierKey: "", position: 2, taken: 3 },
+            ]} />
         </Stack>
       </Stack>
     </Container>

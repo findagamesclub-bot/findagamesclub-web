@@ -10,6 +10,7 @@ import LinkButton from "@/components/ui/LinkButton";
 import type { MemberProfile } from "@/types/profile";
 import type { MemberContext } from "@/services/memberContext.service";
 import type { MemberRecords } from "@/services/memberRecords.service";
+import type { RivalMark } from "@/services/clubExtras.service";
 import type { ClubTracker } from "@/services/grudgeTracker.service";
 import MilitaryTechIcon from "@mui/icons-material/MilitaryTechOutlined";
 import MemberArmyInsights, { type MemberArmy }
@@ -37,6 +38,7 @@ export default function MemberProfileView({
   context,
   records,
   trackers,
+  rivalMarks,
   armies,
   overall,
   editHref = "/account/profile",
@@ -58,6 +60,12 @@ export default function MemberProfileView({
   records?: MemberRecords;
   /** Their playing record at each club the reader shares with them. */
   trackers?: ClubTracker[];
+  /**
+   * Whether the reader has named this member a rival, by club id. Absent on
+   * your own profile and when the read failed, which costs the button rather
+   * than the card it sits in.
+   */
+  rivalMarks?: Map<number, RivalMark>;
   armies?: MemberArmy[];
   /** Everything they have played, from club nights, events and leagues. */
   overall?: Overall;
@@ -147,8 +155,10 @@ export default function MemberProfileView({
             <GrudgeTracker
               trackers={trackers}
               memberId={profile.id}
+              memberName={profile.fullName}
               firstName={profile.fullName.trim().split(" ")[0] || profile.fullName}
               isSelf={isSelf}
+              rivalMarks={rivalMarks}
             />
           </Panel>
         ) : null}

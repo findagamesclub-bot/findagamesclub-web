@@ -187,7 +187,16 @@ export function pricingReading(form: FormData): Reading<PricingReading> {
 
 export type ScheduleReading = {
   sessions: { id: string | null; day: string; time: string; label: string }[];
-  announcements: { message: string }[];
+  /**
+   * Null when the form carried no noticeboard at all, which is a live club:
+   * 0185 moved its board onto its own console page and left this panel to the
+   * submissions, which have no club and nowhere else to put it.
+   *
+   * "Not posted" and "posted and emptied" have to stay different, exactly as
+   * the logo's two states do, or a club opening this step to fix a social link
+   * would wipe every notice on its page without being asked.
+   */
+  announcements: { message: string }[] | null;
 };
 
 /** Step 4. */
@@ -217,7 +226,9 @@ export function scheduleReading(form: FormData): Reading<ScheduleReading> {
     ok: true,
     value: {
       sessions,
-      announcements: list(form, "notice").map((message) => ({ message })),
+      announcements: form.get("noticesPosted") === "1"
+        ? list(form, "notice").map((message) => ({ message }))
+        : null,
     },
   };
 }

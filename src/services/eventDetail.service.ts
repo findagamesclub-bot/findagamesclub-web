@@ -10,7 +10,7 @@ import { findTeamDraw, findTeamEvent, findTeams }
 import { findEventImages } from "@/repositories/eventImages.repository";
 import { clubImageUrl } from "@/utils/club-media";
 import { publicUrl } from "@/lib/supabase/storage";
-import { getRoundArmiesForReaders } from "./eventPairingArmies.service";
+import { getRoundArmiesForReaders, getRoundSetup } from "./eventPairingArmies.service";
 import { listFromSnapshot } from "@/utils/army-snapshot";
 import { toMembershipTiers } from "@/utils/membership-tiers";
 import { formatPrice } from "@/utils/format";
@@ -122,8 +122,9 @@ async function readPairings(eventId: number, forClub: boolean): Promise<EventPai
   // who is not in the club see them at all: before it the tables were public
   // on a published round and the armies on them were not, so a visitor read a
   // tournament that looked like nobody had recorded an army.
-  const armies = await getRoundArmiesForReaders(
-    shown.flatMap((round) => round.matches.map((match) => match.id)));
+  const armies = await getRoundArmiesForReaders(eventId);
+  // How each table was set up. The same single read, so it costs no wave.
+  const setup = await getRoundSetup(eventId);
 
   return shown.map((round) => ({
     id: round.id,
@@ -134,6 +135,11 @@ async function readPairings(eventId: number, forClub: boolean): Promise<EventPai
       table: match.tableLabel || null,
       playerOne: match.playerOne,
       playerTwo: match.playerTwo,
+      // Read since the draw was built and dropped here, so a name on the
+      // public draw had no account behind it even when the club had linked
+      // one. The client asked for the name to reach the profile.
+      playerOneId: match.playerOneId,
+      playerTwoId: match.playerTwoId,
       // Both or neither. One score on its own is half a result and reads as
       // a walkover that nobody recorded.
       score: pairScore(match.scoreOne, match.scoreTwo),
@@ -141,6 +147,7 @@ async function readPairings(eventId: number, forClub: boolean): Promise<EventPai
       scoreTwo: match.scoreTwo,
       armyOne: armies[`${match.id}:one`] ?? null,
       armyTwo: armies[`${match.id}:two`] ?? null,
+      setup: setup[match.id] ?? null,
     })).filter((match) => match.playerOne || match.playerTwo),
   }));
 }
@@ -310,6 +317,7 @@ export async function getEventDetail(
     // The policy only knows whether a round is on show, so the ticket gate is
     // applied here, the same place and the same way the individual draw's is.
     teams,
+    teamEvent,
     teamFixtures: drawOpen
       ? teamFixtures.filter((fixture) => fixture.published || canManageClub)
       : [],

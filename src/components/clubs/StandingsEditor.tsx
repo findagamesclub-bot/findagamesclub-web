@@ -78,13 +78,23 @@ export default function StandingsEditor({
   const patch = (key: string, change: Partial<StandingRow>) =>
     setRows((prev) => prev.map((r) => (r.key === key ? { ...r, ...change } : r)));
 
+  /** The account's own name where there is one, the typed name where there is not. */
+  const nameOf = (row: StandingRow) =>
+    (row.profileId ? roster.find((m) => m.id === row.profileId)?.name : "") || row.memberName;
+
   const save = () => {
     const data = new FormData();
     data.set("intent", "standings");
     data.set("slug", slug);
     data.set("competitionId", String(competitionId));
     data.set("rows", JSON.stringify(rows.map((r) => ({
-      memberName: r.memberName, profileId: r.profileId,
+      // A linked row is named by the account, never by what is in the box.
+      // The name field is not even drawn once a member is picked, so a row
+      // linked before that change could otherwise keep a stale name nobody
+      // could see or correct: the seed has one, reading "Joe Matthews" over
+      // Gulnabi Afridi's profile, and it is exactly the kind of thing that
+      // gets reported as a badge fault.
+      memberName: nameOf(r), profileId: r.profileId,
       wins: r.wins, draws: r.draws, losses: r.losses, points: r.points,
       notes: r.notes, faction: r.faction,
       // Named explicitly, like every other field. Leaving them out of this
@@ -115,7 +125,7 @@ export default function StandingsEditor({
                     {index + 1}
                   </Typography>
                   <Typography variant="subtitle2" noWrap sx={{ minWidth: 0 }}>
-                    {row.memberName || "New player"}
+                    {nameOf(row) || "New player"}
                   </Typography>
                   <Typography noWrap sx={{ fontFamily: mono, fontSize: "0.68rem",
                                            color: tokens.inkMuted, ml: "auto" }}>

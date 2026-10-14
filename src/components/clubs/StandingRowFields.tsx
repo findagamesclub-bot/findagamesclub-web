@@ -11,7 +11,7 @@ import ArmyPicker from "@/components/results/ArmyPicker";
 import { playedFrom } from "@/utils/competition-meta";
 import type { Catalogue } from "@/utils/army-catalogue";
 import type { Builder } from "@/services/resultArmies.service";
-import { mono, tokens } from "@/lib/tokens";
+import { display, mono, tokens } from "@/lib/tokens";
 import type { StandingRow } from "./StandingsEditor";
 
 /**
@@ -62,13 +62,27 @@ export default function StandingRowFields({
         </IconButton>
       </Stack>
 
-      <TextField size="small" label="Name" fullWidth required
-        value={row.memberName}
-        onChange={(e) => patch(row.key, { memberName: e.target.value })}
-        helperText={row.profileId
-          ? "Linked to their profile, so this counts on their member page."
-          : "A guest. Counts in this table only."}
-        slotProps={{ htmlInput: { maxLength: 120 } }} />
+      {/* Only for a guest. Picking a member already fills the name in from
+          their account, so the box underneath was a second place to write a
+          name the row was not going to use: type "J. Matthews" into it over a
+          linked Joe Matthews and the table says one thing while the profile it
+          counts on says another. The client asked for it to go, and the seed
+          has a row proving why — it reads "Joe Matthews" over Gulnabi Afridi's
+          account, which is what a wrong badge looks like from the other end. */}
+      {row.profileId ? (
+        <Typography sx={{ fontFamily: display, fontSize: "0.75rem",
+                          lineHeight: 1.6, color: tokens.inkMuted }}>
+          {`Named from their account, so this counts on ${
+            roster.find((m) => m.id === row.profileId)?.name ?? "their"
+          }'s member page.`}
+        </Typography>
+      ) : (
+        <TextField size="small" label="Name" fullWidth required
+          value={row.memberName}
+          onChange={(e) => patch(row.key, { memberName: e.target.value })}
+          helperText="A guest. Counts in this table only."
+          slotProps={{ htmlInput: { maxLength: 120 } }} />
+      )}
 
       <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: "wrap" }}>
         {([["wins", "W"], ["draws", "D"], ["losses", "L"], ["points", "Pts"]] as const)

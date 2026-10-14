@@ -21,6 +21,12 @@ export type EventTeam = {
   /** Where the club says they finished, once it has said. */
   finalRank: number | null;
   placement: string;
+  /**
+   * The figure beside their finishing place, in whatever the format counts.
+   * Typed by the club, never derived: a final table has tiebreakers only the
+   * organiser knows, which is what `finalRank` already says.
+   */
+  finalScore: number | null;
   captainProfileId: string | null;
   players: TeamPlayer[];
 };
@@ -34,6 +40,14 @@ export type TeamTable = {
   playerTwoId: string | null;
   scoreOne: number | null;
   scoreTwo: number | null;
+  /**
+   * What the format scored this one table at, where that is not the victory
+   * points: 3 against 1 on a table that went 80 to 60. 0176 gave the fixture
+   * the same pair for the same reason and the client asked for it a level
+   * down. Null means the club has not said, which is not nil.
+   */
+  pointsOne: number | null;
+  pointsTwo: number | null;
   position: number;
 };
 

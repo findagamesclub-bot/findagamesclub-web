@@ -13,6 +13,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import BusyOverlay from "@/components/ui/BusyOverlay";
 import EmptyState from "@/components/ui/EmptyState";
 import ArmyListDialog from "./ArmyListDialog";
+import MatchDetailDialog, { type MatchDetail } from "./MatchDetailDialog";
 import PairingTable from "./PairingTable";
 import { armySummary } from "@/utils/army-snapshot";
 import { fold } from "@/utils/text";
@@ -53,6 +54,7 @@ export default function EventPairings({
   const total = pairings.reduce((sum, round) => sum + round.matches.length, 0);
   const [open, setOpen] = useState<number | false>(pairings.length - 1);
   const [list, setList] = useState<{ player: string; army: ResultArmy } | null>(null);
+  const [game, setGame] = useState<MatchDetail | null>(null);
 
   const rounds = useMemo(() => pairings.map((round) => ({
     ...round,
@@ -140,7 +142,22 @@ export default function EventPairings({
                     round.matches.map((m, i) => (
                       <PairingTable key={`${round.id}-${i}`} match={m} faction={faction}
                         me={me}
-                        onOpenList={(player, army) => setList({ player, army })} />
+                        onOpenList={(player, army) => setList({ player, army })}
+                        onOpenMatch={() => setGame({
+                          // "Round 1 · 1" reads as two round numbers. The
+                          // table column is bare because it has a heading
+                          // above it; a dialog title has nothing to lean on.
+                          label: [round.label || (round.round ? `Round ${round.round}` : ""),
+                                  (m.table ?? "").trim()
+                                    ? (/^\d+$/.test((m.table ?? "").trim())
+                                        ? `Table ${(m.table ?? "").trim()}`
+                                        : (m.table ?? "").trim())
+                                    : ""].filter(Boolean).join(" · "),
+                          playerOne: m.playerOne, playerTwo: m.playerTwo,
+                          scoreOne: m.scoreOne === null ? "" : String(m.scoreOne),
+                          scoreTwo: m.scoreTwo === null ? "" : String(m.scoreTwo),
+                          armyOne: m.armyOne, armyTwo: m.armyTwo, setup: m.setup,
+                        })} />
                     ))
                   ) : (
                     <Typography variant="body2"
@@ -158,6 +175,8 @@ export default function EventPairings({
 
       {/* One dialog for the section rather than one per table: twenty tables
           is forty mounted dialogs, and only one is ever open. */}
+      <MatchDetailDialog match={game} onClose={() => setGame(null)} faction={faction} />
+
       <ArmyListDialog
         open={list !== null}
         onClose={() => setList(null)}

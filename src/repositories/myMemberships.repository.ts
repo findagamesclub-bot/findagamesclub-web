@@ -17,6 +17,7 @@ export type MyMembershipRow = {
   created_at: string;
   decline_reason: string | null;
   requested_tier_key: string | null;
+  requested_billing_label: string | null;
   tier_requested_at: string | null;
   clubs: {
     id: number; slug: string; name: string; city: string; logo_url: string | null; logo_path: string | null;
@@ -40,7 +41,7 @@ type Chain = {
 
 const COLUMNS = `
   id, status, tier_key, tier_assigned_at, joined_at, created_at, decline_reason,
-  requested_tier_key, tier_requested_at,
+  requested_tier_key, requested_billing_label, tier_requested_at,
   clubs!inner(id, slug, name, city, logo_url, logo_path,
     club_membership_tiers(tier_key, label, price, price_duration, description,
                           is_basic, position, benefits, billing_options))`;
@@ -71,11 +72,15 @@ export async function findMine(profileId: string) {
  * Goes through a security-definer function so a member cannot write tier_key
  * itself; see migration 0025.
  */
-export async function requestTier(membershipId: number, tierKey: string | null) {
+export async function requestTier(
+  membershipId: number, tierKey: string | null, billingLabel = "",
+) {
   const supabase = await createClient();
   const { error } = await (supabase as unknown as {
     rpc(name: string, args: Record<string, unknown>): Promise<{ error: { message: string } | null }>;
-  }).rpc("request_tier_upgrade", { membership: membershipId, wanted: tierKey });
+  }).rpc("request_tier_upgrade", {
+    membership: membershipId, wanted: tierKey, billing_label: billingLabel,
+  });
 
   if (error) throw new Error(error.message);
 }

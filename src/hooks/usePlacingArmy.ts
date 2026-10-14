@@ -29,10 +29,16 @@ export function usePlacingArmy(open: boolean, placing: EventPlacing | null,
   const [army, setArmy] = useState<ArmyNaming>(NO_ARMY);
   const [listId, setListId] = useState<number | null>(null);
   const [seen, setSeen] = useState<number | string | null>(null);
+  // Whose row this was the last time it settled, so changing the player can be
+  // told apart from opening a different placing.
+  const [seenProfile, setSeenProfile] = useState<string | null>(null);
 
   const key = placing?.id ?? "new";
   if (open && key !== seen) {
     setSeen(key);
+    // Seeded to what `linked` is about to become, so the reset below does not
+    // fire on the render that opens the dialog.
+    setSeenProfile(placing?.profileId ?? null);
     // Read here rather than as a `useState` initialiser: an initialiser runs
     // on the first mount and never again, so this dialog carried the previous
     // winner's profile link onto the next row it opened.
@@ -46,6 +52,20 @@ export function usePlacingArmy(open: boolean, placing: EventPlacing | null,
       disposition: placing?.army?.disposition ?? "",
     });
     setListId(placing?.army?.list?.id ?? null);
+  } else if (open && profileId !== seenProfile) {
+    // The player moved, so the named list belonged to whoever is no longer on
+    // this row. Without this the dialog kept it: the picker correctly stopped
+    // offering it, because it filters to the named player's lists, and the
+    // hidden field went on posting the id anyway. Saving then came back "That
+    // list belongs to somebody else" about a list nobody had chosen, on a
+    // dialog that was at that moment saying "They have not built an army list
+    // at your club". The client hit exactly that.
+    //
+    // The faction is deliberately left alone, for the same reason clearing a
+    // list leaves it alone: a club that typed it by hand should not lose it
+    // because they corrected the name beside it.
+    setSeenProfile(profileId);
+    setListId(null);
   }
 
   // Only this player's. A club working down a results sheet must not be able

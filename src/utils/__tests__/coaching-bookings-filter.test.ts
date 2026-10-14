@@ -7,7 +7,10 @@ import {
 const row = (over: Partial<CoachingBookingRow> = {}): CoachingBookingRow => ({
   id: 1, name: "Gulnabi Afridi", profileId: "p1", paid: false, cancelled: false,
   refundStatus: "not_due", cancelReason: "", slotId: 9, title: "List clinic",
-  date: "2026-10-10", time: "19:00", total: 18, pointsSpent: 0, ...over,
+  date: "2026-10-10", time: "19:00", total: 18, pointsSpent: 0,
+  priced: { subtotal: 20, tierLabel: "Premium Membership", tierPercent: 10,
+            tierAmount: 2, points: 0, pointsAmount: 0, total: 18 },
+  ...over,
 });
 
 const rows: CoachingBookingRow[] = [

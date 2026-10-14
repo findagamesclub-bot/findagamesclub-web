@@ -131,14 +131,13 @@ function toDetail(row: NonNullable<Row>): ClubDetail {
       price: formatPrice(p.price),
       notes: p.notes,
     })),
-    // Newest first, then by id. The editor replaces the whole noticeboard in
-    // one insert, so every row it writes shares a timestamp and the sort is a
-    // tie: without the id, "the first one is the one members see everywhere
-    // else" is a promise the order cannot keep.
+    // Newest first, then by id. The tie-break was load-bearing while the only
+    // writer replaced the whole board in one insert and every row shared a
+    // timestamp; 0185 saves by row and keeps each notice's own date, so this
+    // is now a real date sort with the id settling notices added together.
     announcements: (row.club_announcements ?? [])
       .map((a) => ({ id: a.id, message: a.message, createdAt: a.created_at }))
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.id - b.id)
-      .map(({ message, createdAt }) => ({ message, createdAt })),
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.id - b.id),
     membershipTiers: toMembershipTiers(row.club_membership_tiers ?? []),
 
 

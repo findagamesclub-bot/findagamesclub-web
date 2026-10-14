@@ -296,6 +296,13 @@ export default async function ClubMembersPage({
 
         <RosterFilters
           members={roster}
+          // The same two the cards already draw, so a filter and the card it
+          // narrows to cannot disagree about which tier somebody is on.
+          facets={roster.map((m) => ({
+            id: m.profileId,
+            membership: tierLabel(m.tierKey) ?? "",
+            loyalty: loyaltyFor(m.profileId)?.tier ?? "",
+          }))}
           cards={roster.map((m) => ({
             id: m.profileId,
             node: (
@@ -315,6 +322,7 @@ export default async function ClubMembersPage({
                     memberName={m.fullName}
                     tierKey={m.tierKey}
                     requestedTierKey={m.requestedTierKey}
+                    requestedBillingLabel={m.requestedBillingLabel}
                     tierRequestedAt={m.tierRequestedAt}
                     joinedAt={m.joinedAt}
                     today={londonToday()}

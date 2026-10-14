@@ -416,6 +416,31 @@ export async function replaceClubSocialLinks(clubId: number, rows: {
  * Delete then insert: the notices are a list in an order, and legacy derives
  * the club's single `announcement` field from the first of them.
  */
+/**
+ * The club's noticeboard, saved by row.
+ *
+ * A function rather than a delete and an insert, for two reasons the old
+ * writer got wrong. A notice carries the date it went up and the board is
+ * ordered by it, so re-inserting every row re-dated April's notice to today
+ * whenever somebody fixed a typo in Thursday's. And a failure between the
+ * delete and the insert left the board empty, which is 0168's lesson.
+ */
+export async function saveClubNotices(
+  clubId: number, notices: { id: number | null; message: string }[],
+) {
+  await callRpc<null>("save_club_notices", {
+    p_club: clubId,
+    p_notices: notices.map((n) => ({ id: n.id, message: n.message })),
+  });
+}
+
+/**
+ * The submission path's writer, which is a different question.
+ *
+ * A listing being drafted has no club and no board, so its notices arrive as
+ * a list of strings out of the payload and there is nothing to keep dates on.
+ * `saveClubNotices` is what a live club uses.
+ */
 export async function replaceClubAnnouncements(clubId: number, messages: string[]) {
   const supabase = await createClient();
 

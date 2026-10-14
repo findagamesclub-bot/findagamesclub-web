@@ -6,6 +6,7 @@ import PageHead from "@/components/ui/PageHead";
 import BackLink from "@/components/ui/BackLink";
 import LinkButton from "@/components/ui/LinkButton";
 import EventPlacings from "@/components/events/EventPlacings";
+import TeamPlacings from "./TeamPlacings";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
 import { getClubDetail } from "@/services/clubDetail.service";
@@ -85,23 +86,60 @@ export default async function PlacingsPage({
 
       <PageHead
         title="Results and placings"
-        lede={`Who finished where at ${event.title}. This is what the event's own page shows, so type it once and it is published.`}
+        lede={detail.teamEvent
+          ? `Where each team finished at ${event.title}. A team event is placed by team, and the players in it come with it: first, second or third gives every one of them that badge.`
+          : `Who finished where at ${event.title}. This is what the event's own page shows, so type it once and it is published.`}
       />
 
       <Stack spacing={2} sx={{ mt: 3 }}>
-        <EventPlacings
-          placings={detail.placings}
-          faction={faction}
-          viewerName={viewer.full_name ?? null}
-          admin={{
-            slug, eventKey: event.legacyId, eventId: event.id,
-            roster, builder: records, lists,
-          }}
-        />
+        {/* The unit a team event finishes in is the team, not the player, so
+            this page asks the question the format asks. 0167 already awards
+            the podium badge off the team's own rank. */}
+        {detail.teamEvent ? (
+          <>
+            <TeamPlacings slug={slug} eventId={event.id}
+              teams={detail.teams} faction={faction} />
+
+            {/* An event switched to teams can still be carrying individual
+                placings from before it was, and with the editor above asking
+                only about teams there would be no way left to clear them.
+                Shown only when there are some. */}
+            {detail.placings.length ? (
+              <Stack spacing={1.5} sx={{ pt: 2 }}>
+                <Typography sx={{ fontSize: "0.75rem", lineHeight: 1.5,
+                                  color: tokens.inkMuted }}>
+                  This event also carries individual placings, from before it
+                  ran as teams. They still show on the public page. Clear them
+                  here if they are not meant to be there.
+                </Typography>
+                <EventPlacings
+                  placings={detail.placings}
+                  faction={faction}
+                  viewerName={viewer.full_name ?? null}
+                  admin={{
+                    slug, eventKey: event.legacyId, eventId: event.id,
+                    roster, builder: records, lists,
+                  }}
+                />
+              </Stack>
+            ) : null}
+          </>
+        ) : (
+          <EventPlacings
+            placings={detail.placings}
+            faction={faction}
+            viewerName={viewer.full_name ?? null}
+            admin={{
+              slug, eventKey: event.legacyId, eventId: event.id,
+              roster, builder: records, lists,
+            }}
+          />
+        )}
 
         <Typography sx={{ fontSize: "0.75rem", lineHeight: 1.5, color: tokens.inkMuted }}>
-          The round by round scores are on the draw, and a table there records
-          what each side brought.
+          {detail.teamEvent
+            ? "Who is in each team is on the Teams page. The round by round scores are on the draw, and a table there records what each side brought."
+            : "The round by round scores are on the draw, and a table there records what each side brought."}
         </Typography>
 
         <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap" }}>

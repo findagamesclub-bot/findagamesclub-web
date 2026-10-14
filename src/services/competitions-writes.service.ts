@@ -1,6 +1,8 @@
 import "server-only";
 
 import * as repo from "@/repositories/competitions.repository";
+import { setResultList } from "./resultArmies.service";
+import type { ResultArmy } from "@/utils/result-army";
 import {
   competitionStatus, competitionType, playedFrom, rankStandings,
   statusLabel, typeLabel,
@@ -196,12 +198,25 @@ export type RoundForm = {
   title: string;
   summary: string;
   matches: {
+    /** Absent on a game being added. Present keeps its armies across a save. */
+    id?: number | string | null;
     playerOne: string; playerOneScore: string;
     playerTwo: string; playerTwoScore: string;
+    /** The accounts behind the names, where the club named a member. */
+    playerOneId?: string | null;
+    playerTwoId?: string | null;
   }[];
 };
 
-/** A round, and the games in it. Legacy calls these history entries. */
+/**
+ * A round, and the games in it.
+ *
+ * One call since 0181, where it used to be an insert or update followed by a
+ * delete-and-reinsert of the games. A game owns army rows now, so a game that
+ * survives an edit has to keep its id: without that, saving a round to fix a
+ * typo in its title took every army in it, through the delete path 0164's
+ * rule requires.
+ */
 export async function saveRound(params: {
   competitionId: number;
   roundId: number | null;
@@ -218,29 +233,59 @@ export async function saveRound(params: {
 
   // Both names, or it is not a game. A half-filled row would render as
   // "Alice v" on the club page.
-  const matches = params.form.matches
+  const games = params.form.matches
     .map((m) => ({
-      playerOne: m.playerOne.trim().slice(0, 120),
-      playerOneScore: m.playerOneScore.trim().slice(0, 20),
-      playerTwo: m.playerTwo.trim().slice(0, 120),
-      playerTwoScore: m.playerTwoScore.trim().slice(0, 20),
+      // Everything here was parsed out of a form field, so it is a claim
+      // rather than a fact: `text()` answers "" for anything that is not a
+      // string, which is the trap `saveStandings` already paid for.
+      id: m.id ? String(m.id) : "",
+      playerOne: text(m.playerOne, 120),
+      playerOneScore: text(m.playerOneScore, 20),
+      playerOneId: text(m.playerOneId, 40),
+      playerTwo: text(m.playerTwo, 120),
+      playerTwoScore: text(m.playerTwoScore, 20),
+      playerTwoId: text(m.playerTwoId, 40),
     }))
     .filter((m) => m.playerOne && m.playerTwo);
 
   try {
-    const id = params.roundId
-      ?? (await repo.insertRound(params.competitionId, {
-        postedOn, title, summary, position: params.position,
-      })).id;
-
-    if (params.roundId) {
-      await repo.updateRound(params.roundId, { postedOn, title, summary });
-    }
-    await repo.replaceMatches(id, matches);
+    const id = await repo.saveCompetitionRound({
+      competitionId: params.competitionId,
+      roundId: params.roundId,
+      postedOn, title, summary, games,
+    });
     return { ok: true, id };
   } catch (error) {
     const raw = error instanceof Error ? error.message : "";
     return { ok: false, error: refusal(raw, "Could not save that round. Try again.") };
+  }
+}
+
+/**
+ * What was played in one game of a round.
+ *
+ * The same two writes a table of a draw makes, in the same order and for the
+ * same reason: a list hangs off the army row this creates, so naming one
+ * before the faction exists has nothing to attach to.
+ */
+export async function saveGameResult(params: {
+  matchId: number;
+  armies: { one?: Partial<ResultArmy>; two?: Partial<ResultArmy> };
+  lists: { one: number | null; two: number | null };
+  setup: { mission: string; deployment: string; terrain: string };
+}): Promise<Result> {
+  try {
+    await repo.saveCompetitionMatchResult({ matchId: params.matchId,
+      armies: params.armies, ...params.setup });
+
+    for (const side of ["one", "two"] as const) {
+      if (!(params.armies[side]?.factionId ?? "").trim()) continue;
+      await setResultList("competition_match", params.matchId, side, params.lists[side]);
+    }
+    return { ok: true };
+  } catch (error) {
+    const raw = error instanceof Error ? error.message : "";
+    return { ok: false, error: refusal(raw, "Could not save that game. Try again.") };
   }
 }
 

@@ -24,6 +24,8 @@ export type MyClubMembership = {
   /** A tier the member has asked to move to, still with the club. */
   requestedTierKey: string | null;
   requestedTierLabel: string | null;
+  /** Which way they asked to pay, in the club's own words. */
+  requestedBillingLabel: string;
   requestedAtTier: string | null;
   payments: MembershipPayment[];
   standing: PaymentStanding;
@@ -97,6 +99,7 @@ export async function getMyMemberships(profileId: string): Promise<MyClubMembers
       requestedTierKey: row.requested_tier_key,
       requestedTierLabel:
         tiers.find((tier) => tier.key === row.requested_tier_key)?.label ?? null,
+      requestedBillingLabel: row.requested_billing_label ?? "",
       requestedAtTier: row.tier_requested_at,
       payments: paid,
       standing: standing(paid, row.tier_key, row.tier_assigned_at),
@@ -116,6 +119,8 @@ export async function requestTierChange(
   membershipId: number,
   profileId: string,
   tierKey: string | null,
+  /** Which of the tier's payment options they asked on, in the club's words. */
+  billingLabel = "",
 ): Promise<{ error?: string; notice?: string }> {
   const mine = (await getMyMemberships(profileId))
     .find((m) => m.membershipId === membershipId);
@@ -127,8 +132,14 @@ export async function requestTierChange(
   const wanted = tierKey ? mine.tiers.find((tier) => tier.key === tierKey) ?? null : null;
   if (tierKey && !wanted) return { error: "That club does not offer that tier." };
 
+  // A term the tier does not sell is not a term. The browser offers only the
+  // tier's own options, and a form field is a claim rather than a fact.
+  const term = wanted?.billingOptions.find((option) => option.label === billingLabel)
+    ? billingLabel
+    : "";
+
   try {
-    await requestTier(membershipId, tierKey);
+    await requestTier(membershipId, tierKey, term);
   } catch (error) {
     console.error("tier request failed", { membershipId, tierKey, error });
     return { error: "Could not send that request. Try again." };

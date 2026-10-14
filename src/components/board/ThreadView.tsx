@@ -110,10 +110,18 @@ export default function ThreadView({
             </Typography>
           </Stack>
 
-          {/* Everybody but the author. The club already has Remove, so a
-              manager reporting to themselves would be a strange thing to
-              offer. */}
-          {!thread.isMine && !thread.canRemove ? (
+          {/* Everybody but the author, including the club's own team.
+              It used to exclude anybody who could Remove, on the reasoning
+              that a manager reporting to themselves is strange. That reads
+              well and was wrong twice over: a manager who thinks the OWNER'S
+              post breaks the rules could only take it down, never escalate
+              it, even though `club_may_judge` already routes a team member's
+              content to a site admin precisely so they can. The route existed
+              in SQL and no screen could reach it. And the club could already
+              report a review, so the same team had two different answers to
+              the same question. The client found it from the other end: they
+              could not report a reply at all. */}
+          {!thread.isMine ? (
             <ReportButton type="post" id={thread.id} what="post"
               reported={alreadyReported("post", thread.id)} />
           ) : null}

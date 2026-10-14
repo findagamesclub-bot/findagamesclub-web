@@ -79,9 +79,11 @@ export default function BoardThread({
               <Typography variant="body2" sx={{ whiteSpace: "pre-line", mt: 0.75 }}>
                 {r.content}
               </Typography>
-              {/* Somebody else's, and not the club's to take down: the only
-                  thing left to offer is reporting it to an admin. */}
-              {viewerId && !mine(r.authorId) && !canManage ? (
+              {/* Everybody but the author, the club's own team included.
+                  Excluding anybody who can take it down left a manager unable
+                  to escalate the owner's words, which is the one case
+                  `club_may_judge` sends to a site admin on purpose. */}
+              {viewerId && !mine(r.authorId) ? (
                 <ReportButton type="event_reply" id={r.id} what="reply" label=""
                   reported={isReported("event_reply", r.id)} />
               ) : null}
@@ -109,7 +111,7 @@ export default function BoardThread({
             Reply
           </Button>
         )}
-        {viewerId && !mine(post.authorId) && !canManage ? (
+        {viewerId && !mine(post.authorId) ? (
           <ReportButton type="event_post" id={post.id} what="post"
             reported={isReported("event_post", post.id)} />
         ) : null}

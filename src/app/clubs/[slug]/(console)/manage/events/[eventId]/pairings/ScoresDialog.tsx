@@ -16,7 +16,15 @@ import { useTheme } from "@mui/material/styles";
 import { display, mono, tokens } from "@/lib/tokens";
 import type { PairingMatch } from "@/types/eventEditor";
 
-type Row = { id: number; scoreOne: string; scoreTwo: string };
+type Row = {
+  id: number; scoreOne: string; scoreTwo: string;
+  /**
+   * What the format scored the table at, where that is not the victory
+   * points: 3 against 1 on a table that went 80 to 60. Only asked for at a
+   * team event, which is the only format that has one.
+   */
+  pointsOne: string; pointsTwo: string;
+};
 
 /**
  * Every score in the round, in one screen.
@@ -30,12 +38,14 @@ type Row = { id: number; scoreOne: string; scoreTwo: string };
  * mis-entered result gets taken back.
  */
 export default function ScoresDialog({
-  open, saving, round, matches, onClose, onSave,
+  open, saving, round, matches, teamEvent = false, onClose, onSave,
 }: {
   open: boolean;
   saving: boolean;
   round: number;
   matches: PairingMatch[];
+  /** A team event scores a table twice: the victory points, and the format's. */
+  teamEvent?: boolean;
   onClose: () => void;
   onSave: (rows: Row[]) => void;
 }) {
@@ -48,10 +58,12 @@ export default function ScoresDialog({
       id: match.id,
       scoreOne: match.scoreOne === null ? "" : String(match.scoreOne),
       scoreTwo: match.scoreTwo === null ? "" : String(match.scoreTwo),
+      pointsOne: match.pointsOne == null ? "" : String(match.pointsOne),
+      pointsTwo: match.pointsTwo == null ? "" : String(match.pointsTwo),
     })));
   });
 
-  const set = (id: number, side: "scoreOne" | "scoreTwo", value: string) =>
+  const set = (id: number, side: keyof Omit<Row, "id">, value: string) =>
     setRows((current) => current.map((row) =>
       row.id === id ? { ...row, [side]: value.replace(/[^0-9]/g, "").slice(0, 4) } : row));
 
@@ -66,8 +78,27 @@ export default function ScoresDialog({
         <Stack spacing={1.25} sx={{ pt: 1 }}>
           <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
             Leave both boxes empty for a table nobody has finished. Clearing a score takes
-            it back.
+            it back.{teamEvent
+              ? " VP is the victory points. Scored is what your format counts the table at, if that is a different number."
+              : ""}
           </Typography>
+
+          {teamEvent ? (
+            <Box sx={{ display: "grid", gap: 1,
+                       gridTemplateColumns: "auto minmax(0, 1fr) 72px 72px 72px 72px" }}>
+              <Box /><Box />
+              <Typography sx={{ fontFamily: mono, fontSize: "0.6rem",
+                                letterSpacing: "0.1em", color: tokens.inkMuted,
+                                gridColumn: "3 / span 2" }}>
+                VP
+              </Typography>
+              <Typography sx={{ fontFamily: mono, fontSize: "0.6rem",
+                                letterSpacing: "0.1em", color: tokens.inkMuted,
+                                gridColumn: "5 / span 2" }}>
+                SCORED
+              </Typography>
+            </Box>
+          ) : null}
 
           {matches.map((match) => {
             const row = rows.find((seen) => seen.id === match.id);
@@ -76,7 +107,9 @@ export default function ScoresDialog({
             return (
               <Box key={match.id}
                 sx={{ display: "grid", gap: 1, alignItems: "center",
-                      gridTemplateColumns: "auto minmax(0, 1fr) 72px 72px" }}>
+                      gridTemplateColumns: teamEvent
+                        ? "auto minmax(0, 1fr) 72px 72px 72px 72px"
+                        : "auto minmax(0, 1fr) 72px 72px" }}>
                 <Typography sx={{ fontFamily: mono, fontSize: "0.75rem",
                                   color: tokens.inkMuted, minWidth: 24 }}>
                   {match.tableLabel || "—"}
@@ -101,6 +134,21 @@ export default function ScoresDialog({
                   slotProps={{ htmlInput: {
                     inputMode: "numeric",
                     "aria-label": `${match.playerTwo || "Bye"} score` } }} />
+
+                {teamEvent ? (
+                  <>
+                    <TextField size="small" value={row?.pointsOne ?? ""}
+                      onChange={(e) => set(match.id, "pointsOne", e.target.value)}
+                      slotProps={{ htmlInput: {
+                        inputMode: "numeric",
+                        "aria-label": `${match.playerOne} score for the format` } }} />
+                    <TextField size="small" value={row?.pointsTwo ?? ""} disabled={bye}
+                      onChange={(e) => set(match.id, "pointsTwo", e.target.value)}
+                      slotProps={{ htmlInput: {
+                        inputMode: "numeric",
+                        "aria-label": `${match.playerTwo || "Bye"} score for the format` } }} />
+                  </>
+                ) : null}
               </Box>
             );
           })}

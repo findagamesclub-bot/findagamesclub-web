@@ -11,6 +11,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+import ScrollBox from "@/components/ui/ScrollBox";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import { parsePastedPairings, pasteSummary } from "@/utils/pairings-paste";
@@ -87,8 +88,8 @@ Ann Shah vs Ben Lowe           typed by hand
                 {pasteSummary(parsed).toUpperCase()}
               </Typography>
 
-              <Box sx={{ maxHeight: 280, overflowY: "auto", borderRadius: 1.5,
-                         border: `1px solid ${tokens.rule}` }}>
+              <ScrollBox cap={280} label={`${parsed.length} tables read from the paste`}
+                sx={{ borderRadius: 1.5, border: `1px solid ${tokens.rule}` }}>
                 {parsed.map((match, index) => (
                   <Box key={index}
                     sx={{ display: "grid", gap: 1, alignItems: "center", px: 1.5, py: 1,
@@ -113,7 +114,7 @@ Ann Shah vs Ben Lowe           typed by hand
                     </Stack>
                   </Box>
                 ))}
-              </Box>
+              </ScrollBox>
             </Stack>
           ) : null}
         </Stack>

@@ -114,7 +114,7 @@ export async function getMemberLists(clubId: number): Promise<MemberList[]> {
 
 /** The club naming which list was brought, or taking the naming back. */
 export async function setResultList(
-  source: "event_podium" | "event_pairing",
+  source: "event_podium" | "event_pairing" | "competition_match",
   sourceId: number, side: "one" | "two", listId: number | null,
 ): Promise<{ ok: boolean; error?: string }> {
   try {

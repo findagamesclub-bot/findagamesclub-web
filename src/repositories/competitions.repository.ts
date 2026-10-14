@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { callRpc } from "@/lib/supabase/table";
 
 export type StandingRow = {
   rank: number; member_name: string; profile_id: string | null;
@@ -12,6 +13,7 @@ export type StandingRow = {
 export type UpdateRow = {
   id: number; posted_on: string | null; title: string; summary: string; position: number;
   club_competition_matches: {
+    id: number;
     player_one: string; player_one_score: string;
     player_two: string; player_two_score: string; position: number;
   }[];
@@ -65,7 +67,7 @@ const HISTORY = `
   club_competition_updates(
     id, posted_on, title, summary, position,
     club_competition_matches(
-      player_one, player_one_score, player_two, player_two_score, position
+      id, player_one, player_one_score, player_two, player_two_score, position
     )
   )`;
 
@@ -315,29 +317,77 @@ export async function deleteRound(id: number) {
   if (!data) throw new Error("NOT_PERMITTED");
 }
 
-/** Same reasoning as the standings: a round's matches are edited as a set. */
-export async function replaceMatches(updateId: number, rows: {
-  playerOne: string; playerOneScore: string;
-  playerTwo: string; playerTwoScore: string;
-}[]) {
-  const matches = await writable("club_competition_matches");
+/**
+ * A round and the games in it, in one statement.
+ *
+ * Replaces the delete-and-reinsert this used to do, and that is not tidying.
+ * Since 0181 a game owns army rows, and 0164's rule is that a polymorphic
+ * `source_id` needs a delete path per source: with one in place, a round
+ * re-saved to fix a typo in its title would have taken every army in it. A
+ * game that stays keeps its id, so its armies stay with it.
+ *
+ * It also carries the two profile ids, which an ordinary update may not: 0181
+ * revokes write on this table outright, because attaching a result to an
+ * account is `may_link_profile`'s question (0177) and never a column grant's.
+ */
+export const saveCompetitionRound = (params: {
+  competitionId: number;
+  roundId: number | null;
+  postedOn: string | null;
+  title: string;
+  summary: string;
+  games: unknown;
+}) => callRpc<number>("save_competition_round", {
+  p_competition: params.competitionId,
+  p_round: params.roundId,
+  p_title: params.title,
+  p_summary: params.summary,
+  p_posted_on: params.postedOn,
+  p_games: params.games,
+});
 
-  const { error: cleared } = await matches
-    .delete()
-    .eq("update_id", updateId)
-    .select("id").rows();
-  if (cleared) throw new Error(cleared.message);
+/** What was played in one game of a round, both sides and the setup. */
+export const saveCompetitionMatchResult = (params: {
+  matchId: number;
+  armies: unknown;
+  mission: string;
+  deployment: string;
+  terrain: string;
+}) => callRpc<boolean>("save_competition_match_result", {
+  p_match: params.matchId,
+  p_armies: params.armies,
+  p_mission: params.mission,
+  p_deployment: params.deployment,
+  p_terrain: params.terrain,
+});
 
-  if (!rows.length) return;
+export type CompetitionGameRow = {
+  id: number;
+  update_id: number;
+  position: number;
+  player_one: string; player_one_score: string; player_one_id: string | null;
+  player_two: string; player_two_score: string; player_two_id: string | null;
+  mission: string; deployment: string; terrain: string;
+};
 
-  const { error } = await matches.insert(
-    rows.map((row, index) => ({
-      update_id: updateId,
-      player_one: row.playerOne, player_one_score: row.playerOneScore,
-      player_two: row.playerTwo, player_two_score: row.playerTwoScore,
-      position: index,
-    })),
-  ).select("id").rows();
+/**
+ * The games of every round, through a function rather than the embed this
+ * used to read. Every column 0181 adds landed after `database.ts` was last
+ * generated, and `check:columns` is right to refuse a select naming one.
+ */
+export const findCompetitionGames = (competitionId: number) =>
+  callRpc<CompetitionGameRow[]>("competition_games", { p_competition: competitionId });
 
-  if (error) throw Object.assign(new Error(error.message), { code: error.code });
-}
+export type GameArmyRow = {
+  source_id: number; side: string;
+  faction_id: string; faction_label: string;
+  detachment: string; disposition: string;
+  list_id: number | null; list_name: string;
+  list_version_number: number | null; snapshot: unknown;
+  mvp_units: string[] | null; underwhelming_units: string[] | null;
+  primary_score: number | null; secondary_score: number | null;
+  painted: boolean; first_turn: string; battle_role: string; outcome: string;
+};
+
+export const findCompetitionGameArmies = (competitionId: number) =>
+  callRpc<GameArmyRow[]>("competition_game_armies", { p_competition: competitionId });

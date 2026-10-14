@@ -14,6 +14,8 @@ import { getClubAccess } from "@/services/clubAccess.service";
 import { getManagedCompetitions } from "@/services/competitions.service";
 import { getRoster } from "@/services/memberships.service";
 import { getBuilderFor } from "@/services/armyBuilder.service";
+import { getMemberLists } from "@/services/resultArmies.service";
+import { getCompetitionGames } from "@/services/competitions.service";
 import { clubIdentity } from "@/utils/club-identity";
 
 export const metadata = { title: "Competition setup" };
@@ -60,6 +62,17 @@ export default async function CompetitionSetupPage({
     ? { editionId: builder.editionId, catalogueVersion: builder.catalogueVersion }
     : null;
 
+  // What was played in each game of each round, and the lists to name. One
+  // wave, and only at a club that records armies: a league at a club with the
+  // builder off is a table of names and scores as it always was.
+  const [lists, played] = records
+    ? await Promise.all([
+        getMemberLists(club.id).catch(() => []),
+        getCompetitionGames(competition.id).catch(() => ({ armies: {}, setup: {} })),
+      ])
+    : [[], { armies: {}, setup: {} }];
+  const { armies, setup } = played;
+
   return (
     <Container maxWidth="md" component="main" sx={{ py: { xs: 4, md: 6 } }}>
       <BackLink href={`/clubs/${slug}/competitions/manage`} label="Competitions" />
@@ -79,7 +92,8 @@ export default async function CompetitionSetupPage({
 
       <Section title="Rounds" icon={HistoryIcon}>
         <RoundsEditor competitionId={competition.id} slug={slug} faction={faction}
-          rounds={competition.updates} />
+          rounds={competition.updates} roster={roster}
+          builder={records} lists={lists} armies={armies} setup={setup} />
       </Section>
     </Container>
   );

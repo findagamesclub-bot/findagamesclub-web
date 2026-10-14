@@ -51,13 +51,13 @@ begin
   assert jsonb_array_length(j->'mostActive') >= 1, 'somebody is turning up';
   raise notice 'PASS people: the leaderboards build';
 
-  j := public.club_analytics_memberships(c);
+  j := public.club_analytics_memberships(c, d1, d2);
   assert (j->>'total')::int = 2, 'two on the roster, got ' || (j->>'total');
   raise notice 'PASS memberships: the roster matches the summary';
 
   -- The two must never disagree about the same club.
   assert (public.club_analytics_summary(c, d1, d2)->>'members')::int
-       = (public.club_analytics_memberships(c)->>'total')::int,
+       = (public.club_analytics_memberships(c, d1, d2)->>'total')::int,
     'the headline roster and membership health disagree';
   raise notice 'PASS agreement: headline roster equals membership health';
 end $$;
@@ -74,8 +74,8 @@ begin
   begin perform public.club_analytics_money(c, d1, d2); exception when others then refused := refused + 1; end;
   begin perform public.club_analytics_people(c, d1, d2); exception when others then refused := refused + 1; end;
   begin perform public.club_analytics_nights(c, d1, d2); exception when others then refused := refused + 1; end;
-  begin perform public.club_analytics_months(c, 3); exception when others then refused := refused + 1; end;
-  begin perform public.club_analytics_memberships(c); exception when others then refused := refused + 1; end;
+  begin perform public.club_analytics_months(c, d1, d2); exception when others then refused := refused + 1; end;
+  begin perform public.club_analytics_memberships(c, d1, d2); exception when others then refused := refused + 1; end;
   assert refused = 6, 'a stranger got through to ' || (6 - refused) || ' of the six';
   raise notice 'PASS guard: all six refuse somebody who does not run the club';
 end $$;

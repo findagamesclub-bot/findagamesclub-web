@@ -29,6 +29,9 @@ type MatchRow = {
   player_two_id: string | null;
   score_one: number | null;
   score_two: number | null;
+  /** 0183. What the format counts a table at, beside the victory points. */
+  points_one?: number | null;
+  points_two?: number | null;
   position: number;
 };
 
@@ -63,6 +66,12 @@ export async function findRounds(eventId: number): Promise<PairingRound[]> {
       playerTwoId: row.player_two_id,
       scoreOne: row.score_one,
       scoreTwo: row.score_two,
+      // Only a team event scores a table twice, and those tables come back
+      // through `event_team_draw` with both pairs on them. This read is the
+      // ordinary draw, and naming the 0183 columns here would fail
+      // `check:columns` against the stale `database.ts` besides.
+      pointsOne: null,
+      pointsTwo: null,
       position: row.position,
     });
     byRound.set(row.pairing_id, list);
@@ -139,6 +148,9 @@ export async function ensureRound(
 }
 
 export type MatchFields = {
+  /** 0183. What the format counts a table at, beside the victory points. */
+  points_one?: number | null;
+  points_two?: number | null;
   table_label: string;
   player_one: string;
   player_one_id: string | null;

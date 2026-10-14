@@ -7,6 +7,7 @@ import { getMemberRecords } from "@/services/memberRecords.service";
 import { getOverallRecord } from "@/services/memberOverall.service";
 import { getHeldBadges } from "@/services/memberBadges.service";
 import { getGrudgeTracker } from "@/services/grudgeTracker.service";
+import { getRivalMarks } from "@/services/clubExtras.service";
 import { getCurrentProfile } from "@/services/auth.service";
 
 export async function generateMetadata({ params }: PageProps<"/members/[id]">) {
@@ -26,6 +27,8 @@ export default async function MemberPage({ params }: PageProps<"/members/[id]">)
 
   const profile = await getProfile(id);
   if (!profile) notFound();
+
+  const isSelf = viewer.id === profile.id;
 
   // Where they play, and how the reader has done against them. Both are
   // limited by policy to what the reader may already see.
@@ -56,13 +59,25 @@ export default async function MemberPage({ params }: PageProps<"/members/[id]">)
   const trackers = await getGrudgeTracker(profile.id, context.clubs)
     .catch(() => []);
 
+  // Whether the reader has already named them, club by club, so the button on
+  // each card says which of the three states it is in. Its own read rather
+  // than a field on the tracker, because the tracker answers "how have they
+  // done" and this answers "what have I said about them": a failure here
+  // should cost the button and not the record. Nothing is read on your own
+  // profile, where the button is not drawn at all.
+  const rivalMarks = isSelf || !trackers.length
+    ? undefined
+    : await getRivalMarks(trackers.map((t) => t.club.id), viewer.id, profile.id)
+        .catch(() => undefined);
+
   return (
     <MemberProfileView
       profile={profile}
-      isSelf={viewer.id === profile.id}
+      isSelf={isSelf}
       context={context}
       records={{ ...records, badges: [...held, ...records.badges] }}
       trackers={trackers}
+      rivalMarks={rivalMarks}
       armies={armies}
       overall={overall}
     />

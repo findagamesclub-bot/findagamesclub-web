@@ -4,7 +4,18 @@ import Typography from "@mui/material/Typography";
 import { initialsOf } from "@/utils/format";
 import { display, mono, tokens } from "@/lib/tokens";
 
-export type RankedRow = { label: string; value: number };
+export type RankedRow = {
+  label: string;
+  value: number;
+  /**
+   * A second figure for the same row, set in mono beside the first.
+   *
+   * The ranking is by `value` and the note is whatever else is worth knowing
+   * about it: what a product brought in against how many went, which is where
+   * a club finds out that its best seller is not its best earner.
+   */
+  note?: string;
+};
 
 /**
  * A short ranking, drawn as rows rather than as a chart.
@@ -63,6 +74,7 @@ export default function RankedBars({
                 <Typography sx={{ fontFamily: mono, fontSize: "0.72rem",
                                   color: tokens.inkMuted, flexShrink: 0 }}>
                   {row.value}{suffix ? ` ${suffix(row.value)}` : ""}
+                  {row.note ? ` · ${row.note}` : ""}
                 </Typography>
               </Stack>
 

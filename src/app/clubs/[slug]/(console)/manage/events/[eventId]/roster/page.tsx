@@ -8,6 +8,7 @@ import { getClubAccess } from "@/services/clubAccess.service";
 import { getClubDetail } from "@/services/clubDetail.service";
 import { getEvent } from "@/services/eventEditor.service";
 import { getDoorList } from "@/services/eventRoster.service";
+import { getRoster } from "@/services/memberships.service";
 import { londonToday } from "@/services/bookingCalendar.service";
 import { clubIdentity } from "@/utils/club-identity";
 import { consoleBackTarget } from "@/utils/back-link";
@@ -45,7 +46,10 @@ export default async function RosterPage({
   const event = await getEvent(club.id, Number(eventId));
   if (!event) notFound();
 
-  const rows = await getDoorList(event.id);
+  const [rows, members] = await Promise.all([
+    getDoorList(event.id),
+    getRoster(club.id).catch(() => []),
+  ]);
   // Its last day, by the same London wall-clock rule the rest of the app uses.
   const lastDay = event.endDate || event.startDate;
   const over = Boolean(lastDay) && lastDay < londonToday();
@@ -66,7 +70,15 @@ export default async function RosterPage({
         lede="Everybody with a place. Mark who has paid, check people in as they arrive on the day, and take a place back when somebody cannot make it."
       />
 
-      <RosterBoard slug={slug} eventId={event.id} rows={rows} faction={faction} />
+      {/* The roster is read for the optional member link: naming one is what
+          makes a place theirs rather than a name on a list. Approved only,
+          which is the same population the ticket eligibility guard judges. */}
+      <RosterBoard slug={slug} eventId={event.id} rows={rows} faction={faction}
+        tickets={event.ticketTypes}
+        members={members
+          .filter((m) => m.status === "approved")
+          .map((m) => ({ id: m.profileId, name: m.fullName }))}
+        canAdd={!over && event.status !== "cancelled"} />
     </Container>
   );
 }

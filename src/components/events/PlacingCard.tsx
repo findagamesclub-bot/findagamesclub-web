@@ -6,24 +6,29 @@ import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
+import PlayerName from "./PlayerName";
 import { armySummary } from "@/utils/army-snapshot";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { EventPlacing } from "@/types/event";
 
 /**
- * One placing, in full: the army, the units that did the work, the list.
+ * One placing, in full: the army, the units that did the work, and a way into
+ * the list.
  *
  * Reserved for the podium once a field gets big. Fifty of these is a page
  * nobody scrolls, and the detail is what people come for at the top of a
  * table, not at fortieth.
  */
 export default function PlacingCard({
-  p, faction, onEdit,
+  p, faction, onEdit, onOpenList,
 }: {
   p: EventPlacing;
   faction: Faction;
   /** The club's own control. Absent for everybody else. */
   onEdit?: () => void;
+  /** Opens the saved list. Same dialog the rest of the field uses. */
+  onOpenList?: (player: string, army: NonNullable<EventPlacing["army"]>) => void;
 }) {
   return (
     <Stack
@@ -50,7 +55,8 @@ export default function PlacingCard({
 
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}>
-            <Typography variant="subtitle1">{p.name}</Typography>
+            <PlayerName name={p.name} profileId={p.profileId}
+              sx={{ fontSize: "1rem", fontWeight: 600 }} />
             {!p.isMember ? (
               <Chip size="small" label="Visitor" variant="outlined"
                 sx={{ borderColor: tokens.rule, fontSize: "0.7rem" }} />
@@ -88,38 +94,25 @@ export default function PlacingCard({
                 </Stack>
               ) : null}
 
-              {/* The full list, when the player had one saved. Two columns of
-                  unit and points, the way an army list is actually written. */}
-              {p.army.list?.units.length ? (
-                <Box sx={{ mt: 1.5, pt: 1.25, borderTop: `1px solid ${tokens.rule}` }}>
-                  <Stack direction="row" spacing={1} sx={{ alignItems: "baseline", mb: 0.75 }}>
-                    <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.64rem",
-                                      letterSpacing: "0.1em", color: tokens.inkMuted }}>
-                      {(p.army.list.name ?? "ARMY LIST").toUpperCase()}
-                    </Typography>
-                    {p.army.list.totalPoints ? (
-                      <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem",
-                                        color: tokens.brass, fontWeight: 600 }}>
-                        {p.army.list.totalPoints} pts
-                      </Typography>
-                    ) : null}
-                  </Stack>
-                  <Box sx={{ display: "grid",
-                             gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0,1fr))" },
-                             columnGap: 2 }}>
-                    {p.army.list.units.map((u) => (
-                      <Stack key={u.name} direction="row" spacing={1}
-                        sx={{ justifyContent: "space-between", py: 0.3 }}>
-                        <Typography variant="body2" sx={{ fontSize: "0.85rem" }}>
-                          {u.quantity > 1 ? `${u.quantity} × ` : ""}{u.name}
-                        </Typography>
-                        <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.78rem",
-                                          color: tokens.inkMuted, flexShrink: 0 }}>
-                          {u.points}
-                        </Typography>
-                      </Stack>
-                    ))}
-                  </Box>
+              {/* The list opens in the same dialog the rest of the field uses,
+                  rather than being printed out under the card.
+
+                  0172 kept it inline here on the reasoning that the podium is
+                  where somebody wants the detail. The client asked for the
+                  dialog instead, and they are right on the stronger ground:
+                  one control, one place, whichever half of the table somebody
+                  is reading. A forty-unit list under the winner also pushed
+                  second and third off the screen, so the thing the podium
+                  exists to show was the thing it buried. */}
+              {p.army.list?.units.length && onOpenList ? (
+                <Box sx={{ mt: 1.25 }}>
+                  <Button size="small" variant="text"
+                    onClick={() => onOpenList(p.name, p.army!)}
+                    startIcon={<FormatListBulletedIcon sx={{ fontSize: 15 }} />}
+                    sx={{ color: faction.deep, fontSize: "0.75rem", ml: -0.75 }}>
+                    {p.army.list.name || "Army list"}
+                    {p.army.list.totalPoints ? ` · ${p.army.list.totalPoints} pts` : ""}
+                  </Button>
                 </Box>
               ) : null}
             </>

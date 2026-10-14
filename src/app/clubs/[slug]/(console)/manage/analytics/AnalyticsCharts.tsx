@@ -7,8 +7,20 @@ import MonthBarChart from "@/components/ui/MonthBarChart";
 import RankedBars from "@/components/ui/RankedBars";
 import EmptyState from "@/components/ui/EmptyState";
 import type { AnalyticsMonth, AnalyticsNights } from "@/repositories/analytics.repository";
+import { MONEY_STREAMS, monthRevenue } from "@/utils/analytics-money";
 import { foldGames, worthSplittingByDay } from "@/utils/fold-rows";
 import { mono, tokens } from "@/lib/tokens";
+
+/**
+ * One colour per revenue stream, in `MONEY_STREAMS` order.
+ *
+ * Five bands on one bar, so they have to be told apart at a glance and none of
+ * them may be the danger red, which means something else everywhere on this
+ * site.
+ */
+const STREAM_COLOURS = [
+  tokens.brand, tokens.brass, tokens.positive, "#7E6BB5", "#2E8D8A",
+] as const;
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -110,7 +122,7 @@ export default function AnalyticsCharts({
   }
 
   const anyMonths = months.some((m) =>
-    m.bookings > 0 || m.tickets > 0 || m.new_members > 0 || Number(m.revenue) > 0);
+    m.bookings > 0 || m.tickets > 0 || m.new_members > 0 || monthRevenue(m) > 0);
 
   if (!anyMonths) {
     return (
@@ -125,11 +137,17 @@ export default function AnalyticsCharts({
     <Box sx={{ display: "grid", gap: 2.5,
                gridTemplateColumns: { xs: "minmax(0, 1fr)",
                                       lg: "repeat(2, minmax(0, 1fr))" } }}>
+      {/* Stacked by stream rather than one brass bar. A club reading "£140 in
+          August" could not see whether that was a busy shop or a full hall,
+          and the client asked for every stream to be in this report. The bars
+          still total what the Money tab says for the same window, which is
+          what makes the figure checkable. */}
       <Card title="Revenue by month">
-        <MonthBarChart labels={labels} series={[
-          { name: "Revenue", color: tokens.brass,
-            values: months.map((m) => Number(m.revenue ?? 0)) },
-        ]} />
+        <MonthBarChart labels={labels} series={MONEY_STREAMS.map((s, i) => ({
+          name: s.label,
+          color: STREAM_COLOURS[i] ?? tokens.brass,
+          values: months.map((m) => Number(m[s.column] ?? 0)),
+        }))} />
       </Card>
 
       <Card title="Bookings, tickets and new members">

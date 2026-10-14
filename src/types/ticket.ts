@@ -1,3 +1,5 @@
+import type { Priced } from "@/utils/price-lines";
+
 import type { PaymentStatus, RefundStatus } from "@/utils/door-list";
 
 /** A ticket type as the buyer sees it, including whether they may buy it. */
@@ -54,6 +56,12 @@ export type EventBooking = {
   discountAmount: number;
   total: number;
   currency: string;
+  /**
+   * The whole sum, including the points the member spent. The ticket showed
+   * what the membership took off and dropped what their own points did, so
+   * the figures on screen could not be added up.
+   */
+  priced: Priced;
   createdAt: string;
   /**
    * What the club has written down about the money. Nothing here takes

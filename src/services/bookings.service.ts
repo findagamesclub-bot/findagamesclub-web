@@ -3,6 +3,7 @@ import "server-only";
 import * as repo from "@/repositories/bookings.repository";
 import * as notify from "./booking-notify.service";
 import * as lfgRepo from "@/repositories/lookingForGames.repository";
+import { formatPounds } from "@/utils/format";
 
 /**
  * Creating and cancelling a table booking.
@@ -19,7 +20,12 @@ const SEAT_TAKEN = "23505";
 const MAX_ATTEMPTS = 4;
 
 type Result =
-  | { ok: true; bookingId: number; tableIndex: number; price: string; postWithdrawn: boolean }
+  | {
+      ok: true; bookingId: number; tableIndex: number;
+      /** What was frozen onto the row, written the way a price is written. */
+      price: string;
+      postWithdrawn: boolean;
+    }
   | { ok: false; error: string };
 
 /** Postgres exceptions from the guard trigger, in the member's words. */
@@ -43,6 +49,101 @@ function messageFor(raw: string): string {
   // policy left over from Stage 3 hid behind this line for a whole round trip.
   console.error("[bookings] unexpected refusal:", raw);
   return "Could not book that table. Try again.";
+}
+
+/**
+ * The same refusals, said to the club rather than to the member.
+ *
+ * "You already have a booking for that club date" is the wrong sentence
+ * entirely when somebody else is doing the booking, and "you do not have that
+ * many points" cannot happen on this path at all. Naming the member is what
+ * makes the two that actually happen actionable.
+ */
+function clubMessageFor(raw: string, name: string): string {
+  const who = name.trim() || "They";
+  if (raw.includes("club_booking_participants_one_per_date")) {
+    return `${who} already has a table that night.`;
+  }
+  if (raw.includes("BOOKING_NOT_A_MEMBER")) {
+    return `${who} is not an approved member of this club, so there is no tier to price a table from.`;
+  }
+  if (raw.includes("BOOKING_NO_MEMBER")) return "Choose who the table is for.";
+  if (raw.includes("BOOKING_NO_GAME")) return "Game title is required.";
+  if (raw.includes("NOT_PERMITTED")) {
+    return "You cannot book a table for somebody else at this club.";
+  }
+  return messageFor(raw);
+}
+
+/**
+ * Putting somebody else on a table.
+ *
+ * The club's own action, and the twin of `club_add_event_booking`. A member
+ * books their own table and the club hands one out at the door, and until now
+ * only the first of those existed: `club_bookings_insert` pins
+ * `booked_by = auth.uid()`, so the club's only move was to book it themselves
+ * and then edit who it was for.
+ *
+ * Two decisions live in the function rather than here, so a second caller
+ * cannot get them wrong: the table is priced off the NAMED MEMBER'S tier, and
+ * no loyalty points are spent, because nobody at a door can consent to
+ * spending somebody else's. Points are still earned.
+ */
+export async function addBookingFor(params: {
+  clubId: number;
+  clubSessionId: number;
+  sessionDate: string;
+  profileId: string;
+  memberName: string;
+  gameTitle: string;
+  notes?: string;
+  opponentProfileId?: string | null;
+  opponentName?: string;
+}): Promise<Result> {
+  const gameTitle = params.gameTitle.trim();
+  if (!params.profileId) return { ok: false, error: "Choose who the table is for." };
+  if (!gameTitle) return { ok: false, error: "Game title is required." };
+  if (!params.clubSessionId || !params.sessionDate) {
+    return { ok: false, error: "Choose an available session to book." };
+  }
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const row = await repo.addTableBookingFor({
+        clubId: params.clubId,
+        clubSessionId: params.clubSessionId,
+        sessionDate: params.sessionDate,
+        profileId: params.profileId,
+        gameTitle: gameTitle.slice(0, 120),
+        notes: (params.notes ?? "").trim().slice(0, 500),
+        opponentProfileId: params.opponentProfileId || null,
+        opponentName: (params.opponentName ?? "").trim().slice(0, 120),
+      });
+
+      // The same confirmation a member gets when they book themselves. They
+      // did not press the button, so this is the only thing that reaches them
+      // outside the app, and it goes to the address on their account.
+      await notify.notifyBooked(row.booking_id);
+
+      return {
+        ok: true,
+        bookingId: row.booking_id,
+        tableIndex: row.table_index,
+        price: formatPounds(Number(row.total_price), row.price_currency),
+        postWithdrawn: false,
+      };
+    } catch (error) {
+      const err = error as { code?: string; message?: string };
+      const raw = err.message ?? "";
+      if (err.code === SEAT_TAKEN && raw.includes("club_bookings_seat_uniq")
+          && attempt < MAX_ATTEMPTS) {
+        continue;
+      }
+      return { ok: false, error: clubMessageFor(raw, params.memberName) };
+    }
+  }
+
+  return { ok: false, error: "That night filled up while you were booking. Try another." };
 }
 
 export async function createBooking(params: {
@@ -98,7 +199,7 @@ export async function createBooking(params: {
         ok: true,
         bookingId: row.id,
         tableIndex: row.table_index,
-        price: `${row.price_currency} ${row.total_price}`,
+        price: formatPounds(Number(row.total_price), row.price_currency),
         postWithdrawn,
       };
     } catch (error) {
@@ -197,6 +298,8 @@ const EDIT_ERRORS: [string, string][] = [
   ["BOOKING_OPPONENT_NOT_MEMBER",
    "That opponent is not an approved member. Type their name instead to record them as a guest."],
   ["BOOKING_SAME_PERSON", "The same person cannot hold two seats on one table."],
+  ["BOOKING_SEATS_CONFLICT",
+   "That form asked to change both seats at once. Reopen the booking and try again."],
   ["BOOKING_DATE_CLASH",
    "They already have a table that night, and a member can only hold one per club night."],
   ["BOOKING_POINTS_SPENT",
@@ -220,12 +323,19 @@ export async function editBooking(params: {
   setPeople?: boolean;
   bookedBy?: string | null;
   opponentId?: string | null;
+  /** The member saying who they are playing. Their only seat (0178). */
+  setOpponent?: boolean;
 }): Promise<{ ok: boolean; error?: string }> {
   if (!params.gameTitle.trim()) {
     return { ok: false, error: "Say which game is being played." };
   }
   if (params.setPeople && !params.bookedBy) {
     return { ok: false, error: "Say who the table is booked for." };
+  }
+  // The database refuses this too. Caught here so the message names the two
+  // forms rather than coming back as a code nobody typed.
+  if (params.setPeople && params.setOpponent) {
+    return { ok: false, error: "Only one of the two seats can be set at a time." };
   }
 
   try {
@@ -239,6 +349,7 @@ export async function editBooking(params: {
       setPeople: params.setPeople,
       bookedBy: params.bookedBy,
       opponentId: params.opponentId,
+      setOpponent: params.setOpponent,
     });
     return { ok: true };
   } catch (error) {

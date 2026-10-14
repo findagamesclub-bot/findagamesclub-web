@@ -9,6 +9,9 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
+import Autocomplete from "@mui/material/Autocomplete";
+import MemberCodeField, { type Linked } from "@/components/results/MemberCodeField";
+import type { Person } from "./AddPlaceDialog";
 import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
@@ -23,9 +26,18 @@ import { tokens } from "@/lib/tokens";
  * somebody agreed to it is not a thing this app allows.
  */
 export default function EditBookingDialog({
-  row, saving, onClose, onSave,
+  row, slug, members = [], saving, onClose, onSave,
 }: {
   row: DoorRow | null;
+  /** For the member-code lookup, which works at any club. */
+  slug: string;
+  /**
+   * The club's own approved members, who need no code. Empty on the club-wide
+   * bookings list, which does not load a roster; the code field below still
+   * works there, and a picker with nothing in it is a control offering to do
+   * something it cannot.
+   */
+  members?: Person[];
   saving: boolean;
   onClose: () => void;
   onSave: (fields: Record<string, string>) => void;
@@ -35,12 +47,22 @@ export default function EditBookingDialog({
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [notes, setNotes] = useState("");
+  // Whose place this is. A booking made signed in already carries it, which
+  // is the client's scenario 1; the other two are what this control is for.
+  const [linked, setLinked] = useState<Linked | null>(null);
 
   useWhenChanged([row], () => {
     if (!row) return;
     setFullName(row.fullName);
     setEmail(row.email);
     setNotes(row.notes);
+    // Only the id is stored, so a name is offered where the roster knows one
+    // and left off where it does not. Echoing the name the club typed would
+    // make a wrong link unspottable, which 0177 already paid for.
+    setLinked(row.profileId
+      ? { id: row.profileId,
+          name: members.find((m) => m.id === row.profileId)?.name }
+      : null);
   });
 
   return (
@@ -50,6 +72,37 @@ export default function EditBookingDialog({
 
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
+          {/* Who the place belongs to, above the name on the door, because
+              the account is the thing the results and badges follow and the
+              name is only what to call out on the day. A member picker for
+              the club's own, and the code underneath for anybody else: the
+              client's scenario 2 is somebody who "may not be a member of
+              that club" and scenario 3 is somebody who is not one at all. */}
+          {members.length ? (
+          <Autocomplete<Person, false, false, false>
+            options={members}
+            value={linked?.id
+              ? members.find((m) => m.id === linked.id) ?? null
+              : null}
+            onChange={(_event, value) =>
+              setLinked(value ? { id: value.id, name: value.name } : null)}
+            getOptionLabel={(option) => option.name}
+            isOptionEqualToValue={(a, b) => a.id === b.id}
+            renderInput={(params) => (
+              <TextField {...params} label="Whose place is it"
+                helperText="A member of your club. Leave it empty for somebody with no account." />
+            )}
+          />
+          ) : null}
+
+          <MemberCodeField
+            slug={slug}
+            linked={linked}
+            onFound={(holder) => setLinked(holder)}
+            onClear={() => setLinked(null)}
+            unlinkedNote="Nobody's profile is behind this place, so no result from it reaches one."
+          />
+
           <TextField label="Name" required fullWidth autoFocus value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             slotProps={{ htmlInput: { maxLength: 120 } }}
@@ -76,7 +129,14 @@ export default function EditBookingDialog({
         <Button variant="contained" disabled={!fullName.trim()}
           loading={saving} loadingPosition="start"
           aria-label={saving ? "Saving the booking" : undefined}
-          onClick={() => onSave({ fullName, email, notes })}>
+          onClick={() => onSave({
+            fullName, email, notes,
+            // Empty means nobody, which is a real answer and how a wrong link
+            // is taken off. The code rides along because an account that is
+            // nobody at this club is only attachable with one.
+            memberId: linked?.id ?? "",
+            memberCode: linked?.code ?? "",
+          })}>
           Save
         </Button>
       </DialogActions>

@@ -72,9 +72,11 @@ export async function teamsAction(
 
       case "place-team": {
         const rank = String(data.get("rank") ?? "").trim();
+        const score = String(data.get("score") ?? "").trim();
         return teams.placeTeam(event.id, Number(data.get("teamId")) || 0,
           rank === "" ? null : Math.floor(Number(rank)),
-          String(data.get("placement") ?? ""));
+          String(data.get("placement") ?? ""),
+          score === "" ? null : Math.floor(Number(score)));
       }
 
       default:

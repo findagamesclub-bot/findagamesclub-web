@@ -12,6 +12,7 @@ import Typography from "@mui/material/Typography";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import StatusChip from "@/components/ui/StatusChip";
+import PriceBreakdown from "@/components/ui/PriceBreakdown";
 import { nightLabel } from "@/utils/dates";
 import { formatMoney } from "@/utils/format";
 import {
@@ -72,8 +73,13 @@ export default function BookingRow({
         <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
           {row.title}
           {row.total > 0 ? ` · ${formatMoney(row.total, "GBP")}` : ""}
-          {row.pointsSpent > 0 ? ` · ${row.pointsSpent} pts` : ""}
         </Typography>
+
+        {/* The points used to sit on the line above as a bare "9 pts", which
+            said how many without saying what they were worth, and said nothing
+            at all about the tier. A club asked what it is owed deserves to be
+            able to answer why. */}
+        <PriceBreakdown priced={row.priced} compact />
 
         {tags.length ? (
           <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: "wrap" }}>

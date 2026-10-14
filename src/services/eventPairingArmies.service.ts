@@ -5,6 +5,9 @@ import { setResultList } from "./resultArmies.service";
 import { pairingRefusal } from "@/utils/event-refusals";
 import { listFromSnapshot } from "@/utils/army-snapshot";
 import type { Result } from "./eventEditor.service";
+import { sideFromRow, type GameSide, type ResultArmy as EditedArmy }
+  from "@/utils/result-army";
+import type { MatchSetup } from "@/utils/result-meta";
 import type { ResultArmy } from "@/types/event";
 
 /**
@@ -40,14 +43,16 @@ function refusalOf(error: unknown, fallback: string): string {
  * table nobody has filled the army in on, which is the common case anyway, and
  * is a great deal better than a draw that will not draw between rounds.
  */
-export type PairingArmy = {
-  factionId: string;
-  factionLabel: string;
-  detachment: string;
-  disposition: string;
-  listId: number | null;
-  listName: string;
-};
+/**
+ * What the console's dialog edits.
+ *
+ * It was six fields: a faction cascade and a list. `put_result_army` has
+ * accepted the full per-side shape since 0135, so the scores, the MVP units,
+ * the turn order and the battle role were being offered on a table booking
+ * and silently dropped on a table of a draw. It is `GameSide` now, which is
+ * `ResultArmy` plus the list, so one set of fields edits both.
+ */
+export type PairingArmy = GameSide;
 
 /**
  * The same army, in the shape a reader's components already take.
@@ -61,6 +66,9 @@ export function readerArmy(row: {
   faction_label: string; detachment: string; disposition: string;
   list_id: number | null; list_name: string; snapshot: unknown;
   mvp_units: string[] | null;
+  underwhelming_units?: string[] | null;
+  primary_score?: number | null; secondary_score?: number | null;
+  painted?: boolean | null; first_turn?: string | null; battle_role?: string | null;
 }): ResultArmy | null {
   const faction = (row.faction_label ?? "").trim();
   const list = listFromSnapshot(row.snapshot, {
@@ -76,6 +84,12 @@ export function readerArmy(row: {
     detachment: (row.detachment ?? "").trim() || null,
     disposition: (row.disposition ?? "").trim() || null,
     mvpUnits: (row.mvp_units ?? []).filter(Boolean),
+    underwhelmingUnits: (row.underwhelming_units ?? []).filter(Boolean),
+    primaryScore: row.primary_score ?? null,
+    secondaryScore: row.secondary_score ?? null,
+    painted: row.painted ?? false,
+    firstTurn: (row.first_turn ?? "").trim(),
+    battleRole: (row.battle_role ?? "").trim(),
     list,
   };
 }
@@ -88,9 +102,9 @@ export function readerArmy(row: {
  * query, not two hundred.
  */
 export async function getRoundArmiesForReaders(
-  matchIds: number[],
+  eventId: number,
 ): Promise<Record<string, ResultArmy>> {
-  const rows = await repo.findPairingArmies(matchIds).catch(() => []);
+  const rows = await repo.findPairingArmies(eventId).catch(() => []);
   const out: Record<string, ResultArmy> = {};
   for (const row of rows) {
     const army = readerArmy(row);
@@ -100,18 +114,32 @@ export async function getRoundArmiesForReaders(
 }
 
 export async function getRoundArmies(
-  matchIds: number[],
+  eventId: number,
 ): Promise<Record<string, PairingArmy>> {
-  const rows = await repo.findPairingArmies(matchIds).catch(() => []);
+  const rows = await repo.findPairingArmies(eventId).catch(() => []);
   const out: Record<string, PairingArmy> = {};
+  for (const row of rows) out[`${row.source_id}:${row.side}`] = sideFromRow(row);
+  return out;
+}
+
+/**
+ * How each table of a draw was set up, by match id.
+ *
+ * Its own read rather than a field on the army, because the setup belongs to
+ * the game and not to a side: both sides of one table share one mission. The
+ * army rows carry a copy for the rollups, which is 0141's shape, and this is
+ * what a screen reads so a table with the mission typed and no army recorded
+ * still has something to show.
+ */
+export async function getRoundSetup(
+  eventId: number,
+): Promise<Record<number, MatchSetup>> {
+  const rows = await repo.findPairingArmies(eventId).catch(() => []);
+  const out: Record<number, MatchSetup> = {};
   for (const row of rows) {
-    out[`${row.source_id}:${row.side}`] = {
-      factionId: row.faction_id,
-      factionLabel: row.faction_label,
-      detachment: row.detachment,
-      disposition: row.disposition,
-      listId: row.list_id,
-      listName: row.list_name,
+    if (!row.mission && !row.deployment && !row.terrain) continue;
+    out[row.source_id] = {
+      mission: row.mission, deployment: row.deployment, terrain: row.terrain,
     };
   }
   return out;
@@ -127,16 +155,17 @@ export async function getRoundArmies(
  */
 export async function saveMatchArmies(
   matchId: number,
-  armies: { one: Record<string, string>; two: Record<string, string> },
+  armies: { one?: Partial<EditedArmy>; two?: Partial<EditedArmy> },
   lists: { one: number | null; two: number | null },
+  setup: MatchSetup = { mission: "", deployment: "", terrain: "" },
 ): Promise<Result> {
   try {
-    await repo.savePairingArmies(matchId, armies);
+    await repo.savePairingArmies({ matchId, armies, ...setup });
 
     for (const side of ["one", "two"] as const) {
       // Nothing was named, so there is no row to hang a list off and none to
       // clear: `put_result_army` has already deleted it.
-      if (!(armies[side].factionId ?? "").trim()) continue;
+      if (!(armies[side]?.factionId ?? "").trim()) continue;
       const linked = await setResultList("event_pairing", matchId, side, lists[side]);
       // The armies are already saved, so this reports the list and nothing
       // else: saying "that did not save" about a faction that did is worse

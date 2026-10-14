@@ -16,6 +16,7 @@ import type { EventTeam, TeamFixture, TeamTable } from "@/types/eventTeams";
 type TeamRow = {
   id: number; name: string; position: number;
   final_rank: number | null; placement: string | null;
+  final_score: number | null;
   captain_profile_id: string | null;
   players: { id: number; profileId: string | null; name: string; position: number }[] | null;
 };
@@ -41,6 +42,7 @@ export async function findTeams(eventId: number): Promise<EventTeam[]> {
     position: row.position,
     finalRank: row.final_rank,
     placement: text(row.placement),
+    finalScore: row.final_score,
     captainProfileId: row.captain_profile_id,
     players: row.players ?? [],
   }));
@@ -110,9 +112,27 @@ export const saveTeam = (params: {
   p_players: params.players,
 });
 
+/**
+ * A fixture made by hand, and the round it needs made with it.
+ *
+ * Through a function because 0168 revoked insert on `club_event_team_matches`
+ * outright and left the shuffle as the only way to get one. A club running a
+ * format the draw does not understand had no way to build a round at all,
+ * which is what the client found.
+ */
+export const addFixture = (params: {
+  eventId: number; round: number; teamOne: number; teamTwo: number;
+}) => callRpc<number>("add_event_team_fixture", {
+  p_event: params.eventId,
+  p_round: params.round,
+  p_team_one: params.teamOne,
+  p_team_two: params.teamTwo,
+});
+
 /** Where the club says a team finished. An ordinary update by policy. */
 export async function placeTeam(
-  eventId: number, id: number, fields: { final_rank: number | null; placement: string },
+  eventId: number, id: number,
+  fields: { final_rank: number | null; placement: string; final_score: number | null },
 ) {
   const teams = await table<{ id: number }>("club_event_teams");
   const { data, error } = await teams

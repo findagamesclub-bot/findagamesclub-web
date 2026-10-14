@@ -8,6 +8,13 @@ export type ResultArmy = {
   /** Belongs to the detachment, never to the faction. */
   disposition: string | null;
   mvpUnits: string[];
+  /** What the club recorded against this side. Absent on an imported result. */
+  underwhelmingUnits?: string[];
+  primaryScore?: number | null;
+  secondaryScore?: number | null;
+  painted?: boolean;
+  firstTurn?: string;
+  battleRole?: string;
   /** Present only when the player had a saved list attached. */
   list: {
     /** Null on an imported result: legacy stored the name and not the row. */
@@ -55,6 +62,13 @@ export type EventPairing = {
     table: string | null;
     playerOne: string;
     playerTwo: string;
+    /**
+     * The accounts behind the names, where the club linked them. A tournament
+     * sheet is mostly typed names, so these are usually null, and that is what
+     * decides whether a name is a link to a profile.
+     */
+    playerOneId: string | null;
+    playerTwoId: string | null;
     /** The result, once somebody has entered it. Null while the round is live. */
     score: string | null;
     /**
@@ -66,6 +80,11 @@ export type EventPairing = {
     /** What each side brought, once the club has recorded it. */
     armyOne: ResultArmy | null;
     armyTwo: ResultArmy | null;
+    /**
+     * How the game was set up. One per game rather than one per side,
+     * because both players were in the same deployment.
+     */
+    setup: { mission: string; deployment: string; terrain: string } | null;
   }[];
 };
 
@@ -160,4 +179,10 @@ export type ClubEventDetail = {
    */
   teams: EventTeam[];
   teamFixtures: TeamFixture[];
+  /**
+   * Whether the club runs this one as teams. Carried rather than inferred
+   * from `teams.length`, because an event marked as teams with none entered
+   * yet is still a team event and must not offer the individual editor.
+   */
+  teamEvent: boolean;
 };

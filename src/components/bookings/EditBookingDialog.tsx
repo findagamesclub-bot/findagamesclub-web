@@ -12,7 +12,8 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import BookingPeopleFields, { type Person } from "./BookingPeopleFields";
+import BookingPeopleFields from "./BookingPeopleFields";
+import OpponentField, { type Person } from "./OpponentField";
 import SubmitButton from "@/components/ui/SubmitButton";
 import { useActionToast } from "@/components/ui/Toaster";
 import { bookingAction, type BookingState } from "@/app/clubs/[slug]/(console)/bookings/actions";
@@ -33,9 +34,14 @@ import type { Booking } from "@/types/booking";
  * against the wrong name, or a guest who has since joined should be linked to
  * their account, and cancelling and rebooking loses the table number and
  * offers the slot to the waiting list on the way past.
+ *
+ * A member gets the second of those and not the first. 0178 opened the
+ * opponent seat to them, because who you are playing is ordinary and handing
+ * your table over is not, and without a picker here the only thing they could
+ * record was a guest's name: the game then counted for nobody but them.
  */
 export default function EditBookingDialog({
-  booking, slug, faction, variant = "text", people,
+  booking, slug, faction, variant = "text", people, opponents,
 }: {
   booking: Booking;
   slug: string;
@@ -49,8 +55,15 @@ export default function EditBookingDialog({
    * their own booking gets none, and the database refuses the fields anyway.
    */
   people?: Person[];
+  /**
+   * Members this booking's owner may name as their opponent, with themselves
+   * already filtered out. The member's half of `people`, and the only seat the
+   * database lets them set.
+   */
+  opponents?: Person[];
 }) {
   const canSetPeople = Boolean(people?.length);
+  const canPickOpponent = !canSetPeople && Boolean(opponents?.length);
   const [open, setOpen] = useState(false);
   const fullScreen = useMediaQuery("(max-width:600px)");
   const [state, submit, busy] = useActionState<BookingState, FormData>(bookingAction, {});
@@ -109,7 +122,14 @@ export default function EditBookingDialog({
 
               {canSetPeople ? (
                 <BookingPeopleFields booking={booking} people={people!} />
+              ) : canPickOpponent ? (
+                <OpponentField
+                  booking={booking} people={opponents!} label="Opponent" setsSeat
+                  helperText="Pick a member so the game counts for both of you, or type a guest's name." />
               ) : (
+                // No roster to pick from, so a guest's name is all there is to
+                // record. A linked opponent stays read-only here: their name
+                // comes from their profile and typing over it changes nothing.
                 <TextField
                   name="opponentName" label="Opponent" fullWidth
                   defaultValue={booking.opponent?.name ?? ""}

@@ -89,13 +89,23 @@ export default function ReplyRow({
                   </Typography>
                 )}
 
-                {/* Reporting is for people who cannot act. A manager who can
-                    take the reply down themselves reporting it to themselves
-                    would be a strange thing to offer, which is the rule the
-                    thread's own Remove button already follows. */}
-                {!reply.isMine && !reply.canRemove && !reply.pending ? (
+                {/* Everybody but the author, including the club's own team.
+                    This used to exclude anybody who could Remove, so an owner,
+                    a manager and a helper had no flag on a reply at all: the
+                    only thing they could do with a line that broke the rules
+                    was delete it. The client reported exactly that. See the
+                    note on the post above for why escalating has to stay
+                    open to them. */}
+                {!reply.isMine && !reply.pending ? (
                   <Box className="reply-remove"
-                    sx={{ opacity: 0, transition: "opacity 140ms ease",
+                    sx={{ // Already reported is a STATE, not a control, and a
+                          // state hidden until hover is a state nobody reads.
+                          // That is the whole of the client's "the little flag
+                          // is all black and cannot be clicked": they hovered
+                          // a disabled filled flag with its only explanation
+                          // in a tooltip.
+                          opacity: isReported("reply", reply.id) ? 1 : 0,
+                          transition: "opacity 140ms ease",
                           "&:focus-within": { opacity: 1 },
                           // A phone has no hover, so on one this was a control
                           // that could not be reached at all: a member could

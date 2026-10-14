@@ -5,6 +5,9 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
+import PlayerName from "./PlayerName";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import { SetupNote } from "./MatchDetailDialog";
 import { armySummary } from "@/utils/army-snapshot";
 import { fold } from "@/utils/text";
 import { mono, tokens, type Faction } from "@/lib/tokens";
@@ -28,21 +31,25 @@ type Match = EventPairing["matches"][number];
  * depending on what somebody typed is worse than either.
  */
 export default function PairingTable({
-  match, faction, me, onOpenList,
+  match, faction, me, onOpenList, onOpenMatch,
 }: {
   match: Match;
   faction: Faction;
   /** The reader's own folded name, so their row can say so. */
   me: string;
   onOpenList: (player: string, army: ResultArmy) => void;
+  /** Opens the whole game: both armies and how it was set up. */
+  onOpenMatch: () => void;
 }) {
   const bye = !match.playerTwo.trim();
   const mine = Boolean(me)
     && (fold(match.playerOne) === me || fold(match.playerTwo) === me);
 
   const sides = [
-    { name: match.playerOne, score: match.scoreOne, army: match.armyOne },
-    { name: match.playerTwo, score: match.scoreTwo, army: match.armyTwo },
+    { name: match.playerOne, id: match.playerOneId,
+      score: match.scoreOne, army: match.armyOne },
+    { name: match.playerTwo, id: match.playerTwoId,
+      score: match.scoreTwo, army: match.armyTwo },
   ].slice(0, bye ? 1 : 2);
 
   // Bold the better score. Both figures are on screen either way, so this is
@@ -82,10 +89,7 @@ export default function PairingTable({
                     borderTop: i === 0 ? "none" : `1px dashed ${tokens.rule}` }}>
               <Stack direction="row" spacing={1.5}
                 sx={{ alignItems: "baseline", justifyContent: "space-between" }}>
-                <Typography variant="body2"
-                  sx={{ minWidth: 0, fontWeight: isMe ? 700 : 400 }}>
-                  {side.name.trim() || "—"}
-                </Typography>
+                <PlayerName name={side.name} profileId={side.id} bold={isMe} />
                 {side.score === null ? null : (
                   <Typography sx={{ fontFamily: mono, fontSize: "0.78rem",
                                     fontVariantNumeric: "tabular-nums",
@@ -120,6 +124,24 @@ export default function PairingTable({
             </Stack>
           );
         })}
+
+        {/* How the game was set up, and the way into the whole of it. The
+            setup belongs to the table rather than to a player, so it sits
+            under both of them, and the control beside it opens the match
+            rather than one side's list: "click an event round game and see
+            then those details of that match" is what it answers. */}
+        {match.setup || match.armyOne || match.armyTwo ? (
+          <Stack direction="row" spacing={1} useFlexGap
+            sx={{ alignItems: "baseline", flexWrap: "wrap", pt: 0.5 }}>
+            <SetupNote setup={match.setup} />
+            <Button size="small" variant="text" onClick={onOpenMatch}
+              startIcon={<InfoOutlinedIcon sx={{ fontSize: 14 }} />}
+              sx={{ minWidth: 0, px: 0.75, py: 0, fontSize: "0.72rem",
+                    color: faction.deep }}>
+              The game
+            </Button>
+          </Stack>
+        ) : null}
 
         {bye ? (
           <Typography sx={{ fontFamily: mono, fontSize: "0.62rem",

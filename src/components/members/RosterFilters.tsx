@@ -12,7 +12,8 @@ import SearchIcon from "@mui/icons-material/Search";
 import BusyOverlay from "@/components/ui/BusyOverlay";
 import Pager from "@/components/ui/Pager";
 import { usePagedList } from "@/hooks/usePagedList";
-import { ANY, filterRoster, rosterOptions } from "@/utils/roster-filter";
+import { ANY, facetOptions, filterRoster, rosterOptions,
+  type MemberFacets } from "@/utils/roster-filter";
 import { tokens } from "@/lib/tokens";
 import type { ClubMember } from "@/types/membership";
 import { PER_PAGE } from "@/utils/paging";
@@ -28,16 +29,25 @@ import { PER_PAGE } from "@/utils/paging";
  * one option rather than a list of forty it has never heard of.
  */
 export default function RosterFilters({
-  members, cards,
+  members, cards, facets = [],
 }: {
   members: ClubMember[];
   /** One entry per member, keyed by profile id. */
   cards: { id: string; node: ReactNode }[];
+  /**
+   * The tier each member pays for and the rung they have earned, by profile
+   * id. Worked out on the server, where the club's tier list and its loyalty
+   * ladder already are: a club with neither sends nothing and the two
+   * dropdowns do not appear.
+   */
+  facets?: { id: string; membership: string; loyalty: string }[];
 }) {
   const [query, setQuery] = useState("");
   const [game, setGame] = useState(ANY);
   const [army, setArmy] = useState(ANY);
   const [style, setStyle] = useState(ANY);
+  const [membership, setMembership] = useState(ANY);
+  const [loyalty, setLoyalty] = useState(ANY);
 
   const settled = useDeferredValue(query);
   const busy = settled !== query;
@@ -46,12 +56,22 @@ export default function RosterFilters({
   const armies = useMemo(() => rosterOptions(members, (m) => m.armies), [members]);
   const styles = useMemo(() => rosterOptions(members, (m) => m.playStyle), [members]);
 
+  const held = useMemo(
+    () => new Map<string, MemberFacets>(
+      facets.map((f) => [f.id, { membership: f.membership, loyalty: f.loyalty }])),
+    [facets]);
+  const tiers = useMemo(
+    () => facetOptions(members, held, (f) => f.membership), [members, held]);
+  const rungs = useMemo(
+    () => facetOptions(members, held, (f) => f.loyalty), [members, held]);
+
   const shown = useMemo(
     () => new Set(
-      filterRoster(members, { query: settled, game, army, style })
+      filterRoster(members,
+        { query: settled, game, army, style, membership, loyalty }, held)
         .map((member) => member.profileId),
     ),
-    [members, settled, game, army, style],
+    [members, settled, game, army, style, membership, loyalty, held],
   );
 
   // Only the cards that match, in roster order. Previously every card stayed
@@ -65,7 +85,7 @@ export default function RosterFilters({
   const top = useRef<HTMLDivElement>(null);
   const paged = usePagedList(matching, PER_PAGE.cards, top);
 
-  const narrowed = query || game || army || style;
+  const narrowed = query || game || army || style || membership || loyalty;
 
   const dropdown = (
     label: string,
@@ -114,6 +134,12 @@ export default function RosterFilters({
           {dropdown("Games interested in", game, setGame, games, "All games")}
           {dropdown("Factions or armies", army, setArmy, armies, "All factions or armies")}
           {dropdown("Game style", style, setStyle, styles, "Any game style")}
+          {/* The two the client asked for. What somebody pays for and what
+              they have earned are different questions and a club acts on them
+              differently: one is a renewal conversation, the other is who to
+              thank. Each only appears where the club has it set up. */}
+          {dropdown("Membership tier", membership, setMembership, tiers, "All membership tiers")}
+          {dropdown("Loyalty tier", loyalty, setLoyalty, rungs, "All loyalty tiers")}
         </Box>
 
         <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
@@ -122,7 +148,10 @@ export default function RosterFilters({
           </Typography>
           {narrowed ? (
             <Button size="small" variant="text"
-              onClick={() => { setQuery(""); setGame(ANY); setArmy(ANY); setStyle(ANY); }}>
+              onClick={() => {
+                setQuery(""); setGame(ANY); setArmy(ANY); setStyle(ANY);
+                setMembership(ANY); setLoyalty(ANY);
+              }}>
               Clear
             </Button>
           ) : null}

@@ -5,35 +5,40 @@ import {
 } from "../club-access";
 
 /**
- * Transcribed by hand from club_role_capabilities() in 0067. The point is that
- * it is a copy: if either side is edited without the other, this fails.
+ * Transcribed by hand from club_role_capabilities(), as 0185 rewrote it. The
+ * point is that it is a copy: if either side is edited without the other, this
+ * fails.
  */
 const SQL_MATRIX: Record<ClubRole, Capability[]> = {
   owner: [
     "listing.edit", "events.manage", "members.manage", "bookings.manage",
-    "results.manage", "board.moderate", "shop.manage", "coaching.manage",
-    "competitions.manage", "messages.club", "analytics.view",
-    "team.manage", "billing.manage", "audit.view",
+    "results.manage", "board.moderate", "noticeboard.manage", "shop.manage",
+    "coaching.manage", "competitions.manage", "messages.club",
+    "analytics.view", "team.manage", "billing.manage", "audit.view",
   ],
   admin: [
     "listing.edit", "events.manage", "members.manage", "bookings.manage",
-    "results.manage", "board.moderate", "shop.manage", "coaching.manage",
-    "competitions.manage", "messages.club", "analytics.view",
-    "team.manage", "billing.manage", "audit.view",
+    "results.manage", "board.moderate", "noticeboard.manage", "shop.manage",
+    "coaching.manage", "competitions.manage", "messages.club",
+    "analytics.view", "team.manage", "billing.manage", "audit.view",
   ],
   manager: [
     "listing.edit", "events.manage", "members.manage", "bookings.manage",
-    "results.manage", "board.moderate", "shop.manage", "coaching.manage",
-    "competitions.manage", "messages.club", "analytics.view", "audit.view",
+    "results.manage", "board.moderate", "noticeboard.manage", "shop.manage",
+    "coaching.manage", "competitions.manage", "messages.club",
+    "analytics.view", "audit.view",
   ],
-  helper: ["bookings.manage", "results.manage", "board.moderate"],
+  helper: [
+    "bookings.manage", "results.manage", "board.moderate",
+    "noticeboard.manage", "competitions.manage",
+  ],
 };
 
 for (const role of Object.keys(SQL_MATRIX) as ClubRole[]) {
   assert.deepEqual(
     [...CAPABILITIES[role]].sort(),
     [...SQL_MATRIX[role]].sort(),
-    `${role} does not match club_role_capabilities() in 0067`,
+    `${role} does not match club_role_capabilities(), rewritten by 0185`,
   );
 }
 
@@ -52,7 +57,14 @@ assert.equal(helper.canManage, false);
 assert.equal(helper.can("bookings.manage"), true);
 assert.equal(helper.can("results.manage"), true);
 assert.equal(helper.can("board.moderate"), true);
+// 0185. The noticeboard is this week's news rather than the listing, and the
+// league is the night written down, so both come with the night. Asserted
+// separately from the matrix because the client asked for exactly these two
+// and the reason they are not `listing.edit` is the whole decision.
+assert.equal(helper.can("noticeboard.manage"), true);
+assert.equal(helper.can("competitions.manage"), true);
 assert.equal(helper.can("listing.edit"), false);
+assert.equal(helper.can("events.manage"), false);
 assert.equal(helper.can("members.manage"), false);
 assert.equal(helper.can("analytics.view"), false);
 

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { callRpc, table } from "@/lib/supabase/table";
+import { callRpc } from "@/lib/supabase/table";
 
 /**
  * The armies recorded against a draw.
@@ -30,20 +30,39 @@ export type PairingArmyRow = {
   /** The units as they were on the day, frozen by 0145. */
   snapshot: unknown;
   mvp_units: string[] | null;
+  underwhelming_units: string[] | null;
+  primary_score: number | null;
+  secondary_score: number | null;
+  painted: boolean;
+  first_turn: string;
+  battle_role: string;
+  outcome: string;
+  /** How the game was set up. On the match row since 0181, copied here. */
+  mission: string;
+  deployment: string;
+  terrain: string;
 };
 
-export async function findPairingArmies(matchIds: number[]) {
-  if (!matchIds.length) return [];
-  const rows = await table<PairingArmyRow>("game_result_armies");
-  const { data, error } = await rows
-    .select(`source_id, side, faction_id, faction_label, detachment, disposition,
-             list_id, list_name, list_version_number, snapshot, mvp_units`)
-    .eq("source_type", "event_pairing")
-    .in("source_id", matchIds);
-  if (error) throw new Error(error.message);
-  return data ?? [];
-}
+/**
+ * Every army on one event's draw, by the event rather than by a list of ids.
+ *
+ * It was a select over `game_result_armies` and needed six more columns, every
+ * one of them added after `database.ts` was last generated, so `check:columns`
+ * would have refused it and been right to. `event_pairing_armies` is the same
+ * query with the match's setup joined on, which the select could not have
+ * reached anyway: the setup lives on the game's own row.
+ */
+export const findPairingArmies = (eventId: number) =>
+  callRpc<PairingArmyRow[]>("event_pairing_armies", { p_event: eventId });
 
-/** Both armies on one table, through the writer 0136 built and 0163 finished. */
-export const savePairingArmies = (matchId: number, armies: unknown) =>
-  callRpc<boolean>("save_pairing_armies", { p_match: matchId, p_armies: armies });
+/** Both armies on one table, and how the game was set up. */
+export const savePairingArmies = (params: {
+  matchId: number; armies: unknown;
+  mission: string; deployment: string; terrain: string;
+}) => callRpc<boolean>("save_pairing_armies", {
+  p_match: params.matchId,
+  p_armies: params.armies,
+  p_mission: params.mission,
+  p_deployment: params.deployment,
+  p_terrain: params.terrain,
+});

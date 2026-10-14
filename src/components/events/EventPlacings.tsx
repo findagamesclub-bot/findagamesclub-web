@@ -129,13 +129,15 @@ export default function EventPlacings({
           {small ? (
             placings.map((p) => (
               <PlacingCard key={p.id} p={p} faction={faction}
-                onEdit={admin ? () => setTarget({ placing: p }) : undefined} />
+                onEdit={admin ? () => setTarget({ placing: p }) : undefined}
+                onOpenList={(player, army) => setList({ player, army })} />
             ))
           ) : null}
 
           {podium.map((p) => (
             <PlacingCard key={p.id} p={p} faction={faction}
-              onEdit={admin ? () => setTarget({ placing: p }) : undefined} />
+              onEdit={admin ? () => setTarget({ placing: p }) : undefined}
+              onOpenList={(player, army) => setList({ player, army })} />
           ))}
 
           {field.length ? (
@@ -175,10 +177,10 @@ export default function EventPlacings({
         </Stack>
       </BusyOverlay>
 
-      {/* The podium cards render their list inline, which is the detail a
-          reader came for at the top of a table. The rest of the field opens
-          the same list here instead, because forty of those cards is a page
-          nobody scrolls. */}
+      {/* One list dialog for the whole table, podium and field alike. The
+          podium used to print its list out under the card; the client asked
+          for the same control in both halves, which is also the consistency
+          rule: a reader should not learn two ways to open the same thing. */}
       <ArmyListDialog
         open={list !== null}
         onClose={() => setList(null)}

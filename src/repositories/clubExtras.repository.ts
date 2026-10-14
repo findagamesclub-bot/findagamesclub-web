@@ -24,6 +24,30 @@ export async function findRivals(clubId: number) {
 }
 
 /** Rivals this person has named, at any club. */
+/**
+ * The rival rows between two people, across several clubs.
+ *
+ * Both directions in one read, because the button has to say three different
+ * things: not named, named by you, and named by both. `club_rivals_read`
+ * admits any member of the club to every row at it, which is what makes the
+ * mutual half readable without a definer function.
+ */
+export async function findRivalLinksBetween(
+  clubIds: number[], viewerId: string, otherId: string,
+) {
+  if (!clubIds.length) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("club_rivals")
+    .select("id, club_id, profile_id, rival_id")
+    .in("club_id", clubIds)
+    .in("profile_id", [viewerId, otherId])
+    .in("rival_id", [viewerId, otherId]);
+
+  if (error) throw new Error(`Failed to load rivalries: ${error.message}`);
+  return data ?? [];
+}
+
 export async function findRivalsFor(profileId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -273,7 +297,12 @@ export type ClubCoachingBookingRow = {
   refund_status: string;
   cancel_reason: string;
   base_price: number | string;
+  price_currency: string | null;
+  tier_label: string | null;
+  tier_percent: number | null;
+  tier_amount: number | string | null;
   loyalty_points_spent: number;
+  points_amount: number | string | null;
   total_price: number | string;
   booked_at: string;
 };

@@ -4,6 +4,7 @@ import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
 import { getClubDetail } from "@/services/clubDetail.service";
 import { getClubAnalytics } from "@/services/analytics.service";
+import { MONEY_STREAMS, monthRevenue } from "@/utils/analytics-money";
 import { toCsv, csvFilename } from "@/utils/csv";
 import { londonNow } from "@/utils/dates";
 import { periodLabel, readPeriod } from "@/utils/analytics-period";
@@ -44,7 +45,7 @@ export async function GET(
   // Each file needs exactly one of the six reads, so it asks for that one
   // rather than for all of them and throwing five away.
   const data = await getClubAnalytics(
-    club.id, period, today, file === "revenue" ? "months" : "health", period);
+    club.id, period, today, file === "revenue" ? "months" : "health");
 
   let headers: string[];
   let rows: (string | number | null)[][];
@@ -53,18 +54,48 @@ export async function GET(
   if (file === "revenue") {
     // A row per month, so it can be summed, filtered and pasted into whatever
     // the accountant actually uses.
-    headers = ["Month", "Table bookings", "Event tickets", "New members",
-               "Posts", "Revenue (GBP)"];
+    //
+    // Every stream has its own money column (0186). It used to be one
+    // "Revenue" figure beside four counts, two of which were called "Table
+    // bookings" and "Event tickets" while meaning how many rather than how
+    // much: a treasurer checking a tenner had nothing to check it against.
+    // The counts keep their own names now so no column is ambiguous about
+    // its unit, and the money columns add up across the row.
+    //
+    // The months come from the same window the page is on, which is the
+    // other half of the client's report. They used to be calendar buckets
+    // counted back from today while the page measured a rolling range, so
+    // "3 months" on screen and "3 months" in the file were five weeks apart
+    // and the totals were never going to agree.
+    headers = ["Month", "Members joined", "Tables booked", "Tickets sold",
+               "Board posts",
+               ...MONEY_STREAMS.map((s) => `${s.label} (GBP)`),
+               "Revenue (GBP)"];
     rows = data.months.map((m) => [
-      m.month_start, m.bookings, m.tickets, m.new_members, m.posts,
-      Number(m.revenue ?? 0).toFixed(2),
+      m.month_start, m.new_members, m.bookings, m.tickets, m.posts,
+      ...MONEY_STREAMS.map((s) => Number(m[s.column] ?? 0).toFixed(2)),
+      monthRevenue(m).toFixed(2),
     ]);
+
+    // The window it covers, in the file rather than only in the filename, so a
+    // sheet forwarded to an accountant still says what it is a sheet of.
+    rows.push([], ["Window", periodLabel(period)], ["Total (GBP)", "", "", "", "",
+      ...MONEY_STREAMS.map((s) =>
+        data.months.reduce((sum, m) => sum + Number(m[s.column] ?? 0), 0).toFixed(2)),
+      data.months.reduce((sum, m) => sum + monthRevenue(m), 0).toFixed(2)]);
+
     name = csvFilename(["revenue", club.slug, period]);
   } else if (file === "memberships") {
-    headers = ["Tier", "Members"];
-    rows = data.health.byTier.map((t) => [t.tier, t.members]);
-    // The three figures the page shows, so the file says the same thing it did.
-    rows.push([], ["Due to renew", data.health.dueSoon],
+    // The club's own label for the tier, not its key: a sheet reading
+    // "premium-membership" is the database talking to itself. The joined
+    // column is the half that follows the window, the same split the tab
+    // draws.
+    headers = ["Tier", "Members", "Joined in window"];
+    rows = data.health.byTier.map((t) => [t.label || t.tier, t.members, t.joined]);
+    // The figures the page shows, so the file says the same thing it did.
+    rows.push([], ["Window", periodLabel(period)],
+              ["Joined in window", data.health.joined],
+              ["Due to renew", data.health.dueSoon],
               ["Lapsed", data.health.lapsed],
               ["Never paid", data.health.neverPaid],
               ["Approved total", data.health.total]);

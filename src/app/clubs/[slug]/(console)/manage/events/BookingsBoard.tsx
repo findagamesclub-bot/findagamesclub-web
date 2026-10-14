@@ -179,7 +179,7 @@ export default function BookingsBoard({
           send(row.eventId, row.bookingId, { intent: "cancel", reason });
         }} />
 
-      <EditBookingDialog row={editing} saving={busy} onClose={() => setEditing(null)}
+      <EditBookingDialog row={editing} slug={slug} saving={busy} onClose={() => setEditing(null)}
         onSave={(fields) => {
           if (!editing) return;
           const row = editing;

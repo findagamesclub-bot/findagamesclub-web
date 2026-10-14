@@ -241,29 +241,25 @@ export async function findMembershipForPayment(id: number) {
 /**
  * Tier requests outstanding at a club, by membership id.
  *
- * A second query rather than two more columns on the roster select: those
- * columns arrived in 0025 and `database.ts` does not know them until the types
- * are regenerated. Delete this narrowing then, and fold the columns in.
+ * Through 0178's own function rather than a select. The columns arrived in
+ * 0025 and 0178 and `database.ts` has never been regenerated since, so
+ * `check:columns` refuses a query naming them and is right to: the hand-rolled
+ * client narrowing that used to sit here passed the check by hiding the table
+ * from it, which is not the same as being correct.
  */
 export async function findTierRequests(clubId: number) {
-  const supabase = await createClient();
-  type Row = { id: number; requested_tier_key: string | null; tier_requested_at: string | null };
-  type Chain = {
-    select(columns: string): Chain;
-    eq(column: string, value: number): Chain;
-    not(column: string, op: string, value: null): Promise<
-      { data: Row[] | null; error: { message: string } | null }
-    >;
+  type Row = {
+    membership_id: number; requested_tier: string | null;
+    requested_label: string | null; requested_at: string | null;
   };
 
-  const { data, error } = await (supabase as unknown as { from(name: string): Chain })
-    .from("club_memberships")
-    .select("id, requested_tier_key, tier_requested_at")
-    .eq("club_id", clubId)
-    .not("requested_tier_key", "is", null);
-
-  if (error) throw new Error(`Failed to load tier requests: ${error.message}`);
-  return data ?? [];
+  const rows = await callRpc<Row[]>("club_tier_requests", { p_club: clubId });
+  return (rows ?? []).map((row) => ({
+    id: row.membership_id,
+    requested_tier_key: row.requested_tier,
+    requested_billing_label: row.requested_label,
+    tier_requested_at: row.requested_at,
+  }));
 }
 
 /** Clear a request once the club has decided, either way. See 0026. */

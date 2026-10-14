@@ -110,7 +110,10 @@ export default function BookingActions({
         {/* Beside Cancel, not hidden behind it: a wrong game or a mistyped
             opponent is the common correction, and giving up the table to fix
             a typo was the only way to do it. */}
-        {mine?.canEdit ? <EditBookingDialog faction={faction} booking={mine} slug={slug} variant="outlined" /> : null}
+        {mine?.canEdit ? (
+          <EditBookingDialog faction={faction} booking={mine} slug={slug}
+            variant="outlined" opponents={roster} />
+        ) : null}
 
         {myBookingId && canCancelMine ? (
           // Asked for, not fired on click. Giving up a table is not undoable:
@@ -259,6 +262,15 @@ export default function BookingActions({
                     typeof option === "string" ? option : option.name}
                   onChange={(_event, value) =>
                     setOpponent(typeof value === "string" || !value ? null : value.id)}
+                  // `onChange` fires on a pick and on a clear and never on a
+                  // keystroke, so picking a member and then typing a guest's
+                  // name over them left the member's id on the form: the
+                  // booking was filed against the member and the typed name
+                  // thrown away. The same fault 0178 found on the club's own
+                  // opponent field, in the member's half of the same question.
+                  onInputChange={(_event, _value, reason) => {
+                    if (reason === "input") setOpponent(null);
+                  }}
                   renderInput={(params) => (
                     <TextField
                       {...params}

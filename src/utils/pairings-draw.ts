@@ -23,8 +23,19 @@ export type DrawnMatch = {
  * Left as they come, that person appears six times in the draw, gets paired
  * with the same opponent three times over and, on one table, with themselves.
  *
- * Matched on the account when there is one, on the folded name when there is
- * not, because a booking made at the door carries a name and nothing else.
+ * Matched on the account AND the name, not on the account alone. A member may
+ * book for somebody else, which is a rule this app states everywhere else: the
+ * ticket carries their account and the name of whoever is actually coming. On
+ * the account alone, a member who books themselves in and then books a place
+ * for a friend is one player, and the friend never reaches the draw. That is
+ * what the client found at Oxford Onslaught 5, two people booked and one in
+ * the picker.
+ *
+ * The six-bookings case this was written for still folds, because six tickets
+ * somebody bought for themselves all carry their own name. Two different
+ * people who happen to share a name are still told apart, because their
+ * accounts differ. A booking made at the door has no account and folds on the
+ * name alone, which is all it carries.
  */
 export function uniquePlayers(players: Player[]): Player[] {
   const seen = new Map<string, Player>();
@@ -32,7 +43,7 @@ export function uniquePlayers(players: Player[]): Player[] {
   for (const player of players) {
     const name = player.name.trim();
     if (!name) continue;
-    const key = player.profileId ?? `name:${name.toLowerCase()}`;
+    const key = `${player.profileId ?? ""}:${name.toLowerCase()}`;
     // The first one wins, so the earliest booking is the one that carries the
     // account if a later one was made without signing in.
     if (!seen.has(key)) seen.set(key, { profileId: player.profileId, name });

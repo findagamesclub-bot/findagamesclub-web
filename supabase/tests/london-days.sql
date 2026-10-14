@@ -66,7 +66,8 @@ begin
 
   -- The month buckets have to agree with it.
   select count(*) into n from jsonb_array_elements(
-    public.club_analytics_months(v_club, 3)) m
+    public.club_analytics_months(v_club, public.london_today() - 90,
+                                 public.london_today())) m
    where (m->>'tickets')::int > 0;
   assert n = 1, 'the ticket is in no month bucket, or in two. Buckets holding it: ' || n;
   raise notice 'PASS months: and it lands in exactly one month';

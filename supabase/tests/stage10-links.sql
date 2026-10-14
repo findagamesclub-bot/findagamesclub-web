@@ -21,6 +21,18 @@ create or replace function pg_temp.army(p_id bigint)
 returns public.game_result_armies language sql security definer as $fn$
   select * from public.game_result_armies where source_id = p_id and side = 'one' $fn$;
 
+-- Read as postgres, because the question is whether a row is still THERE and
+-- the select policy hides a deleted list from everybody. Through RLS a soft
+-- delete and a hard one look identical, which is the third time this suite
+-- family has had to learn it: read a fixture as postgres, read the thing under
+-- test as the person.
+create or replace function pg_temp.list_state(p_id bigint)
+returns table (deleted boolean, versions int)
+language sql security definer as $fn$
+  select l.deleted_at is not null,
+         (select count(*)::int from public.army_list_versions v where v.list_id = l.id)
+    from public.army_lists l where l.id = p_id $fn$;
+
 insert into public.club_membership_tiers (club_id, tier_key, label, benefits, is_basic)
   select id, 'basic', 'Basic Membership', '{"armyBuilderAccess": true}'::jsonb, true from c;
 
@@ -29,6 +41,7 @@ set local role authenticated;
 do $$
 declare
   w record; v_club bigint; v_book bigint; v_list bigint; v_out jsonb;
+  v_state record;
   a public.game_result_armies; v_rows int;
 begin
   select * into w from who;
@@ -134,6 +147,39 @@ begin
   if (select version_number from public.meta_lists(v_club, null, null))
      is distinct from 1 then
     raise exception 'the rollup should name the version played, not the latest';
+  end if;
+
+  -- =====================================================================
+  -- Deleting the list does not touch the game it was played in.
+  --
+  -- The client asked what happens if somebody deletes or changes a list that
+  -- an event result points at, and whether it stays locked to the version and
+  -- the catalogue of the day. All three halves are asserted here rather than
+  -- argued: the delete is soft, the result keeps pointing at the VERSION it
+  -- was played at rather than the list, and it carries its own frozen copy of
+  -- the units so the answer survives even if the version row went.
+  -- =====================================================================
+  perform pg_temp.be(w.member);
+  perform public.delete_army_list(v_list);
+
+  select * into v_state from pg_temp.list_state(v_list);
+  if v_state.deleted is distinct from true then
+    raise exception 'FAIL: deleting a list should be soft, not remove the row';
+  end if;
+  if coalesce(v_state.versions, 0) < 2 then
+    raise exception 'FAIL: deleting a list took its versions with it, % left',
+      coalesce(v_state.versions, 0);
+  end if;
+
+  a := pg_temp.army(v_book);
+  if a.list_version_id is null then
+    raise exception 'FAIL: the game lost the version it was played at';
+  end if;
+  if a.snapshot = '{}'::jsonb then
+    raise exception 'FAIL: the game lost its frozen copy of the list';
+  end if;
+  if a.snapshot ->> 'catalogueVersion' is null then
+    raise exception 'FAIL: the game does not say which catalogue it was played under';
   end if;
 
   -- Unlinking takes the frozen copy with it, which is how a mis-tap is undone.

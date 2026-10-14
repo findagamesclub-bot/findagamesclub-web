@@ -3,6 +3,7 @@ import { clubLogoUrl } from "@/utils/club-media";
 import { publicUrl } from "@/lib/supabase/storage";
 
 import type { LoyaltyTier } from "@/utils/loyalty";
+import type { Priced } from "@/utils/price-lines";
 
 import { countUpcoming } from "@/utils/coaching-filter";
 import { countWaiting } from "@/utils/order-filter";
@@ -33,6 +34,12 @@ export type TableBooking = {
   /** What the club will ask for on the night, after tier and points. */
   total: number;
   tierLabel: string | null;
+  /**
+   * The whole sum, so the row can say why the total is what it is. The client
+   * read the figure here and asked what had come off it; the columns have
+   * carried the answer since 0014 and nothing selected them.
+   */
+  priced: Priced;
   /** Tonight's table cannot be cancelled, so the button says so rather than failing. */
   isToday: boolean;
 };
@@ -117,6 +124,16 @@ export async function getDashboard(profileId: string): Promise<Dashboard> {
       opponentName: (row.opponent_name ?? "").trim(),
       total: Number(row.total_price ?? 0),
       tierLabel: row.membership_tier_label || null,
+      priced: {
+        subtotal: Number(row.base_price ?? 0),
+        tierLabel: row.membership_tier_label || null,
+        tierPercent: Number(row.tier_discount_percent ?? 0),
+        tierAmount: Number(row.tier_discount_amount ?? 0),
+        points: Number(row.loyalty_points_spent ?? 0),
+        pointsAmount: Number(row.loyalty_discount_amount ?? 0),
+        total: Number(row.total_price ?? 0),
+        currency: row.price_currency ?? "GBP",
+      },
       isToday: row.session_date === today,
     };
   });

@@ -23,10 +23,19 @@ export type CompetitionStanding = {
 };
 
 export type CompetitionMatch = {
+  /** Stable since 0181, which is what lets a game own what was played in it. */
+  id: number;
   playerOne: string;
   playerOneScore: string;
+  /** The account behind the name, where the club named a member. */
+  playerOneId: string | null;
   playerTwo: string;
   playerTwoScore: string;
+  playerTwoId: string | null;
+  /** How the game was set up. 40k's own three, empty at every other game. */
+  mission: string;
+  deployment: string;
+  terrain: string;
 };
 
 export type CompetitionUpdate = {

@@ -25,7 +25,7 @@ import type { Player } from "@/utils/pairings-draw";
  * them into a booking. Picking from the roster links the match to that account.
  */
 export default function MatchDialog({
-  open, match, roster, round, position, nextTable, onClose, onSave,
+  open, match, roster, round, position, nextTable, fixtureName = "", onClose, onSave,
 }: {
   open: boolean;
   /** Null for a new table. */
@@ -34,6 +34,12 @@ export default function MatchDialog({
   round: number;
   position: number;
   nextTable: string;
+  /**
+   * The fixture a new table is going under at a team event. Named in the
+   * title, because "Add a table to round 2" on a team event is the one
+   * question a club needs answered before they type two names into it.
+   */
+  fixtureName?: string;
   onClose: () => void;
   onSave: (fields: Record<string, string>) => void;
 }) {
@@ -73,7 +79,11 @@ export default function MatchDialog({
   return (
     <Dialog open={open} onClose={onClose} fullScreen={fullScreen} fullWidth maxWidth="sm">
       <DialogTitle sx={{ pb: 1 }}>
-        {match ? `Table ${match.tableLabel || ""}`.trim() : `Add a table to round ${round}`}
+        {match
+          ? `Table ${match.tableLabel || ""}`.trim()
+          : fixtureName
+            ? `Add a table to ${fixtureName}`
+            : `Add a table to round ${round}`}
       </DialogTitle>
 
       <DialogContent>

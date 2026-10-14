@@ -32,6 +32,7 @@ export default function PlaceDialog({ team, saving, onClose, onSave }: {
   const fullScreen = useMediaQuery(useTheme().breakpoints.down("sm"));
   const [rank, setRank] = useState("");
   const [placement, setPlacement] = useState("");
+  const [score, setScore] = useState("");
 
   // A badge lands on an account, and a player typed in from a door booking
   // has none. Said here rather than on the card, because this is the screen
@@ -43,6 +44,8 @@ export default function PlaceDialog({ team, saving, onClose, onSave }: {
   useWhenChanged([team], () => {
     setRank(team?.finalRank ? String(team.finalRank) : "");
     setPlacement(team?.placement ?? "");
+    setScore(team?.finalScore === null || team?.finalScore === undefined
+      ? "" : String(team.finalScore));
   });
 
   return (
@@ -60,6 +63,15 @@ export default function PlaceDialog({ team, saving, onClose, onSave }: {
             // for it: a fifty-character helper under a narrow field wraps to
             // three lines and reads as a warning.
             helperText="1 for the winners."
+            sx={{ maxWidth: 180 }} />
+
+          {/* The overall figure beside the place, in whatever the format
+              counts: match points, games won, a tally of its own. Optional,
+              because plenty of formats place a team without one. */}
+          <TextField label="Team score" type="number" value={score}
+            onChange={(e) => setScore(e.target.value)}
+            slotProps={{ htmlInput: { min: 0 } }}
+            helperText="Optional."
             sx={{ maxWidth: 180 }} />
 
           <TextField label="What to call it" fullWidth value={placement}
@@ -95,6 +107,7 @@ export default function PlaceDialog({ team, saving, onClose, onSave }: {
             teamId: team ? String(team.id) : "",
             rank: rank.trim(),
             placement,
+            score: score.trim(),
           })}>
           Save
         </Button>

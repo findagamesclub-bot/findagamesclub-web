@@ -9,6 +9,7 @@ import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import ClubLogo from "@/components/clubs/ClubLogo";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import PriceBreakdown from "@/components/ui/PriceBreakdown";
 import { useActionToast } from "@/components/ui/Toaster";
 import { accountBookingAction, type AccountBookingState }
   from "@/app/account/bookings/actions";
@@ -41,10 +42,12 @@ export default function TableBookingRow({ booking }: { booking: TableBooking }) 
     setAsking(false);
   };
 
+  // The tier used to sit here as a bare name, which told a member they were
+  // on Premium and not that Premium had taken 50p off. What it did is on the
+  // line underneath now, where it can carry a figure.
   const facts = [
     booking.opponentName ? `vs ${booking.opponentName}` : null,
     booking.total > 0 ? formatPounds(booking.total) : "nothing to pay",
-    booking.tierLabel,
   ].filter(Boolean) as string[];
 
   return (
@@ -67,6 +70,7 @@ export default function TableBookingRow({ booking }: { booking: TableBooking }) 
             {facts.join(" · ")}
           </Typography>
         ) : null}
+        <PriceBreakdown priced={booking.priced} compact />
       </Box>
 
       <Stack sx={{ alignItems: { xs: "flex-start", sm: "flex-end" }, flexShrink: 0 }}>

@@ -5,8 +5,11 @@ import type { MyOrder } from "@/services/myActivity.service";
 const make = (over: Partial<MyOrder> & { id: number }): MyOrder => ({
   club: { slug: "didcot", name: "Didcot Wargames", logoUrl: null },
   status: "paid", placedAt: "2026-08-01", updatedAt: null,
-  total: 10, saved: 0, tierLabel: null,
-  items: [{ id: 1, name: "Club t shirt", quantity: 1, lineTotal: 10, quoted: false }],
+  total: 10, tierLabel: null, notes: "",
+  priced: { subtotal: 10, tierLabel: null, tierPercent: 0, tierAmount: 0,
+            points: 0, pointsAmount: 0, total: 10 },
+  items: [{ id: 1, name: "Club t shirt", variantLabel: "", quantity: 1,
+            unitAmount: 10, lineTotal: 10, grossTotal: 10, quoted: false }],
   ...over,
 } as MyOrder);
 
@@ -15,7 +18,8 @@ const orders = [
   make({ id: 2, placedAt: "2026-08-01", total: 13.5, status: "fulfilled" }),
   make({ id: 3, placedAt: "2026-07-01", total: 60, status: "cancelled",
          club: { slug: "abingdon", name: "Abingdon Games Club", logoUrl: null },
-         items: [{ id: 9, name: "Dice tray", quantity: 2, lineTotal: 60, quoted: false }] }),
+         items: [{ id: 9, name: "Dice tray", variantLabel: "", quantity: 2,
+                   unitAmount: 30, lineTotal: 60, grossTotal: 60, quoted: false }] }),
 ];
 
 const ids = (rows: MyOrder[]) => rows.map((r) => r.id);

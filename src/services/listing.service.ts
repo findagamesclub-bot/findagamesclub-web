@@ -145,7 +145,11 @@ export async function saveContentStep(clubId: number, form: FormData): Promise<S
 }
 
 /**
- * Step 4: the club's nights, its noticeboard and its booking rules.
+ * Step 4: the club's nights and its booking rules.
+ *
+ * Its noticeboard moved to a console page of its own in 0185, so a live
+ * club posts no notices here. The reading says so rather than arriving as an
+ * empty list, which would read as every notice being deleted.
  *
  * The nights go through the function in 0086 rather than a policy, because a
  * night with bookings on it must not be deleted and updating in place is what
@@ -157,8 +161,13 @@ export async function saveScheduleStep(clubId: number, form: FormData): Promise<
 
   try {
     await sections.saveSchedule(clubId, read.value.sessions);
-    await repo.replaceClubAnnouncements(clubId,
-      read.value.announcements.map((a) => a.message));
+    // Only when the form actually carried the board. A live club edits its
+    // notices on their own page now, so this step does not post them and must
+    // not treat their absence as "take them all down".
+    if (read.value.announcements) {
+      await repo.replaceClubAnnouncements(clubId,
+        read.value.announcements.map((a) => a.message));
+    }
   } catch (error) {
     return refusal(error);
   }

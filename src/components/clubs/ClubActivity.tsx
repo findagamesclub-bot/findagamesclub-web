@@ -1,9 +1,9 @@
-import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import LockIcon from "@mui/icons-material/Lock";
 import ActivityLine from "@/components/clubs/ActivityLine";
 import MonoLabel from "@/components/ui/MonoLabel";
+import ScrollBox from "@/components/ui/ScrollBox";
 import { mono, tokens, type Faction } from "@/lib/tokens";
 import type { ActivityItem } from "@/services/clubActivity.service";
 
@@ -57,17 +57,15 @@ export default function ClubActivity({
         ) : null}
       </Stack>
 
-      <Box sx={{
-        border: `1px solid ${tokens.rule}`, borderRadius: 1.5,
-        overflowX: "hidden",
-        // A height that lands mid-row, so the cut edge reads as "more below"
-        // rather than as the list simply ending.
-        ...(scrolls ? { maxHeight: { xs: 300, md: 340 }, overflowY: "auto" } : {}),
-      }}>
+      {/* A height that lands mid-row, so the cut edge reads as "more below"
+          rather than as the list simply ending. */}
+      <ScrollBox scrolls={scrolls} cap={{ xs: 300, md: 340 }}
+        label={`${items.length} updates`}
+        sx={{ border: `1px solid ${tokens.rule}`, borderRadius: 1.5 }}>
         {items.map((item, i) => (
           <ActivityLine key={item.id} item={item} faction={faction} first={i === 0} />
         ))}
-      </Box>
+      </ScrollBox>
 
       {/* Under the box rather than inside it, so it reads as a note about the
           list rather than as another thing that happened. */}

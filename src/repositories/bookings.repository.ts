@@ -1,12 +1,14 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { callRpc } from "@/lib/supabase/table";
 import type { TablesInsert } from "@/types/database";
 
 const BOOKING_COLUMNS =
   "id, club_id, club_session_id, session_date, session_day, session_time, session_label, " +
   "table_index, game_title, notes, booked_by, opponent_profile_id, opponent_name, " +
   "accepted_by, source, status, total_price, base_price, tier_discount_percent, " +
+  "tier_discount_amount, loyalty_points_spent, loyalty_discount_amount, " +
   "price_currency, membership_tier_label, created_at";
 
 /** Active bookings for a club across a date window, with the people on them. */
@@ -107,6 +109,48 @@ export async function insertBooking(row: TablesInsert<"club_bookings">) {
   if (error) throw Object.assign(new Error(error.message), { code: error.code });
   if (!data) throw new Error("NOT_PERMITTED");
   return data;
+}
+
+/**
+ * The club puts a member on a table.
+ *
+ * Through a function rather than an insert, because `club_bookings_insert`
+ * pins `booked_by = auth.uid()`: a booking in somebody else's name is not
+ * something a policy can express, and widening that policy would let any
+ * member book in anybody's name. 0185 decides the price and the points.
+ *
+ * The raw code survives for the same reason `insertBooking`'s does: a seat
+ * race comes back as 23505 and is worth retrying rather than reporting.
+ */
+export type AddedBooking = {
+  booking_id: number; table_index: number;
+  total_price: number; price_currency: string;
+};
+
+export async function addTableBookingFor(params: {
+  clubId: number; clubSessionId: number; sessionDate: string; profileId: string;
+  gameTitle: string; notes: string;
+  opponentProfileId: string | null; opponentName: string;
+}): Promise<AddedBooking> {
+  try {
+    const rows = await callRpc<AddedBooking[]>("club_add_table_booking", {
+      p_club: params.clubId,
+      p_session: params.clubSessionId,
+      p_date: params.sessionDate,
+      p_profile: params.profileId,
+      p_game: params.gameTitle,
+      p_notes: params.notes,
+      p_opponent: params.opponentProfileId,
+      p_opponent_name: params.opponentName,
+    });
+    const row = rows?.[0];
+    if (!row) throw new Error("NOT_PERMITTED");
+    return row;
+  } catch (error) {
+    const raw = error instanceof Error ? error.message : "";
+    throw Object.assign(new Error(raw),
+      { code: raw.includes("club_bookings_seat_uniq") ? "23505" : undefined });
+  }
 }
 
 /** Cancel. The policy decides who may; the trigger stamps who did. */
@@ -370,6 +414,8 @@ export async function editBookingDetails(params: {
   setPeople?: boolean;
   bookedBy?: string | null;
   opponentId?: string | null;
+  /** The member's own seat flag (0178). Never set alongside `setPeople`. */
+  setOpponent?: boolean;
 }) {
   const supabase = await createClient();
   const { error } = await (supabase as unknown as {
@@ -382,6 +428,7 @@ export async function editBookingDetails(params: {
     p_set_people: params.setPeople ?? false,
     p_booked_by: params.bookedBy ?? null,
     p_opponent_id: params.opponentId ?? null,
+    p_set_opponent: params.setOpponent ?? false,
   });
 
   if (error) throw new Error(error.message);

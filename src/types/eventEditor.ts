@@ -106,6 +106,14 @@ export type PairingMatch = {
   playerTwoId: string | null;
   scoreOne: number | null;
   scoreTwo: number | null;
+  /**
+   * What the format scored this table at, where that is not the victory
+   * points. 0183, for the same reason 0176 gave the fixture one: 80 to 60 on
+   * victory points may be 3 to 1 in the format's own counting, and the two
+   * mean different things.
+   */
+  pointsOne: number | null;
+  pointsTwo: number | null;
   position: number;
 };
 

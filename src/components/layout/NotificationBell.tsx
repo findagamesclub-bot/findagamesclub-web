@@ -12,6 +12,7 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import ScrollBox from "@/components/ui/ScrollBox";
 import NotificationsIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import ForumIcon from "@mui/icons-material/ForumOutlined";
 import VerifiedIcon from "@mui/icons-material/VerifiedUser";
@@ -225,7 +226,7 @@ export default function NotificationBell({
             <CircularProgress size={22} sx={{ color: tokens.brass }} />
           </Stack>
         ) : items && items.length ? (
-          <Box sx={{ maxHeight: 420, overflowY: "auto" }}>
+          <ScrollBox cap={420} label={`${items.length} notifications`}>
             {items.map((item) => {
               const Icon = ICONS[item.kind] ?? NotificationsIcon;
               return (
@@ -275,7 +276,7 @@ export default function NotificationBell({
                 </MenuItem>
               );
             })}
-          </Box>
+          </ScrollBox>
         ) : (
           <Typography variant="body2" sx={{ px: 2, py: 4, color: tokens.inkMuted,
                                             textAlign: "center" }}>

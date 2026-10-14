@@ -3,6 +3,7 @@ import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { formatMoney } from "@/utils/format";
+import PriceBreakdown from "@/components/ui/PriceBreakdown";
 import { PAYMENT_LABELS, REFUND_LABELS } from "@/utils/door-list";
 import { nightLabel } from "@/utils/dates";
 import { tokens, type Faction } from "@/lib/tokens";
@@ -101,15 +102,10 @@ export default function TicketStub({
               ))}
             </Stack>
 
-            {booking.discountAmount > 0 ? (
-              <Stack direction="row" sx={{ justifyContent: "space-between" }}>
-                <Typography variant="body2" sx={{ color: tokens.positive }}>Member discount</Typography>
-                <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.85rem",
-                                  color: tokens.positive }}>
-                  − {formatMoney(booking.discountAmount, booking.currency)}
-                </Typography>
-              </Stack>
-            ) : null}
+            {/* Both savings, named, in the order they came off. This said
+                "Member discount" and nothing else, so a ticket bought with
+                points showed a total the lines above it could not reach. */}
+            <PriceBreakdown priced={booking.priced} labels={{ total: "You pay" }} dense />
 
             {/* Why the place went, when the club took it back rather than the
                 member giving it up. A ticket that simply reads "cancelled" is

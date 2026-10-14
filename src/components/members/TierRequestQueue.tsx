@@ -76,6 +76,12 @@ export default function TierRequestQueue({
                 </Typography>
                 <Typography variant="body2" sx={{ color: "#5c4310" }}>
                   {from} → <strong>{label}</strong>
+                  {/* Which way they asked to pay. A tier sells monthly, yearly
+                      and one-off at different prices, so approving without it
+                      meant picking one on the member's behalf. */}
+                  {member.requestedBillingLabel
+                    ? <> · on <strong>{member.requestedBillingLabel}</strong></>
+                    : null}
                   {member.tierRequestedAt
                     ? ` · asked ${sinceLabel(member.tierRequestedAt)}`
                     : ""}

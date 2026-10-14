@@ -20,7 +20,7 @@ import { mono, tokens } from "@/lib/tokens";
  */
 export default function RoundTools({
   round, tables, played, roster, busy, published, drawPublic, teams,
-  onPublish, onDraw, onPaste, onAdd, onScores,
+  onPublish, onDraw, onPaste, onAdd, onAddFixture, onScores,
 }: {
   round: number;
   tables: number;
@@ -41,6 +41,8 @@ export default function RoundTools({
   onDraw: () => void;
   onPaste: () => void;
   onAdd: () => void;
+  /** Only at a team event, where a round is built out of fixtures. */
+  onAddFixture: () => void;
   onScores: () => void;
 }) {
   return (
@@ -94,6 +96,19 @@ export default function RoundTools({
             belonging to no fixture: it would never be scored into a team
             total and would sit on the draw looking exactly like one that
             would. The draw button is the only way in. */}
+        {/* A team event builds a round out of fixtures, so that is the
+            control it gets. 0168 showed nothing here at all, on the reasoning
+            that a loose table belongs to no fixture: true of a table, and it
+            left a club whose format the shuffle does not understand with no
+            way to build a round by hand. The tables go inside a fixture,
+            which is where that control now is. */}
+        {teams !== null ? (
+          <Button variant="outlined" size="small" startIcon={<AddIcon />}
+            disabled={busy || teams < 2} onClick={onAddFixture}>
+            Add a fixture
+          </Button>
+        ) : null}
+
         {teams === null ? (
           <>
             <Button variant="outlined" size="small" startIcon={<ContentPasteIcon />}

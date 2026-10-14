@@ -297,7 +297,9 @@ export async function saveDraftStep(
     const read = scheduleReading(form);
     if (!read.ok) return { ok: false, error: read.error };
     payload.sessions = read.value.sessions;
-    payload.announcements = read.value.announcements;
+    // A draft has no club and no console, so its own step keeps the board
+    // and posts it. Null would mean the panel was not on screen.
+    payload.announcements = read.value.announcements ?? [];
 
   } else {
     return { ok: false, error: "That step cannot be saved." };

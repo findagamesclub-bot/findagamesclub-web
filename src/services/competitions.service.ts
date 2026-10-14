@@ -1,6 +1,11 @@
 import "server-only";
 
-import { countByStatus, findPage } from "@/repositories/competitions.repository";
+import { countByStatus, findPage, findCompetitionGames, findCompetitionGameArmies }
+  from "@/repositories/competitions.repository";
+import { sideFromRow, type GameSide } from "@/utils/result-army";
+import type { MatchSetup } from "@/utils/result-meta";
+import { readerArmy } from "./eventPairingArmies.service";
+import type { ResultArmy as ReaderArmy } from "@/types/event";
 import type { CompetitionRow } from "@/repositories/competitions.repository";
 import type { Competition } from "@/types/competition";
 
@@ -56,10 +61,19 @@ function toCompetition(row: CompetitionRow): Competition {
         matches: [...(update.club_competition_matches ?? [])]
           .sort((a, b) => a.position - b.position)
           .map((match) => ({
+            id: match.id,
             playerOne: match.player_one,
             playerOneScore: match.player_one_score,
             playerTwo: match.player_two,
             playerTwoScore: match.player_two_score,
+            // The accounts and the setup are columns 0181 added, which a
+            // select cannot name against the stale `database.ts`. They come
+            // from `competition_games` where a screen needs them, which is
+            // the console; the public table reads names and scores and is
+            // one wave as it was.
+            playerOneId: null,
+            playerTwoId: null,
+            mission: "", deployment: "", terrain: "",
           })),
       })),
   };
@@ -142,4 +156,79 @@ export async function getCompetitionPage(
     : [];
 
   return { items: rows.map(toCompetition), total, pages };
+}
+
+
+/**
+ * What was played in each game of a competition, for the console.
+ *
+ * Its own read rather than columns on the round, because every one of them
+ * landed after `database.ts` was last generated and `check:columns` is right
+ * to refuse a select naming one. Two functions rather than one so a league a
+ * few seasons in does not ship a catalogue's worth of army rows to draw a
+ * table of names: the public page asks for neither.
+ */
+export async function getCompetitionGames(competitionId: number): Promise<{
+  armies: Record<string, GameSide>;
+  setup: Record<number, MatchSetup>;
+}> {
+  const [games, rows] = await Promise.all([
+    findCompetitionGames(competitionId).catch(() => []),
+    findCompetitionGameArmies(competitionId).catch(() => []),
+  ]);
+
+  const armies: Record<string, GameSide> = {};
+  for (const row of rows) armies[`${row.source_id}:${row.side}`] = sideFromRow(row);
+
+  const setup: Record<number, MatchSetup> = {};
+  for (const game of games) {
+    if (!game.mission && !game.deployment && !game.terrain) continue;
+    setup[game.id] = {
+      mission: game.mission, deployment: game.deployment, terrain: game.terrain,
+    };
+  }
+  return { armies, setup };
+}
+
+/** The accounts behind each game's two names, for the editor to seed. */
+export async function getCompetitionGameLinks(
+  competitionId: number,
+): Promise<Record<number, { one: string | null; two: string | null }>> {
+  const games = await findCompetitionGames(competitionId).catch(() => []);
+  const out: Record<number, { one: string | null; two: string | null }> = {};
+  for (const game of games) {
+    out[game.id] = { one: game.player_one_id, two: game.player_two_id };
+  }
+  return out;
+}
+
+
+/**
+ * The same games, in the shape a reader's components take.
+ *
+ * `getCompetitionGames` answers the console, which seeds pickers and so leads
+ * with `factionId`. A reader picks nothing and the round result has to agree
+ * with an event's round result about a list, so this goes through the same
+ * `readerArmy` the draw does rather than growing a second army type.
+ */
+export async function getCompetitionGamesForReaders(competitionId: number): Promise<{
+  armies: Record<string, ReaderArmy | null>;
+  setup: Record<number, MatchSetup>;
+}> {
+  const [games, rows] = await Promise.all([
+    findCompetitionGames(competitionId).catch(() => []),
+    findCompetitionGameArmies(competitionId).catch(() => []),
+  ]);
+
+  const armies: Record<string, ReaderArmy | null> = {};
+  for (const row of rows) armies[`${row.source_id}:${row.side}`] = readerArmy(row);
+
+  const setup: Record<number, MatchSetup> = {};
+  for (const game of games) {
+    if (!game.mission && !game.deployment && !game.terrain) continue;
+    setup[game.id] = {
+      mission: game.mission, deployment: game.deployment, terrain: game.terrain,
+    };
+  }
+  return { armies, setup };
 }

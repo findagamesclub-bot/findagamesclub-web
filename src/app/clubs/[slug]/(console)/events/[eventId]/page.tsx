@@ -27,12 +27,13 @@ import EventPairings from "@/components/events/EventPairings";
 import EventTeams from "@/components/events/EventTeams";
 import EventTeamDraw from "@/components/events/EventTeamDraw";
 import EventArmyMeta from "@/components/events/EventArmyMeta";
+import EmptyState from "@/components/ui/EmptyState";
 import FacilityChips from "@/components/clubs/FacilityChips";
 import EventHero from "@/components/events/EventHero";
 import { getEventDetail } from "@/services/eventDetail.service";
 import { countClaimableNames } from "@/services/memberCodes.service";
 import { getEventMeta } from "@/services/meta.service";
-import { mayHaveArmyMeta } from "@/utils/event-meta";
+import { armyMetaWait, mayHaveArmyMeta } from "@/utils/event-meta";
 import { londonToday } from "@/services/bookingCalendar.service";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getMyMembership } from "@/services/memberships.service";
@@ -120,6 +121,15 @@ export default async function EventPage({
       ? getEventMeta(event.id).catch(() => [])
       : Promise.resolve([]),
   ]);
+
+  // Why the panel is empty, for the club only. Computed rather than inferred
+  // at the call site, because the three reasons are a date rule, a game-list
+  // rule and "nothing typed in yet", and the sentence has to name the right
+  // one.
+  const metaWait = armyMetaWait({
+    startDate: event.startDate, games: event.featuredGames,
+    today: londonToday(), rows: eventArmies.length,
+  });
 
   // The roster, the army switch and the club's army lists used to be read
   // here for the results editor. The editor is in the console now, so this
@@ -250,12 +260,22 @@ export default async function EventPage({
 
       {/* What was brought. Hidden outright when the event is not 40k, which is
           the client's own condition, and until it has started, which is the
-          rule the placings already follow. */}
+          rule the placings already follow.
+
+          Three separate rules can empty this and it used to vanish for all
+          three, so the club's only way to find out which one applied was to
+          ask. It now says so on the screen, and only to the club: a visitor
+          has nothing to do about it and an empty panel would be noise. */}
       {eventArmies.length ? (
         <Section navLabel="Armies" title="Event analytics" icon={EmojiEventsIcon}
           note="What was taken to this event, from the finishing places and the draw.">
           <EventArmyMeta rows={eventArmies} top={3}
             href={`/clubs/${slug}/events/${eventId}/armies`} />
+        </Section>
+      ) : event.canManageClub && metaWait ? (
+        <Section navLabel="Armies" title="Event analytics" icon={EmojiEventsIcon}
+          note="What was taken to this event, from the finishing places and the draw.">
+          <EmptyState title="No analytics yet" description={metaWait} />
         </Section>
       ) : null}
 
@@ -403,19 +423,31 @@ export default async function EventPage({
         </Box>
 
         <Stack spacing={3} sx={{ mt: { md: 4 } }}>
-          {/* The club sells the tickets, so it gets the sales board where a
-              buyer gets the desk — adding your own event's ticket to a basket
-              and checking out to yourself is not a thing anybody does. */}
+          {/* The club gets the sales board AND the desk, in that order.
+              It used to get the board instead of the desk, on the reasoning
+              that "adding your own event's ticket to a basket and checking
+              out to yourself is not a thing anybody does". A tournament
+              organiser playing in their own RTT is an ordinary Saturday in
+              this hobby, and the client reported exactly that: a club owner
+              could not book a place at their own event. The board is their
+              job and leads; the desk sits under it priced off their own tier,
+              the same desk everybody else uses. */}
           {event.ticketTypes.length && event.canManageClub ? (
             <TicketSalesBoard
               tickets={tickets}
+              // Totalled from the bookings rather than from the price list,
+              // so the club is shown what it is owed and not what the tickets
+              // would have cost at full price.
+              due={attendees.reduce((sum, a) => sum + a.total, 0)}
               faction={faction}
               slug={event.clubSlug}
               eventId={event.id}
               hasEnded={event.hasEnded}
               cancelled={cancelled}
             />
-          ) : event.ticketTypes.length ? (
+          ) : null}
+
+          {event.ticketTypes.length ? (
             <EventTickets
               tickets={tickets}
               cart={cart}

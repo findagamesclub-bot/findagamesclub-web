@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { readArmies } from "@/utils/result-form";
 import { getCurrentProfile } from "@/services/auth.service";
 import * as comps from "@/services/competitions-writes.service";
 
@@ -72,6 +73,38 @@ export async function competitionAction(
     const result = await comps.saveStandings(competitionId, rows);
     refresh(competitionId);
     return result.ok ? { notice: "Table saved." } : { error: result.error };
+  }
+
+  // What was played in one game of a round. Its own intent rather than part
+  // of the round save, because the two are different jobs: a club types the
+  // scores for a whole round in one go and comes back to the armies when
+  // somebody hands the lists over.
+  if (intent === "game-result") {
+    const matchId = Number(data.get("gameId")) || 0;
+    if (!matchId) {
+      return { error: "Save the round first, then say what was played." };
+    }
+
+    const sides = readArmies(data.get("armies"));
+    if (!sides) {
+      return { error: "Something went wrong with the armies. Reload and try again." };
+    }
+
+    const result = await comps.saveGameResult({
+      matchId,
+      armies: sides,
+      lists: {
+        one: Number(data.get("oneList")) || null,
+        two: Number(data.get("twoList")) || null,
+      },
+      setup: {
+        mission: String(data.get("mission") ?? ""),
+        deployment: String(data.get("deployment") ?? ""),
+        terrain: String(data.get("terrain") ?? ""),
+      },
+    });
+    refresh(competitionId);
+    return result.ok ? { notice: "What was played is saved." } : { error: result.error };
   }
 
   if (intent === "round") {

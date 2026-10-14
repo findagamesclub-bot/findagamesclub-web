@@ -89,11 +89,26 @@ export default function RoundTables({
               {/* The score reads as a score: figures in mono, muted when the
                   table has not been played, never a bare 0 standing in for
                   "nobody has said". */}
-              <Typography sx={{ fontFamily: mono, fontSize: "0.9rem", fontWeight: 700,
-                                color: scored ? tokens.ink : tokens.inkMuted,
-                                whiteSpace: "nowrap" }}>
-                {scored ? `${match.scoreOne ?? 0} - ${match.scoreTwo ?? 0}` : "not played"}
-              </Typography>
+              <Stack spacing={0} sx={{ alignItems: "flex-end" }}>
+                <Typography sx={{ fontFamily: mono, fontSize: "0.9rem", fontWeight: 700,
+                                  color: scored ? tokens.ink : tokens.inkMuted,
+                                  whiteSpace: "nowrap" }}>
+                  {scored ? `${match.scoreOne ?? 0} - ${match.scoreTwo ?? 0}` : "not played"}
+                </Typography>
+
+                {/* What the format counted this table at, where that is not
+                    the victory points above it. Drawn only when the club has
+                    said, and labelled, because two pairs of figures stacked
+                    without a word between them is two scores nobody can tell
+                    apart. */}
+                {match.pointsOne !== null && match.pointsTwo !== null ? (
+                  <Typography sx={{ fontFamily: mono, fontSize: "0.62rem",
+                                    letterSpacing: "0.08em", color: tokens.inkMuted,
+                                    whiteSpace: "nowrap" }}>
+                    {`SCORED ${match.pointsOne}-${match.pointsTwo}`}
+                  </Typography>
+                ) : null}
+              </Stack>
 
               <Button size="small" variant="outlined" disabled={busy}
                 onClick={() => onEdit(match)} sx={{ flexShrink: 0 }}>

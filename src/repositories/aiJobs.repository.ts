@@ -65,6 +65,22 @@ export const adminUsage = (months: number) =>
 export const monthSpend = (club: number) =>
   callRpc<number>("ai_month_spend", { p_club: club });
 
+export type ClubAiUsage = {
+  runs: number;
+  members: number;
+  /** Null when the site has set this club no cap. */
+  usedPercent: number | null;
+};
+
+/**
+ * What a club has used this month, with no money in it.
+ *
+ * The cost is ours: one API key, set and watched by a site admin, and a club
+ * owner is not billed for it. `admin_ai_usage` is where the pounds belong.
+ */
+export const clubUsage = (club: number) =>
+  callRpc<ClubAiUsage>("club_ai_usage", { p_club: club });
+
 export const startJob = (params: {
   club: number; feature: string; signature: string;
   source: unknown; payload: unknown; force: boolean;

@@ -66,6 +66,14 @@ export async function saveMatch(
     playerOne: string; playerOneId: string | null;
     playerTwo: string; playerTwoId: string | null;
     position: number;
+    /**
+     * The fixture a NEW table sits under at a team event. A table made on its
+     * own would belong to no fixture, be counted into no total and look
+     * exactly like one that would, which is why 0168 hid the control rather
+     * than letting that happen. The control is back and this is what keeps
+     * the rule: a table added at a team event is always added to a fixture.
+     */
+    teamMatchId?: number | null;
   },
 ): Promise<Result> {
   if (!match.playerOne.trim()) return { ok: false, error: "A table needs at least one player." };
@@ -88,7 +96,8 @@ export async function saveMatch(
     if (match.id) await repo.updateMatch(pairingId, match.id, fields);
     // Scores are set in their own form, so a new table starts with none.
     else await repo.insertMatches(pairingId, eventId,
-      [{ ...fields, score_one: null, score_two: null }]);
+      [{ ...fields, score_one: null, score_two: null,
+         team_match_id: match.teamMatchId ?? null }]);
     return { ok: true, id: pairingId, notice: "Saved." };
   } catch (error) {
     return { ok: false, error: refusalOf(error, "That did not save. Try again.") };
@@ -103,12 +112,26 @@ export async function saveMatch(
  */
 export async function saveScores(
   pairingId: number,
-  scores: { id: number; scoreOne: number | null; scoreTwo: number | null }[],
+  scores: {
+    id: number; scoreOne: number | null; scoreTwo: number | null;
+    /** What the format counts the table at, where that is a different number. */
+    pointsOne?: number | null; pointsTwo?: number | null;
+  }[],
 ): Promise<Result> {
+  // One side of a pair without the other is half a result, which the column
+  // constraint refuses with a raw 23514. Saying it here names the mistake.
+  const half = scores.find((row) =>
+    (row.pointsOne ?? null) === null !== ((row.pointsTwo ?? null) === null));
+  if (half) {
+    return { ok: false,
+      error: "A table scored your format's way needs both sides, or neither." };
+  }
+
   try {
     for (const row of scores) {
       await repo.updateMatch(pairingId, row.id,
-        { score_one: row.scoreOne, score_two: row.scoreTwo });
+        { score_one: row.scoreOne, score_two: row.scoreTwo,
+          points_one: row.pointsOne ?? null, points_two: row.pointsTwo ?? null });
     }
     const entered = scores.filter((row) => row.scoreOne !== null || row.scoreTwo !== null).length;
     return { ok: true, notice: `${entered} ${entered === 1 ? "result" : "results"} saved.` };

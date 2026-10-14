@@ -82,6 +82,9 @@ export default function EventTeams({ teams, fixtures, faction, viewerName }: {
                                     letterSpacing: "0.07em", color: tokens.inkMuted }}>
                     {[
                       team.placement ? team.placement.toUpperCase() : null,
+                      // The club's own figure for where they finished, in
+                      // whatever the format counts. Only once it has said.
+                      team.finalScore !== null ? `${team.finalScore} PTS` : null,
                       row.played ? `${row.won}-${row.drawn}-${row.lost}` : null,
                       // Said in words, because a bare "1 TABLE" in a column
                       // with no heading reads as the table they are playing

@@ -9,11 +9,13 @@ import { createClient } from "@/lib/supabase/server";
 // typing the whole query.
 const BOOKING_COLUMNS =
   `id, reference, event_id, club_id, full_name, email, status, currency,
-   subtotal, tier_discount_amount, total, created_at` as const;
+   subtotal, tier_discount_percent, tier_discount_amount, membership_tier_label,
+   loyalty_points_spent, loyalty_discount_amount, total, created_at` as const;
 
-// The two loyalty columns 0050 adds are in the generated types now, but still
-// not selected: nothing on a receipt shows points spent yet, and a column
-// nobody reads is a column that goes stale without anybody noticing.
+// The two loyalty columns 0050 adds are selected now. They were deliberately
+// left out while "nothing on a receipt shows points spent yet", and the
+// client found the consequence from the other end: a ticket showed what the
+// membership took off and silently dropped what the member's own points did.
 
 /** One booking with its lines and enough of the event to name it. */
 export async function findBooking(reference: string) {

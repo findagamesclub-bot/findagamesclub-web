@@ -11,6 +11,7 @@ import SchoolIcon from "@mui/icons-material/School";
 import EventIcon from "@mui/icons-material/Event";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import ForumIcon from "@mui/icons-material/ForumOutlined";
+import CampaignIcon from "@mui/icons-material/Campaign";
 import FlagIcon from "@mui/icons-material/OutlinedFlag";
 import StorefrontIcon from "@mui/icons-material/Storefront";
 import LoyaltyIcon from "@mui/icons-material/Loyalty";
@@ -125,7 +126,12 @@ export function consoleGroups(
       ],
     },
     {
-      title: "Events",
+      // Not "Events". It held Events and Competitions, so the heading named
+      // one of the two things under it, and a helper's console filters it to
+      // Competitions alone: a league sitting by itself under a heading that
+      // says Events reads as the wrong menu. Same shape as "roster" and
+      // "pairings", and the paths do not move.
+      title: "Events and leagues",
       items: [
         // The club's own list, not the public one: drafts, the draw and the
         // door list all hang off it, and none of those exist on /events.
@@ -139,6 +145,12 @@ export function consoleGroups(
     {
       title: "Community",
       items: [
+        // The club talking to its members, above the members talking to each
+        // other. `noticeboard.manage` rather than `listing.edit` (0185): a
+        // notice about tonight's car park is this week's news, not the club's
+        // public face, so the person on the door can pin one up.
+        { label: "Noticeboard", href: at("/manage/noticeboard"), icon: CampaignIcon,
+          needs: "noticeboard.manage" },
         { label: "Board", href: at("/board"), icon: ForumIcon,
           needs: "board.moderate" },
         // Reports on this club's own content. An alert count, because a

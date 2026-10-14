@@ -5,7 +5,14 @@ export type ClubImage = { src: string; alt: string };
 export type ClubLink = { label: string; url: string };
 /** `price` is null when the club left it blank or wrote "TBC". */
 export type PricingModel = { label: string; price: string | null; notes: string };
-export type Announcement = { message: string; createdAt: string };
+/**
+ * One notice on the club's board.
+ *
+ * The id is here because 0185 saves by row rather than replacing the whole
+ * board: without it a notice cannot keep the date it went up, and the date is
+ * the only thing that tells Thursday's news from April's.
+ */
+export type Announcement = { id: number; message: string; createdAt: string };
 
 export type MembershipTier = {
   key: string;

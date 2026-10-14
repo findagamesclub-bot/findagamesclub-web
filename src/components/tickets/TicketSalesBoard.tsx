@@ -17,7 +17,7 @@ import type { BuyableTicket } from "@/types/ticket";
  * is on sale, how each type is going, and the way to the door list.
  */
 export default function TicketSalesBoard({
-  tickets, faction, slug, eventId, hasEnded, cancelled,
+  tickets, faction, slug, eventId, hasEnded, cancelled, due,
 }: {
   tickets: BuyableTicket[];
   faction: Faction;
@@ -27,9 +27,16 @@ export default function TicketSalesBoard({
   hasEnded: boolean;
   /** Called off, so the figures are a record of what had been reserved. */
   cancelled: boolean;
+  /**
+   * What the people who booked actually owe, totalled from their own frozen
+   * bookings. This used to be `sold × list price`, which is a figure nobody
+   * on the event had agreed to: a £50 ticket sold to a member with 10% off
+   * and points against it read £50 due when £42.75 was owed. A club chasing
+   * money off that number chases the wrong number.
+   */
+  due: number;
 }) {
   const sold = tickets.reduce((n, t) => n + t.sold, 0);
-  const takings = tickets.reduce((n, t) => n + t.sold * t.unitAmount, 0);
   const capped = tickets.filter((t) => t.remaining !== null);
   const left = capped.reduce((n, t) => n + (t.remaining ?? 0), 0);
 
@@ -50,7 +57,7 @@ export default function TicketSalesBoard({
                 borderBottom: `1px solid ${tokens.rule}` }}>
           <Figure value={sold} label={sold === 1 ? "sold" : "sold"} />
           {capped.length ? <Figure value={left} label="left" /> : null}
-          <Figure value={formatMoney(takings)} label="due" tone={tokens.brass} />
+          <Figure value={formatMoney(due)} label="due" tone={tokens.brass} />
         </Stack>
 
         <Stack>

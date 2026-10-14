@@ -12,7 +12,8 @@
  * fetched, which looks exactly like a club that has done nothing.
  */
 
-export type ReadKey = "summary" | "money" | "people" | "nights" | "months" | "health";
+export type ReadKey =
+  | "summary" | "money" | "people" | "nights" | "months" | "health" | "sales";
 
 export const ANALYTICS_TABS = [
   { key: "headline", label: "Headline", needs: "summary" },
@@ -21,6 +22,10 @@ export const ANALYTICS_TABS = [
   { key: "people", label: "Who turns up", needs: "people" },
   { key: "nights", label: "Nights and events", needs: "nights" },
   { key: "membership", label: "Membership", needs: "health" },
+  // What sells, which is a ranking rather than money: the Money in tab
+  // answers what came in, and the most popular thing is often not the most
+  // valuable one.
+  { key: "sales", label: "Shop and coaching", needs: "sales" },
 ] as const satisfies readonly { key: string; label: string; needs: ReadKey }[];
 
 export type AnalyticsTabKey = (typeof ANALYTICS_TABS)[number]["key"];

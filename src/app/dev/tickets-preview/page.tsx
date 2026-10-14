@@ -52,7 +52,13 @@ export default function TicketsPreviewPage() {
     eventDate: "2026-09-26", clubSlug: "didcot-wargames-didcot", clubName: "Didcot Wargames", clubId: 9,
     legacyId: "2026-09-26-autumn-open-test", fullName: "Ada Marchetti",
     email: "ada@example.com", status: "reserved", subtotal: 60, discountAmount: 3,
-    total: 57, currency: "GBP", createdAt: "2026-08-22T10:00:00Z",
+    total: 54.75, currency: "GBP", createdAt: "2026-08-22T10:00:00Z",
+    // A ticket that used both, which is the case the dashboard was dropping
+    // half of: 5% off as a member, then 45 points at 5p on top.
+    priced: {
+      subtotal: 60, tierLabel: "Premium Membership", tierPercent: 5, tierAmount: 3,
+      points: 45, pointsAmount: 2.25, total: 54.75,
+    },
     paymentStatus: "paid_in_advance", paymentMethod: "Bank transfer",
     refundStatus: "not_due", cancelReason: "",
     lines: cart.lines,

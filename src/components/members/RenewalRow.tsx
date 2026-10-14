@@ -85,6 +85,7 @@ export default function RenewalRow({
           memberName={row.member.fullName}
           tierKey={row.member.tierKey}
           requestedTierKey={row.member.requestedTierKey}
+          requestedBillingLabel={row.member.requestedBillingLabel}
           tierRequestedAt={row.member.tierRequestedAt}
           joinedAt={row.member.joinedAt}
           today={today}

@@ -187,3 +187,43 @@ export async function findRosterPlayers(eventId: number) {
     .filter((row) => row.status !== "cancelled")
     .map((row) => ({ profileId: row.profileId, name: row.fullName.trim() })));
 }
+
+/**
+ * Whose place this is, or nobody's.
+ *
+ * `club_event_bookings.profile_id` is not in any column grant (0015 gives
+ * `status` and nothing else), and it should not be: attaching a result to an
+ * account is `may_link_profile`'s question since 0177, not a column's.
+ */
+export const setBookingMember = (
+  bookingId: number, profileId: string | null, code: string,
+) => callRpc<boolean>("set_booking_member", {
+  p_booking: bookingId, p_profile: profileId, p_code: code,
+});
+
+/**
+ * The club putting somebody on the list (0179).
+ *
+ * Through a function rather than an insert, because `club_event_bookings` has
+ * had insert revoked from `authenticated` since 0015 and should keep it: the
+ * money columns and the tier the price is frozen against are not things a
+ * caller may name. The function reads the named person's tier itself.
+ */
+export const addEventBooking = (params: {
+  eventId: number;
+  /** Null for somebody with no account, which is the ordinary door case. */
+  profileId: string | null;
+  fullName: string;
+  email: string;
+  reference: string;
+  ticketTypeId: number;
+  quantity: number;
+}) => callRpc<number>("club_add_event_booking", {
+  p_event: params.eventId,
+  p_profile: params.profileId,
+  p_name: params.fullName,
+  p_email: params.email,
+  p_reference: params.reference,
+  p_ticket_type: params.ticketTypeId,
+  p_quantity: params.quantity,
+});

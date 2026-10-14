@@ -87,6 +87,21 @@ const last = () => 0.999999;
 }
 
 {
+  // One member books their own place and a place for a friend, which every
+  // other part of this app supports: both tickets carry the member's account
+  // and the friend's name is the one on the door. Keyed on the account alone
+  // the friend never reached the draw, which is what the client saw at Oxford
+  // Onslaught 5: two booked, one in the picker.
+  const bookedForAFriend = [
+    { profileId: "p1", name: "Gulnabi Afridi" },
+    { profileId: "p1", name: "Peter Kay" },
+  ];
+  assert.deepEqual(uniquePlayers(bookedForAFriend).map((p) => p.name),
+    ["Gulnabi Afridi", "Peter Kay"],
+    "a member booking for somebody else puts two people on the draw");
+}
+
+{
   assert.deepEqual(uniquePlayers([{ profileId: null, name: "  " }]), [],
     "a booking with no name on it is nobody");
 }

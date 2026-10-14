@@ -5,6 +5,8 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import ClubLogo from "@/components/clubs/ClubLogo";
+import PriceBreakdown from "@/components/ui/PriceBreakdown";
+import { formatPounds } from "@/utils/format";
 import { nightLabel } from "@/utils/dates";
 import { display, mono, tokens } from "@/lib/tokens";
 import type { MyCoaching } from "@/services/myActivity.service";
@@ -34,13 +36,24 @@ export default function CoachingCard({ session }: { session: MyCoaching }) {
   const done = session.past || session.cancelled;
   const owing = !done && !session.paid;
 
+  // What this booking came to, not what the session lists at. The card used
+  // to print `session.price`, which is the slot's own free-text price: a
+  // member on 10% off who had also spent points was told to bring the full
+  // amount, and the figure they actually owed was never on any screen.
+  const owed = session.priced.total;
+  const hasFigure = session.priced.subtotal > 0 || owed > 0;
+
   const money = session.cancelled
     ? { value: "Cancelled", tone: tokens.inkMuted }
     : session.paid
-      ? { value: session.price ? `${session.price} paid` : "Paid", tone: "#1B5E20" }
+      ? { value: hasFigure ? `${formatPounds(owed, session.priced.currency)} paid` : "Paid",
+          tone: "#1B5E20" }
       : session.past
         ? { value: "Not recorded", tone: tokens.inkMuted }
-        : { value: session.price ? `${session.price} to pay` : "Due", tone: "#5c4310" };
+        : { value: hasFigure
+              ? `${formatPounds(owed, session.priced.currency)} to pay`
+              : "Nothing to pay",
+            tone: "#5c4310" };
 
   return (
     <Stack sx={{ height: "100%", borderRadius: 2, overflow: "hidden",
@@ -77,6 +90,14 @@ export default function CoachingCard({ session }: { session: MyCoaching }) {
             : session.startTime ?? "—"} />
         <Fact label="PAYMENT" value={money.value} tone={money.tone} />
       </Box>
+
+      {/* Why it is that figure and not the one on the session. Drawn only
+          where something came off, so a full price explains itself. */}
+      {!session.cancelled ? (
+        <Box sx={{ px: 2.25, pb: session.description ? 0 : 1.5 }}>
+          <PriceBreakdown priced={session.priced} compact />
+        </Box>
+      ) : null}
 
       {session.description ? (
         <Typography variant="body2"

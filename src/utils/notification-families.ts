@@ -70,6 +70,9 @@ const MAP = {
   // Something you booked or bought.
   table_booked: "bookings",
   booked_in: "bookings",
+  // A table the club put on for you (0185). A place you hold, not a job to do,
+  // so it sits with the rest of the bookings rather than in "Running a club".
+  booked_by_club: "bookings",
   booking_cancelled: "bookings",
   waitlist_promoted: "bookings",
   tickets_booked: "bookings",

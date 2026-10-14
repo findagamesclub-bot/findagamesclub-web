@@ -38,6 +38,56 @@ export type ResultArmy = {
   battleRole: string;
 };
 
+/**
+ * One side of a game that is not a table booking.
+ *
+ * `ResultArmy` is what a booking records and what `ArmyResultFields` edits.
+ * A table of a draw and a game in a league round record the same thing plus
+ * the list it was built from, so they take the same type with two fields on
+ * the end rather than a shape of their own. Three shapes for one fact is how
+ * three dialogs end up offering three different sets of boxes, which is the
+ * item this exists to close.
+ */
+export type GameSide = ResultArmy & {
+  listId: number | null;
+  listName: string;
+};
+
+export const EMPTY_SIDE: GameSide = {
+  factionId: "", factionLabel: "", detachment: "", disposition: "",
+  mvpUnits: [], underwhelmingUnits: [],
+  primaryScore: null, secondaryScore: null, painted: false,
+  firstTurn: "", battleRole: "",
+  listId: null, listName: "",
+};
+
+/** A row out of `game_result_armies`, in the shape the dialogs edit. */
+export function sideFromRow(row: {
+  faction_id?: string | null; faction_label?: string | null;
+  detachment?: string | null; disposition?: string | null;
+  mvp_units?: string[] | null; underwhelming_units?: string[] | null;
+  primary_score?: number | null; secondary_score?: number | null;
+  painted?: boolean | null; first_turn?: string | null; battle_role?: string | null;
+  list_id?: number | null; list_name?: string | null;
+} | null | undefined): GameSide {
+  if (!row) return EMPTY_SIDE;
+  return {
+    factionId: row.faction_id ?? "",
+    factionLabel: row.faction_label ?? "",
+    detachment: row.detachment ?? "",
+    disposition: row.disposition ?? "",
+    mvpUnits: row.mvp_units ?? [],
+    underwhelmingUnits: row.underwhelming_units ?? [],
+    primaryScore: row.primary_score ?? null,
+    secondaryScore: row.secondary_score ?? null,
+    painted: row.painted ?? false,
+    firstTurn: row.first_turn ?? "",
+    battleRole: row.battle_role ?? "",
+    listId: row.list_id ?? null,
+    listName: row.list_name ?? "",
+  };
+}
+
 export const EMPTY_ARMY: ResultArmy = {
   factionId: "", factionLabel: "", detachment: "", disposition: "",
   mvpUnits: [], underwhelmingUnits: [],

@@ -8,16 +8,23 @@ import Typography from "@mui/material/Typography";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import MilitaryTechIcon from "@mui/icons-material/MilitaryTech";
 import CompetitionStandings from "./CompetitionStandings";
+import CompetitionGames, { type PlayedGames } from "./CompetitionGames";
 import { shortDate } from "@/utils/dates";
 import { mono, tokens, type Faction } from "@/lib/tokens";
 import type { Competition } from "@/types/competition";
 
 /** One league, ladder or campaign. Legacy's showcase card (detail.js:5899). */
 export default function CompetitionCard({
-  competition, faction,
+  competition, faction, played,
 }: {
   competition: Competition;
   faction: Faction;
+  /**
+   * What was played in each game, where the page read it. The club page shows
+   * three competitions and does not, so the control simply does not appear
+   * there; the full results history page does.
+   */
+  played?: PlayedGames;
 }) {
   const leader = competition.standings[0];
   const ran = [
@@ -118,21 +125,8 @@ export default function CompetitionCard({
                       {update.summary}
                     </Typography>
                   ) : null}
-                  {update.matches.map((match, i) => (
-                    <Stack key={i} direction="row" spacing={1.25}
-                      sx={{ alignItems: "baseline", flexWrap: "wrap" }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {match.playerOne}
-                      </Typography>
-                      <Typography sx={{ fontFamily: mono, fontSize: "0.84rem",
-                                        color: faction.deep, fontWeight: 700 }}>
-                        {match.playerOneScore} – {match.playerTwoScore}
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {match.playerTwo}
-                      </Typography>
-                    </Stack>
-                  ))}
+                  <CompetitionGames matches={update.matches}
+                    faction={faction} played={played} />
                 </Stack>
               ))}
             </Stack>

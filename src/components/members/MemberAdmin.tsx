@@ -32,6 +32,12 @@ type Props = {
   tierKey: string | null;
   /** A tier this member has asked to move to. */
   requestedTierKey?: string | null;
+  /**
+   * Which payment term they asked on, in the club's own words. The queue above
+   * this dialog has said it since 0178 and this said only the tier, so the one
+   * screen with the Move them button on it was the one still guessing.
+   */
+  requestedBillingLabel?: string;
   tierRequestedAt?: string | null;
   tiers: MembershipTier[];
   standing: PaymentStanding;
@@ -63,6 +69,7 @@ function initials(name: string): string {
  */
 export default function MemberAdmin({
   membershipId, slug, memberName, tierKey, requestedTierKey = null,
+  requestedBillingLabel = "",
   tierRequestedAt = null, tiers, standing, payments, faction,
   joinedAt = null, today, showStatus = true,
 }: Props) {
@@ -161,7 +168,10 @@ export default function MemberAdmin({
                   {memberName} has asked to move to{" "}
                   <strong>
                     {tiers.find((t) => t.key === requestedTierKey)?.label ?? requestedTierKey}
-                  </strong>.
+                  </strong>
+                  {requestedBillingLabel
+                    ? <>, paying <strong>{requestedBillingLabel}</strong></>
+                    : null}.
                 </Typography>
 
                 <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: "wrap" }}>

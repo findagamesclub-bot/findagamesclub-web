@@ -200,6 +200,7 @@ export async function getRoster(clubId: number): Promise<ClubMember[]> {
       ? {
           ...member,
           requestedTierKey: request.requested_tier_key,
+          requestedBillingLabel: request.requested_billing_label ?? "",
           tierRequestedAt: request.tier_requested_at,
         }
       : member;

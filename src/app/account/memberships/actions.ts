@@ -19,7 +19,9 @@ export async function requestTierAction(
   // An empty tier withdraws the request rather than asking for a blank tier.
   const wanted = String(form.get("tierKey") ?? "").trim();
 
-  const result = await requestTierChange(membershipId, viewer.id, wanted || null);
+  const result = await requestTierChange(
+    membershipId, viewer.id, wanted || null,
+    String(form.get("billingLabel") ?? "").trim());
   if (!result.error) revalidatePath("/account/memberships");
   return result;
 }

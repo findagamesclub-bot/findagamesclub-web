@@ -2,6 +2,7 @@
 
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import AddIcon from "@mui/icons-material/Add";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import RoundTables from "./RoundTables";
@@ -30,7 +31,7 @@ import type { PairingArmy } from "@/services/eventPairingArmies.service";
  */
 export default function TeamFixtures({
   fixtures, busy, armies, recordsArmies, onEdit, onArmies, onRemove,
-  onRemoveFixture, onScoreFixture,
+  onRemoveFixture, onScoreFixture, onAddTable,
 }: {
   fixtures: TeamFixture[];
   busy: boolean;
@@ -41,6 +42,8 @@ export default function TeamFixtures({
   onRemove: (match: PairingMatch) => void;
   onRemoveFixture: (fixture: TeamFixture) => void;
   onScoreFixture: (fixture: TeamFixture) => void;
+  /** Puts a player table inside this fixture, rather than loose on the round. */
+  onAddTable: (fixture: TeamFixture) => void;
 }) {
   return (
     <Stack spacing={2}>
@@ -140,6 +143,18 @@ export default function TeamFixtures({
                     ? "Nobody to play this round. They sit it out and the draw still shows them."
                     : "No tables under this fixture yet."}
                 </Typography>
+              )}
+
+              {/* The table control belongs here rather than on the round,
+                  because this is the fixture it goes under. A table added on
+                  the round would belong to nothing, counted into no total,
+                  looking exactly like one that would. */}
+              {bye ? null : (
+                <Button size="small" variant="text" startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+                  disabled={busy} onClick={() => onAddTable(fixture)}
+                  sx={{ mt: fixture.tables.length ? 1 : 1.25, alignSelf: "flex-start" }}>
+                  Add a table
+                </Button>
               )}
             </Box>
           </Box>

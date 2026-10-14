@@ -26,6 +26,8 @@ export type AnalyticsSummary = {
 
 export type AnalyticsMoney = {
   membership: Money; tables: Money; tickets: Money; shop: Money;
+  /** 0186. A club selling coaching was reading a revenue figure short by it. */
+  coaching: Money;
   points: { earned: number; spent: number };
 };
 
@@ -43,14 +45,40 @@ export type AnalyticsNights = {
   sellThrough: { label: string; starts: string; places: number; sold: number }[];
 };
 
+/**
+ * One calendar month of the chosen window, clipped to it.
+ *
+ * The streams come back separately (0186) rather than pre-added, so the chart,
+ * the page and the spreadsheet cannot disagree about what revenue includes.
+ * `monthRevenue` is the one place they are summed.
+ */
 export type AnalyticsMonth = {
   month_start: string; label: string; new_members: number;
-  bookings: number; tickets: number; posts: number; revenue: number;
+  bookings: number; tickets: number; posts: number;
+  membership_in: number; tables_in: number; tickets_in: number;
+  shop_in: number; coaching_in: number;
 };
 
 export type AnalyticsMemberships = {
-  byTier: { tier: string; members: number }[];
+  /** One row per tier on the roster, with the club's own label for it. */
+  byTier: { tier: string; label: string; members: number; joined: number }[];
+  /**
+   * Every approved member's lifetime points, zero included. The rungs are not
+   * worked out here: `tierFor` in TypeScript is the one implementation of the
+   * ladder and the club's own tiers are the jsonb it reads, so a second copy
+   * in SQL would be a second thing to get wrong.
+   */
+  lifetime: number[];
   dueSoon: number; lapsed: number; neverPaid: number; total: number;
+  /** Approved members who joined inside the window. */
+  joined: number;
+};
+
+export type AnalyticsSales = {
+  items: { label: string; sold: number; revenue: number }[];
+  sessions: { label: string; booked: number; revenue: number }[];
+  itemsSold: number;
+  placesTaken: number;
 };
 
 const window = (club: number, from: string, to: string) =>
@@ -68,8 +96,11 @@ export const findPeople = (club: number, from: string, to: string) =>
 export const findNights = (club: number, from: string, to: string) =>
   callRpc<AnalyticsNights>("club_analytics_nights", window(club, from, to));
 
-export const findMonths = (club: number, months: number) =>
-  callRpc<AnalyticsMonth[]>("club_analytics_months", { p_club: club, p_months: months });
+export const findMonths = (club: number, from: string, to: string) =>
+  callRpc<AnalyticsMonth[]>("club_analytics_months", window(club, from, to));
 
-export const findMembershipHealth = (club: number) =>
-  callRpc<AnalyticsMemberships>("club_analytics_memberships", { p_club: club });
+export const findMembershipHealth = (club: number, from: string, to: string) =>
+  callRpc<AnalyticsMemberships>("club_analytics_memberships", window(club, from, to));
+
+export const findSales = (club: number, from: string, to: string) =>
+  callRpc<AnalyticsSales>("club_analytics_sales", window(club, from, to));

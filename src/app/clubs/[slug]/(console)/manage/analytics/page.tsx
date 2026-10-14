@@ -11,6 +11,8 @@ import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
 import { getClubDetail } from "@/services/clubDetail.service";
 import { getClubAnalytics } from "@/services/analytics.service";
+import { getProgramme } from "@/services/loyalty.service";
+import { ladderSpread } from "@/utils/loyalty-spread";
 import { londonNow } from "@/utils/dates";
 import { DEFAULT_PERIOD, PERIODS, readPeriod } from "@/utils/analytics-period";
 import { ANALYTICS_TABS, DEFAULT_TAB, readTab, readsFor } from "@/utils/analytics-tabs";
@@ -31,9 +33,15 @@ export const metadata = { title: "Analytics" };
  * It costs less as well: the page reads the one thing the open tab renders, so
  * opening Money is one round trip rather than six.
  *
- * Two range pickers, because legacy keeps the trend on its own range and a club
- * reading this month's takings against a year of shape is a real thing to want.
- * Both live in the address, so a window is a link.
+ * ONE range picker. Legacy keeps the trend on its own range and that was
+ * copied, on the argument that reading this month's takings against a year of
+ * shape is a real thing to want. The client read the result as "confusing as
+ * two time periods shown", which is the stronger argument: a page showing
+ * £140 over one window and a chart of a different one, with two pickers to
+ * tell apart, is a page whose figures cannot be checked against each other.
+ * Theirs to decide, and the trend follows the window now.
+ *
+ * It lives in the address, so a window is a link.
  */
 export default async function ClubAnalyticsPage({
   params, searchParams,
@@ -52,10 +60,19 @@ export default async function ClubAnalyticsPage({
 
   const tab = readTab(query.tab);
   const period = readPeriod(query.period);
-  const trend = readPeriod(query.trend);
   const today = londonNow().date;
 
-  const data = await getClubAnalytics(club.id, period, today, readsFor(tab), trend);
+  const data = await getClubAnalytics(club.id, period, today, readsFor(tab));
+
+  // The club's own loyalty rungs, and only for the tab that draws them. SQL
+  // hands back one lifetime total per member and `tierFor` decides which rung
+  // each reaches, so the ladder on this page is the same one a member sees on
+  // their own: a second copy in SQL would disagree the first time a club
+  // edited its tiers. A failure costs the chart, not the tab.
+  const ladder = tab === "membership"
+    ? ladderSpread(data.health.lifetime,
+        (await getProgramme(club.id).catch(() => null))?.tiers ?? undefined)
+    : [];
 
   const here = `/clubs/${slug}/manage/analytics`;
   const at = (changes: Record<string, string>, defaults: Record<string, string>) =>
@@ -105,8 +122,7 @@ export default async function ClubAnalyticsPage({
           data={data}
           slug={slug}
           period={period}
-          trend={trend}
-          trendWindows={windows("trend")}
+          ladder={ladder}
         />
       </Stack>
     </Container>

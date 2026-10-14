@@ -50,19 +50,51 @@ export async function bookingAction(
     };
   }
 
+  // The club's own booking. A separate intent from "book" rather than an
+  // optional field on it, because the two refuse differently and say different
+  // things: "you already have a booking that night" is the wrong sentence
+  // entirely when somebody else is doing the booking.
+  if (intent === "book-for") {
+    const result = await bookings.addBookingFor({
+      clubId: Number(data.get("clubId")),
+      clubSessionId: Number(data.get("clubSessionId")),
+      sessionDate: String(data.get("sessionDate") ?? ""),
+      profileId: String(data.get("profileId") ?? ""),
+      memberName: String(data.get("memberName") ?? ""),
+      gameTitle: String(data.get("gameTitle") ?? ""),
+      opponentName: String(data.get("opponentName") ?? ""),
+      opponentProfileId: String(data.get("opponentProfileId") ?? "") || null,
+    });
+
+    refresh();
+    if (!result.ok) return { error: result.error };
+
+    // The price is read back off the row the triggers wrote, so the club is
+    // told what the member actually owes rather than what the club advertises.
+    // A tier that waives the fee really does mean nothing, and "£0.00 to pay"
+    // reads as a figure nobody worked out.
+    const who = String(data.get("memberName") ?? "").trim() || "They";
+    const owed = result.price === "£0.00" ? "Nothing to pay." : `${result.price} to pay.`;
+    return { notice: `Table ${result.tableIndex + 1} is ${who}'s. ${owed}` };
+  }
+
   if (intent === "edit") {
-    // Sent only by the club's own form. A member's form omits it, and the
-    // database refuses the fields from anybody who cannot manage the club, so
-    // a forged field buys nothing.
+    // Two forms post here and each owns a different seat: the club's sets
+    // both, a member's sets only who they are playing. The database refuses
+    // the wrong one for the caller and refuses both together, so a forged
+    // field buys nothing.
     const setPeople = data.get("setPeople") === "1";
+    const setOpponent = data.get("setOpponent") === "1";
+    const setsOpponentSeat = setPeople || setOpponent;
     const result = await bookings.editBooking({
       bookingId: Number(data.get("bookingId")),
       gameTitle: String(data.get("gameTitle") ?? ""),
       opponentName: String(data.get("opponentName") ?? ""),
       notes: String(data.get("notes") ?? ""),
       setPeople,
+      setOpponent,
       bookedBy: setPeople ? String(data.get("bookedBy") ?? "") || null : null,
-      opponentId: setPeople ? String(data.get("opponentId") ?? "") || null : null,
+      opponentId: setsOpponentSeat ? String(data.get("opponentId") ?? "") || null : null,
     });
 
     refresh();

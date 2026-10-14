@@ -49,13 +49,29 @@ export async function rosterAction(
 
   const { slug, facts } = gate;
   const intent = String(data.get("intent") ?? "");
+
+  // Adding somebody is the one intent with no booking to act on, so the id is
+  // checked by the five that need it rather than at the top. Checking it here
+  // refused an add before it started, which is the shape of bug that reads as
+  // "the button does nothing".
   const bookingId = Number(data.get("bookingId"));
-  if (!Number.isFinite(bookingId)) {
+  const needsBooking = intent !== "add";
+  if (needsBooking && !Number.isFinite(bookingId)) {
     return { error: "Something went wrong. Reload and try again." };
   }
 
   const result = await (async () => {
     switch (intent) {
+      case "add":
+        return roster.addPlace(facts, {
+          // Empty means somebody with no account, which is most of a door.
+          profileId: String(data.get("profileId") ?? "") || null,
+          fullName: String(data.get("fullName") ?? ""),
+          email: String(data.get("email") ?? ""),
+          ticketTypeId: Number(data.get("ticketTypeId")),
+          quantity: Number(data.get("quantity") ?? 1),
+        });
+
       case "payment": {
         const status = String(data.get("paymentStatus") ?? "");
         if (!PAYMENT_STATUSES.includes(status as PaymentStatus)) {
@@ -86,6 +102,13 @@ export async function rosterAction(
           fullName: String(data.get("fullName") ?? ""),
           email: String(data.get("email") ?? ""),
           notes: String(data.get("notes") ?? ""),
+          // Absent from the club-wide bookings list, which does not ask about
+          // the account; present and possibly empty from the door list, where
+          // empty means nobody.
+          ...(data.has("memberId")
+            ? { memberId: String(data.get("memberId") ?? ""),
+                memberCode: String(data.get("memberCode") ?? "") }
+            : {}),
         });
 
       default:

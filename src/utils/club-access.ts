@@ -1,7 +1,8 @@
 /**
  * What each club role may do.
  *
- * The same matrix as club_role_capabilities() in 0067. Two copies exist because
+ * The same matrix as club_role_capabilities(), rewritten by 0185. Two copies
+ * exist because
  * the database has to decide whether a write is allowed and the browser has to
  * decide whether to draw the button, and neither can ask the other in time.
  * The test beside this file holds a transcription of the SQL and asserts the
@@ -20,6 +21,7 @@ export type Capability =
   | "bookings.manage"
   | "results.manage"
   | "board.moderate"
+  | "noticeboard.manage"
   | "shop.manage"
   | "coaching.manage"
   | "competitions.manage"
@@ -31,9 +33,9 @@ export type Capability =
 
 const EVERYTHING: readonly Capability[] = [
   "listing.edit", "events.manage", "members.manage", "bookings.manage",
-  "results.manage", "board.moderate", "shop.manage", "coaching.manage",
-  "competitions.manage", "messages.club", "analytics.view",
-  "team.manage", "billing.manage", "audit.view",
+  "results.manage", "board.moderate", "noticeboard.manage", "shop.manage",
+  "coaching.manage", "competitions.manage", "messages.club",
+  "analytics.view", "team.manage", "billing.manage", "audit.view",
 ];
 
 export const CAPABILITIES: Record<ClubRole, readonly Capability[]> = {
@@ -43,8 +45,13 @@ export const CAPABILITIES: Record<ClubRole, readonly Capability[]> = {
   // is how a manager would make themselves an owner; not billing, because that
   // is the owner's money.
   manager: EVERYTHING.filter((c) => c !== "team.manage" && c !== "billing.manage"),
-  // The night, and nothing else.
-  helper: ["bookings.manage", "results.manage", "board.moderate"],
+  // The night, and what the club says about it. 0185 widened it: a helper
+  // puts somebody on a table, runs the league and pins a notice up. Still
+  // nothing near the listing, the roster's payment standing or the money.
+  helper: [
+    "bookings.manage", "results.manage", "board.moderate",
+    "noticeboard.manage", "competitions.manage",
+  ],
 };
 
 /** How each role is described to the person holding it. */
@@ -59,7 +66,7 @@ export const ROLE_LABEL: Record<ClubRole, string> = {
 export const ROLE_SUMMARY: Record<ClubRole, string> = {
   owner: "Everything, including the team and the billing.",
   manager: "The listing, events, members, the shop and the numbers. Not the team or the billing.",
-  helper: "Club nights: table bookings, scores, and taking a post down.",
+  helper: "Club nights: table bookings, scores, leagues, the noticeboard, and taking a post down.",
   admin: "Every club on the site.",
 };
 

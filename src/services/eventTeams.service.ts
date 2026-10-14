@@ -92,16 +92,48 @@ export async function removeTeam(eventId: number, id: number): Promise<Result> {
   }
 }
 
+/**
+ * One fixture, typed in rather than shuffled.
+ *
+ * The draw is still the fast way and nothing about it changes. This is the
+ * other half the client asked for: a club whose format the shuffle does not
+ * understand builds the round itself, a fixture at a time, then puts tables
+ * inside each one.
+ */
+export async function addFixture(
+  eventId: number, round: number, teamOne: number, teamTwo: number,
+): Promise<Result> {
+  if (!teamOne || !teamTwo) {
+    return { ok: false, error: "Pick both teams." };
+  }
+  if (teamOne === teamTwo) {
+    return { ok: false, error: "That is the same team twice." };
+  }
+  try {
+    const id = await repo.addFixture({ eventId, round, teamOne, teamTwo });
+    return { ok: true, id, notice: "Fixture added." };
+  } catch (error) {
+    return { ok: false, error: refusalOf(error, "That did not save. Try again.") };
+  }
+}
+
 /** Where a team finished. The club's word, and what the podium badge reads. */
 export async function placeTeam(
   eventId: number, id: number, rank: number | null, placement: string,
+  score: number | null = null,
 ): Promise<Result> {
   if (rank !== null && (!Number.isInteger(rank) || rank < 1 || rank > 999)) {
     return { ok: false, error: "A place is a whole number from 1 upwards." };
   }
+  // The figure beside the place, in whatever the format counts. Optional,
+  // because plenty of formats place a team without a running total.
+  if (score !== null && (!Number.isInteger(score) || score < 0)) {
+    return { ok: false, error: "A team score is a whole number, or nothing." };
+  }
   try {
     await repo.placeTeam(eventId, id, {
       final_rank: rank, placement: placement.trim().slice(0, 40),
+      final_score: score,
     });
     return { ok: true,
       notice: rank === null ? "Place cleared." : `Placed ${rank}.` };

@@ -11,7 +11,8 @@ import Pager from "@/components/ui/Pager";
 import { getClubDetail } from "@/services/clubDetail.service";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
-import { getCompetitionPage, PER_PAGE } from "@/services/competitions.service";
+import { getCompetitionPage, getCompetitionGamesForReaders, PER_PAGE }
+  from "@/services/competitions.service";
 import { countByStatus } from "@/repositories/competitions.repository";
 import { clubIdentity } from "@/utils/club-identity";
 import { tokens } from "@/lib/tokens";
@@ -41,6 +42,18 @@ export default async function CompetitionsPage({
   const viewer = await getCurrentProfile();
   const access = await getClubAccess(club.id, viewer);
   const canManage = access.can("competitions.manage");
+
+  // What was played in each game, for the rounds on this page only. This is
+  // the full results history, which is where somebody asks what an opponent
+  // brought; the club page shows three competitions and asks for none of it.
+  // One read per competition on the page, fired together.
+  const played: Record<number, Awaited<ReturnType<typeof getCompetitionGamesForReaders>>> = {};
+  for (const [index, row] of (await Promise.all(
+    items.map((c) => getCompetitionGamesForReaders(c.id).catch(
+      () => ({ armies: {}, setup: {} })))
+  )).entries()) {
+    played[items[index].id] = row;
+  }
 
   // A club that has never run one has no public page, rather than an empty
   // one. Whoever runs them still gets it, because it is where they start the
@@ -96,7 +109,8 @@ export default async function CompetitionsPage({
       <Stack spacing={2.5} sx={{ mt: 3 }}>
         {items.length ? (
           items.map((competition) => (
-            <CompetitionCard key={competition.id} competition={competition} faction={faction} />
+            <CompetitionCard key={competition.id} competition={competition}
+              faction={faction} played={played[competition.id]} />
           ))
         ) : (
           <Typography variant="body2" sx={{ color: tokens.inkMuted }}>

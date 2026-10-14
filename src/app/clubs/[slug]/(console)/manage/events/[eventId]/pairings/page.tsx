@@ -8,7 +8,7 @@ import { getClubAccess } from "@/services/clubAccess.service";
 import { getClubDetail } from "@/services/clubDetail.service";
 import { getEvent } from "@/services/eventEditor.service";
 import { getDrawPublic, getRoster, getRounds } from "@/services/eventPairings.service";
-import { getRoundArmies } from "@/services/eventPairingArmies.service";
+import { getRoundArmies, getRoundSetup } from "@/services/eventPairingArmies.service";
 import { getTeamDraw, getTeams, isTeamEvent } from "@/services/eventTeams.service";
 import { getBuilderFor } from "@/services/armyBuilder.service";
 import { getMemberLists } from "@/services/resultArmies.service";
@@ -57,11 +57,13 @@ export default async function PairingsPage({
       getTeamDraw(event.id).catch(() => []),
     ]);
 
-  // The armies need the match ids the first wave produced, so they cannot join
-  // it. One query for every table on the event rather than one per round: a
-  // club flicking between round tabs is reading the same page.
-  const armies = await getRoundArmies(
-    rounds.flatMap((round) => round.matches.map((match) => match.id)));
+  // One query for every table on the event rather than one per round: a club
+  // flicking between round tabs is reading the same page. By event id since
+  // 0181, which also means it no longer has to wait on the round read to
+  // learn the match ids.
+  const armies = await getRoundArmies(event.id);
+  // How each table was set up. Same single read as the armies.
+  const setup = await getRoundSetup(event.id);
 
   // Two short strings, not the catalogue itself. The dialog fetches that on
   // its first open, because a published snapshot is close to a megabyte.
@@ -100,7 +102,7 @@ export default async function PairingsPage({
         slug={slug} eventId={event.id} rounds={rounds} roster={roster}
         roundCount={event.roundCount} faction={faction}
         showing={Number(round) || undefined} drawPublic={drawPublic}
-        builder={records} lists={lists} armies={armies}
+        builder={records} lists={lists} armies={armies} setup={setup}
         teamEvent={teamEvent} teams={teams} fixtures={fixtures}
       />
     </Container>

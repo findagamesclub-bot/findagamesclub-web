@@ -12,9 +12,12 @@ import { useActionSuccess } from "@/hooks/useActionSuccess";
 import RoundTables from "./RoundTables";
 import RoundTools from "./RoundTools";
 import PasteDialog from "./PasteDialog";
+import FixtureDialog from "./FixtureDialog";
 import MatchDialog from "./MatchDialog";
 import DrawAudience from "./DrawAudience";
-import ArmiesDialog, { type ArmyFields } from "./ArmiesDialog";
+import GameResultDialog, { type GameResultFields }
+  from "@/components/results/GameResultDialog";
+import type { MatchSetup } from "@/utils/result-meta";
 import FixtureScoreDialog from "./FixtureScoreDialog";
 import TeamFixtures from "./TeamFixtures";
 import ScoresDialog from "./ScoresDialog";
@@ -36,7 +39,7 @@ import type { EventTeam, TeamFixture } from "@/types/eventTeams";
  */
 export default function PairingsBoard({
   slug, eventId, rounds, roster, roundCount, faction, showing, drawPublic,
-  builder, lists, armies, teamEvent, teams, fixtures,
+  builder, lists, armies, setup, teamEvent, teams, fixtures,
 }: {
   slug: string;
   eventId: number;
@@ -53,6 +56,8 @@ export default function PairingsBoard({
   lists: MemberList[];
   /** What is already recorded, keyed `<matchId>:<side>`. */
   armies: Record<string, PairingArmy>;
+  /** How each table was set up, by match id. One mission per game, not per side. */
+  setup: Record<number, MatchSetup>;
   /**
    * The switch on the Teams page, and the only answer to the question. Turning
    * it off really does put this page back to one player per table: a fixture's
@@ -81,6 +86,10 @@ export default function PairingsBoard({
   const [pasting, setPasting] = useState(false);
   const [scoring, setScoring] = useState(false);
   const [editing, setEditing] = useState<PairingMatch | null | undefined>(undefined);
+  // The fixture a NEW table is going under at a team event, so a table added
+  // by hand is never one that belongs to nothing. Null on an ordinary draw.
+  const [underFixture, setUnderFixture] = useState<TeamFixture | null>(null);
+  const [pairingTeams, setPairingTeams] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [removing, setRemoving] = useState<PairingMatch | null>(null);
   const [arming, setArming] = useState<PairingMatch | null>(null);
@@ -90,7 +99,15 @@ export default function PairingsBoard({
   // Below the state it closes over, not beside the toast at the top: a hook
   // referencing a setter declared later is the temporal dead zone `BadgeBoard`
   // already paid for, and `react-hooks` is what caught it here.
-  useActionSuccess(state, () => setScoringFixture(null));
+  // Every dialog here closes when the answer lands, never on the click, so a
+  // refusal keeps what was typed into it. The two added for item 21 go in the
+  // same hook rather than closing themselves: only one is ever open.
+  useActionSuccess(state, () => {
+    setScoringFixture(null);
+    setPairingTeams(false);
+    setEditing(undefined);
+    setUnderFixture(null);
+  });
 
   const asTeams = teamEvent;
 
@@ -158,7 +175,8 @@ export default function PairingsBoard({
           ? setClearing(true)
           : send({ intent: asTeams ? "generate-teams" : "generate" }))}
         onPaste={() => setPasting(true)}
-        onAdd={() => setEditing(null)}
+        onAdd={() => { setUnderFixture(null); setEditing(null); }}
+        onAddFixture={() => setPairingTeams(true)}
         onScores={() => setScoring(true)}
       />
 
@@ -171,7 +189,8 @@ export default function PairingsBoard({
               onArmies={(match) => setArming(match)}
               onRemove={(match) => setRemoving(match)}
               onRemoveFixture={(fixture) => setDroppingFixture(fixture)}
-              onScoreFixture={(fixture) => setScoringFixture(fixture)} />
+              onScoreFixture={(fixture) => setScoringFixture(fixture)}
+              onAddTable={(fixture) => { setUnderFixture(fixture); setEditing(null); }} />
           ) : (
             <EmptyState
               title={`Round ${round} has not been drawn`}
@@ -196,22 +215,30 @@ export default function PairingsBoard({
         )}
       </BusyOverlay>
 
+      <FixtureDialog open={pairingTeams} saving={busy} round={round} teams={teams}
+        onClose={() => setPairingTeams(false)}
+        onSave={(one, two) => send({ intent: "add-fixture",
+          teamOne: String(one), teamTwo: String(two) })} />
+
       <PasteDialog open={pasting} saving={busy} round={round}
         onClose={() => setPasting(false)}
         onSave={(pasted) => { setPasting(false); send({ intent: "paste", pasted }); }} />
 
       {editing !== undefined ? (
         <MatchDialog open match={editing} roster={roster} round={round}
-          position={editing?.position ?? matches.length}
-          nextTable={String(matches.length + 1)}
-          onClose={() => setEditing(undefined)}
+          position={editing?.position ?? (underFixture?.tables.length ?? matches.length)}
+          nextTable={String((underFixture?.tables.length ?? matches.length) + 1)}
+          fixtureName={underFixture
+            ? `${underFixture.teamOneName} v ${underFixture.teamTwoName}`
+            : ""}
+          onClose={() => { setEditing(undefined); setUnderFixture(null); }}
           onSave={(fields) => {
-            setEditing(undefined);
-            send({ intent: "save-match", ...fields });
+            send({ intent: "save-match", ...fields,
+                   teamMatchId: String(underFixture?.id ?? "") });
           }} />
       ) : null}
 
-      <ScoresDialog open={scoring} saving={busy} round={round}
+      <ScoresDialog open={scoring} saving={busy} round={round} teamEvent={asTeams}
         matches={shown as PairingMatch[]}
         onClose={() => setScoring(false)}
         onSave={(rows) => {
@@ -221,16 +248,29 @@ export default function PairingsBoard({
               data.append("scoreMatchId", String(row.id));
               data.append("scoreOne", row.scoreOne);
               data.append("scoreTwo", row.scoreTwo);
+              // Sent for every table, empty on an ordinary draw, so the
+              // indexes stay lined up whichever kind of event this is.
+              data.append("pointsOne", row.pointsOne);
+              data.append("pointsTwo", row.pointsTwo);
             }
           });
         }} />
 
-      <ArmiesDialog match={arming} builder={builder} lists={lists}
-        recorded={armies} saving={busy}
+      {/* The same dialog a league round uses. It was this screen's own cut
+          down version, offering three of the nine things `put_result_army`
+          has taken since 0135 and none of the setup. */}
+      <GameResultDialog
+        game={arming ? {
+          id: arming.id,
+          playerOne: arming.playerOne, playerOneId: arming.playerOneId ?? null,
+          playerTwo: arming.playerTwo, playerTwoId: arming.playerTwoId ?? null,
+        } : null}
+        title={arming ? (arming.tableLabel || `Table ${arming.position + 1}`) : ""}
+        builder={builder} lists={lists}
+        recorded={armies} setup={setup} saving={busy}
         onClose={() => setArming(null)}
-        onSave={(fields: ArmyFields) => {
-          setArming(null);
-          send({ intent: "save-armies", ...fields });
+        onSave={(fields: GameResultFields) => {
+          send({ intent: "save-armies", matchId: String(arming?.id ?? 0), ...fields });
         }} />
 
       <ConfirmDialog

@@ -5,10 +5,11 @@ import {
 } from "../analytics-tabs";
 
 {
-  // Six tabs, one per section the page used to scroll through.
-  assert.equal(ANALYTICS_TABS.length, 6);
+  // One per section the page used to scroll through, plus the shop and
+  // coaching ranking the client asked for in 0187.
+  assert.equal(ANALYTICS_TABS.length, 7);
   assert.deepEqual(ANALYTICS_TABS.map((t) => t.key),
-    ["headline", "money", "trend", "people", "nights", "membership"]);
+    ["headline", "money", "trend", "people", "nights", "membership", "sales"]);
 
   // Headline leads, because "how are we doing" is the question that opens the
   // page, and it is the tab a plain URL lands on.
@@ -16,13 +17,14 @@ import {
 }
 
 {
-  // Every tab needs exactly one read, and between them they use all six. A tab
-  // pointing at a read nobody fetches renders its empty state over real data,
-  // which is indistinguishable from a club that has done nothing.
+  // Every tab needs exactly one read, and between them they use every one. A
+  // tab pointing at a read nobody fetches renders its empty state over real
+  // data, which is indistinguishable from a club that has done nothing.
   const needed = ANALYTICS_TABS.map((t) => t.needs);
-  assert.equal(new Set(needed).size, 6, "two tabs share a read, or one is unused");
+  assert.equal(new Set(needed).size, needed.length,
+    "two tabs share a read, or one is unused");
   assert.deepEqual([...needed].sort(),
-    ["health", "money", "months", "nights", "people", "summary"]);
+    ["health", "money", "months", "nights", "people", "sales", "summary"]);
 }
 
 {
@@ -47,6 +49,7 @@ import {
   assert.equal(readsFor("money"), "money");
   assert.equal(readsFor("trend"), "months", "the trend tab charts months, not nights");
   assert.equal(readsFor("membership"), "health");
+  assert.equal(readsFor("sales"), "sales");
 }
 
 console.log("analytics-tabs: all assertions passed");

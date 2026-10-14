@@ -17,6 +17,34 @@ import type { CoachingBookingRow } from "@/utils/coaching-bookings-filter";
 type Person = { id: string; full_name: string | null } | null;
 const nameOf = (p: Person) => p?.full_name?.trim() || "Club member";
 
+export type RivalMark = {
+  /** The viewer's own row, when they have named this person. */
+  rowId: number | null;
+  /** Both have named the other. */
+  mutual: boolean;
+};
+
+/**
+ * Whether the reader has named this person a rival, club by club.
+ *
+ * For the button on somebody's profile. A rival row belongs to a club, so the
+ * answer is per club rather than per person: naming somebody at Didcot says
+ * nothing about the club you both also play at on Saturdays.
+ */
+export async function getRivalMarks(
+  clubIds: number[], viewerId: string, otherId: string,
+): Promise<Map<number, RivalMark>> {
+  const rows = await repo.findRivalLinksBetween(clubIds, viewerId, otherId);
+  const marks = new Map<number, RivalMark>();
+
+  for (const id of clubIds) {
+    const mine = rows.find((r) => r.club_id === id && r.profile_id === viewerId);
+    const theirs = rows.some((r) => r.club_id === id && r.profile_id === otherId);
+    marks.set(id, { rowId: mine?.id ?? null, mutual: Boolean(mine) && theirs });
+  }
+  return marks;
+}
+
 export async function getRivals(
   clubId: number,
   viewerId: string,
@@ -218,6 +246,19 @@ export async function getClubCoachingBookings(
     time: row.start_time,
     total: Number(row.total_price) || 0,
     pointsSpent: Number(row.loyalty_points_spent) || 0,
+    // The club's own list said what was owed and never why. 0158 returned
+    // three of the seven figures, which is enough to chase somebody and not
+    // enough to answer them when they ask.
+    priced: {
+      subtotal: Number(row.base_price) || 0,
+      tierLabel: row.tier_label || null,
+      tierPercent: Number(row.tier_percent) || 0,
+      tierAmount: Number(row.tier_amount) || 0,
+      points: Number(row.loyalty_points_spent) || 0,
+      pointsAmount: Number(row.points_amount) || 0,
+      total: Number(row.total_price) || 0,
+      currency: row.price_currency ?? "GBP",
+    },
   }));
 }
 

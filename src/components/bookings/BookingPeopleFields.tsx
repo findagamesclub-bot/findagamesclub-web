@@ -5,10 +5,11 @@ import Autocomplete from "@mui/material/Autocomplete";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import MonoLabel from "@/components/ui/MonoLabel";
+import OpponentField, { type Person } from "./OpponentField";
 import { tokens } from "@/lib/tokens";
 import type { Booking } from "@/types/booking";
 
-export type Person = { id: string; name: string };
+export type { Person };
 
 /** The list floats over the field below it, so it needs an edge of its own. */
 const paper = {
@@ -19,15 +20,13 @@ const paper = {
 /**
  * Who is on the table, for the club to change.
  *
- * The club's own controls, not a member's. A member fixing their own typo is
- * one thing; handing their table to somebody else, or taking one, is the
- * club's to do, and the database refuses these fields from anybody who cannot
- * manage the club.
+ * Both seats, which is the club's own control: handing a member's table to
+ * somebody else is the club's to do, and the database refuses `setPeople` from
+ * anybody who cannot manage the club. The member's half of this question is
+ * `OpponentField` on its own, which is all 0178 lets them set.
  *
- * Same two controls as the booking form itself: a members-only picker for the
- * booker, because a table is a member benefit and everything about it is
- * priced off their tier; a picker that also takes typed text for the opponent,
- * because a guest is a real thing to have on a table and legacy allows it.
+ * The booker is a members-only picker, because a table is a member benefit and
+ * everything about it is priced off their tier.
  */
 export default function BookingPeopleFields({
   booking, people,
@@ -37,8 +36,6 @@ export default function BookingPeopleFields({
 }) {
   const [booker, setBooker] = useState<Person | null>(
     people.find((p) => p.id === booking.booker.profileId) ?? null);
-  const [opponent, setOpponent] = useState<string | null>(
-    booking.opponent?.profileId ?? null);
 
   return (
     <Stack spacing={2.5}>
@@ -58,38 +55,10 @@ export default function BookingPeopleFields({
       />
       <input type="hidden" name="bookedBy" value={booker?.id ?? ""} />
 
-      {/* MUI 9 needs the generics spelled out on a freeSolo list, or the
-          option type collapses to string and every accessor below breaks. */}
-      <Autocomplete<Person, false, false, true>
-        freeSolo
-        // MUI hides the arrow on a freeSolo list, which leaves this reading as
-        // a plain text box sitting under a picker that has one. The helper
-        // text says a member can be chosen here; the control has to say so
-        // too, and the two fields have to look like the same kind of thing.
-        forcePopupIcon
-        options={people}
-        defaultValue={
-          booking.opponent?.profileId
-            ? people.find((p) => p.id === booking.opponent?.profileId) ?? null
-            : booking.opponent?.name ?? ""
-        }
-        getOptionLabel={(option) => (typeof option === "string" ? option : option.name)}
-        onChange={(_event, value) =>
-          setOpponent(typeof value === "string" || !value ? null : value.id)}
-        slotProps={paper}
-        renderInput={(params) => (
-          <TextField {...params} name="opponentName" label="Playing against"
-            helperText="Pick a member so the game counts for both of them, or type a guest's name."
-            slotProps={{
-              ...params.slotProps,
-              htmlInput: { ...(params.slotProps?.htmlInput ?? {}), maxLength: 120 },
-            }} />
-        )}
-      />
-      {/* Cleared whenever the field is typed into rather than picked from, so
-          a member who is typed over becomes a guest instead of keeping a link
-          to somebody who is no longer named on the booking. */}
-      <input type="hidden" name="opponentId" value={opponent ?? ""} />
+      <OpponentField
+        booking={booking} people={people} label="Playing against"
+        helperText="Pick a member so the game counts for both of them, or type a guest's name." />
+
       <input type="hidden" name="setPeople" value="1" />
     </Stack>
   );

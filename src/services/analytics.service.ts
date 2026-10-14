@@ -1,7 +1,8 @@
 import "server-only";
 
 import * as repo from "@/repositories/analytics.repository";
-import { periodMonths, periodRange, type PeriodKey } from "@/utils/analytics-period";
+import { periodRange, type PeriodKey } from "@/utils/analytics-period";
+import { MONEY_STREAMS } from "@/utils/analytics-money";
 import type { ReadKey } from "@/utils/analytics-tabs";
 
 /**
@@ -25,6 +26,7 @@ const NO_SUMMARY: repo.AnalyticsSummary = {
 const NO_MONEY: repo.AnalyticsMoney = {
   membership: { gross: 0, net: 0 }, tables: { gross: 0, net: 0 },
   tickets: { gross: 0, net: 0 }, shop: { gross: 0, net: 0 },
+  coaching: { gross: 0, net: 0 },
   points: { earned: 0, spent: 0 },
 };
 
@@ -37,7 +39,11 @@ const NO_NIGHTS: repo.AnalyticsNights = {
 };
 
 const NO_HEALTH: repo.AnalyticsMemberships = {
-  byTier: [], dueSoon: 0, lapsed: 0, neverPaid: 0, total: 0,
+  byTier: [], lifetime: [], dueSoon: 0, lapsed: 0, neverPaid: 0, total: 0, joined: 0,
+};
+
+const NO_SALES: repo.AnalyticsSales = {
+  items: [], sessions: [], itemsSold: 0, placesTaken: 0,
 };
 
 export type ClubAnalytics = {
@@ -47,6 +53,7 @@ export type ClubAnalytics = {
   nights: repo.AnalyticsNights;
   months: repo.AnalyticsMonth[];
   health: repo.AnalyticsMemberships;
+  sales: repo.AnalyticsSales;
   /**
    * How many of the six did not answer. Zeros from a club with no bookings and
    * zeros from a database that has not had 0117 run against it look identical
@@ -58,15 +65,13 @@ export type ClubAnalytics = {
 
 const EMPTY: ClubAnalytics = {
   summary: NO_SUMMARY, money: NO_MONEY, people: NO_PEOPLE,
-  nights: NO_NIGHTS, months: [], health: NO_HEALTH, missing: 0,
+  nights: NO_NIGHTS, months: [], health: NO_HEALTH, sales: NO_SALES, missing: 0,
 };
 
 export async function getClubAnalytics(
   club: number, period: PeriodKey, today: string,
   /** The one thing the open tab needs. */
   needs: ReadKey,
-  /** Legacy keeps a separate range for the trend, so the page can ask for one. */
-  trendPeriod: PeriodKey = period,
 ): Promise<ClubAnalytics> {
   const { from, to } = periodRange(period, today);
 
@@ -87,15 +92,15 @@ export async function getClubAnalytics(
     case "money": return read("money", () => repo.findMoney(club, from, to));
     case "people": return read("people", () => repo.findPeople(club, from, to));
     case "nights": return read("nights", () => repo.findNights(club, from, to));
-    case "months": return read("months",
-      () => repo.findMonths(club, periodMonths(trendPeriod)));
-    case "health": return read("health", () => repo.findMembershipHealth(club));
+    case "months": return read("months", () => repo.findMonths(club, from, to));
+    case "health": return read("health", () => repo.findMembershipHealth(club, from, to));
+    case "sales": return read("sales", () => repo.findSales(club, from, to));
   }
 }
 
 /** Gross before discounts, and what actually arrived. Both, never one. */
 export function totalMoney(money: repo.AnalyticsMoney) {
-  const streams = [money.membership, money.tables, money.tickets, money.shop];
+  const streams = MONEY_STREAMS.map((s) => money[s.key]);
   const add = (pick: (m: repo.Money) => number) =>
     streams.reduce((sum, stream) => sum + Number(pick(stream) ?? 0), 0);
 

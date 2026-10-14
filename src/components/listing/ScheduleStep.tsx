@@ -6,6 +6,7 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+import NextLink from "next/link";
 import AddIcon from "@mui/icons-material/Add";
 import CalendarIcon from "@mui/icons-material/CalendarMonth";
 import CampaignIcon from "@mui/icons-material/Campaign";
@@ -195,8 +196,36 @@ export default function ScheduleStep({
           </Stack>
         </Panel>
 
+        {/*
+          * A live club edits its board on its own console page (0185), where a
+          * helper can reach it and where saving does not also save the club's
+          * opening hours. A draft has no club and no console, so it keeps the
+          * panel: there is nowhere else for its notices to go until it is
+          * approved, and `approve_club_submission` inserts them from the
+          * payload.
+          *
+          * `noticesPosted` is what tells the reading the difference. Without
+          * it, a live club saving this step would post an empty list of
+          * notices and the save would read as "take them all down".
+          */}
         <Panel title="Noticeboard" icon={CampaignIcon}>
+          {target.kind === "club" ? (
+            <Stack spacing={1}>
+              <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
+                Short notices at the top of your club page. They have their own
+                page now, so anyone who runs a club night can pin one up without
+                being let into the whole listing.
+              </Typography>
+              <NextLink href={`/clubs/${target.slug}/manage/noticeboard`}
+                style={{ textDecoration: "none" }}>
+                <Typography variant="body2" sx={{ color: tokens.brand, fontWeight: 600 }}>
+                  Open the noticeboard
+                </Typography>
+              </NextLink>
+            </Stack>
+          ) : (
           <Stack spacing={1.5}>
+            <input type="hidden" name="noticesPosted" value="1" />
             <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
               Short notices at the top of your club page. The first one is the one
               members see everywhere else.
@@ -224,6 +253,7 @@ export default function ScheduleStep({
               Add a notice
             </Button>
           </Stack>
+          )}
         </Panel>
       </Stack>
 

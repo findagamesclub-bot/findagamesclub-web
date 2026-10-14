@@ -6,6 +6,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
+import PlayerName from "./PlayerName";
 import { armySummary } from "@/utils/army-snapshot";
 import { mono, tokens, type Faction } from "@/lib/tokens";
 import type { EventPlacing, ResultArmy } from "@/types/event";
@@ -52,9 +53,9 @@ export default function PlacingRow({
       </Typography>
 
       <Stack direction="row" spacing={1} sx={{ alignItems: "baseline", minWidth: 0 }}>
-        <Typography variant="body2" sx={{ fontWeight: mine ? 700 : 500 }} noWrap>
-          {p.name}
-        </Typography>
+        <PlayerName name={p.name} profileId={p.profileId} bold={mine}
+          sx={{ fontWeight: mine ? 700 : 500, whiteSpace: "nowrap",
+                overflow: "hidden", textOverflow: "ellipsis" }} />
         {!p.isMember ? (
           <Typography sx={{ fontFamily: mono, fontSize: "0.6rem", letterSpacing: "0.08em",
                             color: tokens.inkMuted, flexShrink: 0 }}>

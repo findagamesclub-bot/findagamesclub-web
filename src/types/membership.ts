@@ -28,6 +28,8 @@ export type ClubMember = {
   tenureYears: number;
   /** A tier this member has asked to move to. Null when they have not. */
   requestedTierKey?: string | null;
+  /** Which payment term they asked on, so the club is not guessing. */
+  requestedBillingLabel?: string;
   /** When they asked. Distinct from requestedAt, which is when they applied. */
   tierRequestedAt?: string | null;
 };

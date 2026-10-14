@@ -221,7 +221,9 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
   const notices = club.announcements.length
     ? club.announcements
     : club.announcement
-      ? [{ message: club.announcement, createdAt: "" }]
+      // id 0: there is no row behind it. Nothing on this page addresses a
+      // notice by id, and the console reads the table rather than this.
+      ? [{ id: 0, message: club.announcement, createdAt: "" }]
       : [];
 
   return (
@@ -281,7 +283,20 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
           "text goes over the edge" the client reported, and body's overflow-x
           was hiding it rather than fixing it. */}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "minmax(0,2fr) minmax(280px,1fr)" }, gap: 4, mt: 4 }}>
-        <Stack spacing={0} sx={{ minWidth: 0 }}>
+        {/* A section's own top margin separates it from the section above it,
+            and on a wide screen the first one in this column has nothing above
+            it but the shortcuts bar. Its 56px and the grid's 32 together put
+            88px of empty page between the bar and the first heading, measured,
+            which is what the client read as a hole. 32 is left.
+
+            `:first-of-type` rather than a prop on the Noticeboard, because
+            which section comes first is conditional: a club with no notices
+            leads with About, and one with neither leads with the club nights.
+            A prop would have been right for Didcot and wrong for them.
+
+            `md` only. On a phone the columns stack and the sidebar sits above
+            this one, so there the margin is doing the job it exists for. */}
+        <Stack spacing={0} sx={{ minWidth: 0, "& > section:first-of-type": { mt: { md: 0 } } }}>
           {/* First thing in the column, because a notice is time-sensitive and
               the club wrote it to be read before anything else. */}
           {notices.length ? (
@@ -587,8 +602,12 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
             somebody opening a club page came for, and it was sitting past
             fifteen sections at the very bottom. Beside the content on a wide
             screen, where it has always been. */}
+        {/* No top margin of its own. It carried 56px written out by hand to
+            line up with the first section's margin opposite, which is the same
+            number in two places with only a comment holding them together.
+            Both columns start at the top of the grid now. */}
         <Stack spacing={3}
-          sx={{ order: { xs: -1, md: 0 }, minWidth: 0, mt: { xs: 0, md: 7 } }}>
+          sx={{ order: { xs: -1, md: 0 }, minWidth: 0 }}>
           {/* Facts above the join panel on a phone, below it on a desktop: the
               panel earns the top of a narrow column only once you already know
               what you would be joining. */}

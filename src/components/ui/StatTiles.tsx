@@ -29,7 +29,12 @@ export default function StatTiles({
   tiles, columns = 3,
 }: {
   tiles: Tile[];
-  columns?: 2 | 3;
+  /**
+   * How many across on a wide screen. Four is for a strip where the figures
+   * are short counts; three is the default because most tiles here carry a
+   * line of explanation under the number and four of those is a cramped row.
+   */
+  columns?: 2 | 3 | 4;
 }) {
   return (
     <Box sx={{ display: "grid", gap: 2,

@@ -12,9 +12,11 @@ import MilitaryTechIcon from "@mui/icons-material/MilitaryTech";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import GrudgeOverview from "./GrudgeOverview";
 import GrudgeInsights from "./GrudgeInsights";
+import RivalButton from "@/components/rivals/RivalButton";
 import { clubIdentity } from "@/utils/club-identity";
-import { mono, tokens } from "@/lib/tokens";
+import { display, mono, tokens } from "@/lib/tokens";
 import type { ClubTracker } from "@/services/grudgeTracker.service";
+import type { RivalMark } from "@/services/clubExtras.service";
 
 /**
  * How a member has done at each club they play at.
@@ -28,29 +30,40 @@ import type { ClubTracker } from "@/services/grudgeTracker.service";
  * neither.
  */
 export default function GrudgeTracker({
-  trackers, memberId, firstName, isSelf,
+  trackers, memberId, memberName, firstName, isSelf, rivalMarks,
 }: {
   trackers: ClubTracker[];
   memberId: string;
+  /** Whole name, for the rival button, which is about a person and not a card. */
+  memberName: string;
   /** "Their" reads badly next to a name the reader already has in front of them. */
   firstName: string;
   isSelf: boolean;
+  /**
+   * Whether the reader has named them a rival, by club id. Absent on your own
+   * profile, and absent entirely if that read failed, which costs the button
+   * and not the card.
+   */
+  rivalMarks?: Map<number, RivalMark>;
 }) {
   return (
     <Stack spacing={2.5}>
       {trackers.map((tracker) => (
         <ClubCard key={tracker.club.id} tracker={tracker} memberId={memberId}
-          firstName={firstName} isSelf={isSelf} />
+          memberName={memberName} firstName={firstName} isSelf={isSelf}
+          mark={rivalMarks?.get(tracker.club.id) ?? null} />
       ))}
     </Stack>
   );
 }
 
-function ClubCard({ tracker, memberId, firstName, isSelf }: {
+function ClubCard({ tracker, memberId, memberName, firstName, isSelf, mark }: {
   tracker: ClubTracker;
   memberId: string;
+  memberName: string;
   firstName: string;
   isSelf: boolean;
+  mark: RivalMark | null;
 }) {
   const [tab, setTab] = useState<"overview" | "insights">("overview");
   const { faction } = clubIdentity(tracker.club.slug, tracker.club.name);
@@ -97,11 +110,18 @@ function ClubCard({ tracker, memberId, firstName, isSelf }: {
       {/* Buttons, not text links. These were a mono caption the colour of a
           footnote and read as small print rather than as the two ways out of
           this card. */}
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} useFlexGap
-        sx={{ flexWrap: "wrap", px: { xs: 2, sm: 2.5 }, py: 2,
+      <Stack spacing={1.5}
+        sx={{ px: { xs: 2, sm: 2.5 }, py: 2,
               borderTop: `1px solid ${tokens.rule}`, backgroundColor: tokens.paper }}>
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} useFlexGap
+          sx={{ flexWrap: "wrap" }}>
+        {/* Narrowed to this person. It said "<name>'s rivals" and landed on
+            every pairing at the club, which is two questions wearing one
+            button. `?member=` rather than component state, so the link can be
+            sent to somebody, survives a refresh and the back button undoes it,
+            which is the shape the badges list already uses. */}
         <LinkButton
-          href={`/clubs/${tracker.club.slug}/rivalries`}
+          href={`/clubs/${tracker.club.slug}/rivalries?member=${memberId}`}
           variant="contained"
           startIcon={<MilitaryTechIcon />}
           sx={{ minHeight: 44, backgroundColor: faction.base, color: "#FFFFFF",
@@ -109,6 +129,7 @@ function ClubCard({ tracker, memberId, firstName, isSelf }: {
         >
           {isSelf ? "Your rivals" : `${firstName}'s rivals`}
         </LinkButton>
+
         <LinkButton
           href={`/clubs/${tracker.club.slug}`}
           variant="outlined"
@@ -118,6 +139,48 @@ function ClubCard({ tracker, memberId, firstName, isSelf }: {
         >
           Open club
         </LinkButton>
+        </Stack>
+
+        {/* Naming a rival lived only on the club's roster page, so it meant
+            finding somebody in a list in order to say a thing about the person
+            already on the screen in front of you. Here because the card is
+            already scoped to one club, which is exactly what a rival row
+            needs: you can be somebody's rival at Didcot and not at the club
+            you both play at on Saturdays.
+
+            Its own row, under the two links rather than beside them. Those go
+            somewhere and this changes something, and a toggle reading "Rivals"
+            shoulder to shoulder with a link reading "Joe's rivals" is two
+            different kinds of control wearing one shape and nearly one set of
+            words.
+
+            The state is in words next to it rather than only in the hover text
+            the button used to carry, because a tooltip is not a way to tell
+            somebody something on a phone. */}
+        {!isSelf && mark ? (
+          <Stack direction="row" spacing={1.5} useFlexGap
+            sx={{ flexWrap: "wrap", alignItems: "center" }}>
+            <RivalButton
+              clubId={tracker.club.id}
+              slug={tracker.club.slug}
+              personId={memberId}
+              personName={memberName}
+              rivalRowId={mark.rowId}
+              mutual={mark.mutual}
+              faction={faction}
+              size="medium"
+              tooltip={false}
+            />
+            <Typography sx={{ fontFamily: display, fontSize: "0.75rem",
+                              lineHeight: 1.6, color: tokens.inkMuted }}>
+              {mark.rowId
+                ? (mark.mutual
+                    ? `You and ${firstName} have named each other.`
+                    : `You count ${firstName} as a rival. ${firstName} has not said the same.`)
+                : `Count ${firstName} as a rival and they lead your own list.`}
+            </Typography>
+          </Stack>
+        ) : null}
       </Stack>
     </Box>
   );
