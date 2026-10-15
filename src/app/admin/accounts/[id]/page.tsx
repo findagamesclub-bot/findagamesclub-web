@@ -6,19 +6,16 @@ import PageHead from "@/components/ui/PageHead";
 import MonoLabel from "@/components/ui/MonoLabel";
 import BackLink from "@/components/ui/BackLink";
 import AccountControls from "@/components/admin/AccountControls";
+import AccountProfile from "@/components/admin/AccountProfile";
+import AccountClubs from "@/components/admin/AccountClubs";
+import AccountTally from "@/components/admin/AccountTally";
+import AccountHistory from "@/components/admin/AccountHistory";
 import { getAccount } from "@/services/adminAccounts.service";
 import { getCurrentProfile } from "@/services/auth.service";
 import { shortDate } from "@/utils/dates";
 import { display, mono, tokens } from "@/lib/tokens";
 
 export const metadata = { title: "Account" };
-
-const WORDS: Record<string, string> = {
-  suspended: "Suspended",
-  restored: "Restored",
-  made_admin: "Made a site admin",
-  removed_admin: "Admin access removed",
-};
 
 export default async function AdminAccountPage({
   params,
@@ -27,7 +24,7 @@ export default async function AdminAccountPage({
   const found = await getAccount(id);
   if (!found) notFound();
 
-  const { account, history } = found;
+  const { account, history, profile, clubs, clubsFailed, tally } = found;
   const viewer = await getCurrentProfile();
   const isSelf = viewer?.id === account.id;
 
@@ -44,7 +41,40 @@ export default async function AdminAccountPage({
         ].filter(Boolean).join(" · ")}
       />
 
-      <Stack spacing={3}>
+      {/* Two columns, the same split the submission review screen uses: the
+          record on the left and what to do about it on the right. One column
+          was why the client's screenshot is two thirds empty page, and it put
+          the three buttons above a history nobody had read yet. */}
+      <Box sx={{ display: "grid", gap: 3, alignItems: "start",
+                 gridTemplateColumns: { xs: "minmax(0, 1fr)",
+                                        md: "minmax(0, 2fr) minmax(300px, 1fr)" } }}>
+        <Stack spacing={3}>
+          {/* Where this person stands, club by club. First, because in a club
+              directory that is what somebody IS. */}
+          <Box>
+            <MonoLabel>Their clubs</MonoLabel>
+            <AccountClubs clubs={clubs} failed={clubsFailed} />
+          </Box>
+
+          <Box>
+            <MonoLabel>Their profile</MonoLabel>
+            {profile ? (
+              <AccountProfile profile={profile} />
+            ) : (
+              <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
+                The profile would not load. Check the latest migrations have been
+                run, then try again.
+              </Typography>
+            )}
+          </Box>
+
+          <Box>
+            <MonoLabel>What we hold</MonoLabel>
+            <AccountTally tally={tally} />
+          </Box>
+        </Stack>
+
+        <Stack spacing={3}>
         <Box>
           <MonoLabel>The account</MonoLabel>
           <Stack spacing={0.75}
@@ -77,42 +107,10 @@ export default async function AdminAccountPage({
 
         <Box>
           <MonoLabel>History</MonoLabel>
-          {history.length ? (
-            <Stack spacing={0.5}>
-              {history.map((entry) => (
-                <Stack key={entry.id} direction="row" spacing={1.5}
-                  sx={{ alignItems: "baseline", px: 2, py: 1.25, borderRadius: 1.5,
-                        border: `1px solid ${tokens.rule}`, backgroundColor: tokens.paper,
-                        flexWrap: "wrap", rowGap: 0.25 }}>
-                  <Typography sx={{ fontFamily: mono, fontSize: "0.66rem", fontWeight: 700,
-                                    letterSpacing: "0.08em", color: tokens.inkMuted,
-                                    minWidth: 68, flexShrink: 0 }}>
-                    {(shortDate(entry.at) ?? "").toUpperCase()}
-                  </Typography>
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography sx={{ fontSize: "0.92rem" }}>
-                      {WORDS[entry.action] ?? entry.action}
-                    </Typography>
-                    {entry.reason ? (
-                      <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-                        {entry.reason}
-                      </Typography>
-                    ) : null}
-                  </Box>
-                  <Typography variant="body2"
-                    sx={{ color: tokens.inkMuted, fontSize: "0.82rem", flexShrink: 0 }}>
-                    {entry.actor}
-                  </Typography>
-                </Stack>
-              ))}
-            </Stack>
-          ) : (
-            <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-              Nothing has been done to this account.
-            </Typography>
-          )}
+          <AccountHistory history={history} />
         </Box>
-      </Stack>
+        </Stack>
+      </Box>
     </>
   );
 }

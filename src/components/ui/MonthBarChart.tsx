@@ -32,11 +32,18 @@ export type MonthSeries = { name: string; color: string; values: number[] };
  * label on the console.
  */
 export default function MonthBarChart({
-  labels, series, height = 220,
+  labels, series, height = 220, unit = "",
 }: {
   labels: string[];
   series: MonthSeries[];
   height?: number;
+  /**
+   * What the figures are, where the number alone does not say. A money chart
+   * whose axis reads 30 could be thirty pounds, thirty bookings or thirty of
+   * anything, and the reader has only the heading above it to go on. Counts
+   * pass nothing and read as counts.
+   */
+  unit?: string;
 }) {
   const host = useRef<HTMLDivElement>(null);
 
@@ -48,7 +55,8 @@ export default function MonthBarChart({
     chart.setOption({
       animationDuration: 400,
       grid: { left: 32, right: 8, top: 12, bottom: 24 },
-      tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+      tooltip: { trigger: "axis", axisPointer: { type: "shadow" },
+                 valueFormatter: (value: unknown) => `${unit}${value}` },
       xAxis: {
         type: "category",
         data: labels,
@@ -62,7 +70,8 @@ export default function MonthBarChart({
         minInterval: 1,
         splitLine: { lineStyle: { color: tokens.rule, type: "dashed" } },
         axisLabel: { color: tokens.inkMuted, fontSize: 10,
-                     fontFamily: "var(--font-mono)" },
+                     fontFamily: "var(--font-mono)",
+                     formatter: (value: number) => `${unit}${value}` },
       },
       series: series.map((s) => ({
         name: s.name,
@@ -80,7 +89,7 @@ export default function MonthBarChart({
     return () => { observer.disconnect(); chart.dispose(); };
     // Rebuilt only when the data changes, not on every render: a fresh array
     // literal in the deps would tear the chart down and rebuild it each time.
-  }, [labels, series]);
+  }, [labels, series, unit]);
 
   return (
     <Stack spacing={1.25}>

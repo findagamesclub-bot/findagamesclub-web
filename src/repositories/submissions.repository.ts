@@ -360,6 +360,17 @@ export async function findSubmitter(profileId: string): Promise<{
 export const restartSubmission = (id: number) =>
   callRpc<number>("restart_club_submission", { p_id: id });
 
+/**
+ * The address this listing will get when it is approved.
+ *
+ * The real generator (0100), not a second slugify in TypeScript. The preview
+ * hashes the slug for the club's faction colour, so a made-up one would draw
+ * the whole page in a colour it never gets, and the bar would print a URL that
+ * is not the one in the email we send on approval.
+ */
+export const previewSlug = (name: string, city: string) =>
+  callRpc<string>("generate_unique_club_slug", { p_name: name, p_city: city });
+
 export const requestSubmissionChanges = (id: number, note: string) =>
   callRpc<string>("request_submission_changes", { p_id: id, p_note: note });
 

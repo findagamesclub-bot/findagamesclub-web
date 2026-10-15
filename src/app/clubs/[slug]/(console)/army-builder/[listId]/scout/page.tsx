@@ -6,7 +6,7 @@ import Crumbs from "@/components/ui/Crumbs";
 import ScoutPicker from "@/components/ai/ScoutPicker";
 import { getArmyGate, aiGateFor } from "@/services/armyAccess.service";
 import { getList } from "@/services/armyLists.service";
-import { getUsage } from "@/services/aiJobs.service";
+import { getUsage, aiDeployment } from "@/services/aiJobs.service";
 import { getRoster } from "@/services/memberships.service";
 
 export const metadata = { title: "Scout an opponent" };
@@ -46,7 +46,8 @@ export default async function ScoutPage(
         ]} />
         <PageHead title="Scout an opponent"
           lede="What a clubmate tends to bring, how you have done against them, and where the openings have been." />
-        <ScoutPicker slug={slug} listId={held.list.id}
+        <ScoutPicker
+          deployment={aiDeployment("scouting")} slug={slug} listId={held.list.id}
           clubmates={roster
             .filter((one) => one.status === "approved" && one.profileId !== gate.viewer?.id)
             .map((one) => ({ id: one.profileId, name: one.fullName }))}

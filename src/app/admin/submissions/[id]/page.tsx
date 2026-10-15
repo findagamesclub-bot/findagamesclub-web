@@ -7,12 +7,14 @@ import NextLink from "next/link";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ChecklistIcon from "@mui/icons-material/FactCheck";
 import PersonIcon from "@mui/icons-material/PersonOutlineOutlined";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import Panel from "@/components/members/Panel";
 import PageHead from "@/components/ui/PageHead";
 import HealthCheck from "@/components/listing/HealthCheck";
 import ReviewActions from "@/components/admin/ReviewActions";
 import SubmissionDetails from "@/components/admin/SubmissionDetails";
 import LongText from "@/components/ui/LongText";
+import LinkButton from "@/components/ui/LinkButton";
 import ReviewHistory from "@/components/listing/ReviewHistory";
 import {
   getEarlierAttempt, getReviewHistory, getSubmissionForReview, getSubmitter,
@@ -187,6 +189,28 @@ export default async function ReviewSubmissionPage({
               </Stack>
             </Panel>
           ) : null}
+
+          {/* Directly above the answer, because it is the last thing to do
+              before giving one. The club's own builder has the same panel with
+              the same words on a live listing ("What people see"), pointing at
+              the club page; this is that panel for a listing there is no club
+              page for yet.
+
+              The decision is not repeated on the preview. Two Approve buttons
+              on two screens is two places for the one irreversible press. */}
+          <Panel title="What people will see" icon={VisibilityIcon}>
+            <Stack spacing={1.5} sx={{ alignItems: "flex-start" }}>
+              <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
+                The rows beside this say whether anything is missing. This is
+                the page itself, drawn with the same components it will be
+                published with.
+              </Typography>
+              <LinkButton href={`/admin/submissions/${submission.id}/preview`}
+                variant="outlined" fullWidth startIcon={<VisibilityIcon />}>
+                See the listing
+              </LinkButton>
+            </Stack>
+          </Panel>
 
           {adminCanReview(submission.status) ? (
             <Panel title="Your answer">

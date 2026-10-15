@@ -2,7 +2,7 @@ import "server-only";
 
 import * as repo from "@/repositories/moderation.repository";
 import {
-  FLAG_TABS, isFlagAction, isModerationTarget, statusForSql,
+  FLAG_TABS, isFlagAction, isModerationTarget, moderationSort, statusForSql,
 } from "@/utils/moderation-targets";
 
 export type { FlagRow } from "@/repositories/moderation.repository";
@@ -29,7 +29,7 @@ function explain(error: unknown, fallback: string): string {
 }
 
 export type ModerationFilters = {
-  tab: string; type: string; query: string; page: number;
+  tab: string; type: string; query: string; sort: string; page: number;
 };
 
 export function readFilters(
@@ -46,6 +46,10 @@ export function readFilters(
     // otherwise, so it falls back to everything.
     type: isModerationTarget(type) ? type : "",
     query: one("q"),
+    // Narrowed on the way in, so an address carrying `?sort=anything` reads as
+    // the default rather than reaching SQL as a word it has to decide about.
+    // The function narrows it too: an address is a claim, not a fact.
+    sort: moderationSort(one("sort")),
     page: Math.max(1, Number(one("page")) || 1),
   };
 }
@@ -59,6 +63,7 @@ export async function getQueue(filters: ModerationFilters) {
       type: filters.type,
       status: statusForSql(filters.tab),
       query: filters.query,
+      sort: filters.sort,
       limit: PER_PAGE,
       offset: (filters.page - 1) * PER_PAGE,
     }).catch(() => null),
@@ -150,6 +155,7 @@ export async function getClubQueue(club: number, filters: ModerationFilters) {
       type: filters.type,
       status: statusForSql(filters.tab),
       query: filters.query,
+      sort: filters.sort,
       limit: PER_PAGE,
       offset: (filters.page - 1) * PER_PAGE,
     }).catch(() => null),

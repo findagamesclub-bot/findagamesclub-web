@@ -7,7 +7,7 @@ import ArmyListActions from "@/components/army/ArmyListActions";
 import ArmyLines from "@/components/army/ArmyLines";
 import ArmyGateNote from "../ArmyGateNote";
 import { getArmyGate, aiGateFor } from "@/services/armyAccess.service";
-import { getUsage, getLatest } from "@/services/aiJobs.service";
+import { getUsage, getLatest, aiDeployment } from "@/services/aiJobs.service";
 import { listHealth } from "@/utils/list-health";
 import { dispositionsFor } from "@/utils/army-catalogue";
 import Section from "@/components/ui/Section";
@@ -66,7 +66,10 @@ export default async function ArmyListPage(
   });
 
   const coachReason = aiGateFor(gate, "coach");
-  const [coachUsage, coachJob] = list.isOwner && !coachReason && current
+  // A read whose panel is not going to draw a button is a round trip for
+  // nothing, which is the rule the catalogue page's own tabs already follow.
+  const coaching = aiDeployment("coach");
+  const [coachUsage, coachJob] = list.isOwner && coaching === "on" && !coachReason && current
     ? await Promise.all([
         getUsage(gate.club.id, "coach"),
         // The version is the coach's signature, so the report on file is
@@ -112,11 +115,17 @@ export default async function ArmyListPage(
         {list.isOwner && current && health ? (
           <Section navLabel="Coaching" title="List health and coaching"
             icon={AutoAwesomeIcon}
-            note="What the shape of this list says, worked out here, and a written review on top of it.">
+            // The written review is a promise, so it is only made when there
+            // is one to keep. Everything before the comma is worked out here
+            // and is true whatever the site has switched on.
+            note={coaching === "on"
+              ? "What the shape of this list says, worked out here, and a written review on top of it."
+              : "What the shape of this list says, worked out here from the list itself."}>
             <Stack spacing={3}>
               <ListHealthCard health={health} />
-              <AiPanel feature="coach" slug={slug} listId={list.id}
-                reason={coachReason} usage={coachUsage} initial={coachJob} />
+              <AiPanel feature="coach" deployment={coaching} slug={slug}
+                listId={list.id} reason={coachReason} usage={coachUsage}
+                initial={coachJob} />
             </Stack>
           </Section>
         ) : null}

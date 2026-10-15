@@ -13,6 +13,7 @@ import InboxIcon from "@mui/icons-material/MoveToInbox";
 import GroupsIcon from "@mui/icons-material/Groups";
 import EventIcon from "@mui/icons-material/EventNote";
 import TuneIcon from "@mui/icons-material/Tune";
+import InsightsIcon from "@mui/icons-material/Insights";
 import type { NavGroup } from "@/components/ui/side-nav";
 
 export type AdminCounts = {
@@ -50,6 +51,10 @@ export function adminGroups(counts: AdminCounts = {}): NavGroup[] {
       title: "The site",
       items: [
         { label: "Overview", href: "/admin", icon: DashboardIcon, exact: true },
+        // Beside Overview rather than under "Clubs and events": this is the
+        // site's own books, not a list of anything. Overview answers "what is
+        // waiting on me", this answers "is it growing".
+        { label: "Analytics", href: "/admin/analytics", icon: InsightsIcon },
         { label: "Site settings", href: "/admin/settings", icon: TuneIcon },
       ],
     },

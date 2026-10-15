@@ -60,6 +60,28 @@ export function statusForSql(tab: string): string {
   return "open";
 }
 
+/**
+ * How the queue is ordered, and why the default is not "newest".
+ *
+ * It is a worklist first: whoever has been waiting longest is the one owed an
+ * answer, which is the order 0122 shipped and the one a plain URL keeps.
+ * Newest first is the other question, "what has come in", and it drops the
+ * waiting-before-answered grouping on purpose, because an answered report from
+ * this morning is part of that.
+ *
+ * `/account/reports` has had the same pair since 0130 under its own words. The
+ * queue going without one meant three screens about the same rows disagreed
+ * about whether you may reorder them.
+ */
+export const MODERATION_SORTS = [
+  { value: "waiting", label: "Longest waiting" },
+  { value: "newest", label: "Newest first" },
+];
+
+export function moderationSort(value: string): string {
+  return MODERATION_SORTS.some((s) => s.value === value) ? value : "waiting";
+}
+
 /** What an admin can do about one. */
 export const FLAG_ACTIONS = ["keep", "remove"] as const;
 export type FlagAction = (typeof FLAG_ACTIONS)[number];

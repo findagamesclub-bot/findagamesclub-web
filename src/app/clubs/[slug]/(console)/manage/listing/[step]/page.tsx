@@ -11,6 +11,8 @@ import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
 import { getClubDetail } from "@/services/clubDetail.service";
 import { readiness } from "@/services/listing.service";
+import { getClubSuspension } from "@/services/adminListings.service";
+import TakenDownNotice from "@/components/ui/TakenDownNotice";
 import {
   findEditableContent, findEditablePricing, findEditableSchedule, findPricingReadiness,
 } from "@/repositories/listingSections.repository";
@@ -78,12 +80,26 @@ export default async function ListingStepPage({
     sessions: club.schedule.map((s) => ({ day: s.day, time: s.time, label: s.label })),
   });
 
+  // Only when the listing is actually down, which is almost never, so every
+  // other visit to this page costs nothing for a banner it does not draw.
+  const takenDown = club.status === "suspended"
+    ? await getClubSuspension(club.id)
+    : null;
+
   return (
     <Container maxWidth="lg" component="main" sx={{ py: { xs: 3, md: 4 } }}>
       <PageHead
         title="Your listing"
         lede="What people see in the directory and on your club page. Saving publishes it."
       />
+
+      {/* Above the steps, because it is the answer to the question somebody
+          arriving here from the notice came to ask, and it is true of every
+          step rather than of the one they happen to be on. */}
+      {takenDown ? (
+        <TakenDownNotice kind="club" reason={takenDown.reason} at={takenDown.at}
+          byName={takenDown.byName} canAct={viewer?.role === "admin"} />
+      ) : null}
 
       <ListingSteps
         steps={STEPS.map((s) => ({
@@ -154,6 +170,7 @@ export default async function ListingStepPage({
       {step === "review" ? (
         <ReviewStep checks={checks} base={`/clubs/${slug}/manage/listing`} clubSlug={slug}
           paused={club.status === "paused"}
+          takenDown={club.status === "suspended"}
           // Owner or admin only. A manager edits the listing; taking the club
           // out of the directory is not the same kind of act, and the database
           // refuses them anyway.

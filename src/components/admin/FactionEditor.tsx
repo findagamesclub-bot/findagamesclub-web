@@ -17,9 +17,12 @@ import NavTabs from "@/components/ui/NavTabs";
 import DetachmentGrid from "@/components/admin/DetachmentGrid";
 import UnitGrid from "@/components/admin/UnitGrid";
 import DetachmentDialog from "@/components/admin/DetachmentDialog";
+import FactionDispositionsDialog from "@/components/admin/FactionDispositionsDialog";
 import UnitDialog from "@/components/admin/UnitDialog";
-import { catalogueAction, type CatalogueState } from "@/app/admin/catalogue/actions";
-import type { DetachmentRow, PublishedEdition, UnitRow }
+import {
+  catalogueAction, detachmentUsageAction, type CatalogueState,
+} from "@/app/admin/catalogue/actions";
+import type { DetachmentRow, DetachmentUsage, PublishedEdition, UnitRow }
   from "@/services/armyCatalogue.service";
 import { mono, tokens } from "@/lib/tokens";
 
@@ -41,10 +44,13 @@ import { mono, tokens } from "@/lib/tokens";
  */
 export default function FactionEditor({
   edition, factionId, detachments, units, total, page, perPage, failed, query,
-  view, counts, detachmentsHeld,
+  view, counts, detachmentsHeld, factionLabel, knownDispositions,
 }: {
   edition: PublishedEdition;
   factionId: string;
+  factionLabel: string;
+  /** Every disposition this edition already names, to seed the bulk box. */
+  knownDispositions: string[];
   detachments: DetachmentRow[];
   units: UnitRow[];
   total: number; page: number; perPage: number; failed: boolean; query: string;
@@ -65,6 +71,15 @@ export default function FactionEditor({
   const [editingUnit, setEditingUnit] = useState<UnitRow | null>(null);
   const [addingUnit, setAddingUnit] = useState(false);
   const [removing, setRemoving] = useState<UnitRow | null>(null);
+  const [dropping, setDropping] = useState<DetachmentRow | null>(null);
+  const [spreading, setSpreading] = useState(false);
+  // What names the detachment about to be deleted. Read when the confirm
+  // opens rather than with the list, because it walks every club's results and
+  // army lists and a page of 24 would pay for it 24 times to draw nothing.
+  // Null while it is being counted AND when the count would not answer, which
+  // is why the dialog has a third sentence for "we could not tell".
+  const [usage, setUsage] = useState<DetachmentUsage | null>(null);
+  const [counting, startCount] = useTransition();
 
   useActionSuccess(state, () => {
     setEditingDetachment(null);
@@ -72,7 +87,17 @@ export default function FactionEditor({
     setEditingUnit(null);
     setAddingUnit(false);
     setRemoving(null);
+    setDropping(null);
+    setSpreading(false);
   });
+
+  const askToDrop = (one: DetachmentRow) => {
+    setDropping(one);
+    setUsage(null);
+    startCount(async () => {
+      setUsage(await detachmentUsageAction(edition.id, one.id));
+    });
+  };
 
   // See CatalogueBoard: the edition stays active while a draft is open, so
   // this has to ask whether the version it is on has been published.
@@ -107,8 +132,17 @@ export default function FactionEditor({
 
       {view === "detachments" ? (
         <Stack spacing={1.5}>
+          {/* Two controls, and the faction-wide one is the quiet of the pair.
+              It is the answer to "every detachment here offers one
+              disposition", which is a job somebody does once per faction;
+              adding a detachment is the ordinary act. */}
           {frozen ? null : (
-            <Stack sx={{ alignItems: "flex-end" }}>
+            <Stack direction="row" spacing={1} useFlexGap
+              sx={{ justifyContent: "flex-end", flexWrap: "wrap" }}>
+              <Button variant="text" size="small"
+                onClick={() => setSpreading(true)}>
+                Dispositions for all
+              </Button>
               <Button variant="outlined" size="small" startIcon={<AddIcon />}
                 onClick={() => setAddingDetachment(true)}>
                 New detachment
@@ -136,7 +170,7 @@ export default function FactionEditor({
                     : "Add them one at a time, or import the legacy catalogue."} />
               ) : (
                 <DetachmentGrid detachments={detachments} frozen={frozen}
-                  onEdit={setEditingDetachment} />
+                  onEdit={setEditingDetachment} onRemove={askToDrop} />
               )}
 
               {detachments.length ? (
@@ -202,6 +236,40 @@ export default function FactionEditor({
         busy={working}
         onSave={(fields) => send({ intent: "unit", ...fields })}
         onClose={() => { setAddingUnit(false); setEditingUnit(null); }}
+      />
+
+      <FactionDispositionsDialog
+        open={spreading}
+        where={factionLabel}
+        detachments={counts.detachments}
+        known={knownDispositions}
+        busy={working}
+        onSave={(dispositions) =>
+          send({ intent: "faction-dispositions", dispositions })}
+        onClose={() => setSpreading(false)}
+      />
+
+      {/* What it costs, counted before the press rather than discovered after
+          it. The client's own worry on 22a is "data is not lost", and the
+          honest answer is a number: a result and an army list version each
+          keep the detachment's name as a string beside the catalogue version
+          they were written against, so neither has a row for this to reach. */}
+      <ConfirmDialog
+        open={dropping !== null}
+        title={`Remove ${dropping?.label ?? "this detachment"}?`}
+        body={`It goes from this draft. ${
+          counting || usage === null
+            ? "Anything already recorded against a published version still reads the way it was played, because that version is frozen."
+            : usage.results === 0 && usage.lists === 0
+              ? "Nothing recorded names it yet."
+              : `${usage.results} recorded ${usage.results === 1 ? "game" : "games"} and ${usage.lists} army list ${usage.lists === 1 ? "version" : "versions"} name it, and they keep it: each one stores the name beside the catalogue version it was written against, so none of them changes.`
+        }`}
+        confirmLabel="Remove it"
+        destructive
+        busy={working}
+        onConfirm={() =>
+          send({ intent: "remove-detachment", detachment: String(dropping?.id ?? 0) })}
+        onClose={() => setDropping(null)}
       />
 
       <ConfirmDialog

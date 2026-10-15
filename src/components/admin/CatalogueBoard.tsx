@@ -14,6 +14,7 @@ import MonoLabel from "@/components/ui/MonoLabel";
 import UrlFilterBar from "@/components/ui/UrlFilterBar";
 import StatusChip from "@/components/ui/StatusChip";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import FactionDispositionsDialog from "@/components/admin/FactionDispositionsDialog";
 import { useActionToast } from "@/components/ui/Toaster";
 import { useActionSuccess } from "@/hooks/useActionSuccess";
 import { catalogueAction, type CatalogueState } from "@/app/admin/catalogue/actions";
@@ -33,12 +34,16 @@ type FactionRow = {
  * sixty round trips. Each faction opens its own page, where the units do page.
  */
 export default function CatalogueBoard({
-  edition, factions, held, query, failed,
+  edition, factions, held, detachments, known, query, failed,
 }: {
   edition: PublishedEdition;
   factions: FactionRow[];
   /** Every faction the edition holds, so the count can say "3 of 30". */
   held: number;
+  /** Every detachment in the edition, so the bulk dialog can say what it reaches. */
+  detachments: number;
+  /** Every disposition the edition already names, to seed the bulk box. */
+  known: string[];
   query: string;
   failed: boolean;
 }) {
@@ -50,11 +55,13 @@ export default function CatalogueBoard({
   const [sifting, setSifting] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [drafting, setDrafting] = useState(false);
+  const [spreading, setSpreading] = useState(false);
   const [version, setVersion] = useState("");
 
   useActionSuccess(state, () => {
     setPublishing(false);
     setDrafting(false);
+    setSpreading(false);
     setVersion("");
   });
 
@@ -93,15 +100,32 @@ export default function CatalogueBoard({
               Start a new draft
             </Button>
           ) : (
-            <Button variant="contained" size="small" onClick={() => setPublishing(true)}>
-              Publish this version
-            </Button>
+            <>
+              {/* Beside Publish because it is the last thing somebody does to
+                  a draft before freezing it, and because the alternative is
+                  this press repeated on thirty faction pages with one of them
+                  quietly missed. Quiet of the two: publishing is the act. */}
+              <Button variant="text" size="small" onClick={() => setSpreading(true)}>
+                Dispositions for every faction
+              </Button>
+              <Button variant="contained" size="small" onClick={() => setPublishing(true)}>
+                Publish this version
+              </Button>
+            </>
           )}
         </Stack>
+        {/* The draft sentence used to stop at "publishing freezes it", which
+            describes the freeze and not the thing people actually hit:
+            `army_published_version` makes every club follow the last
+            PUBLISHED version, so nothing edited here reaches a member, an army
+            builder or a result dialog until Publish is pressed. The client
+            added dispositions to a draft, opened a result dialog, saw the old
+            list and reported the picker as broken. A rule that hides a change
+            has to be readable on the screen that hides it. */}
         <Typography sx={{ fontSize: "0.9rem", color: tokens.inkMuted }}>
           {live
             ? "This version is frozen. Every game recorded against it keeps reading the way it was played, so editing means starting a new draft."
-            : "Nothing has pinned this version yet, so it can still be edited. Publishing freezes it."}
+            : "Nothing has pinned this version yet, so it can still be edited. Until you publish it, every club still reads the last published version, so nothing changed here shows up in an army builder or on a result yet."}
         </Typography>
       </Stack>
 
@@ -169,6 +193,20 @@ export default function CatalogueBoard({
         ) : null}
       </Stack>
       </BusyOverlay>
+
+      <FactionDispositionsDialog
+        open={spreading}
+        where={edition.label}
+        detachments={detachments}
+        known={known}
+        busy={working}
+        // No faction, which is every faction (0193). The field is posted
+        // rather than left off, because a reader of this call should see the
+        // scope being chosen rather than inferred from an absence.
+        onSave={(dispositions) =>
+          send({ intent: "faction-dispositions", faction: "", dispositions })}
+        onClose={() => setSpreading(false)}
+      />
 
       <ConfirmDialog
         open={publishing}

@@ -7,6 +7,7 @@ import { clubImageUrl, clubLogoUrl } from "@/utils/club-media";
 import { publicUrl } from "@/lib/supabase/storage";
 import { fromPriceFor } from "./clubs.service";
 import type { ClubDetail } from "@/types/clubDetail";
+import { getLiveFeaturedClubIds } from "./featured.service";
 
 type Row = Awaited<ReturnType<typeof repo.findClubDetail>>;
 
@@ -23,8 +24,14 @@ export async function getClubDetail(slug: string): Promise<ClubDetail | null> {
   // `price_drop_in` alone, three clubs showed a dash here while their cards
   // showed a price, because that legacy field was never filled for them.
   const detail = toDetail(row);
+  // And the same badge rule as the card, from the same read. It was
+  // `clubs.spotlight`, which is an editorial pick rather than a booking, so a
+  // club with no slot wore "Featured" on its own page as well as in the
+  // directory.
+  const featured = await getLiveFeaturedClubIds();
   return {
     ...detail,
+    isFeatured: featured.includes(row.id),
     fromPrice: detail.fromPrice ?? (await fromPriceFor(row.id)),
   };
 }
@@ -79,7 +86,10 @@ function toDetail(row: NonNullable<Row>): ClubDetail {
         { logoPath: row.logo_path, logoUrl: row.logo_url },
         publicUrl),
     logoPath: row.logo_path,
-    isFeatured: row.spotlight,
+    // Filled in by `getClubDetail` from the live slots. False here rather
+    // than `row.spotlight`, so nothing reaching `toDetail` another way claims
+    // a placement nobody bought.
+    isFeatured: false,
     announcement: row.announcement,
 
     venue: {

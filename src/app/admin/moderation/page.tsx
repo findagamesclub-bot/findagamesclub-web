@@ -39,6 +39,7 @@ export default async function AdminModerationPage({
           tabs={queue.tabs}
           tab={filters.tab}
           type={filters.type}
+          sort={filters.sort}
           query={filters.query}
           total={queue.total}
           page={queue.page}

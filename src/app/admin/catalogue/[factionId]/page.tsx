@@ -4,7 +4,7 @@ import LinkButton from "@/components/ui/LinkButton";
 import Stack from "@mui/material/Stack";
 import FactionEditor from "@/components/admin/FactionEditor";
 import {
-  getEditions, getFactionDetail, getFactions,
+  getEditionDispositions, getEditions, getFactionDetail, getFactions,
 } from "@/services/armyCatalogue.service";
 import { pageFrom } from "@/utils/paging";
 
@@ -30,13 +30,17 @@ export default async function FactionPage({
   const edition = editions.find((one) => one.status === "active") ?? editions[0] ?? null;
   if (!edition) notFound();
 
-  const [all, detail] = await Promise.all([
+  // One wave. The edition's own disposition vocabulary seeds the bulk box
+  // (0192) and is one scalar over 346 rows, so it rides along rather than
+  // costing a round trip of its own.
+  const [all, detail, known] = await Promise.all([
     getFactions(edition.id),
     getFactionDetail(edition.id, factionId, {
       query: Array.isArray(query.q) ? (query.q[0] ?? "") : (query.q ?? ""),
       page: pageFrom(query.page),
       view,
     }),
+    getEditionDispositions(edition.id),
   ]);
 
   const faction = all.rows.find((one) => one.id === factionId);
@@ -56,6 +60,8 @@ export default async function FactionPage({
       <FactionEditor
         edition={edition}
         factionId={factionId}
+        factionLabel={faction.label}
+        knownDispositions={known}
         view={view}
         counts={{ detachments: faction.detachments, units: faction.units }}
         detachments={detail.detachments}

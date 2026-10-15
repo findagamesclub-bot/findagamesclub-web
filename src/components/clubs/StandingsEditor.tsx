@@ -14,7 +14,7 @@ import { competitionAction, type CompetitionState }
   from "@/app/clubs/[slug]/(console)/competitions/actions";
 import StandingRowFields from "./StandingRowFields";
 import { useCatalogue } from "@/hooks/useCatalogue";
-import type { Builder } from "@/services/resultArmies.service";
+import type { Builder, MemberList } from "@/services/resultArmies.service";
 import { mono, tokens, type Faction } from "@/lib/tokens";
 import type { CompetitionStanding } from "@/types/competition";
 
@@ -26,6 +26,8 @@ export type StandingRow = {
   faction: string;
   detachment: string;
   disposition: string;
+  /** Which of their own lists they brought (0194). Null is none named. */
+  listId: number | null;
   notes: string;
 };
 
@@ -37,7 +39,7 @@ export type StandingRow = {
  * head is asking it to make them wrong. Both are computed on save.
  */
 export default function StandingsEditor({
-  competitionId, slug, faction, standings, roster, builder = null,
+  competitionId, slug, faction, standings, roster, builder = null, lists = [],
 }: {
   competitionId: number;
   slug: string;
@@ -50,6 +52,12 @@ export default function StandingsEditor({
    * army builder. Null is the old behaviour: one free-text Army box.
    */
   builder?: Builder | null;
+  /**
+   * Every list built at this club, narrowed per row to the player on it. One
+   * read for the whole table rather than one per row, the same call the event
+   * placings make.
+   */
+  lists?: MemberList[];
 }) {
   const [state, submit, busy] = useActionState<CompetitionState, FormData>(
     competitionAction, {});
@@ -67,6 +75,7 @@ export default function StandingsEditor({
     faction: s.faction,
     detachment: s.detachment,
     disposition: s.disposition,
+    listId: s.listId,
     notes: s.notes,
   })));
 
@@ -102,6 +111,10 @@ export default function StandingsEditor({
       // line showed them, the toast said Saved, and the payload never carried
       // them.
       detachment: r.detachment, disposition: r.disposition,
+      // Same lesson, one field later. The list is only ever named on a row
+      // that holds an account, which is what the service re-checks before it
+      // reaches the trigger.
+      listId: r.listId,
     }))));
     startTransition(() => submit(data));
   };
@@ -137,7 +150,7 @@ export default function StandingsEditor({
               </AccordionSummary>
 
               <AccordionDetails>
-                <StandingRowFields
+                <StandingRowFields lists={lists}
                   row={row} roster={roster} patch={patch}
                   onRemove={() => setRows((prev) => prev.filter((r) => r.key !== row.key))}
                   builder={builder} catalogue={catalogue}
@@ -162,7 +175,8 @@ export default function StandingsEditor({
             setRows((prev) => [...prev, {
               key, memberName: "", profileId: null,
               wins: 0, draws: 0, losses: 0, points: 0,
-              faction: "", detachment: "", disposition: "", notes: "",
+              faction: "", detachment: "", disposition: "", listId: null,
+              notes: "",
             }]);
             setOpenRow(key);
           }}

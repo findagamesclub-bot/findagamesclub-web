@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/services/auth.service";
 import { unitShapeProblem } from "@/utils/unit-shape";
 import {
-  newDraft, publish, removeUnit, saveDetachment, saveFaction, saveUnit,
+  addDispositions, getDetachmentUsage, newDraft, publish, removeDetachment,
+  removeUnit, saveDetachment, saveFaction, saveUnit,
+  type DetachmentUsage,
 } from "@/services/armyCatalogue.service";
 
 export type CatalogueState = { error?: string; notice?: string };
@@ -84,6 +86,23 @@ export async function catalogueAction(
     return done.ok ? { notice: done.notice } : { error: done.error };
   }
 
+  if (intent === "remove-detachment") {
+    const done = await removeDetachment(edition, num(data, "detachment"));
+    refresh();
+    return done.ok ? { notice: done.notice } : { error: done.error };
+  }
+
+  if (intent === "faction-dispositions") {
+    const done = await addDispositions({
+      edition, faction: str(data, "faction"),
+      // One per line, the same reading the detachment dialog's own box gets.
+      dispositions: str(data, "dispositions").split("\n")
+        .map((one) => one.trim()).filter(Boolean),
+    });
+    refresh();
+    return done.ok ? { notice: done.notice } : { error: done.error };
+  }
+
   if (intent === "remove-unit") {
     const done = await removeUnit(edition, num(data, "unit"));
     refresh();
@@ -103,4 +122,24 @@ export async function catalogueAction(
   }
 
   return { error: "That is not something you can do to the catalogue." };
+}
+
+/**
+ * What names a detachment, read when somebody opens the confirm.
+ *
+ * Its own action rather than a branch of the one above, because this answers
+ * rather than writes: folding it into `CatalogueState` would mean a read
+ * landing in the slot a refusal is meant to occupy, and a toast firing on a
+ * count nobody asked to be told.
+ *
+ * Not folded into the faction's own read either. It walks every club's results
+ * and army lists, so a page of 24 detachments would pay for it 24 times over
+ * to draw nothing.
+ */
+export async function detachmentUsageAction(
+  edition: string, detachment: number,
+): Promise<DetachmentUsage | null> {
+  const viewer = await getCurrentProfile();
+  if (!viewer || viewer.role !== "admin") return null;
+  return getDetachmentUsage(edition, detachment);
 }

@@ -25,16 +25,31 @@ export type FlagRow = {
   club_name: string;
   body: string;
   title: string;
+  /**
+   * The thread to open, for anything that lives on a board (0189). A post is
+   * its own thread and a reply points at its parent, because a reply has no
+   * page of its own. Null for a review, a message, and anything taken down.
+   */
+  context_id: number | null;
+  /** The event's own URL key, for the two event board kinds. Empty otherwise. */
+  event_key: string;
+  /**
+   * Who a message was sent to. The one piece of context a private message has,
+   * since nothing on this site shows somebody else's conversation. Empty for
+   * every other kind.
+   */
+  sent_to: string;
   /** The words have gone: removed, or deleted with their parent. */
   target_gone: boolean;
   total_count: number;
 };
 
 export const findFlags = (params: {
-  type: string; status: string; query: string; limit: number; offset: number;
+  type: string; status: string; query: string; sort: string;
+  limit: number; offset: number;
 }) => callRpc<FlagRow[]>("moderation_queue", {
   p_type: params.type, p_status: params.status, p_query: params.query,
-  p_limit: params.limit, p_offset: params.offset,
+  p_sort: params.sort, p_limit: params.limit, p_offset: params.offset,
 });
 
 export const findFlagCounts = (type: string, query: string) =>
@@ -115,11 +130,12 @@ export const findMyOpenFlags = async (profileId: string) => {
  * TypeScript is a rule anybody with the anon key can ignore.
  */
 export const findClubFlags = (params: {
-  club: number; type: string; status: string; query: string;
+  club: number; type: string; status: string; query: string; sort: string;
   limit: number; offset: number;
 }) => callRpc<FlagRow[]>("club_moderation_queue", {
   p_club: params.club, p_type: params.type, p_status: params.status,
-  p_query: params.query, p_limit: params.limit, p_offset: params.offset,
+  p_query: params.query, p_sort: params.sort,
+  p_limit: params.limit, p_offset: params.offset,
 });
 
 export const findClubFlagCounts = (club: number, type: string, query: string) =>

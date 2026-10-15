@@ -50,6 +50,9 @@ export default function PublishPanel({
   const standing = event.status === "published"
     ? `Live since ${shortDate(event.publishedAt) ?? "you published it"}`
     : event.status === "cancelled" ? "Called off"
+    // 0188. Without this a suspended event fell through to "Draft", which is
+    // the panel telling the club they had never published something they had.
+    : event.status === "suspended" ? "Taken down by an admin"
     : "Draft. Only your team can see it.";
 
   const at = (path: string) => `/clubs/${slug}/manage/events/${event.id}${path}`;
@@ -70,7 +73,12 @@ export default function PublishPanel({
             <Typography sx={{ fontFamily: display, fontSize: "0.95rem", color: tokens.inkMuted }}>
               {event.status === "cancelled"
                 ? (event.cancelReason || "No reason was recorded.")
-                : "Tickets, the draw and the door list all hang off this event."}
+                : event.status === "suspended"
+                  // The reason is on the notice at the top of the page rather
+                  // than here: it is free text somebody typed, and a panel
+                  // built for one line is the wrong place for a paragraph.
+                  ? "Everything here still saves. Only an admin can put the listing back."
+                  : "Tickets, the draw and the door list all hang off this event."}
             </Typography>
           </Stack>
 

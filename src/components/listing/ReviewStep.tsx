@@ -23,7 +23,7 @@ import type { Check } from "@/utils/listing-readiness";
  * whole section.
  */
 export default function ReviewStep({
-  checks, base, clubSlug, paused = false, canPause = false,
+  checks, base, clubSlug, paused = false, canPause = false, takenDown = false,
 }: {
   checks: Check[];
   /** `/clubs/didcot/manage/listing` */
@@ -33,6 +33,12 @@ export default function ReviewStep({
   paused?: boolean;
   /** Owner or admin. A manager edits the listing but does not delist it. */
   canPause?: boolean;
+  /**
+   * An admin has taken it out of the directory (0188). Different from paused
+   * in the one way that matters here: the club cannot undo it, so offering
+   * them a control that the database will refuse is a button that lies.
+   */
+  takenDown?: boolean;
 }) {
   const outstanding = checks.filter((c) => !c.ready);
   const { done, total } = readinessFields(checks);
@@ -86,11 +92,15 @@ export default function ReviewStep({
       <Panel title="What people see" icon={VisibilityIcon}>
         <Stack spacing={1.5} sx={{ alignItems: "flex-start" }}>
           <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-            {paused
-              ? "Your listing is out of the directory at the moment, so this page "
-                + "is only reachable by you and your members."
-              : "There is no draft and no submission: everything you save is already "
-                + "live. This is your page as it stands."}
+            {takenDown
+              ? "Your listing is out of the directory, so this page is only "
+                + "reachable by your own team. Everything you save here is kept "
+                + "and goes live the moment an admin puts the listing back."
+              : paused
+                ? "Your listing is out of the directory at the moment, so this page "
+                  + "is only reachable by you and your members."
+                : "There is no draft and no submission: everything you save is already "
+                  + "live. This is your page as it stands."}
           </Typography>
           <NextLink href={`/clubs/${clubSlug}`} style={{ textDecoration: "none" }}>
             <Typography variant="body2" sx={{ color: tokens.brand, fontWeight: 600 }}>
@@ -101,8 +111,11 @@ export default function ReviewStep({
       </Panel>
 
       {/* Last, and only for the owner. It is the one thing on this screen that
-          changes whether anybody can find the club at all. */}
-      {canPause ? (
+          changes whether anybody can find the club at all.
+          Not while an admin has it down: pausing is refused in that state
+          (0108), and a control that cannot work is worse than none. The
+          banner at the top of the page says who can undo it. */}
+      {canPause && !takenDown ? (
         <Panel title={paused ? "Your listing is paused" : "Closing for a while"}
           icon={PauseIcon}>
           <PauseListing slug={clubSlug} paused={paused} canPause={canPause} />

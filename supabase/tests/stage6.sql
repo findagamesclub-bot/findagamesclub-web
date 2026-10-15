@@ -86,17 +86,17 @@ select set_config('request.jwt.claims',
 do $$
 declare n int; t text; j jsonb;
 begin
-  select count(*) into n from public.admin_clubs('', '', 25, 0);
+  select count(*) into n from public.admin_clubs('', '', 'name', 25, 0);
   assert n = 2, 'admin sees both clubs including the paused one, got ' || n;
-  select count(*) into n from public.admin_clubs('leeds', '', 25, 0);
+  select count(*) into n from public.admin_clubs('leeds', '', 'name', 25, 0);
   assert n = 1, 'search matches the town, got ' || n;
-  select count(*) into n from public.admin_clubs('', 'paused', 25, 0);
+  select count(*) into n from public.admin_clubs('', 'paused', 'name', 25, 0);
   assert n = 1, 'the status tab narrows, got ' || n;
-  select members into n from public.admin_clubs('leeds', '', 25, 0);
+  select members into n from public.admin_clubs('leeds', '', 'name', 25, 0);
   assert n = 2, 'the club carries its approved member count, got ' || n;
-  select owner_name into t from public.admin_clubs('leeds', '', 25, 0);
+  select owner_name into t from public.admin_clubs('leeds', '', 'name', 25, 0);
   assert t = 'Owner One', 'the club names who runs it, got ' || coalesce(t, 'null');
-  select owner_name into t from public.admin_clubs('hull', '', 25, 0);
+  select owner_name into t from public.admin_clubs('hull', '', 'name', 25, 0);
   assert t = '', 'a club with nobody running it answers empty, not null';
   raise notice 'PASS admin_clubs: filters, counts and the owner all read right';
 
@@ -107,17 +107,17 @@ begin
   assert (j->>'all')::int = 1, 'the counts narrow with the search too: ' || j::text;
   raise notice 'PASS admin_club_counts: they narrow with the search';
 
-  select title into t from public.admin_events('', '', 'upcoming', 25, 0) limit 1;
+  select title into t from public.admin_events('', '', 'upcoming', 'date', 25, 0) limit 1;
   assert t = 'Soon', 'the soonest event leads the Upcoming tab, got ' || coalesce(t, 'null');
-  select count(*) into n from public.admin_events('', '', 'past', 25, 0);
+  select count(*) into n from public.admin_events('', '', 'past', 'date', 25, 0);
   assert n = 1, 'one event has happened, got ' || n;
-  select count(*) into n from public.admin_events('', '', '', 25, 0);
+  select count(*) into n from public.admin_events('', '', '', 'date', 25, 0);
   assert n = 2, 'the All tab holds both, got ' || n;
-  select places into n from public.admin_events('', '', 'past', 25, 0);
+  select places into n from public.admin_events('', '', 'past', 'date', 25, 0);
   assert n = 40, 'places come from quantity_available, got ' || n;
-  select sold into n from public.admin_events('', '', 'past', 25, 0);
+  select sold into n from public.admin_events('', '', 'past', 'date', 25, 0);
   assert n = 2, 'sold excludes the cancelled ticket, got ' || n;
-  select count(*) into n from public.admin_events('leeds', '', '', 25, 0);
+  select count(*) into n from public.admin_events('leeds', '', '', 'date', 25, 0);
   assert n = 2, 'searching a town finds that club''s events, got ' || n;
   raise notice 'PASS admin_events: order, tabs, places and sold all read right';
 
@@ -133,8 +133,8 @@ select set_config('request.jwt.claims',
 do $$
 declare refused int := 0;
 begin
-  begin perform * from public.admin_clubs('', '', 25, 0); exception when others then refused := refused + 1; end;
-  begin perform * from public.admin_events('', '', '', 25, 0); exception when others then refused := refused + 1; end;
+  begin perform * from public.admin_clubs('', '', 'name', 25, 0); exception when others then refused := refused + 1; end;
+  begin perform * from public.admin_events('', '', '', 'date', 25, 0); exception when others then refused := refused + 1; end;
   begin perform public.admin_club_counts(''); exception when others then refused := refused + 1; end;
   begin perform public.admin_event_counts(''); exception when others then refused := refused + 1; end;
   assert refused = 4, 'a member reached ' || (4 - refused) || ' of the four admin reads';

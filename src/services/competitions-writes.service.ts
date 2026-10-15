@@ -32,10 +32,32 @@ const ARMY_REFUSALS: [string, string][] = [
   ["RESULT_BAD_DISPOSITION", "is not a disposition that detachment offers"],
 ];
 
+/**
+ * The list refusals read as sentences about the list, not about the army.
+ *
+ * `ARMY_REFUSALS` above slots into "What <who> played <said>", which is right
+ * for a faction and nonsense for these: "What Joe Matthews played that list
+ * belongs to somebody else" is not a sentence. They carry the same name from
+ * the same wrapper and need their own shape.
+ */
+const LIST_REFUSALS: [string, string][] = [
+  ["ARMY_NOT_THEIRS", "is not theirs to name. Pick one of their own lists, or clear it."],
+  ["ARMY_WRONG_CLUB", "was built at another club, so it cannot go on this table."],
+  ["ARMY_LIST_NOT_FOUND", "is not there any more. Clear it and pick again."],
+];
+
 function refusal(raw: string, fallback: string): string {
   if (raw.includes("NOT_PERMITTED") || raw.includes("row-level security")) {
     return "Only the club can change its competitions.";
   }
+  for (const [code, said] of LIST_REFUSALS) {
+    if (!raw.includes(code)) continue;
+    const who = raw.slice(raw.indexOf(code) + code.length).replace(/^\s*for\s*/, "").trim();
+    return who
+      ? `The list on ${who}'s row ${said}`
+      : `One of the lists named on this table ${said}`;
+  }
+
   for (const [code, said] of ARMY_REFUSALS) {
     if (!raw.includes(code)) continue;
     // "RESULT_BAD_FACTION for Joe Matthews", which the trigger builds.
@@ -140,6 +162,8 @@ export type StandingForm = {
   faction?: string;
   detachment?: string;
   disposition?: string;
+  /** Which of their own lists they brought (0194). Null clears the link. */
+  listId?: number | null;
 };
 
 const text = (value: unknown, cap: number) =>
@@ -167,6 +191,13 @@ export async function saveStandings(
       // value with nothing to hang off. The trigger in 0136 refuses it; this
       // drops it so the rest of the table still saves.
       disposition: text(row.detachment, 120) ? text(row.disposition, 120) : "",
+      // A list belongs to an account, so a row typed as a free-text name has
+      // none to name. The trigger refuses that by name; dropping it here means
+      // clearing the player also clears a list that is no longer theirs,
+      // rather than refusing a save the club has no way to understand.
+      listId: typeof row.profileId === "string" && typeof row.listId === "number"
+        ? row.listId
+        : null,
       wins: count(row.wins),
       draws: count(row.draws),
       losses: count(row.losses),
@@ -185,6 +216,7 @@ export async function saveStandings(
       faction: row.faction,
       detachment: row.detachment,
       disposition: row.disposition,
+      army_list_id: row.listId,
     })));
     return { ok: true };
   } catch (error) {

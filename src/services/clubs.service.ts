@@ -12,6 +12,7 @@ import { splitFacets } from "@/utils/facets";
 import { formatPrice } from "@/utils/format";
 import { fold } from "@/utils/text";
 import type { ClubSummary } from "@/types/club";
+import { getLiveFeaturedClubIds } from "./featured.service";
 
 /** Business rules for clubs. Filters and sorts mirror the existing site exactly. */
 
@@ -97,14 +98,19 @@ export async function listClubs(filters: ClubFilters = {}): Promise<ClubListResu
   });
 
   const ids = rows.map((r) => r.id);
-  const [sessions, games, reviews, facilities, formats, locations] = await Promise.all([
-    repo.findSessionsForClubs(ids),
-    repo.findGamesForClubs(ids),
-    repo.findReviewAggregates(),
-    repo.findFacilitiesForClubs(ids),
-    repo.findFormatsForClubs(ids),
-    wantedPlace ? repo.findClubLocations() : Promise.resolve([]),
-  ]);
+  const [sessions, games, reviews, facilities, formats, locations, liveFeatured] =
+    await Promise.all([
+      repo.findSessionsForClubs(ids),
+      repo.findGamesForClubs(ids),
+      repo.findReviewAggregates(),
+      repo.findFacilitiesForClubs(ids),
+      repo.findFormatsForClubs(ids),
+      wantedPlace ? repo.findClubLocations() : Promise.resolve([]),
+      // Who is actually on a paid slot today. In the wave that was already
+      // here, cached for a minute, and a handful of rows at most.
+      getLiveFeaturedClubIds(),
+    ]);
+  const featuredNow = new Set(liveFeatured);
 
   const pricing = await tierPricing(rows);
   const prices = pricing.lowest;
@@ -219,6 +225,7 @@ export async function listClubs(filters: ClubFilters = {}): Promise<ClubListResu
       rating: reviews.get(row.id) ?? null,
       joinedCount: joined.get(row.id) ?? null,
       fromPrice: pricing.label.get(row.id) ?? null,
+      featured: featuredNow.has(row.id),
     });
 
   // From `rows`, not `matched`: who leads the page is the featured list's
@@ -545,6 +552,13 @@ function toSummary(
     rating: { average: number; count: number } | null;
     joinedCount: number | null;
     fromPrice: string | null;
+    /**
+     * They hold a paid featured slot today. Not `clubs.spotlight`, which is an
+     * editorial pick an admin can set on any club: the badge is a claim that
+     * somebody bought a placement, and reading it off spotlight put "Featured"
+     * on clubs with no booking at all. The client found it in the directory.
+     */
+    featured: boolean;
   },
 ): ClubSummary {
   const first = sessions[0];
@@ -570,7 +584,7 @@ function toSummary(
     featuredGames: games.map((g) => g.games?.label ?? "").filter(Boolean),
     facilities: extras?.facilities ?? [],
     distanceMiles: distanceMiles ?? null,
-    isFeatured: row.spotlight,
+    isFeatured: extras?.featured ?? false,
     image: firstImage(row),
     logoUrl: clubLogoUrl(
         { logoPath: row.logo_path, logoUrl: row.logo_url },

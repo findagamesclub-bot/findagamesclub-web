@@ -290,3 +290,95 @@ export function listingResumed(params: {
     action: { label: "Open your club page", url: params.url },
   });
 }
+
+/**
+ * An admin has taken a listing out of the directory.
+ *
+ * Deliberately not `listingPaused` with different words. That one is the club
+ * reading about its own decision; this is us telling them about ours, so it
+ * leads with the reason and says plainly that they cannot undo it. A letter
+ * that made the two sound alike would be the kinder lie.
+ */
+export function listingSuspended(params: {
+  name?: string;
+  clubName: string;
+  reason: string;
+  url: string;
+}): Email {
+  return build(`${params.clubName} has been taken out of the directory`, {
+    previewText: "An admin has taken the listing down.",
+    eyebrow: "Taken down",
+    heading: `${params.clubName} is not listed at the moment`,
+    body: [
+      greet(params.name),
+      `A site admin has taken ${params.clubName} out of the directory. Nobody can `
+        + "find it, join it or book a table.",
+      params.reason || "No reason was recorded.",
+      "Your club page, your console and everything under them still open for you, "
+        + "so you can put right whatever this is about. Only an admin can put the "
+        + "listing back: reply to this email once it is sorted and a person will read it.",
+    ],
+    action: { label: "Open your listing", url: params.url },
+  });
+}
+
+export function listingRestored(params: {
+  name?: string;
+  clubName: string;
+  url: string;
+}): Email {
+  return build(`${params.clubName} is back in the directory`, {
+    previewText: "An admin has put the listing back.",
+    eyebrow: "Back on",
+    heading: `${params.clubName} is listed again`,
+    body: [
+      greet(params.name),
+      `An admin has put ${params.clubName} back in the directory. People can find `
+        + "it again, join it and book tables.",
+    ],
+    action: { label: "Open your club page", url: params.url },
+  });
+}
+
+export function eventTakenDown(params: {
+  name?: string;
+  clubName: string;
+  eventTitle: string;
+  reason: string;
+  url: string;
+}): Email {
+  return build(`${params.eventTitle} has been taken down`, {
+    previewText: "An admin has taken the event listing down.",
+    eyebrow: "Taken down",
+    heading: `${params.eventTitle} is off the site`,
+    body: [
+      greet(params.name),
+      `A site admin has taken the listing for ${params.eventTitle} down. It is gone `
+        + "from the events list and nobody can book a new place.",
+      params.reason || "No reason was recorded.",
+      "Everybody who had already booked keeps their place and nothing has been "
+        + "cancelled. You can still edit the event, so you can put right whatever "
+        + "this is about. Only an admin can put the listing back.",
+    ],
+    action: { label: "Open the event", url: params.url },
+  });
+}
+
+export function eventPutBack(params: {
+  name?: string;
+  clubName: string;
+  eventTitle: string;
+  url: string;
+}): Email {
+  return build(`${params.eventTitle} is back on the site`, {
+    previewText: "An admin has put the event listing back.",
+    eyebrow: "Back on",
+    heading: `${params.eventTitle} is listed again`,
+    body: [
+      greet(params.name),
+      `An admin has put the listing for ${params.eventTitle} back where it was. `
+        + "Everybody who had a place still has it.",
+    ],
+    action: { label: "Open the event", url: params.url },
+  });
+}

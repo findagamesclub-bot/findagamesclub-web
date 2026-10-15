@@ -167,6 +167,18 @@ export async function getSubmissionForReview(id: number) {
   return repo.findSubmission(id);
 }
 
+/**
+ * The address the listing will get, for the preview.
+ *
+ * A failed read falls back to something readable rather than taking the page
+ * down: the preview is about the club's own content, and a slug it cannot work
+ * out is one line on a bar rather than a reason to show nothing.
+ */
+export async function getPreviewSlug(name: string, city: string): Promise<string> {
+  const slug = await repo.previewSlug(name, city).catch(() => null);
+  return (slug ?? "").trim() || "your-club";
+}
+
 export type HistoryEntry = {
   id: number;
   kind: string;

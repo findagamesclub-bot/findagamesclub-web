@@ -1,6 +1,6 @@
 import type { DoorRow } from "@/utils/door-list";
 
-import type { EventStatus } from "@/utils/event-draft";
+import type { EventRowStatus } from "@/utils/event-draft";
 import type { TicketAudience } from "@/utils/event-tickets";
 
 /**
@@ -67,7 +67,7 @@ export type EditableEvent = {
    * always read.
    */
   images: EventImage[];
-  status: EventStatus;
+  status: EventRowStatus;
   publishedAt: string | null;
   cancelReason: string;
   ticketsAvailable: number | null;

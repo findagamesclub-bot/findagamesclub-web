@@ -4,10 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import { callRpc } from "@/lib/supabase/table";
 
 export type StandingRow = {
+  id: number;
   rank: number; member_name: string; profile_id: string | null;
   played: number; wins: number; draws: number; losses: number; points: number;
   record_label: string; notes: string; faction: string; detachment: string;
   disposition: string;
+  /** Which of the member's own lists this row was played with (0194). */
+  army_list_id: number | null;
 };
 
 export type UpdateRow = {
@@ -59,7 +62,7 @@ type Root = {
 
 const STANDINGS = `
   club_competition_standings(
-    rank, member_name, profile_id, played, wins, draws, losses, points,
+    id, rank, member_name, profile_id, played, wins, draws, losses, points,
     record_label, notes, faction, detachment, disposition
   )`;
 
@@ -248,7 +251,7 @@ export async function deleteCompetition(id: number) {
  */
 export async function replaceStandings(
   competitionId: number,
-  rows: Omit<StandingRow, "record_label">[],
+  rows: Omit<StandingRow, "record_label" | "id">[],
 ) {
   const standings = await writable("club_competition_standings");
 
@@ -273,6 +276,9 @@ export async function replaceStandings(
       record_label: `${row.wins}-${row.draws}-${row.losses}`,
       notes: row.notes, faction: row.faction, detachment: row.detachment,
       disposition: row.disposition,
+      // 0194. An insert is not a select, so `check:columns` has nothing to
+      // say about a column the stale `database.ts` has not caught up with.
+      army_list_id: row.army_list_id,
     })),
   ).select("id").rows();
 
@@ -391,3 +397,19 @@ export type GameArmyRow = {
 
 export const findCompetitionGameArmies = (competitionId: number) =>
   callRpc<GameArmyRow[]>("competition_game_armies", { p_competition: competitionId });
+
+/** The army list named on a league table row, for every competition on a page. */
+export type StandingListRow = {
+  competition_id: number;
+  standing_id: number;
+  list_id: number;
+  list_name: string;
+  list_version_number: number | null;
+  snapshot: unknown;
+};
+
+export const findStandingLists = (competitionIds: number[]) =>
+  competitionIds.length
+    ? callRpc<StandingListRow[]>("competition_standing_lists",
+        { p_competitions: competitionIds })
+    : Promise.resolve<StandingListRow[]>([]);

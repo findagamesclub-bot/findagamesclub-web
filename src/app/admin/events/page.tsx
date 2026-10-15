@@ -29,6 +29,7 @@ export default async function AdminEventsPage({
         query={filters.query}
         when={list.when}
         status={filters.extra}
+        sort={list.sort}
         tabs={list.tabs}
         total={list.total}
         page={list.page}

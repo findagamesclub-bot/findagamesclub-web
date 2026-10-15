@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { AiFeature } from "@/utils/ai-access";
+import type { AiDeployment } from "@/utils/ai-deployment";
 
 /**
  * Which model answers which feature, and what it costs.
@@ -34,4 +35,34 @@ export function featureEnabled(feature: AiFeature): boolean {
   const only = String(process.env.AI_FEATURES ?? "").trim();
   if (!only) return true;
   return only.split(",").map((one) => one.trim()).includes(feature);
+}
+
+/**
+ * Is there an account to call?
+ *
+ * Mirrors `provider()` in `run.ts`: the default is Anthropic and `stub` is a
+ * real answer rather than an absence, so asking for it counts as configured.
+ * The two have to agree, because this decides whether a screen draws a button
+ * and that one decides whether the button works.
+ */
+export function providerKeyPresent(): boolean {
+  const named = String(process.env.AI_PROVIDER ?? "").toLowerCase();
+  if (named === "stub") return true;
+  if (named === "openai") return Boolean(process.env.OPENAI_API_KEY);
+  return Boolean(process.env.ANTHROPIC_API_KEY);
+}
+
+/**
+ * What a screen needs to know before it draws.
+ *
+ * `featureEnabled` and the key check used to be read only inside `runAi`,
+ * which is after the press. So every screen offered a confident primary button
+ * it already knew would fail, and the only place the site ever said why was a
+ * warning that arrived once the job had been filed and had come back. The
+ * client read that as the feature not being built, which is a fair reading of
+ * what they were shown.
+ */
+export function deploymentState(feature: AiFeature): AiDeployment {
+  if (!featureEnabled(feature)) return "off";
+  return providerKeyPresent() ? "on" : "no_key";
 }

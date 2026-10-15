@@ -276,16 +276,23 @@ export async function findClubDetail(slug: string) {
     .order("created_at", { referencedTable: "club_reviews", ascending: false })
     .limit(REVIEW_CAP, { referencedTable: "club_reviews" })
     .eq("slug", slug)
-    // Active or paused, and RLS decides which people get the paused one: its
-    // own members and team, nobody else. The filter cannot simply go, because
-    // `pending`, `suspended` and `archived` must still be nothing to everybody.
+    // Active, paused or suspended, and RLS decides which people get which:
+    // `clubs_select_paused_member` hands a paused club to its own members, and
+    // `clubs_select_own` (0002) hands any status to the owner and to an admin.
+    // `pending` and `archived` are still nothing to anybody.
     //
     // It was `.eq("status", "active")` and that was harmless right up until
     // 0108, since every other non-active state should 404. Pausing is the first
-    // one that has to stay readable for the people already inside it, and this
+    // one that had to stay readable for the people already inside it, and this
     // line quietly overrode the policy that says so: the owner who pressed the
     // button got Not found on their own club.
-    .in("status", ["active", "paused"])
+    //
+    // `suspended` joined it with 0188 for a sharper version of the same
+    // problem: an admin takes a listing down with a reason and the one person
+    // the reason is written for could not open any page it appears on. A club
+    // hidden for an unpaid subscription could not reach its own billing page
+    // to pay, which is the failure 0110's comment is about.
+    .in("status", ["active", "paused", "suspended"])
     .maybeSingle();
 
   if (error) throw new Error(`Failed to load club ${slug}: ${error.message}`);

@@ -11,9 +11,11 @@ import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import LinkButton from "@/components/ui/LinkButton";
 import type { FlagRow } from "@/services/moderation.service";
 import { targetLabel } from "@/utils/moderation-targets";
+import { moderationContext } from "@/utils/moderation-context";
 import { shortDate } from "@/utils/dates";
 import { display, mono, tokens } from "@/lib/tokens";
 
@@ -68,6 +70,12 @@ export default function ModerationDialog({
     onAnswer(action, reason);
   };
 
+  // Where this can be read in the place it was said (0189). Null for a
+  // private message, for anything already taken down, and for a club that has
+  // gone, which is why the sentence underneath exists rather than a disabled
+  // button.
+  const context = flag ? moderationContext(flag) : null;
+
   const waiting = flag?.status === "open";
   // A withdrawn report is nobody's to answer, including an admin's.
   const answering = waiting || (canReopen && flag?.status !== "withdrawn");
@@ -121,6 +129,42 @@ export default function ModerationDialog({
                 </Stack>
               )}
             </Box>
+
+            {/* Under the words, because it is what to do about not having
+                enough of them. A reply out of context reads very differently
+                from the same reply in its thread, which is the client's own
+                point: "so the admin can easily see the full context".
+
+                A new tab rather than a navigation. This is a worklist: going
+                to read the thread and coming back to a queue that has lost
+                its filters, its page and this dialog is the long way round of
+                answering one report. */}
+            {context ? (
+              <Box>
+                <LinkButton href={context.href} target="_blank"
+                  variant="outlined" size="small"
+                  // 44px, because this is a thing somebody taps on a phone
+                  // while answering a report in the evening, and `size="small"`
+                  // is 31. The same floor `ClubSidebar`'s own buttons carry.
+                  sx={{ minHeight: 44 }}
+                  endIcon={<OpenInNewIcon sx={{ fontSize: 15, opacity: 0.7 }} />}>
+                  {context.label}
+                </LinkButton>
+              </Box>
+            ) : flag?.target_type === "message" && !flag.target_gone ? (
+              // Only while there are words. On a message already taken down
+              // the box above has just said there is nothing left to read, and
+              // "there is no page to open" underneath it is the dialog
+              // answering a question nobody is still asking.
+              <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
+                {flag.sent_to
+                  ? `Sent privately to ${flag.sent_to}. There is no page to open: `
+                    + "nobody on this site can read somebody else's conversation, so "
+                    + "these words are the whole of it."
+                  : "Sent privately. There is no page to open: nobody on this site "
+                    + "can read somebody else's conversation."}
+              </Typography>
+            ) : null}
           </Stack>
 
           {flag && !waiting ? (

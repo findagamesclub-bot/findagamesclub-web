@@ -18,11 +18,18 @@ export type AiErrorKind =
   | "lost";           // the sweep found it stuck
 
 export const AI_ERROR_COPY: Record<AiErrorKind, string> = {
-  disabled: "AI coaching is switched off on this deployment. The list health above is still current.",
+  // These two now only reach a screen on a run that was filed before the site
+  // changed under it, because the panels read the deployment state before they
+  // draw a button (0193's sibling work). They still have to read right, and
+  // the words match `AI_DEPLOYMENT_COPY` so one state cannot be described two
+  // ways. "Site", never "deployment": a club secretary does not have one. And
+  // no promise about "the list health above", which is only on one of the four
+  // screens this renders on.
+  disabled: "Written coaching was switched off for this site while that was running. Nothing was charged.",
   timeout: "That took too long and was stopped. Nothing was charged, so it is worth trying again.",
   provider: "The coaching service did not answer. Nothing was charged, so it is worth trying again.",
   unparseable: "The answer came back in a shape we could not read. Nothing was charged.",
-  no_key: "AI coaching is not set up on this deployment yet, so there is nothing to try again. Everything above still works.",
+  no_key: "Written coaching is not available on this site, so there is nothing to try again. Nothing was charged.",
   lost: "That run was stopped after five minutes without an answer. Nothing was charged.",
 };
 

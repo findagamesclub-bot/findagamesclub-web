@@ -8,6 +8,8 @@ import EventDetailsForm from "./EventDetailsForm";
 import TicketTypes from "./TicketTypes";
 import EventNotices from "./EventNotices";
 import PublishPanel from "./PublishPanel";
+import TakenDownNotice from "@/components/ui/TakenDownNotice";
+import { getEventSuspension } from "@/services/adminListings.service";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
 import { getClubDetail } from "@/services/clubDetail.service";
@@ -45,6 +47,12 @@ export default async function EventEditorPage({
   const event = await getEvent(club.id, Number(eventId));
   if (!event) notFound();
 
+  // Only on an event that is actually down. The club arrives here from the
+  // notice, so this is the page the reason has to be on.
+  const takenDown = event.status === "suspended"
+    ? await getEventSuspension(event.id)
+    : null;
+
   const { faction } = clubIdentity(club.slug, club.name);
   const tiers = club.membershipTiers.map((tier) => ({ key: tier.key, label: tier.label }));
 
@@ -56,6 +64,14 @@ export default async function EventEditorPage({
         title={event.title}
         lede="Everything about this event. It saves section by section, so you can leave and come back."
       />
+
+      {/* Above the section nav, because it is true of the whole page rather
+          than of one section of it, and it is why the publish controls
+          underneath are not there. */}
+      {takenDown ? (
+        <TakenDownNotice kind="event" reason={takenDown.reason} at={takenDown.at}
+          byName={takenDown.byName} canAct={viewer.role === "admin"} />
+      ) : null}
 
       <SectionNav />
 

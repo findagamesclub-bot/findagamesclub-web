@@ -7,7 +7,9 @@
  * sit rather than for what they hold, and one reader serves both screens.
  */
 
-export type AdminListFilters = { query: string; tab: string; extra: string; page: number };
+export type AdminListFilters = {
+  query: string; tab: string; extra: string; sort: string; page: number;
+};
 
 export function readAdminFilters(
   params: Record<string, string | string[] | undefined>,
@@ -20,6 +22,7 @@ export function readAdminFilters(
     query: one("q"),
     tab: one("state"),
     extra: one("status"),
+    sort: one("sort"),
     page: Math.max(1, Number(one("page")) || 1),
   };
 }
@@ -44,6 +47,41 @@ export const EVENT_TABS: { key: string; label: string }[] = [
   { key: "past", label: "Past" },
   { key: "any", label: "All" },
 ];
+
+/**
+ * How the clubs list is ordered, with the default filled in.
+ *
+ * Narrowed here rather than in SQL as well, so an address carrying
+ * `?sort=whatever` reads as the default instead of reaching the database with
+ * a word it has to decide about. The function narrows it too, because the
+ * address is a claim and not a fact.
+ */
+export const CLUB_SORTS = [
+  { value: "name", label: "By name" },
+  { value: "newest", label: "Newest first" },
+];
+
+export function clubSort(filters: AdminListFilters): string {
+  return CLUB_SORTS.some((s) => s.value === filters.sort) ? filters.sort : "name";
+}
+
+/**
+ * How the events list is ordered.
+ *
+ * "Newest first" is when the event was PUT UP, not the latest date on it. "By
+ * date" already walks the start date in both directions, ascending on Upcoming
+ * and descending on Past, so a second control for the same column would be the
+ * same sort wearing a different word. What it cannot answer is "what has
+ * appeared since I last looked", which is the question an admin list is for.
+ */
+export const EVENT_SORTS = [
+  { value: "date", label: "By date" },
+  { value: "newest", label: "Newest first" },
+];
+
+export function eventSort(filters: AdminListFilters): string {
+  return EVENT_SORTS.some((s) => s.value === filters.sort) ? filters.sort : "date";
+}
 
 /** What the events list is showing, with the default filled in. */
 export function eventWhen(filters: AdminListFilters): string {

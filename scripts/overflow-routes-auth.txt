@@ -89,3 +89,14 @@
 /admin/ai-usage
 /clubs/didcot-wargames-didcot/army-builder/1/edit
 /account/notifications
+# The listing preview (M3 admin 2a). Every component on it is the club page's
+# own, so it is already swept at /clubs/<slug>, but the sticky preview bar and
+# the two-column grid inside the admin shell are this page's alone.
+/admin/submissions/1/preview
+# One account, with everything the site holds on them (M3 admin 7a). Two
+# columns, a club list and a figure grid, none of which the accounts list
+# itself exercises.
+/admin/accounts/1ee93437-165d-46ae-83d5-9781ff7a11e5
+# The site's own dashboard (M3 admin 9a). Two ECharts canvases, a five-column
+# figure grid and the window picker, none of which any other admin route has.
+/admin/analytics

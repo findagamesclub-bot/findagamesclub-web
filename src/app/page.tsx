@@ -34,16 +34,14 @@ export default async function HomePage() {
   // with three spotlight clubs and no paid slots this rendered one row where
   // the design has two, which is a homepage that breaks itself the day a
   // migration lands.
+  // `isFeatured` already means a live paid slot, from the same read the
+  // directory uses, so there is nothing to OR here any more. It used to add
+  // `spotlight` on top "because the card already says it in the directory",
+  // which was true and was the bug: a club an admin had spotlighted wore
+  // "Featured" with no booking behind it, on both pages.
   const seen = new Set(leading.map((club) => club.slug));
   const shown = [...leading, ...clubs.filter((club) => !seen.has(club.slug))]
-    .slice(0, 6)
-    .map((club) => ({
-      ...club,
-      // A paid slot wears the badge, and so does `spotlight`, which is what the
-      // card already says in the directory. One club cannot read two ways on
-      // two pages.
-      isFeatured: club.isFeatured || paidBySlug.get(club.slug) === true,
-    }));
+    .slice(0, 6);
 
   // Only money gets to be called featured. Saying it over the spotlight
   // fallback is exactly what 0113 was written to stop.

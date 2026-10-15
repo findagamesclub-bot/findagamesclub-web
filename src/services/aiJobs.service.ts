@@ -2,6 +2,7 @@ import "server-only";
 
 import * as repo from "@/repositories/aiJobs.repository";
 import { runAi } from "@/lib/ai/run";
+import { deploymentState } from "@/lib/ai/models";
 import { AiError } from "@/lib/ai/provider";
 import { usageFor, type Usage } from "@/utils/ai-usage";
 import { FEATURE_META, type AiFeature } from "@/utils/ai-access";
@@ -30,6 +31,17 @@ const toJob = (row: repo.JobRow): AiJob => ({
   finishedAt: row.finished_at,
   source: row.source,
 });
+
+/**
+ * Whether this site can run a feature at all, for the screen that draws it.
+ *
+ * A plain read of two environment variables, so it costs nothing and is safe
+ * to ask on every render. The page hands the answer down as a string, which is
+ * what keeps `lib/ai` out of a client bundle.
+ */
+export function aiDeployment(feature: AiFeature) {
+  return deploymentState(feature);
+}
 
 export async function getJob(id: number): Promise<AiJob | null> {
   const row = await repo.findJob(id).catch(() => null);

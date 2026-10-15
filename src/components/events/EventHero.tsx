@@ -54,7 +54,11 @@ export default function EventHero({
   // off and the hero went on offering the last place, which is the page
   // arguing with the banner directly above it.
   const cancelled = event.status === "cancelled";
-  const tickets = cancelled ? null : ticketsLeft(counted, true);
+  // An admin has taken the listing down (0188). Its own state, not a flavour
+  // of cancelled: the club did not call this off and the hero must not say
+  // they did.
+  const takenDown = event.status === "suspended";
+  const tickets = cancelled || takenDown ? null : ticketsLeft(counted, true);
 
   const facts = [
     event.price ? { label: "entry", value: event.price } : null,
@@ -96,7 +100,10 @@ export default function EventHero({
                 sx={{ bgcolor: faction.base, color: "#fff", fontWeight: 700,
                       textTransform: "capitalize" }} />
             ) : null}
-            {cancelled ? (
+            {takenDown ? (
+              <Chip size="small" label="Taken down"
+                sx={{ bgcolor: tokens.danger, color: "#fff", fontWeight: 700 }} />
+            ) : cancelled ? (
               <Chip size="small" label="Called off"
                 sx={{ bgcolor: tokens.danger, color: "#fff", fontWeight: 700 }} />
             ) : event.hasEnded ? (

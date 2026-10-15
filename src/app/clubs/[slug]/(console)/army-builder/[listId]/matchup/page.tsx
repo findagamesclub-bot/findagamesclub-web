@@ -6,7 +6,7 @@ import Crumbs from "@/components/ui/Crumbs";
 import OpponentPicker from "@/components/ai/OpponentPicker";
 import { getArmyGate, aiGateFor } from "@/services/armyAccess.service";
 import { getList } from "@/services/armyLists.service";
-import { getUsage } from "@/services/aiJobs.service";
+import { getUsage, aiDeployment } from "@/services/aiJobs.service";
 import { factionsIn } from "@/utils/army-catalogue";
 
 export const metadata = { title: "Match-up" };
@@ -46,7 +46,8 @@ export default async function MatchupPage(
         ]} />
         <PageHead title="Match-up"
           lede={`How ${held.list.name} reads against another faction, from the two unit mixes and nothing else.`} />
-        <OpponentPicker feature="matchup" slug={slug} listId={held.list.id}
+        <OpponentPicker feature="matchup"
+          deployment={aiDeployment("matchup")} slug={slug} listId={held.list.id}
           factions={factionsIn(gate.build?.catalogue ?? null)
             .map((one) => ({ id: one.id, label: one.label }))}
           reason={reason} usage={usage} initial={null} />

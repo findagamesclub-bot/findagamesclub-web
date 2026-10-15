@@ -124,6 +124,12 @@ const MAP = {
   "event-cancelled": "events",
   "event-back-on": "events",
   "event-alert": "events",
+  // 0188. An admin took the event listing down, which is not a cancellation:
+  // the place is still held. Here with the cancellation rather than under
+  // "Running a club", because it reaches a ticket holder who does not run
+  // anything and email is on by default in this family.
+  "event-suspended": "events",
+  "event-restored": "events",
 
   // Work, for somebody who runs a club or the site.
   "club-request": "running",
@@ -144,6 +150,17 @@ const MAP = {
   "listing-declined": "running",
   "listing-paused": "running",
   "listing-resumed": "running",
+  // 0188, the admin's own take-down. With the rest of the listing decisions
+  // rather than in a family where email is on: an approval, a decline and a
+  // suspension are the same kind of news about the same listing, and splitting
+  // one of them out would mean a club that turned this family off still heard
+  // about one of the three.
+  "club-suspended": "running",
+  "club-restored": "running",
+  "listing-suspended": "running",
+  "listing-restored": "running",
+  "event-taken-down": "running",
+  "event-put-back": "running",
   order_placed: "running",
 
   // Money, which is the one family nobody should miss.

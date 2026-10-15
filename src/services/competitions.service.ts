@@ -1,7 +1,9 @@
 import "server-only";
 
-import { countByStatus, findPage, findCompetitionGames, findCompetitionGameArmies }
-  from "@/repositories/competitions.repository";
+import {
+  countByStatus, findPage, findCompetitionGames, findCompetitionGameArmies,
+  findStandingLists,
+} from "@/repositories/competitions.repository";
 import { sideFromRow, type GameSide } from "@/utils/result-army";
 import type { MatchSetup } from "@/utils/result-meta";
 import { readerArmy } from "./eventPairingArmies.service";
@@ -34,6 +36,7 @@ function toCompetition(row: CompetitionRow): Competition {
       // Rank is what the club decided; ties fall back to points.
       .sort((a, b) => (a.rank || 99) - (b.rank || 99) || b.points - a.points)
       .map((entry) => ({
+        id: entry.id,
         rank: entry.rank,
         memberName: entry.member_name,
         profileId: entry.profile_id,
@@ -48,6 +51,13 @@ function toCompetition(row: CompetitionRow): Competition {
         faction: entry.faction,
         detachment: entry.detachment,
         disposition: entry.disposition ?? "",
+        // Filled in by `withStandingLists` where a page wants them. The row
+        // itself only carries the id, so what the league table shows is what
+        // was played rather than what the list has since become.
+        listId: entry.army_list_id ?? null,
+        listName: "",
+        listVersion: null,
+        listSnapshot: null,
       })),
 
     updates: [...(row.club_competition_updates ?? [])]
@@ -116,7 +126,10 @@ export async function getCompetitionOverview(clubId: number): Promise<Competitio
     : [];
 
   return {
-    featured: [...running, ...finished].map(toCompetition),
+    // One more read for the club page, and only when it has a table to draw.
+    // The client asked for the list to show "against club competitions and
+    // leagues", and the club page is where most people meet a league at all.
+    featured: await withStandingLists([...running, ...finished].map(toCompetition)),
     activeCount,
     completedCount,
   };
@@ -134,11 +147,14 @@ export type ManagedCompetition = Competition & { type: string; status: string };
 
 export async function getManagedCompetitions(clubId: number): Promise<ManagedCompetition[]> {
   const rows = await findPage(clubId, { from: 0, to: 199, withHistory: true });
-  return rows.map((row) => ({
+  // The editor has to open on the list already named, or the first save would
+  // quietly clear every one of them: the rows it posts are built from what it
+  // was handed, so a field it never received comes back null.
+  return withStandingLists(rows.map((row) => ({
     ...toCompetition(row as CompetitionRow),
     type: (row as CompetitionRow).type,
     status: (row as CompetitionRow).status,
-  }));
+  })));
 }
 
 export async function getCompetitionPage(
@@ -155,7 +171,13 @@ export async function getCompetitionPage(
     ? await findPage(clubId, { status, from, to: from + PER_PAGE - 1, withHistory: true })
     : [];
 
-  return { items: rows.map(toCompetition), total, pages };
+  // The results history page is where somebody reads a season back, so it
+  // carries the lists. One read for the whole page, however many tables are
+  // on it.
+  return {
+    items: await withStandingLists(rows.map(toCompetition)),
+    total, pages,
+  };
 }
 
 
@@ -231,4 +253,48 @@ export async function getCompetitionGamesForReaders(competitionId: number): Prom
     };
   }
   return { armies, setup };
+}
+
+/**
+ * The army lists named on a page of league tables, attached to their rows.
+ *
+ * One read for every competition on the page rather than one each: a club page
+ * draws three tables and the results page draws six, and this codebase counts
+ * round trips in waves. A failure costs the list names and nothing else, which
+ * is why it catches rather than throws: a league table with no list beside a
+ * name is the state every club was in before 0194, and it is a far better page
+ * than an error.
+ */
+export async function withStandingLists<T extends Competition>(
+  competitions: T[],
+): Promise<T[]> {
+  const ids = competitions.map((one) => one.id);
+  if (!ids.length) return competitions;
+
+  // Logged, never swallowed. An empty answer here takes the list name off
+  // every row and looks exactly like "nobody has named one", which is the
+  // quietest way for this to break and the trap `featured.service` already
+  // paid for once.
+  const rows = await findStandingLists(ids).catch((error: unknown) => {
+    console.error("[competitions] standing lists did not load:", error);
+    return [];
+  });
+  if (!rows.length) return competitions;
+
+  const byStanding = new Map(rows.map((row) => [row.standing_id, row]));
+  return competitions.map((one) => ({
+    ...one,
+    standings: one.standings.map((entry) => {
+      const found = byStanding.get(entry.id);
+      return found
+        ? {
+            ...entry,
+            listId: found.list_id,
+            listName: found.list_name,
+            listVersion: found.list_version_number,
+            listSnapshot: found.snapshot,
+          }
+        : entry;
+    }),
+  }));
 }

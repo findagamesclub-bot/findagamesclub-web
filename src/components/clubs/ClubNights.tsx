@@ -23,7 +23,7 @@ import type { ClubSession } from "@/types/club";
  */
 export default function ClubNights({
   schedule, tablesAvailable, slug, clubName, faction, canBook, signedIn, isMember,
-  pending = false,
+  pending = false, preview = false,
 }: {
   schedule: ClubSession[];
   tablesAvailable: number | null;
@@ -39,6 +39,14 @@ export default function ClubNights({
    * "Request pending", which is the page arguing with itself.
    */
   pending?: boolean;
+  /**
+   * Drawn for an admin reading a listing that has no club behind it yet
+   * (0188's sibling, the submission preview). Every control under the nights
+   * leads somewhere that does not exist, and "Sign in and join this club" said
+   * to the signed-in admin reviewing it is a preview telling a lie about
+   * itself. The nights are the part that is real, so only they are drawn.
+   */
+  preview?: boolean;
 }) {
   const takesBookings = (tablesAvailable ?? 0) > 0;
 
@@ -73,7 +81,13 @@ export default function ClubNights({
         </Typography>
       )}
 
-      {takesBookings ? (
+      {preview ? (
+        takesBookings ? (
+          <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
+            {`Members will be offered a table here, ${tablesAvailable} a night.`}
+          </Typography>
+        ) : null
+      ) : takesBookings ? (
         <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}
           sx={{ alignItems: { sm: "center" } }}>
           {canBook ? (

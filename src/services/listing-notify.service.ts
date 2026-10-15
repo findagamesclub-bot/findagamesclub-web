@@ -4,6 +4,9 @@ import { sendEmail } from "@/lib/email/send";
 import * as templates from "@/lib/email/templates";
 import { deliver, siteUrl } from "./mail-recipient.service";
 import { findSiteSettings } from "@/repositories/siteSettings.repository";
+import {
+  findClubForNotice, findClubSuspension, findEventForNotice, findEventSuspension,
+} from "@/repositories/adminListings.repository";
 import type { SubmissionRow, SubmissionListRow } from "@/repositories/submissions.repository";
 
 /**
@@ -173,4 +176,68 @@ export async function clubPaused(
   } catch (error) {
     console.error("[listing] the pause notice did not send", error);
   }
+}
+
+/**
+ * An admin has taken a listing down, or put it back.
+ *
+ * Its own function rather than a flag on `clubPaused`, for the reason the
+ * template is its own template: a pause is the club reading about their own
+ * decision and this is them reading about ours. The reason travels with it,
+ * because a letter saying something happened and not why costs somebody a
+ * reply to learn the one thing they opened it for.
+ */
+export async function clubSuspended(
+  clubId: number, down: boolean, actorId?: string,
+) {
+  const club = await findClubForNotice(clubId).catch(() => null);
+  if (!club?.owner_id) return;
+  // An admin suspending their own club hears nothing about their own doing.
+  // Same test the trigger in 0188 uses, so the bell and the inbox cannot
+  // disagree about who did what.
+  if (club.owner_id === actorId) return;
+
+  const reason = down ? await reasonFor(clubId) : "";
+
+  await deliver(club.owner_id, down ? "listing-suspended" : "listing-restored",
+    (name) => (down
+      ? templates.listingSuspended({
+        name, clubName: club.name, reason,
+        url: `${siteUrl()}/clubs/${club.slug}/manage/listing/review`,
+      })
+      : templates.listingRestored({
+        name, clubName: club.name, url: `${siteUrl()}/clubs/${club.slug}`,
+      })));
+}
+
+export async function eventSuspended(
+  eventId: number, down: boolean, actorId?: string,
+) {
+  const event = await findEventForNotice(eventId).catch(() => null);
+  const club = (event as { clubs?: { slug: string; name: string; owner_id: string | null } } | null)?.clubs;
+  if (!event || !club?.owner_id || club.owner_id === actorId) return;
+
+  const reason = down ? (await findEventSuspension(eventId).catch(() => null))?.[0]?.reason ?? "" : "";
+
+  await deliver(club.owner_id, down ? "event-taken-down" : "event-put-back",
+    (name) => (down
+      ? templates.eventTakenDown({
+        name, clubName: club.name, eventTitle: event.title, reason,
+        url: `${siteUrl()}/clubs/${club.slug}/manage/events/${event.id}`,
+      })
+      : templates.eventPutBack({
+        name, clubName: club.name, eventTitle: event.title,
+        url: `${siteUrl()}/clubs/${club.slug}/events/${event.legacy_id}`,
+      })));
+}
+
+/**
+ * Read back after the write, never echoed from the form.
+ *
+ * The function trims and caps what it stores, so quoting the argument would
+ * put a slightly different sentence in the letter from the one on the banner.
+ */
+async function reasonFor(clubId: number) {
+  const rows = await findClubSuspension(clubId).catch(() => null);
+  return (rows?.[0]?.reason ?? "").trim();
 }

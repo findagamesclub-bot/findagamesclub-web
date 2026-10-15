@@ -1,11 +1,12 @@
 import "server-only";
 
 import * as repo from "@/repositories/armyCatalogue.repository";
-import type { EditionRow } from "@/repositories/armyCatalogue.repository";
+import type { DetachmentUsage, EditionRow }
+  from "@/repositories/armyCatalogue.repository";
 import { siftDetachments, siftFactions } from "@/utils/catalogue-filters";
 import type { Catalogue } from "@/utils/army-catalogue";
 
-export type { EditionRow, FactionRow, DetachmentRow, UnitRow }
+export type { EditionRow, FactionRow, DetachmentRow, UnitRow, DetachmentUsage }
   from "@/repositories/armyCatalogue.repository";
 
 /** An edition, plus whether the version it is on has been frozen. */
@@ -31,6 +32,8 @@ const REFUSALS: Record<string, string> = {
   UNIT_NEEDS_NAME: "Give the unit a name.",
   UNIT_NEEDS_POINTS: "A unit costs more than nothing. Check the points.",
   VERSION_NEEDS_NAME: "Give the new draft a version.",
+  DETACHMENT_NOT_FOUND: "That detachment is not in this edition any more.",
+  DISPOSITIONS_NEEDED: "Type at least one disposition, one per line.",
   army_units_one_name: "This faction already has a unit with that name.",
 };
 
@@ -91,6 +94,12 @@ export async function getFactions(edition: string, query = "") {
   return {
     rows: siftFactions(all, query),
     held: all.length,
+    // Every detachment in the edition, before any search narrowed the
+    // factions. Summed from the counts this read already has rather than
+    // asked for again, and it has to be the unnarrowed figure: the dialog
+    // that uses it says how many an edition-wide add reaches, which is not a
+    // function of what somebody typed in the search box.
+    detachments: all.reduce((sum, one) => sum + one.detachments, 0),
     // A read that failed is not a catalogue with nothing in it.
     failed: rows === null,
   };
@@ -178,6 +187,76 @@ export async function saveUnit(params: {
     return { ok: true, notice: "Unit saved." };
   } catch (error) {
     return { ok: false, error: explain(error, "That unit did not save.") };
+  }
+}
+
+/**
+ * Every disposition the edition already names.
+ *
+ * It seeds the bulk box, so a faction can be given the five a rulebook names
+ * in one press rather than a list somebody retypes thirty times. Never throws:
+ * an empty box is a worse screen than a wrong one here, not a broken page.
+ */
+export async function getEditionDispositions(edition: string): Promise<string[]> {
+  return repo.findEditionDispositions(edition).catch(() => []);
+}
+
+/**
+ * What names a detachment, asked only when somebody is about to delete it.
+ *
+ * Not folded into the faction read: it walks every club's results and army
+ * lists, and a page of 24 detachments would pay for it 24 times to draw
+ * nothing. Null when the count would not answer, so the dialog says it does
+ * not know rather than quoting a nought it has not measured.
+ */
+export async function getDetachmentUsage(
+  edition: string, detachment: number,
+): Promise<DetachmentUsage | null> {
+  try {
+    const rows = await repo.findDetachmentUsage(edition, detachment);
+    return rows?.[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function removeDetachment(
+  edition: string, detachment: number,
+): Promise<Result> {
+  try {
+    await repo.deleteDetachment(edition, detachment);
+    return { ok: true, notice: "Detachment removed." };
+  } catch (error) {
+    return {
+      ok: false,
+      error: explain(error, "That detachment could not be removed."),
+    };
+  }
+}
+
+/**
+ * Give every detachment in one faction the same dispositions.
+ *
+ * The notice counts what moved rather than saying "Saved" over a faction where
+ * nothing did, because the whole point of pressing this twice is that the
+ * second press should visibly do nothing.
+ */
+export async function addDispositions(params: {
+  edition: string; faction: string; dispositions: string[];
+}): Promise<Result> {
+  if (params.dispositions.length === 0) {
+    return { ok: false, error: REFUSALS.DISPOSITIONS_NEEDED! };
+  }
+  try {
+    const touched = await repo.addFactionDispositions(params);
+    return {
+      ok: true,
+      notice: touched === 0
+        ? "Every detachment already offers those."
+        : `${touched} ${touched === 1 ? "detachment" : "detachments"} updated.`,
+    };
+  } catch (error) {
+    return { ok: false, error: explain(error, "Those dispositions did not save.") };
   }
 }
 

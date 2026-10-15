@@ -10,18 +10,33 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
+// The same icon the rail's own Messages entry carries, because this opens
+// that screen. The club page's "Email club" wears an envelope and is a
+// different act: that one hands you to your mail client.
+import ForumIcon from "@mui/icons-material/ForumOutlined";
 import TypedConfirmDialog from "@/components/ui/TypedConfirmDialog";
+import LinkButton from "@/components/ui/LinkButton";
 import SubmitButton from "@/components/ui/SubmitButton";
 import { useActionToast } from "@/components/ui/Toaster";
 import { accountAction, type AdminState } from "@/app/admin/actions";
 
 /**
- * Suspend, restore, hand out admin, send a reset.
+ * Message them, suspend, restore, hand out admin, send a reset.
  *
  * Suspending asks for a reason because the person it happens to can see it,
  * and "your account was suspended" with no reason is the message that generates
  * the support email. Making somebody an admin asks for their name to be typed:
  * it is the one action here that hands over the whole site.
+ *
+ * The order is the house one, which 0109 settled on the owner's listing cards:
+ * do-this-first, then the quiet controls, then the one that ends something. So
+ * Message leads, Suspend is last and red, and on a suspended account Restore
+ * takes the front because putting somebody back is then the only thing anybody
+ * came here to do.
+ *
+ * Message is a link, not an action: it opens the site's own conversation with
+ * them (`SITE_CLUB`), which is the thread a member reads as being from
+ * FindAGamesClub rather than from whichever admin happened to type it.
  */
 export default function AccountControls({
   profileId, name, email, active, isAdmin,
@@ -71,12 +86,7 @@ export default function AccountControls({
 
   return (
     <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: "wrap" }}>
-      {active ? (
-        <Button variant="outlined" color="error" onClick={() => setSuspending(true)}
-          disabled={pending}>
-          Suspend
-        </Button>
-      ) : (
+      {active ? null : (
         <Box component="form" action={formAction}>
           {hidden("restore")}
           <Button type="submit" variant="contained"
@@ -86,6 +96,14 @@ export default function AccountControls({
           </Button>
         </Box>
       )}
+
+      {/* 0 is the site's own thread rather than a club's. Writing to somebody
+          about their account has no club in common to hang on, which is the
+          case `SITE_CLUB` exists for. */}
+      <LinkButton href={`/admin/messages/0/${profileId}`} variant="outlined"
+        startIcon={<ForumIcon sx={{ fontSize: 18 }} />}>
+        Message them
+      </LinkButton>
 
       <Box component="form" action={formAction}>
         {hidden("reset", { email })}
@@ -110,6 +128,15 @@ export default function AccountControls({
           Make a site admin
         </Button>
       )}
+
+      {/* Last, and the only red one. It is the one thing on this screen that
+          takes something away from somebody. */}
+      {active ? (
+        <Button variant="outlined" color="error" onClick={() => setSuspending(true)}
+          disabled={pending}>
+          Suspend
+        </Button>
+      ) : null}
 
       <Dialog open={suspending} onClose={() => setSuspending(false)} maxWidth="xs" fullWidth>
         <DialogTitle>Suspend {name}?</DialogTitle>

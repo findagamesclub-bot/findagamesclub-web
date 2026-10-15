@@ -148,3 +148,52 @@ export async function countSite() {
     eventsThisMonth: events.count ?? 0,
   };
 }
+
+/**
+ * Everything the site holds on one person (0190).
+ *
+ * Three calls rather than one blob, because they answer three different
+ * questions and the page fires them together: one wave, and a failure in any
+ * one of them costs its own panel rather than the page.
+ */
+
+export type AccountProfileRow = {
+  bio: string | null;
+  home_postcode: string | null;
+  travel_miles: number | null;
+  age_groups: string[];
+  availability_days: string[];
+  games_interested: string[];
+  factions_armies: string[];
+  play_style_tags: string[];
+  social_profiles: Record<string, unknown>;
+  member_code: string;
+  profile_updated_at: string | null;
+};
+
+export type AccountClubRow = {
+  club_id: number;
+  slug: string;
+  name: string;
+  city: string;
+  club_status: string;
+  /** owner / manager / helper, or empty where they only belong to it. */
+  team_role: string;
+  /** approved / pending / cancelled / declined, or empty where they never joined. */
+  membership_status: string;
+  tier_key: string;
+  /** The club's own word for the tier. `premium-membership` is not one. */
+  tier_label: string;
+  joined_at: string | null;
+  lifetime: number;
+};
+
+export const findAccountProfile = (profileId: string) =>
+  callRpc<AccountProfileRow[]>("admin_account_profile", { p_profile: profileId })
+    .then((rows) => rows[0] ?? null);
+
+export const findAccountClubs = (profileId: string) =>
+  callRpc<AccountClubRow[]>("admin_account_clubs", { p_profile: profileId });
+
+export const findAccountTally = (profileId: string) =>
+  callRpc<Record<string, number>>("admin_account_tally", { p_profile: profileId });

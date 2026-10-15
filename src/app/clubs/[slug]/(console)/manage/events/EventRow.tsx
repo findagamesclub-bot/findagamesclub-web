@@ -74,6 +74,14 @@ export default function EventRow({
               sx={{ height: 20, fontSize: "0.65rem", fontFamily: mono,
                     backgroundColor: tokens.brassSoft, color: tokens.ink }} />
           ) : null}
+          {/* 0188. Its own chip and its own colour: the club did not call this
+              off, and a brass "Called off" on an event an admin took down
+              would have them chasing a decision they never made. */}
+          {event.status === "suspended" ? (
+            <Chip label="Taken down" size="small"
+              sx={{ height: 20, fontSize: "0.65rem", fontFamily: mono,
+                    backgroundColor: tokens.danger, color: "#fff" }} />
+          ) : null}
         </Stack>
         <Typography sx={{ fontFamily: mono, fontSize: "0.64rem", letterSpacing: "0.08em",
                           color: tokens.inkMuted }}>
@@ -126,13 +134,19 @@ export default function EventRow({
         {event.status === "published" ? (
           <MenuItem onClick={pick(onUnpublish)}>Take back to a draft</MenuItem>
         ) : null}
-        {event.status !== "cancelled" ? (
+        {/* Nothing that moves the status while an admin has it down: 0188's
+            trigger refuses every one of them, and a menu item that cannot work
+            is worse than one that is not there. Delete goes with them, since a
+            club cannot clear a listing somebody is looking at. */}
+        {event.status === "suspended" ? null : event.status !== "cancelled" ? (
           <MenuItem onClick={pick(onCancel)}>Call it off</MenuItem>
         ) : (
           <MenuItem onClick={pick(onPublish)}>Put it back on</MenuItem>
         )}
 
-        <MenuItem onClick={pick(onDelete)} sx={{ color: tokens.danger }}>Delete</MenuItem>
+        {event.status === "suspended" ? null : (
+          <MenuItem onClick={pick(onDelete)} sx={{ color: tokens.danger }}>Delete</MenuItem>
+        )}
       </Menu>
     </Box>
   );

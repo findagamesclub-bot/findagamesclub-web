@@ -46,8 +46,20 @@ export type EventDraft = {
   removedImages: string[];
 };
 
+/**
+ * The three a club may put its own event in.
+ *
+ * `suspended` is deliberately NOT here. An admin takes a listing down (0188)
+ * and the club cannot write that state: 0188's own trigger refuses them, and
+ * keeping it out of this list means the action that reads a posted status
+ * cannot be talked into it either. A guard in two places for the one state
+ * nobody should be able to reach from a form.
+ */
 export const EVENT_STATUSES = ["draft", "published", "cancelled"] as const;
 export type EventStatus = (typeof EVENT_STATUSES)[number];
+
+/** And the four a row can actually be in, for anything that reads one. */
+export type EventRowStatus = EventStatus | "suspended";
 
 const text = (form: FormData, key: string) => String(form.get(key) ?? "").trim();
 const list = (form: FormData, key: string) =>

@@ -10,7 +10,7 @@ import Typography from "@mui/material/Typography";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import AddIcon from "@mui/icons-material/Add";
 import LinkButton from "@/components/ui/LinkButton";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import AiNote from "./AiNote";
 import AiJobProgress from "./AiJobProgress";
 import AiResult from "./AiResult";
 import AiResultHeader from "./AiResultHeader";
@@ -18,6 +18,7 @@ import { useAiJob } from "@/hooks/useAiJob";
 import { runSeasonAction } from "@/app/clubs/[slug]/(console)/army-builder/season-actions";
 import { SEASON_GOALS } from "@/utils/season-goals";
 import { aiErrorCopy } from "@/utils/ai-errors";
+import { AI_DEPLOYMENT_COPY, type AiDeployment } from "@/utils/ai-deployment";
 import type { AiJob } from "@/types/ai";
 import { mono, tokens } from "@/lib/tokens";
 
@@ -31,8 +32,10 @@ export type ListOption = { id: number; name: string; faction: string };
  * "prepare next games" are two plans, both worth having, and both kept.
  */
 export default function SeasonCoach({
-  slug, lists, reason, usage, initial, stale,
+  slug, lists, reason, usage, initial, stale, deployment,
 }: {
+  /** Whether this site can run it at all. Checked before the tier. */
+  deployment: AiDeployment;
   slug: string;
   lists: ListOption[];
   reason: string | null;
@@ -62,16 +65,11 @@ export default function SeasonCoach({
     if (answer.jobId) setJobId(answer.jobId);
   });
 
-  if (reason) {
-    return (
-      <Stack direction="row" spacing={1.5}
-        sx={{ alignItems: "flex-start", p: 2, borderRadius: 1.5,
-              border: `1px solid ${tokens.rule}`, backgroundColor: tokens.paper }}>
-        <LockOutlinedIcon sx={{ fontSize: 20, color: tokens.inkMuted, mt: 0.2 }} />
-        <Typography variant="body2" sx={{ color: tokens.inkMuted }}>{reason}</Typography>
-      </Stack>
-    );
+  if (deployment !== "on") {
+    return <AiNote kind="note">{AI_DEPLOYMENT_COPY[deployment]}</AiNote>;
   }
+
+  if (reason) return <AiNote>{reason}</AiNote>;
 
   if (!lists.length) {
     // Telling somebody to build a list and giving them no way to build one is

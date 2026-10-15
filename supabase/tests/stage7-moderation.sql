@@ -118,7 +118,7 @@ begin
   -- ----------------------------------------------------------- the queue
   perform pg_temp.be(w.member);
   begin
-    perform public.moderation_queue('', 'open', '', 25, 0);
+    perform public.moderation_queue('', 'open', '', 'waiting', 25, 0);
     raise exception 'NOT_REACHED';
   exception
     when insufficient_privilege then raise notice 'PASS guard: a member cannot open the queue';
@@ -127,7 +127,7 @@ begin
 
   perform pg_temp.be(w.owner);
   begin
-    perform public.moderation_queue('', 'open', '', 25, 0);
+    perform public.moderation_queue('', 'open', '', 'waiting', 25, 0);
     raise exception 'NOT_REACHED';
   exception
     when insufficient_privilege then
@@ -136,22 +136,22 @@ begin
   end;
 
   perform pg_temp.be(w.admin);
-  select count(*) into n from public.moderation_queue('', 'open', '', 25, 0);
+  select count(*) into n from public.moderation_queue('', 'open', '', 'waiting', 25, 0);
   assert n = 3, 'the admin should see 3 waiting, got ' || n;
-  select total_count into n from public.moderation_queue('', 'open', '', 25, 0) limit 1;
+  select total_count into n from public.moderation_queue('', 'open', '', 'waiting', 25, 0) limit 1;
   assert n = 3, 'total_count is wrong before paging, got ' || n;
 
   -- The words that were reported come with it, or there is nothing to judge.
-  select body into t from public.moderation_queue('review', 'open', '', 25, 0);
+  select body into t from public.moderation_queue('review', 'open', '', 'waiting', 25, 0);
   assert t like '%slur%', 'the queue did not carry the review text';
   raise notice 'PASS queue: three waiting, with the words and a total that pages';
 
   -- Filtering by type and searching the words.
-  select count(*) into n from public.moderation_queue('message', 'open', '', 25, 0);
+  select count(*) into n from public.moderation_queue('message', 'open', '', 'waiting', 25, 0);
   assert n = 1, 'the type filter is wrong, got ' || n;
-  select count(*) into n from public.moderation_queue('', 'open', 'nasty', 25, 0);
+  select count(*) into n from public.moderation_queue('', 'open', 'nasty', 'waiting', 25, 0);
   assert n = 1, 'the search should match the message body, got ' || n;
-  select count(*) into n from public.moderation_queue('', 'open', 'zzzz', 25, 0);
+  select count(*) into n from public.moderation_queue('', 'open', 'zzzz', 'waiting', 25, 0);
   assert n = 0, 'a search matching nothing returned rows';
   raise notice 'PASS filters: type and search both narrow';
 
@@ -186,16 +186,16 @@ begin
   raise notice 'PASS remove: soft deleted, and the row survives for the thread';
 
   -- A removed thing leaves the queue, because there is nothing left to judge.
-  select count(*) into n from public.moderation_queue('', 'open', '', 25, 0);
+  select count(*) into n from public.moderation_queue('', 'open', '', 'waiting', 25, 0);
   assert n = 1, 'the queue should hold 1 after two were answered, got ' || n;
-  select count(*) into n from public.moderation_queue('', 'answered', '', 25, 0);
+  select count(*) into n from public.moderation_queue('', 'answered', '', 'waiting', 25, 0);
   assert n = 2, 'both answered flags should still be findable, got ' || n;
 
   -- The removed one keeps its record and loses its words, so an admin can find
   -- what they took down without the queue showing it to them again.
-  select target_gone into v_gone from public.moderation_queue('post', 'answered', '', 25, 0);
+  select target_gone into v_gone from public.moderation_queue('post', 'answered', '', 'waiting', 25, 0);
   assert v_gone, 'a removed post should be marked gone in the record';
-  select body into t from public.moderation_queue('post', 'answered', '', 25, 0);
+  select body into t from public.moderation_queue('post', 'answered', '', 'waiting', 25, 0);
   assert coalesce(t, '') = '', 'a removed post should show no words, shows: ' || t;
   raise notice 'PASS record: a removal stays findable, with its words gone';
 

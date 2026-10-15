@@ -104,9 +104,18 @@ export default function ArmyPicker({
         disabled={!value.detachment || unknown}
         onChange={(event) => onChange({ ...value, disposition: event.target.value })}
         sx={{ flex: 1, minWidth: 0 }}
-        helperText={value.detachment
-          ? "Only the ones this detachment offers."
-          : "Pick a detachment first."}>
+        // The count, not just the rule. The client reported this box as broken
+        // because it offered one option; it was offering every disposition the
+        // detachment holds, and every detachment in the imported catalogue
+        // holds exactly one. A picker that says how many it has is a picker
+        // nobody has to report.
+        helperText={!value.detachment
+          ? "Pick a detachment first."
+          : dispositions.length === 0
+            ? "This detachment has none recorded."
+            : dispositions.length === 1
+              ? "This detachment offers one."
+              : `Only the ${dispositions.length} this detachment offers.`}>
         <MenuItem value="">Not said</MenuItem>
         {dispositions.map((one) => (
           <MenuItem key={one} value={one}>{one}</MenuItem>

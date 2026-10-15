@@ -7,6 +7,7 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import AiPanel from "./AiPanel";
 import type { AiJob } from "@/types/ai";
+import type { AiDeployment } from "@/utils/ai-deployment";
 import { tokens } from "@/lib/tokens";
 
 export type Clubmate = { id: string; name: string };
@@ -20,8 +21,10 @@ export type Clubmate = { id: string; name: string };
  * is more useful than hiding them and leaving the reader wondering why.
  */
 export default function ScoutPicker({
-  slug, listId, clubmates, reason, usage, initial,
+  slug, listId, clubmates, reason, usage, initial, deployment,
 }: {
+  /** Whether this site can run it at all. Passed straight through. */
+  deployment: AiDeployment;
   slug: string;
   listId: number;
   clubmates: Clubmate[];
@@ -46,7 +49,7 @@ export default function ScoutPicker({
         )} />
 
       {who ? (
-        <AiPanel feature="scouting" slug={slug} listId={listId}
+        <AiPanel deployment={deployment} feature="scouting" slug={slug} listId={listId}
           opponentProfileId={who.id}
           reason={reason} usage={usage} initial={initial} />
       ) : (

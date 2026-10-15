@@ -4,7 +4,7 @@ import { table } from "@/lib/supabase/table";
 import { findTicketTypes } from "./eventTicketTypes.repository";
 import { findNotices } from "./eventNotices.repository";
 import type { EditableEvent, EditableTicketType, EventNotice } from "@/types/eventEditor";
-import type { EventStatus } from "@/utils/event-draft";
+import type { EventRowStatus } from "@/utils/event-draft";
 
 /**
  * A club's own events, including the ones nobody else can see.
@@ -42,7 +42,7 @@ export type EventRow = {
   logo_src: string | null;
   logo_alt: string | null;
   logo_path: string | null;
-  status: EventStatus;
+  status: EventRowStatus;
   published_at: string | null;
   cancel_reason: string | null;
   tickets_available: number | null;

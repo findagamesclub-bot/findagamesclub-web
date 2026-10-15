@@ -8,9 +8,10 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import ArmyPicker from "@/components/results/ArmyPicker";
+import ArmyListPicker from "@/components/results/ArmyListPicker";
 import { playedFrom } from "@/utils/competition-meta";
 import type { Catalogue } from "@/utils/army-catalogue";
-import type { Builder } from "@/services/resultArmies.service";
+import type { Builder, MemberList } from "@/services/resultArmies.service";
 import { display, mono, tokens } from "@/lib/tokens";
 import type { StandingRow } from "./StandingsEditor";
 
@@ -22,10 +23,12 @@ import type { StandingRow } from "./StandingsEditor";
  * army it took.
  */
 export default function StandingRowFields({
-  row, roster, patch, onRemove, builder, catalogue, loading, failed,
+  row, roster, patch, onRemove, builder, catalogue, loading, failed, lists,
 }: {
   row: StandingRow;
   roster: { id: string; name: string }[];
+  /** Every list built at this club. Narrowed here to the player on this row. */
+  lists: MemberList[];
   patch: (key: string, change: Partial<StandingRow>) => void;
   onRemove: () => void;
   /** Null at a club that does not record armies, which keeps the plain box. */
@@ -47,9 +50,14 @@ export default function StandingRowFields({
             const member = roster.find((m) => m.id === value);
             // Picking a member fills the name too, so the table matches
             // the profile it links to rather than a typed variant of it.
+            // The list goes with the player. It belongs to an account, so
+            // leaving it behind would post a list the new name does not own
+            // and the trigger would refuse the whole table over a field
+            // nobody could see. Same reset `usePlacingArmy` makes when the
+            // name on a placing moves.
             patch(row.key, member
-              ? { profileId: member.id, memberName: member.name }
-              : { profileId: null });
+              ? { profileId: member.id, memberName: member.name, listId: null }
+              : { profileId: null, listId: null });
           }}
         >
           <MenuItem value="guest">Not a member here</MenuItem>
@@ -130,6 +138,30 @@ export default function StandingRowFields({
             disposition: named.disposition,
           })} />
       )}
+
+      {/* Under the army, because a list is the long answer to the same
+          question the cascade above asks in three words. Only at a club that
+          records armies: with the builder off there is nothing to pick from.
+          The picker says why it is empty rather than vanishing, and the Player
+          box it points at is directly above. */}
+      {builder && !failed ? (
+        <ArmyListPicker
+          lists={lists.filter((one) => one.profileId === row.profileId)}
+          value={row.listId}
+          playerNamed={Boolean(row.profileId)}
+          unnamedNote="Pick a member above and the lists they have built at your club appear here."
+          onChange={(list) => patch(row.key, list
+            ? {
+                listId: list.id,
+                // A list already says all three, and typing them again is two
+                // chances to disagree with it. Only where the club has not
+                // said: 0194's trigger draws the same line.
+                faction: row.faction || list.faction,
+                detachment: row.detachment || list.detachment,
+                disposition: row.detachment ? row.disposition : list.disposition,
+              }
+            : { listId: null })} />
+      ) : null}
 
       <TextField size="small" label="Note" fullWidth value={row.notes}
         onChange={(e) => patch(row.key, { notes: e.target.value })}

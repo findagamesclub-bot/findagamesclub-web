@@ -33,7 +33,7 @@ import type { BuyableTicket, EventCart } from "@/types/ticket";
  */
 export default function EventTickets({
   tickets, cart, standing, faction, slug, eventKey, eventId, signedIn, hasEnded,
-  cancelled, fullName, email, myBookingReference, myBookingCount = 0,
+  cancelled, takenDown = false, fullName, email, myBookingReference, myBookingCount = 0,
 }: {
   tickets: BuyableTicket[];
   cart: EventCart | null;
@@ -47,6 +47,13 @@ export default function EventTickets({
   hasEnded: boolean;
   /** Called off. Closes the desk the same way a finished event does. */
   cancelled: boolean;
+  /**
+   * An admin has taken the listing down (0188). Its own flag rather than
+   * folded into `cancelled`, because a reader told their event was called off
+   * when the club never called it off would go and ask the club about
+   * something the club did not do.
+   */
+  takenDown?: boolean;
   fullName: string;
   email: string;
   myBookingReference: string | null;
@@ -125,6 +132,17 @@ export default function EventTickets({
   // called off rather than that it finished. The banner at the top of the page
   // carries the club's reason; this is the desk agreeing with it, which it did
   // not: it went on selling the last place under a cancellation notice.
+  // Before the cancellation test as well, since a suspended event may also
+  // have been called off at some point and ours is the state it is in now.
+  if (takenDown) {
+    return (
+      <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
+        This listing has been taken down while we look at it, so no new tickets
+        can be booked. Anybody who already has a place keeps it.
+      </Typography>
+    );
+  }
+
   if (cancelled) {
     return (
       <Typography variant="body2" sx={{ color: tokens.inkMuted }}>

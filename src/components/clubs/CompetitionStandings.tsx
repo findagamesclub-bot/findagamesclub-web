@@ -1,9 +1,12 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
+import ArmyListDialog from "@/components/events/ArmyListDialog";
 import Pager from "@/components/ui/Pager";
+import { listFromSnapshot } from "@/utils/army-snapshot";
 import { usePagedList } from "@/hooks/usePagedList";
 import { mono, tokens, type Faction } from "@/lib/tokens";
 import type { CompetitionStanding } from "@/types/competition";
@@ -18,8 +21,14 @@ const ROWS_PER_PAGE = PER_PAGE.rows;
  * The league table.
  *
  * Figures are mono and right-aligned so a column of scores reads as a column.
- * The faction column is text: legacy links it to a stored army list, which
- * needs the army builder, so that link is Milestone 3.
+ *
+ * The faction column carries the whole answer to "what is this person
+ * playing": the army, the detachment under it, and the list itself behind a
+ * button (0194). The list opens in the dialog a placing and a table of the
+ * draw already use, so the four places a reader meets an army list on this
+ * site all behave the same way. It is read-only there, because what it shows
+ * is the frozen copy taken when the row was saved rather than whatever the
+ * list has become since.
  */
 export default function CompetitionStandings({
   standings, faction,
@@ -29,6 +38,7 @@ export default function CompetitionStandings({
 }) {
   const top = useRef<HTMLDivElement>(null);
   const paged = usePagedList(standings, ROWS_PER_PAGE, top);
+  const [open, setOpen] = useState<CompetitionStanding | null>(null);
 
   if (!standings.length) {
     return (
@@ -101,6 +111,21 @@ export default function CompetitionStandings({
                             .filter(Boolean).join(" · ")}
                         </Typography>
                       ) : null}
+                      {/* Only where there is one, and never a disabled button
+                          beside the rows that have none: a league is mostly
+                          people who did not save a list, and a column of dead
+                          controls reads as a feature that is broken rather
+                          than one nobody used. */}
+                      {entry.listName ? (
+                        <Button variant="text" size="small"
+                          onClick={() => setOpen(entry)}
+                          sx={{ px: 0, minWidth: 0, fontSize: "0.76rem",
+                                justifyContent: "flex-start",
+                                color: faction.deep, textDecoration: "underline",
+                                "&:hover": { background: "none" } }}>
+                          {entry.listName}
+                        </Button>
+                      ) : null}
                     </>
                   ) : (
                     <Typography variant="body2" sx={{ color: tokens.inkMuted }}>—</Typography>
@@ -129,6 +154,22 @@ export default function CompetitionStandings({
 
     <Pager page={paged.page} total={paged.total} noun="players"
       size={ROWS_PER_PAGE} onChange={paged.goTo} />
+
+    <ArmyListDialog
+      open={open !== null}
+      onClose={() => setOpen(null)}
+      player={open?.memberName ?? ""}
+      faction={faction}
+      army={open ? {
+        factionLabel: open.faction,
+        detachment: open.detachment,
+        disposition: open.disposition,
+        mvpUnits: [],
+        list: listFromSnapshot(open.listSnapshot, {
+          id: open.listId, name: open.listName,
+        }),
+      } : null}
+    />
     </Box>
   );
 }

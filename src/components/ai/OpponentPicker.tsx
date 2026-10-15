@@ -9,6 +9,7 @@ import AiPanel from "./AiPanel";
 import type { AiFeature } from "@/utils/ai-access";
 import type { AiJob } from "@/types/ai";
 import { tokens } from "@/lib/tokens";
+import type { AiDeployment } from "@/utils/ai-deployment";
 
 export type Faction = { id: string; label: string };
 
@@ -24,8 +25,10 @@ export type Faction = { id: string; label: string };
  * question with no answer and it would still cost a run.
  */
 export default function OpponentPicker({
-  feature, slug, listId, factions, reason, usage, initial,
+  feature, slug, listId, factions, reason, usage, initial, deployment,
 }: {
+  /** Whether this site can run it at all. Passed straight through. */
+  deployment: AiDeployment;
   feature: AiFeature;
   slug: string;
   listId: number;
@@ -51,7 +54,7 @@ export default function OpponentPicker({
         )} />
 
       {opponent ? (
-        <AiPanel feature={feature} slug={slug} listId={listId}
+        <AiPanel deployment={deployment} feature={feature} slug={slug} listId={listId}
           opponent={{ factionId: opponent.id, factionLabel: opponent.label }}
           reason={reason} usage={usage} initial={initial} />
       ) : (

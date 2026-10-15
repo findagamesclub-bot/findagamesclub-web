@@ -14,12 +14,22 @@ export type CompetitionStanding = {
   notes: string;
   /**
    * What they took. Free text at a club with the army builder off, and the
-   * catalogue's own spelling at one that runs it. The link to a stored army
-   * list is stage 10.
+   * catalogue's own spelling at one that runs it.
    */
   faction: string;
   detachment: string;
   disposition: string;
+  /**
+   * Which of their own lists it was (0194). The id is what the editor posts
+   * back; the name, the version and the snapshot are read off the mirror in
+   * `game_result_armies`, so they are what the row was played with rather
+   * than what the list has since become.
+   */
+  id: number;
+  listId: number | null;
+  listName: string;
+  listVersion: number | null;
+  listSnapshot: unknown;
 };
 
 export type CompetitionMatch = {

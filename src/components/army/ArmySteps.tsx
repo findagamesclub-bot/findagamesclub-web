@@ -124,7 +124,7 @@ export function StepDetachments({
               <Typography sx={{ fontFamily: mono, fontSize: "0.68rem",
                                 color: tokens.inkMuted }}>
                 {dispositions.length
-                  ? `${dispositions.length} dispositions`
+                  ? `${dispositions.length} ${dispositions.length === 1 ? "disposition" : "dispositions"}`
                   : "No dispositions recorded"}
               </Typography>
             </Stack>

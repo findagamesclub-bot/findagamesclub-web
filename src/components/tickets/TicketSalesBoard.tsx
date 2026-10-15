@@ -17,7 +17,7 @@ import type { BuyableTicket } from "@/types/ticket";
  * is on sale, how each type is going, and the way to the door list.
  */
 export default function TicketSalesBoard({
-  tickets, faction, slug, eventId, hasEnded, cancelled, due,
+  tickets, faction, slug, eventId, hasEnded, cancelled, takenDown = false, due,
 }: {
   tickets: BuyableTicket[];
   faction: Faction;
@@ -27,6 +27,8 @@ export default function TicketSalesBoard({
   hasEnded: boolean;
   /** Called off, so the figures are a record of what had been reserved. */
   cancelled: boolean;
+  /** An admin has taken the listing down (0188). Not the same as called off. */
+  takenDown?: boolean;
   /**
    * What the people who booked actually owe, totalled from their own frozen
    * bookings. This used to be `sold × list price`, which is a figure nobody
@@ -110,7 +112,9 @@ export default function TicketSalesBoard({
       </Box>
 
       <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-        {cancelled
+        {takenDown
+          ? "The listing is down, so no new places can be taken. Figures are what had been reserved before it came down."
+          : cancelled
           ? "This event was called off. Figures are what had been reserved before you called it off."
           : hasEnded
             ? "This event has finished. Figures are the final reserved count."

@@ -63,6 +63,8 @@ import { getCurrentProfile } from "@/services/auth.service";
 import { getReported } from "@/services/myReports.service";
 import { getClubAccess } from "@/services/clubAccess.service";
 import { getMyClaim } from "@/services/claims.service";
+import { getClubSuspension } from "@/services/adminListings.service";
+import TakenDownNotice from "@/components/ui/TakenDownNotice";
 import ClaimPrompt from "@/components/clubs/ClaimPrompt";
 import { getJoinedCount, getMyMembership, getPendingRequests, getRoster } from "@/services/memberships.service";
 import { getPayments, standing } from "@/services/payments.service";
@@ -111,6 +113,12 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
     getClubEventsPage(club.id, { past: true, page: 1, size: 3 }),
     getReviewCount(club.id),
   ]);
+
+  // Only on a listing that is actually down, which is almost none of them, so
+  // the ordinary club page pays nothing for the banner it never draws.
+  const takenDown = club.status === "suspended"
+    ? await getClubSuspension(club.id)
+    : null;
 
   // Only on a page that can actually be claimed, so the other forty do not pay
   // a round trip for a prompt they never render.
@@ -232,6 +240,14 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
           is reading this is a member or on the team, and the thing they need to
           know is why nobody else can find it. Leading with it, the same way a
           called-off event leads with its reason. */}
+      {/* Ours, not theirs, and it says so. Only the club's own team and an
+          admin can see a suspended club at all, so whoever is reading this is
+          the person the reason was written for. */}
+      {takenDown ? (
+        <TakenDownNotice kind="club" reason={takenDown.reason} at={takenDown.at}
+          byName={takenDown.byName} canAct={viewer?.role === "admin"} />
+      ) : null}
+
       {club.status === "paused" ? (
         <Alert severity="info" sx={{ mb: 3 }}>
           <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.25 }}>

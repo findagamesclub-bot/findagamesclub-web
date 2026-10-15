@@ -188,6 +188,33 @@ export const saveUnit = (params: {
 export const deleteUnit = (edition: string, unit: number) =>
   callRpc<boolean>("delete_army_unit", { p_edition: edition, p_unit: unit });
 
+export const deleteDetachment = (edition: string, detachment: number) =>
+  callRpc<boolean>("delete_army_detachment",
+    { p_edition: edition, p_detachment: detachment });
+
+/** What a recorded game or an army list calls this detachment, and how many. */
+export type DetachmentUsage = { label: string; results: number; lists: number };
+
+/**
+ * A `returns table` arrives as an array of one over PostgREST, never as the
+ * row itself.
+ */
+export const findDetachmentUsage = (edition: string, detachment: number) =>
+  callRpc<DetachmentUsage[]>("army_detachment_usage",
+    { p_edition: edition, p_detachment: detachment });
+
+/** Every disposition this edition already names, folded and sorted. */
+export const findEditionDispositions = (edition: string) =>
+  callRpc<string[]>("army_edition_dispositions", { p_edition: edition });
+
+/** Adds them to every detachment in one faction, and never removes. */
+export const addFactionDispositions = (params: {
+  edition: string; faction: string; dispositions: string[];
+}) => callRpc<number>("add_faction_dispositions", {
+  p_edition: params.edition, p_faction: params.faction,
+  p_dispositions: params.dispositions,
+});
+
 export const publishCatalogue = (edition: string, note: string) =>
   callRpc<string>("publish_army_catalogue", { p_edition: edition, p_note: note });
 

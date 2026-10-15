@@ -87,7 +87,8 @@ export default async function CompetitionSetupPage({
 
       <Section title="The table" icon={LeaderboardIcon}>
         <StandingsEditor competitionId={competition.id} slug={slug} faction={faction}
-          standings={competition.standings} roster={roster} builder={records} />
+          standings={competition.standings} roster={roster} builder={records}
+          lists={lists} />
       </Section>
 
       <Section title="Rounds" icon={HistoryIcon}>

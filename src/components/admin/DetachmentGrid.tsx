@@ -20,11 +20,12 @@ import { display, mono, tokens } from "@/lib/tokens";
  * across 30 factions.
  */
 export default function DetachmentGrid({
-  detachments, frozen, onEdit,
+  detachments, frozen, onEdit, onRemove,
 }: {
   detachments: DetachmentRow[];
   frozen: boolean;
   onEdit: (one: DetachmentRow) => void;
+  onRemove: (one: DetachmentRow) => void;
 }) {
   return (
     <>
@@ -57,9 +58,22 @@ export default function DetachmentGrid({
                   )}
                 </Stack>
                 <Box sx={{ flex: 1 }} />
+                {/* The same footer the units tab carries, in the same order
+                    and the same colours: two tabs a click apart drawing one
+                    action two ways is one more thing to learn for no reason.
+                    Remove is new here (0192); Edit was the only control a
+                    detachment has ever had, so a mistyped one could be
+                    renamed and never taken out. */}
                 {frozen ? null : (
-                  <Stack direction="row" sx={{ justifyContent: "flex-end" }}>
+                  <Stack direction="row" spacing={0.5}
+                    sx={{ pt: 1.25, borderTop: `1px solid ${tokens.rule}`,
+                          justifyContent: "flex-end" }}>
                     <Button variant="text" size="small"
+                      onClick={() => onRemove(one)}
+                      sx={{ color: tokens.danger }}>
+                      Remove
+                    </Button>
+                    <Button variant="outlined" size="small"
                       onClick={() => onEdit(one)}>
                       Edit
                     </Button>

@@ -112,3 +112,39 @@ export async function unfeatureClub(slot: number): Promise<FeaturedResult> {
 
 /** A London day, like every other date in this app. */
 const todayIso = () => londonNow().date;
+
+/**
+ * The clubs wearing the badge today, which is not the same list as the
+ * homepage's.
+ *
+ * "Featured" on a card is a claim that somebody paid for a placement. The
+ * directory and the club page were both reading `clubs.spotlight` for it,
+ * which is an editorial pick an admin can set on any club, so a club with no
+ * booking at all read as featured. The client found that in the directory.
+ *
+ * `spotlight` keeps the job 0113 gave it: filling the homepage row before
+ * anything has been sold, so the front page is not empty on day one. It just
+ * does not get to say somebody paid.
+ *
+ * Cached and tagged with the slots themselves, so booking or removing one
+ * clears this in the same breath rather than leaving a badge up for a minute
+ * after the slot went.
+ */
+const readLiveFeatured = unstable_cache(
+  async (today: string) => repo.findLiveFeaturedClubIds(today).catch((error): number[] => {
+    // Logged rather than swallowed. An empty list here takes the badge off
+    // every club, which looks exactly like "nobody is featured today" and is
+    // the quietest possible way for this to break.
+    console.error("[featured] the live slots did not load", error);
+    return [];
+  }),
+  ["live-featured-clubs"],
+  { revalidate: 60, tags: [FEATURED_TAG] },
+);
+
+export async function getLiveFeaturedClubIds(): Promise<number[]> {
+  // The London day, because a slot runs on London days and a boundary read in
+  // the server's timezone puts a slot's last evening in the wrong day. The
+  // same helper every other date on this page already goes through.
+  return readLiveFeatured(todayIso());
+}

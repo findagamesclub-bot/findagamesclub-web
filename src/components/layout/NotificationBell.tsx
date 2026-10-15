@@ -33,6 +33,8 @@ import DomainAddIcon from "@mui/icons-material/DomainAdd";
 import DomainDisabledIcon from "@mui/icons-material/DomainDisabled";
 import UndoIcon from "@mui/icons-material/Undo";
 import PauseIcon from "@mui/icons-material/PauseCircleOutlineOutlined";
+import BlockIcon from "@mui/icons-material/Block";
+import EventAvailableIcon from "@mui/icons-material/EventAvailable";
 import type { SvgIconComponent } from "@mui/icons-material";
 import { notificationHref } from "@/utils/notification-href";
 import {
@@ -80,6 +82,17 @@ const ICONS: Record<string, SvgIconComponent> = {
   // The same two from the club's side, when somebody else moved it.
   "listing-paused": PauseIcon,
   "listing-resumed": DomainAddIcon,
+  // 0188. A suspension is not a pause and must not wear the pause icon: the
+  // whole point of the two states is that one is the club's doing and the
+  // other is ours.
+  "club-suspended": BlockIcon,
+  "club-restored": DomainAddIcon,
+  "listing-suspended": BlockIcon,
+  "listing-restored": DomainAddIcon,
+  "event-taken-down": BlockIcon,
+  "event-put-back": EventAvailableIcon,
+  "event-suspended": BlockIcon,
+  "event-restored": EventAvailableIcon,
 };
 
 /**

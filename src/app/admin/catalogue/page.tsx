@@ -5,7 +5,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import CatalogueBoard from "@/components/admin/CatalogueBoard";
 import CatalogueVersions from "@/components/admin/CatalogueVersions";
 import {
-  getCatalogueVersions, getEditions, getFactions,
+  getCatalogueVersions, getEditionDispositions, getEditions, getFactions,
 } from "@/services/armyCatalogue.service";
 import { nextSearch, searchFrom, withSearch } from "@/utils/filter-url";
 
@@ -41,11 +41,16 @@ export default async function AdminCataloguePage({
   // draft somebody is part way through.
   const edition = editions.find((one) => one.status === "active") ?? editions[0] ?? null;
 
-  const [factions, versions] = await Promise.all([
+  const [factions, versions, known] = await Promise.all([
     showing === "factions" && edition
       ? getFactions(edition.id, search)
-      : { rows: [], held: 0, failed: false },
+      : { rows: [], held: 0, detachments: 0, failed: false },
     showing === "versions" ? getCatalogueVersions() : { rows: [], failed: false },
+    // Only on the tab that can use it, which is the rule this page's own
+    // comment is about: a read whose tab is shut is a round trip for nothing.
+    showing === "factions" && edition
+      ? getEditionDispositions(edition.id)
+      : Promise.resolve<string[]>([]),
   ]);
 
   // The search belongs to the factions tab, so it rides along rather than
@@ -81,6 +86,8 @@ export default async function AdminCataloguePage({
           edition={edition}
           factions={factions.rows}
           held={factions.held}
+          detachments={factions.detachments}
+          known={known}
           query={search}
           failed={factions.failed}
         />

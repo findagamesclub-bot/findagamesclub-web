@@ -77,13 +77,55 @@ export async function listAccounts(
 }
 
 export async function getAccount(profileId: string) {
-  const [row, actions] = await Promise.all([
+  // One wave. None of the five needs another's answer, so waiting between them
+  // would cost 300ms a time for nothing, and each failure costs its own panel
+  // rather than the page: an admin whose database has not had 0190 run against
+  // it still gets the account and the controls.
+  const [row, actions, profile, clubs, tally] = await Promise.all([
     repo.findAccount(profileId),
     repo.findAccountActions(profileId).catch(() => []),
+    repo.findAccountProfile(profileId).catch(() => null),
+    repo.findAccountClubs(profileId).catch((): null => null),
+    repo.findAccountTally(profileId).catch((): Record<string, number> => ({})),
   ]);
   if (!row) return null;
 
   return {
+    profile: profile ? {
+      bio: (profile.bio ?? "").trim(),
+      postcode: (profile.home_postcode ?? "").trim(),
+      travelMiles: profile.travel_miles,
+      ageGroups: profile.age_groups ?? [],
+      availability: profile.availability_days ?? [],
+      games: profile.games_interested ?? [],
+      armies: profile.factions_armies ?? [],
+      playStyle: profile.play_style_tags ?? [],
+      // The object the person typed, flattened to label/url pairs. A platform
+      // with no address is a key they cleared rather than a link to nowhere.
+      links: Object.entries(profile.social_profiles ?? {})
+        .map(([label, url]) => ({ label, url: String(url ?? "").trim() }))
+        .filter((link) => link.url),
+      memberCode: profile.member_code,
+      updatedAt: profile.profile_updated_at,
+    } : null,
+    // A read that failed is not a person who belongs to nothing. Without this
+    // the panel says "they do not run a club and have not joined one" to an
+    // admin whose database has not had 0190 run against it, which is the same
+    // plausible lie `paged()` already carries a comment about.
+    clubsFailed: clubs === null,
+    clubs: (clubs ?? []).map((club) => ({
+      id: club.club_id,
+      slug: club.slug,
+      name: club.name,
+      city: club.city,
+      clubStatus: club.club_status,
+      teamRole: club.team_role,
+      membershipStatus: club.membership_status,
+      tierLabel: club.tier_label,
+      joined: club.joined_at,
+      lifetime: club.lifetime,
+    })),
+    tally,
     account: {
       id: row.id,
       name: nameOf(row.full_name),

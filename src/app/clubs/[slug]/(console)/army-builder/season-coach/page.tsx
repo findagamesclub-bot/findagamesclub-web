@@ -6,7 +6,7 @@ import Crumbs from "@/components/ui/Crumbs";
 import SeasonCoach from "@/components/ai/SeasonCoach";
 import { getArmyGate, aiGateFor } from "@/services/armyAccess.service";
 import { getClubLists } from "@/services/armyLists.service";
-import { getUsage } from "@/services/aiJobs.service";
+import { getUsage, aiDeployment } from "@/services/aiJobs.service";
 
 export const metadata = { title: "Season coach" };
 
@@ -50,7 +50,8 @@ export default async function SeasonCoachPage(
         ]} />
         <PageHead title="Season coach"
           lede="A few weeks of practical work, built from the games this club has confirmed and the goal you pick. Only settled results count." />
-        <SeasonCoach slug={slug}
+        <SeasonCoach
+          deployment={aiDeployment("season")} slug={slug}
           lists={lists.filter((one) => one.isOwner && one.current)
             .map((one) => ({ id: one.id, name: one.name, faction: one.factionLabel }))}
           reason={reason} usage={usage} initial={null} stale={stale} />

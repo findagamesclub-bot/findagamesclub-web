@@ -17,11 +17,19 @@ export default function ClubHeader({
   /** Members get a way through to booking from the stat that prompts it. */
   canBook = false,
   joinedCount = null,
+  preview = false,
 }: {
   club: ClubDetail;
   canBook?: boolean;
   /** Approved members who joined through the site. Null when we could not ask. */
   joinedCount?: number | null;
+  /**
+   * Drawn for a listing that has no club behind it yet, on the admin's
+   * preview. Every page this header links to is one that does not exist, so
+   * the stats stay and the ways through come off. A preview with a dead link
+   * in it is a preview nobody can trust about anything else either.
+   */
+  preview?: boolean;
 }) {
   const place = [club.neighbourhood, club.city].filter(Boolean).join(" · ");
   const banner = club.images[0] ?? null;
@@ -115,7 +123,7 @@ export default function ClubHeader({
             // The club page runs to 3600px and the booking panel sits below the
             // fold on a laptop. "How many tables" is asked by somebody about to
             // book one, so the answer carries the way there.
-            href: canBook && (club.tablesAvailable ?? 0) > 0
+            href: !preview && canBook && (club.tablesAvailable ?? 0) > 0
               ? `/clubs/${club.slug}/bookings` : undefined,
             linkLabel: "Book",
           },
@@ -128,7 +136,7 @@ export default function ClubHeader({
             // which is legacy's own third fallback and is at least true.
             value: joinedCount || "Open",
             icon: GroupsIcon,
-            href: `/clubs/${club.slug}/members`,
+            href: preview ? undefined : `/clubs/${club.slug}/members`,
             linkLabel: "See who",
           },
           { label: "From", value: club.fromPrice, icon: SellIcon },

@@ -29,6 +29,7 @@ export default async function AdminClubsPage({
         rows={list.rows}
         query={filters.query}
         status={filters.tab}
+        sort={list.sort}
         tabs={list.tabs}
         total={list.total}
         page={list.page}

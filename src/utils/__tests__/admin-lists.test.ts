@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 
 import {
-  CLUB_TABS, EVENT_TABS, eventWhen, eventWhenForSql, readAdminFilters, tabsWith,
+  CLUB_SORTS, CLUB_TABS, EVENT_SORTS, EVENT_TABS, clubSort, eventSort, eventWhen,
+  eventWhenForSql, readAdminFilters, tabsWith,
 } from "../admin-lists";
 import { nextSearch } from "../filter-url";
 
@@ -18,7 +19,7 @@ import { nextSearch } from "../filter-url";
 {
   // A plain URL is page one of everything, not page NaN of nothing.
   const filters = readAdminFilters({});
-  assert.deepEqual(filters, { query: "", tab: "", extra: "", page: 1 });
+  assert.deepEqual(filters, { query: "", tab: "", extra: "", sort: "", page: 1 });
   assert.equal(readAdminFilters({ page: "0" }).page, 1);
   assert.equal(readAdminFilters({ page: "-4" }).page, 1);
   assert.equal(readAdminFilters({ page: "nonsense" }).page, 1);
@@ -39,9 +40,10 @@ import { nextSearch } from "../filter-url";
   assert.equal(empties(CLUB_TABS), 1, "clubs need one plain-URL tab");
   assert.equal(empties(EVENT_TABS), 0, "events default to upcoming, so none is plain");
 
-  assert.equal(eventWhen({ query: "", tab: "", extra: "", page: 1 }), "upcoming");
-  assert.equal(eventWhen({ query: "", tab: "past", extra: "", page: 1 }), "past");
-  assert.equal(eventWhen({ query: "", tab: "any", extra: "", page: 1 }), "any");
+  const at = (tab: string) => ({ query: "", tab, extra: "", sort: "", page: 1 });
+  assert.equal(eventWhen(at("")), "upcoming");
+  assert.equal(eventWhen(at("past")), "past");
+  assert.equal(eventWhen(at("any")), "any");
 
   // Pressing All has to write an address that reads back as All.
   for (const tab of EVENT_TABS) {
@@ -56,6 +58,68 @@ import { nextSearch } from "../filter-url";
   assert.equal(eventWhenForSql("any"), "");
   assert.equal(eventWhenForSql("upcoming"), "upcoming");
   assert.equal(eventWhenForSql("past"), "past");
+}
+
+// --- how the clubs list is ordered ----------------------------------------
+
+{
+  // An address is a claim. Anything that is not one of the two offered reads
+  // as the default rather than reaching SQL as a word it has to decide about.
+  const sorted = (sort: string) => clubSort({ query: "", tab: "", extra: "", sort, page: 1 });
+  assert.equal(sorted(""), "name");
+  assert.equal(sorted("name"), "name");
+  assert.equal(sorted("newest"), "newest");
+  assert.equal(sorted("created_at desc; drop table clubs"), "name");
+
+  // The default is the one `nextSearch` drops, so a plain URL and the picker's
+  // own first option write the same address. Get this wrong and pressing
+  // "By name" leaves `?sort=name` on every link the pager builds.
+  const plain = nextSearch("", { sort: "name" }, { sort: "name" });
+  assert.equal(plain, "");
+  assert.equal(clubSort(readAdminFilters(
+    Object.fromEntries(new URLSearchParams(plain)))), "name");
+
+  // And pressing the other one comes back as itself.
+  for (const option of CLUB_SORTS) {
+    const search = nextSearch("", { sort: option.value }, { sort: "name" });
+    assert.equal(clubSort(readAdminFilters(
+      Object.fromEntries(new URLSearchParams(search)))), option.value,
+      `pressing ${option.label} does not come back as itself`);
+  }
+}
+
+// --- and how the events list is ordered -----------------------------------
+
+{
+  const sorted = (sort: string) =>
+    eventSort({ query: "", tab: "", extra: "", sort, page: 1 });
+  assert.equal(sorted(""), "date");
+  assert.equal(sorted("date"), "date");
+  assert.equal(sorted("newest"), "newest");
+  assert.equal(sorted("start_date"), "date");
+
+  // Each list's default is the one `nextSearch` drops, so a plain URL and the
+  // picker's own first option write the same address.
+  assert.equal(nextSearch("", { sort: "date" }, { sort: "date" }), "");
+
+  for (const option of EVENT_SORTS) {
+    const search = nextSearch("", { sort: option.value }, { sort: "date" });
+    assert.equal(eventSort(readAdminFilters(
+      Object.fromEntries(new URLSearchParams(search)))), option.value,
+      `pressing ${option.label} does not come back as itself`);
+  }
+
+  // The two lists do not share a default, and must not share a sort value
+  // either: `state` and `sort` are one address, and a club sort reaching the
+  // events list would narrow nothing and order by something nobody picked.
+  assert.equal(CLUB_SORTS.find((s) => s.value === "date"), undefined,
+    "the clubs list must not offer the events list's default");
+  assert.equal(EVENT_SORTS.find((s) => s.value === "name"), undefined,
+    "the events list must not offer the clubs list's default");
+  // They do share "newest", deliberately: it is the same word for the same
+  // idea on both, which is the whole reason the client asked for it twice.
+  assert.ok(CLUB_SORTS.some((s) => s.value === "newest"));
+  assert.ok(EVENT_SORTS.some((s) => s.value === "newest"));
 }
 
 // --- the counts -----------------------------------------------------------

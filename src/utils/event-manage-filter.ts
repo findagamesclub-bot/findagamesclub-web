@@ -19,7 +19,7 @@ export type ManageEvent = {
   id: number;
   legacyId: string;
   title: string;
-  status: "draft" | "published" | "cancelled";
+  status: "draft" | "published" | "cancelled" | "suspended";
   startDate: string | null;
   endDate: string | null;
   venueName: string | null;
@@ -45,6 +45,10 @@ export function isPast(event: ManageEvent, today: string): boolean {
 function tabOf(event: ManageEvent, today: string): ManageEventTab {
   if (event.status === "cancelled") return "cancelled";
   if (event.status === "draft") return "drafts";
+  // A suspended event (0188) stays in Upcoming or Past with its own dates. It
+  // is still a night the club is running and the club is still working on it;
+  // only the listing is down, which the row's chip says. Filing it under
+  // Cancelled would tell them it is off, which it is not.
   return isPast(event, today) ? "past" : "upcoming";
 }
 

@@ -17,19 +17,25 @@ import { callRpc } from "@/lib/supabase/table";
 export type AdminClubRow = {
   id: number; slug: string; name: string; city: string; status: string;
   claimable: boolean; spotlight: boolean; owner_name: string;
-  members: number; total_count: number;
+  members: number;
+  /** When the club started: its legacy date where it has one, else the row's. */
+  started: string | null;
+  total_count: number;
 };
 
 export type AdminEventRow = {
   id: number; legacy_id: string; title: string; start_date: string; status: string;
   club_slug: string; club_name: string;
-  places: number; sold: number; total_count: number;
+  places: number; sold: number;
+  /** When the club put it up, which is what "newest first" orders on. */
+  added: string | null;
+  total_count: number;
 };
 
 export const findAdminClubs = (params: {
-  query: string; status: string; limit: number; offset: number;
+  query: string; status: string; sort: string; limit: number; offset: number;
 }) => callRpc<AdminClubRow[]>("admin_clubs", {
-  p_query: params.query, p_status: params.status,
+  p_query: params.query, p_status: params.status, p_sort: params.sort,
   p_limit: params.limit, p_offset: params.offset,
 });
 
@@ -40,8 +46,9 @@ export const findAdminEventCounts = (query: string) =>
   callRpc<Record<string, number>>("admin_event_counts", { p_query: query });
 
 export const findAdminEvents = (params: {
-  query: string; status: string; when: string; limit: number; offset: number;
+  query: string; status: string; when: string; sort: string;
+  limit: number; offset: number;
 }) => callRpc<AdminEventRow[]>("admin_events", {
   p_query: params.query, p_status: params.status, p_when: params.when,
-  p_limit: params.limit, p_offset: params.offset,
+  p_sort: params.sort, p_limit: params.limit, p_offset: params.offset,
 });

@@ -6,7 +6,7 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import AiNote from "./AiNote";
 import AiJobProgress from "./AiJobProgress";
 import AiResult from "./AiResult";
 import AiResultHeader from "./AiResultHeader";
@@ -14,6 +14,7 @@ import { useAiJob } from "@/hooks/useAiJob";
 import { runAiAction } from "@/app/clubs/[slug]/(console)/army-builder/ai-actions";
 import { FEATURE_META, type AiFeature } from "@/utils/ai-access";
 import { aiErrorCopy } from "@/utils/ai-errors";
+import { AI_DEPLOYMENT_COPY, type AiDeployment } from "@/utils/ai-deployment";
 import type { AiJob } from "@/types/ai";
 import { mono, tokens } from "@/lib/tokens";
 
@@ -27,9 +28,17 @@ import { mono, tokens } from "@/lib/tokens";
  * The blocked reason is shown, never hidden. A member on a tier without this
  * feature can see what it is and what it would take, which is the same call
  * the ticket desk and the army builder already make.
+ *
+ * The same goes for the site not having it switched on, and that one is newer:
+ * `deployment` is read where the page renders rather than inside the run, so
+ * the button is not drawn at all when it is already known that it cannot work.
+ * It used to be offered, pressed, filed as a job, and answered a few seconds
+ * later with a warning. That reads as a broken feature, and the client
+ * reported it as one.
  */
 export default function AiPanel({
   feature, slug, listId, opponent, opponentProfileId, reason, usage, initial,
+  deployment,
 }: {
   feature: AiFeature;
   slug: string;
@@ -39,6 +48,8 @@ export default function AiPanel({
   opponentProfileId?: string;
   /** Null when they may run it. Otherwise the rung they are stopped at. */
   reason: string | null;
+  /** Whether this site can run it at all. Checked before the tier. */
+  deployment: AiDeployment;
   usage: { message: string; limited: boolean; remaining: number | null };
   initial: AiJob | null;
 }) {
@@ -63,16 +74,14 @@ export default function AiPanel({
     if (answer.jobId) setJobId(answer.jobId);
   });
 
-  if (reason) {
-    return (
-      <Stack direction="row" spacing={1.5}
-        sx={{ alignItems: "flex-start", p: 2, borderRadius: 1.5,
-              border: `1px solid ${tokens.rule}`, backgroundColor: tokens.paper }}>
-        <LockOutlinedIcon sx={{ fontSize: 20, color: tokens.inkMuted, mt: 0.2 }} />
-        <Typography variant="body2" sx={{ color: tokens.inkMuted }}>{reason}</Typography>
-      </Stack>
-    );
+  // The site first, then the tier. Telling somebody their tier does not
+  // include a feature that nobody on the site can run is a true sentence that
+  // sends them to buy something which would change nothing.
+  if (deployment !== "on") {
+    return <AiNote kind="note">{AI_DEPLOYMENT_COPY[deployment]}</AiNote>;
   }
+
+  if (reason) return <AiNote>{reason}</AiNote>;
 
   return (
     <Stack spacing={2}>

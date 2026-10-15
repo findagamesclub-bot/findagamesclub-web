@@ -14,7 +14,9 @@ import { useActionSuccess } from "@/hooks/useActionSuccess";
 import ModerationDialog from "@/components/moderation/ModerationDialog";
 import type { ModerationState } from "@/app/admin/moderation/actions";
 import type { FlagRow } from "@/services/moderation.service";
-import { MODERATION_TARGETS, targetLabel } from "@/utils/moderation-targets";
+import {
+  MODERATION_SORTS, MODERATION_TARGETS, targetLabel,
+} from "@/utils/moderation-targets";
 import { statusTag } from "@/utils/moderation-status";
 import { clubIdentity } from "@/utils/club-identity";
 import { shortDate } from "@/utils/dates";
@@ -36,12 +38,12 @@ const TYPES = [
  * open the author in.
  */
 export default function ModerationQueue({
-  rows, tabs, tab, type, query, total, page, perPage, failed,
+  rows, tabs, tab, type, query, sort, total, page, perPage, failed,
   action, basePath, scope = "site", extraFields,
 }: {
   rows: FlagRow[];
   tabs: UrlTab[];
-  tab: string; type: string; query: string;
+  tab: string; type: string; query: string; sort: string;
   total: number; page: number; perPage: number; failed: boolean;
   /** A server action, which does cross the boundary. Plain functions do not. */
   action: (prev: ModerationState, data: FormData) => Promise<ModerationState>;
@@ -74,10 +76,10 @@ export default function ModerationQueue({
         placeholder="Search the words, or the reason given"
         tab={tab}
         tabs={tabs}
-        sort="oldest"
-        sorts={[{ value: "oldest", label: "Longest waiting" }]}
+        sort={sort}
+        sorts={MODERATION_SORTS}
         second={{ label: "Kind", value: type, options: TYPES, param: "type" }}
-        defaults={{ state: "", sort: "oldest", type: "" }}
+        defaults={{ state: "", sort: "waiting", type: "" }}
         onBusy={setSifting}
       />
 
@@ -186,6 +188,9 @@ export default function ModerationQueue({
           <Pager page={page} total={total} size={perPage} noun="reports"
             href={{ path: basePath, params: {
               q: query || undefined, state: tab || undefined, type: type || undefined,
+              // The pager carries the order, or page two of Newest first is
+              // page two of Longest waiting wearing the same link.
+              sort: sort === "waiting" ? undefined : sort,
             } }} />
         </Stack>
       </BusyOverlay>

@@ -161,3 +161,39 @@ export async function markFeaturedAnnouncedAsJob(slot: number): Promise<boolean>
   if (error) throw new Error(`Failed to mark a slot announced: ${error.message}`);
   return Boolean(data);
 }
+
+/**
+ * Which clubs hold a live, paid slot today.
+ *
+ * Its own read rather than `featured_clubs()`, because that one answers a
+ * different question: who should lead the homepage, capped at six and padded
+ * with `spotlight` when nothing has been sold. This is the narrower fact that
+ * the badge depends on, uncapped and with nothing standing in.
+ *
+ * The anon client, like `findFeaturedClubs`: the directory caches this and
+ * `unstable_cache` cannot contain `cookies()`. RLS still applies, and 0113's
+ * own policy is `using (true)` because what is featured today is on the front
+ * page anyway.
+ */
+export async function findLiveFeaturedClubIds(today: string): Promise<number[]> {
+  const supabase = createAnonClient();
+  const { data, error } = await (supabase as unknown as {
+    from(table: string): {
+      select(columns: string): {
+        lte(column: string, value: string): {
+          gte(column: string, value: string): Promise<{
+            data: { club_id: number }[] | null;
+            error: { message: string } | null;
+          }>;
+        };
+      };
+    };
+  })
+    .from("featured_listings")
+    .select("club_id")
+    .lte("starts_on", today)
+    .gte("ends_on", today);
+
+  if (error) throw new Error(`Failed to load the live featured slots: ${error.message}`);
+  return [...new Set((data ?? []).map((row) => row.club_id))];
+}

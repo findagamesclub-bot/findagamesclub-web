@@ -2,13 +2,15 @@ import "server-only";
 
 import * as repo from "@/repositories/adminLists.repository";
 import {
-  CLUB_TABS, EVENT_TABS, eventWhen, eventWhenForSql, tabsWith,
+  CLUB_TABS, EVENT_TABS, clubSort, eventSort, eventWhen, eventWhenForSql, tabsWith,
   type AdminListFilters,
 } from "@/utils/admin-lists";
 
 const PER_PAGE = 25;
 
-export { CLUB_TABS, EVENT_TABS, readAdminFilters } from "@/utils/admin-lists";
+export {
+  CLUB_SORTS, CLUB_TABS, EVENT_SORTS, EVENT_TABS, readAdminFilters,
+} from "@/utils/admin-lists";
 export type { AdminListFilters } from "@/utils/admin-lists";
 
 /**
@@ -30,31 +32,35 @@ function paged<T extends { total_count: number }>(rows: T[] | null, page: number
 }
 
 export async function getAdminClubs(filters: AdminListFilters) {
+  const sort = clubSort(filters);
   // One wave. Two reads that do not need each other's answer, so waiting for
   // the first before starting the second would cost 300ms for nothing.
   const [rows, counts] = await Promise.all([
     repo.findAdminClubs({
-      query: filters.query, status: filters.tab,
+      query: filters.query, status: filters.tab, sort,
       limit: PER_PAGE, offset: (filters.page - 1) * PER_PAGE,
     }).catch(() => null),
     repo.findAdminClubCounts(filters.query).catch(() => ({})),
   ]);
-  return { ...paged(rows, filters.page), tabs: tabsWith(CLUB_TABS, counts ?? {}) };
+  return {
+    ...paged(rows, filters.page), sort, tabs: tabsWith(CLUB_TABS, counts ?? {}),
+  };
 }
 
 export async function getAdminEvents(filters: AdminListFilters) {
   // Upcoming unless the address says otherwise, so the plain URL answers the
   // question an admin nearly always has.
   const when = eventWhen(filters);
+  const sort = eventSort(filters);
   const [rows, counts] = await Promise.all([
     repo.findAdminEvents({
       query: filters.query, status: filters.extra, when: eventWhenForSql(when),
-      limit: PER_PAGE, offset: (filters.page - 1) * PER_PAGE,
+      sort, limit: PER_PAGE, offset: (filters.page - 1) * PER_PAGE,
     }).catch(() => null),
     repo.findAdminEventCounts(filters.query).catch(() => ({})),
   ]);
   return {
-    ...paged(rows, filters.page), when,
+    ...paged(rows, filters.page), when, sort,
     tabs: tabsWith(EVENT_TABS, counts ?? {}),
   };
 }

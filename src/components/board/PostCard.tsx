@@ -6,6 +6,7 @@ import Image from "next/image";
 import PollIcon from "@mui/icons-material/Poll";
 import Counter from "@/components/ui/Counter";
 import { sinceLabel } from "@/utils/dates";
+import { visuallyHidden } from "@/lib/a11y";
 import { tokens, type Faction } from "@/lib/tokens";
 
 /**
@@ -228,9 +229,7 @@ function UnreadPill({ count }: { count: number }) {
       >
         {count} NEW
       </Typography>
-      <Box component="span" sx={{ position: "absolute", width: 1, height: 1,
-                                  overflow: "hidden", clip: "rect(0 0 0 0)",
-                                  whiteSpace: "nowrap" }}>
+      <Box component="span" sx={visuallyHidden}>
         {count === 1 ? "1 reply you have not read" : `${count} replies you have not read`}
       </Box>
     </Stack>

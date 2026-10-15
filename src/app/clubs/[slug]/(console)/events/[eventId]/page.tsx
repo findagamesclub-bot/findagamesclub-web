@@ -18,6 +18,8 @@ import Section from "@/components/ui/Section";
 import EventPlacings from "@/components/events/EventPlacings";
 import EventNoticeboard from "@/components/events/EventNoticeboard";
 import EventCalledOff from "@/components/events/EventCalledOff";
+import TakenDownNotice from "@/components/ui/TakenDownNotice";
+import { getEventSuspension } from "@/services/adminListings.service";
 import ClaimNamesNotice from "@/components/events/ClaimNamesNotice";
 import LockedNote from "@/components/events/LockedNote";
 import EventTags from "@/components/events/EventTags";
@@ -145,6 +147,15 @@ export default async function EventPage({
     : 0;
 
   const cancelled = event.status === "cancelled";
+  // Only on an event that is actually down, which is almost none of them, so
+  // every other event page pays nothing for a banner it never draws. The
+  // function answers nobody but the club's own team and an admin, so an
+  // ordinary reader gets null and sees the hero's own "Taken down" and no
+  // reason, which is right: our reason is written for the club.
+  const takenDown = event.status === "suspended"
+    ? await getEventSuspension(event.id)
+    : null;
+  const isSiteAdmin = viewer?.role === "admin";
   const { faction, monogram } = clubIdentity(event.clubSlug, event.clubName);
   const back = backTarget(query.from, { slug: event.clubSlug, name: event.clubName }, query);
   // Passed on to the door list so its own back link lands where you started.
@@ -161,6 +172,14 @@ export default async function EventPage({
           </Typography>
         </Stack>
       </NextLink>
+
+      {/* Ours rather than the club's, and never both: an event an admin has
+          taken down has not been called off, and saying both would be the page
+          telling two different stories about the same evening. */}
+      {takenDown ? (
+        <TakenDownNotice kind="event" reason={takenDown.reason} at={takenDown.at}
+          byName={takenDown.byName} canAct={isSiteAdmin} />
+      ) : null}
 
       {/* First thing on the page, above the artwork. Everything under it reads
           as a live event otherwise, which is exactly what the club saw: a
@@ -444,6 +463,7 @@ export default async function EventPage({
               eventId={event.id}
               hasEnded={event.hasEnded}
               cancelled={cancelled}
+              takenDown={event.status === "suspended"}
             />
           ) : null}
 
@@ -461,6 +481,7 @@ export default async function EventPage({
               signedIn={Boolean(viewer)}
               hasEnded={event.hasEnded}
               cancelled={cancelled}
+              takenDown={event.status === "suspended"}
               myBookingReference={event.myBookingReference}
               myBookingCount={event.myBookingCount}
             />
