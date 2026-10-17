@@ -18,7 +18,7 @@ const member = (over: Partial<ClubMember> & { membershipId: number }): ClubMembe
 const payment = (over: Partial<MembershipPayment> = {}): MembershipPayment => ({
   id: 1, tierKey: "premium", tierLabel: "Premium", billingOptionLabel: "Monthly",
   price: "£10", priceDuration: "month", periodStart: "2026-01-01",
-  periodEnd: day(20), note: null, recordedAt: "2026-01-01T00:00:00Z", ...over,
+  periodEnd: day(20), note: null, recordedAt: "2026-01-01T00:00:00Z", editedAt: null, ...over,
 });
 
 const row = (id: number, payments: MembershipPayment[], free = false) =>

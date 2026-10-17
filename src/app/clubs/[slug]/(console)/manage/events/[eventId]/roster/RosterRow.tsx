@@ -23,9 +23,12 @@ import { display, mono, tokens, type Faction } from "@/lib/tokens";
  * menu where it cannot be hit by accident.
  */
 export default function RosterRow({
-  row, busy, faction, members = [], onCheckIn, onPayment, onCancel, onEdit, onRefund,
+  row, busy, faction, members = [], accountNames = {},
+  onCheckIn, onPayment, onCancel, onEdit, onRefund,
 }: {
   row: DoorRow;
+  /** Linked accounts' own names by id, for people the roster does not hold. */
+  accountNames?: Record<string, string>;
   /** The club's own members, so an account can be named rather than an id. */
   members?: { id: string; name: string }[];
   /** True only for the row being saved, so one spinner marks one action. */
@@ -41,7 +44,8 @@ export default function RosterRow({
   // The account's own name, but only when it is not the name on the door.
   // A member who booked for themselves is the ordinary case and says nothing.
   const account = row.profileId
-    ? members.find((m) => m.id === row.profileId)?.name ?? ""
+    ? members.find((m) => m.id === row.profileId)?.name
+      ?? accountNames[row.profileId] ?? ""
     : "";
   const bookedBy = account
     && account.trim().toLowerCase() !== row.fullName.trim().toLowerCase()

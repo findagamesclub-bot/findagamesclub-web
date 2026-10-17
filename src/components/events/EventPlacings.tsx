@@ -39,6 +39,8 @@ export type PlacingAdmin = {
   builder: Builder | null;
   /** Lists built at this club, narrowed per placing by the editor. */
   lists: MemberList[];
+  /** Linked accounts' own names by id, for the people the roster does not hold. */
+  accountNames?: Record<string, string>;
 };
 
 /**
@@ -213,6 +215,7 @@ export default function EventPlacings({
             eventId={admin.eventId}
             builder={admin.builder}
             lists={admin.lists}
+            accountNames={admin.accountNames}
             onClose={() => setTarget(null)}
           />
         </>

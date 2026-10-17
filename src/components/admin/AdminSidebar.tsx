@@ -6,6 +6,8 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import LogoutIcon from "@mui/icons-material/Logout";
 import TravelExploreIcon from "@mui/icons-material/TravelExplore";
+import EventIcon from "@mui/icons-material/Event";
+import InsightsIcon from "@mui/icons-material/Insights";
 import NextLink from "next/link";
 import { useState } from "react";
 import SideNav from "@/components/ui/SideNav";
@@ -15,10 +17,25 @@ import { adminGroups, type AdminCounts } from "./admin-nav";
 import { display, mono, tokens } from "@/lib/tokens";
 
 /**
+ * The site as everybody else sees it, from inside the console.
+ *
+ * The same three the client named ("directory, events, meta tracker"), which
+ * are three of the items the header offers everywhere the header is drawn.
+ * Map is left off: it is the directory in another view and the directory is
+ * one press away from it.
+ */
+const PUBLIC_LINKS = [
+  { href: "/clubs", label: "Directory", Icon: TravelExploreIcon },
+  { href: "/events", label: "Events", Icon: EventIcon },
+  { href: "/meta-tracker", label: "Meta Tracker", Icon: InsightsIcon },
+];
+
+/**
  * The admin console's navigation. Same shell as the account and the club.
  *
  * It carries more than those two because the console hides the site header:
- * who is signed in, and the way out, have nowhere else to be.
+ * who is signed in, and the way back out to the public site, have nowhere
+ * else to be on this screen.
  */
 export default function AdminSidebar({
   counts, viewerId, viewerName,
@@ -67,19 +84,37 @@ export default function AdminSidebar({
       }
       footer={
         <Stack spacing={1.25}>
-        {/* The one way out of the console, kept away from the sections so it
-            does not read as one of them. */}
-        <Box sx={{ px: 1.5 }}>
-          <NextLink href="/clubs" style={{ textDecoration: "none" }}>
-            <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-              <TravelExploreIcon sx={{ fontSize: 17, color: tokens.inkMuted }} />
-              <Typography variant="body2" sx={{ color: tokens.inkMuted,
-                                                "&:hover": { color: tokens.ink } }}>
-                Club directory
-              </Typography>
-            </Stack>
-          </NextLink>
-        </Box>
+        {/* The way out of the console, and the one place on the site where
+            the header is hidden, so this is where its links have to be.
+
+            Three rather than one. The header carries Directory, Events and the
+            Meta Tracker for an admin now, the way it does for everybody else;
+            leaving the rail offering only the directory would make the console
+            the single screen in the app with less of the site reachable from
+            it, which is the gap the client found from the other side.
+
+            Written in the rail's own shape, a heading and its rows, rather
+            than squeezed onto one line: at 248px "Directory · Events · Meta
+            Tracker" wraps mid-list and the separators disappear. Its heading
+            names where they go, so three site links at the foot of a console
+            rail cannot read as three more console sections. */}
+        <Stack spacing={0.9} sx={{ px: 1.5 }}>
+          <Typography sx={{ fontFamily: mono, fontSize: "0.62rem", fontWeight: 700,
+                            letterSpacing: "0.12em", color: tokens.inkMuted }}>
+            THE PUBLIC SITE
+          </Typography>
+          {PUBLIC_LINKS.map((link) => (
+            <NextLink key={link.href} href={link.href} style={{ textDecoration: "none" }}>
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                <link.Icon sx={{ fontSize: 17, color: tokens.inkMuted, flexShrink: 0 }} />
+                <Typography variant="body2" sx={{ color: tokens.inkMuted,
+                                                  "&:hover": { color: tokens.ink } }}>
+                  {link.label}
+                </Typography>
+              </Stack>
+            </NextLink>
+          ))}
+        </Stack>
         <Box sx={{ px: 1.5 }}>
           <Button onClick={() => setAsking(true)} fullWidth variant="outlined" size="small"
             startIcon={<LogoutIcon sx={{ fontSize: 16 }} />}

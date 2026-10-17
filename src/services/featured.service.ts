@@ -33,6 +33,40 @@ export async function getSlots() {
   return repo.findSlots().catch(() => []);
 }
 
+/**
+ * One club's own slots, for its billing page.
+ *
+ * Shaped here rather than handed over as rows, because the page splits them
+ * with `splitSlots` and a pure util should not be reading `starts_on`.
+ */
+export type ClubFeaturedSlot = {
+  id: number;
+  startsOn: string;
+  endsOn: string;
+  pricePence: number;
+  currency: string;
+  note: string;
+};
+
+export async function getClubSlots(clubId: number): Promise<ClubFeaturedSlot[]> {
+  const rows = await repo.findSlotsForClub(clubId).catch((error) => {
+    // Logged rather than swallowed. An empty list here reads as "this club has
+    // never been featured", which is a believable sentence about a club that
+    // is on the homepage as we speak.
+    console.error("[featured] a club's own slots did not load", error);
+    return [];
+  });
+
+  return rows.map((row) => ({
+    id: row.id,
+    startsOn: row.starts_on,
+    endsOn: row.ends_on,
+    pricePence: row.price_pence,
+    currency: row.currency ?? "GBP",
+    note: row.note ?? "",
+  }));
+}
+
 export async function getClubsForPicker() {
   return repo.findClubsForPicker().catch(() => []);
 }

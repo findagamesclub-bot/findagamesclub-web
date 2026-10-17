@@ -16,7 +16,7 @@ import GameField from "@/components/results/GameField";
 import { knownGames } from "@/utils/game-label";
 import { playsFortyK } from "@/utils/event-meta";
 import { useCatalogue } from "@/hooks/useCatalogue";
-import { EMPTY_ARMY, type ResultArmy } from "@/utils/result-army";
+import { EMPTY_SIDE, type GameSide } from "@/utils/result-army";
 import { useActionToast } from "@/components/ui/Toaster";
 import { useActionSuccess } from "@/hooks/useActionSuccess";
 import { clubResultAction, type ClubResultState }
@@ -50,8 +50,8 @@ export default function ClubResultDialog({
   const [deployment, setDeployment] = useState("");
   const [terrain, setTerrain] = useState("");
   const [confirmation, setConfirmation] = useState("admin-confirmed");
-  const [home, setHome] = useState<ResultArmy>(EMPTY_ARMY);
-  const [away, setAway] = useState<ResultArmy>(EMPTY_ARMY);
+  const [home, setHome] = useState<GameSide>(EMPTY_SIDE);
+  const [away, setAway] = useState<GameSide>(EMPTY_SIDE);
   const [title, setTitle] = useState("");
   const [seenId, setSeenId] = useState<number | null>(null);
 
@@ -128,9 +128,25 @@ export default function ClubResultDialog({
                 <ArmyFields
                   builder={isFortyK ? result.builder : null} catalogue={catalogue}
                   loading={loading} failed={failed}
-                  one={home} two={away} onOne={setHome} onTwo={setAway}
+                  one={home} two={away}
+                  // Spread rather than replaced, so a list the member named
+                  // survives the club correcting the cascade under it.
+                  onOne={(next) => setHome({ ...home, ...next })}
+                  onTwo={(next) => setAway({ ...away, ...next })}
                   oneTitle={`${result.homeName}'s army`}
                   twoTitle={`${result.awayName}'s army`}
+                  // No list picker on either side, and said rather than left
+                  // to be noticed. `link_result_army_list` is the member's own
+                  // door and refuses anybody else, because on a club night the
+                  // only person who knows which list came out of the bag is the
+                  // one who built it. A tournament is the case that rule was
+                  // not written for, which is why the event screens do have the
+                  // picker. Saying nothing here is how a deliberate rule reads
+                  // as a half-built feature.
+                  underOne={<OwnListNote name={result.homeName}
+                    listName={home.listName} />}
+                  underTwo={<OwnListNote name={result.awayName}
+                    listName={away.listName} />}
                   fallback={isFortyK ? (
                     <Stack direction="row" spacing={2}>
                       <TextField name="homeArmy" label={`${result.homeName}'s army`}
@@ -170,5 +186,17 @@ export default function ClubResultDialog({
         </>
       ) : null}
     </Dialog>
+  );
+}
+
+/** Which list they named, or why the club cannot name one for them. */
+function OwnListNote({ name, listName }: { name: string; listName: string }) {
+  const said = listName.trim();
+  return (
+    <Typography variant="caption" sx={{ color: tokens.inkMuted }}>
+      {said
+        ? `They named ${said}.`
+        : `Only ${name} can name the army list they brought, from their own copy of this game.`}
+    </Typography>
   );
 }

@@ -1,4 +1,6 @@
 import { build, greet, type Email } from "./build";
+import { paymentNote } from "@/utils/payment-note";
+import { tableNumber } from "@/utils/table-number";
 
 export function tablePromoted(params: {
   name?: string;
@@ -75,8 +77,7 @@ export function ticketsBooked(params: {
       // The reference is the thing they will be asked for on the door, so it is
       // its own line rather than buried in a sentence.
       `Your reference is ${params.reference}.`,
-      "The club takes payment either before the event or on the day, depending on their terms. "
-      + "Quote the reference when you arrive.",
+      `${paymentNote(params.clubName)} Quote the reference when you arrive.`,
     ],
     action: { label: "See your ticket", url: params.url },
     footnote: "If you can no longer make it, cancel from your tickets so somebody else can take the place.",
@@ -133,18 +134,18 @@ export function tableBooked(params: {
       `You put ${params.pointsSpent} loyalty ${params.pointsSpent === 1 ? "point" : "points"} towards it, and that is already off the price below.`,
     );
   }
-  body.push("Nothing has been charged. Clubs take table money at the door.");
+  body.push(`Nothing has been charged. ${paymentNote(params.clubName)}`);
 
   const rows = [
     { label: "When", value: [params.night, params.time].filter(Boolean).join(", ") },
     { label: "Playing", value: params.gameTitle },
-    { label: "Table", value: `${params.tableIndex}` },
+    { label: "Table", value: `${tableNumber(params.tableIndex)}` },
   ];
   // Only when they named one. "Opponent: none" reads like a failed lookup.
   if (params.opponentName) rows.push({ label: "Opponent", value: params.opponentName });
 
   return build(`Your table at ${params.clubName} on ${params.night}`, {
-    previewText: `${params.night}. Table ${params.tableIndex}. ${params.gameTitle}.`,
+    previewText: `${params.night}. Table ${tableNumber(params.tableIndex)}. ${params.gameTitle}.`,
     eyebrow: "Table booked",
     heading: "Your table is booked",
     body,

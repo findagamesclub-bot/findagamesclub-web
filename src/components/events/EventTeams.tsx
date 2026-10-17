@@ -17,7 +17,7 @@ import type { EventTeam, TeamFixture } from "@/types/eventTeams";
  *
  * One row per team rather than a grid of cards, because this is a table and a
  * table is read down a column: the whole question is who is above whom. The
- * boards fold away under each row, since "who is in Red Dice" is the second
+ * players fold away under each row, since "who is in Red Dice" is the second
  * question and asking it of twelve teams at once is a page of names.
  *
  * The place the club has given a team wins over the running order, and the
@@ -88,10 +88,10 @@ export default function EventTeams({ teams, fixtures, faction, viewerName }: {
                       row.played ? `${row.won}-${row.drawn}-${row.lost}` : null,
                       // Said in words, because a bare "1 TABLE" in a column
                       // with no heading reads as the table they are playing
-                      // on, and both teams in a two-board fixture show one.
+                      // on, and both teams in a two-table fixture show one.
                       row.played
                         ? `${row.tablesWon} ${row.tablesWon === 1 ? "TABLE" : "TABLES"} WON`
-                        : `${team.players.length} ${team.players.length === 1 ? "BOARD" : "BOARDS"}`,
+                        : `${team.players.length} ${team.players.length === 1 ? "PLAYER" : "PLAYERS"}`,
                     ].filter(Boolean).join(" · ")}
                   </Typography>
                 </Stack>
@@ -120,13 +120,13 @@ export default function EventTeams({ teams, fixtures, faction, viewerName }: {
 
               <Collapse in={showing} unmountOnExit>
                 <Stack spacing={0.4} sx={{ px: 2, pb: 1.75, pl: 5.5 }}>
-                  {team.players.map((player, board) => (
+                  {team.players.map((player, seat) => (
                     <Stack key={player.id} direction="row" spacing={1}
                       sx={{ alignItems: "baseline" }}>
                       <Typography sx={{ fontFamily: mono, fontSize: "0.65rem",
                                         fontWeight: 700, color: tokens.inkMuted,
                                         width: 18, flexShrink: 0 }}>
-                        {board + 1}
+                        {seat + 1}
                       </Typography>
                       <Typography sx={{ fontSize: "0.88rem", minWidth: 0 }}>
                         {player.name}

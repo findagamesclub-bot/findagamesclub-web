@@ -37,6 +37,7 @@ const toPayment = (row: {
   id: number; tier_key: string | null; tier_label: string; billing_option_label: string;
   price: string; price_duration: string; period_start_at: string | null;
   period_end_at: string | null; note: string | null; created_at: string;
+  edited_at?: string | null;
 }): MembershipPayment => ({
   id: row.id,
   tierKey: row.tier_key,
@@ -46,6 +47,7 @@ const toPayment = (row: {
   priceDuration: row.price_duration,
   periodStart: row.period_start_at,
   periodEnd: row.period_end_at,
+  editedAt: row.edited_at ?? null,
   note: row.note ?? "",
   recordedAt: row.created_at,
 });

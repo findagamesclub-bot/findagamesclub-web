@@ -33,12 +33,12 @@ export default function JoinPanelPreviewPage() {
       price: "£10", priceDuration: "month",
       periodStart: new Date(NOW - 10 * day).toISOString(),
       periodEnd: new Date(NOW + 20 * day).toISOString(),
-      note: "Bank transfer", recordedAt: new Date(NOW - 10 * day).toISOString() },
+      note: "Bank transfer", recordedAt: new Date(NOW - 10 * day).toISOString() , editedAt: null},
     { id: 1, tierKey: "basic", tierLabel: "Basic Membership", billingOptionLabel: "Monthly",
       price: "£10", priceDuration: "month",
       periodStart: new Date(NOW - 40 * day).toISOString(),
       periodEnd: new Date(NOW - 10 * day).toISOString(),
-      note: "Cash at the door", recordedAt: new Date(NOW - 40 * day).toISOString() },
+      note: "Cash at the door", recordedAt: new Date(NOW - 40 * day).toISOString() , editedAt: null},
   ];
   const base = {
     clubId: 9, slug: "didcot-wargames-didcot", clubName: "Didcot Wargames",

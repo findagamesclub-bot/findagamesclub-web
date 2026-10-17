@@ -19,6 +19,8 @@ export type MembershipPayment = {
   periodEnd: string | null;
   note: string | null;
   recordedAt: string;
+  /** When the club last put it right (0195). Null means never. */
+  editedAt: string | null;
 };
 
 /** Where a member's subscription stands right now. */

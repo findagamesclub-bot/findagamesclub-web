@@ -103,14 +103,30 @@ export default function AddPlaceDialog({
             isOptionEqualToValue={(a, b) => a.id === b.id}
             renderInput={(params) => (
               <TextField {...params} label="Member"
-                helperText="Optional. Name one and the place is theirs: it shows on their tickets, earns them points, takes their tier's discount, and uses the address on their account." />
+                helperText="Name one and the place is theirs: their name on the door, their tier's discount, their points, their account address. Leave it blank for a guest, who pays the list price." />
             )}
           />
 
-          <TextField label="Name on the door" required fullWidth
-            value={name} onChange={(event) => setName(event.target.value)}
-            slotProps={{ htmlInput: { maxLength: 120 } }}
-            helperText="Who to call up on the day." />
+          {/* A place is a member's or it is a guest's, and the two boxes used
+              to be independent: naming a member bought their tier's discount
+              and this field then sent somebody else in on it. The client found
+              it ("any member discount or loyalty points should not be applied
+              to the non member"), so the name is no longer a separate
+              decision. 0197 takes it from the profile as well, because a
+              screen is not where a rule about money is enforced. */}
+          {member ? (
+            <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
+              The place is {member.name}&apos;s, so it goes on the door in their
+              name. Booking somebody else in on a member&apos;s discount is the
+              one thing this cannot do: clear the member above and add them as a
+              guest.
+            </Typography>
+          ) : (
+            <TextField label="Name on the door" required fullWidth
+              value={name} onChange={(event) => setName(event.target.value)}
+              slotProps={{ htmlInput: { maxLength: 120 } }}
+              helperText="Who to call up on the day. A guest pays the list price." />
+          )}
 
           {/* Required unless a member is named, because 0015 has required an
               address on every booking since tickets existed: everything about

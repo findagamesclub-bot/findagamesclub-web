@@ -35,6 +35,11 @@ export async function recordResultAction(
     // game alone. Present here, so changing it to something that is not 40k
     // takes the recorded factions with it.
     game: String(data.get("game") ?? "").trim() || undefined,
+    // Absent when the club does not run the army builder, which leaves any
+    // link alone. "" is a real answer and means take it off.
+    listId: data.get("myList") === null
+      ? undefined
+      : Number(data.get("myList")) || null,
   });
 
   if (!result.ok) return { error: result.error };

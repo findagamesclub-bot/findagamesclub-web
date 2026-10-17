@@ -23,6 +23,7 @@ import { tokens, type Faction } from "@/lib/tokens";
 import { nightLabel } from "@/utils/dates";
 import type { Booking, CalendarSession } from "@/types/booking";
 import type { QueueEntry } from "@/services/waitlist.service";
+import { tableNumber } from "@/utils/table-number";
 
 /**
  * The club's view of one night: every table, every person waiting, and the two
@@ -128,7 +129,7 @@ export default function ManageNight({
                       sx={{ py: 1.25, borderTop: `1px solid ${tokens.rule}`, alignItems: "center" }}>
                       <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem",
                                         color: tokens.inkMuted, minWidth: 22 }}>
-                        {String(b.tableIndex + 1).padStart(2, "0")}
+                        {String(tableNumber(b.tableIndex)).padStart(2, "0")}
                       </Typography>
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>

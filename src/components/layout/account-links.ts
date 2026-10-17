@@ -48,10 +48,13 @@ export function accountLinks(
     // Above the profile and the messages: somebody who runs a club opens this
     // menu to get to work more often than to read their own page.
     ...(manage ? [manage] : []),
-    // The page other members see, rather than the editor inside the account.
-    // An admin gets theirs at its address inside the console, because their
-    // rail is the only navigation they have once the header is hidden.
-    { href: isAdmin ? "/admin/profile" : `/members/${viewerId}`, label: "Profile" },
+    // The page other members see, rather than the editor inside the account,
+    // and the same for everybody. An admin used to be sent to the editor
+    // inside their console instead, because the header was hidden from them
+    // and the rail was all they had. The header is back, their rail still
+    // carries the editor, and one label meaning two different pages by role is
+    // the thing the status chips already learned not to do.
+    { href: `/members/${viewerId}`, label: "Profile" },
     { href: "/account/messages", label: "Messages", badge: "messages" },
     // The current app keeps Create Listing in the top bar at all times. This is
     // the same door: an owner adding a second club opens this menu, not the

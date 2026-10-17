@@ -98,7 +98,9 @@ export default async function ListingStepPage({
           step rather than of the one they happen to be on. */}
       {takenDown ? (
         <TakenDownNotice kind="club" reason={takenDown.reason} at={takenDown.at}
-          byName={takenDown.byName} canAct={viewer?.role === "admin"} />
+          byName={takenDown.byName} canAct={viewer?.role === "admin"}
+          ask={{ id: club.id, slug: club.slug,
+                 askedAt: takenDown.askedAt, askedNote: takenDown.askedNote }} />
       ) : null}
 
       <ListingSteps

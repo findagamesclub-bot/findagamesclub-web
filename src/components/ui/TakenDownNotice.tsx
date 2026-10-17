@@ -1,6 +1,7 @@
 import Alert from "@mui/material/Alert";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import AskForReview from "./AskForReview";
 import LongText from "./LongText";
 import { shortDate } from "@/utils/dates";
 import { mono, tokens } from "@/lib/tokens";
@@ -21,7 +22,7 @@ import { mono, tokens } from "@/lib/tokens";
  * and has no length anybody controls.
  */
 export default function TakenDownNotice({
-  kind, reason, at, byName, canAct = false,
+  kind, reason, at, byName, canAct = false, ask,
 }: {
   kind: "club" | "event";
   reason: string;
@@ -30,6 +31,15 @@ export default function TakenDownNotice({
   byName: string;
   /** The reader is a site admin, so the sentence about asking one is wrong. */
   canAct?: boolean;
+  /**
+   * The club's own way back, where this is the club reading it.
+   *
+   * Absent for an admin, who has the real control on their own list, and
+   * absent where the page cannot say which row this is. The sentence changes
+   * with it: "only a site admin can put it back" was true and was also the
+   * end of the road, which is what the client reported.
+   */
+  ask?: { id: number; slug: string; askedAt: string | null; askedNote: string };
 }) {
   const when = at ? shortDate(at.slice(0, 10)) : null;
   const stamp = [when ? `TAKEN DOWN ${when}` : "TAKEN DOWN",
@@ -65,8 +75,15 @@ export default function TakenDownNotice({
               + "edit the event. "}
           {canAct
             ? "Put it back from the admin list when it is settled."
-            : "Only a site admin can put it back."}
+            : ask
+              ? "A site admin puts it back. Tell them when it is sorted and they will look again."
+              : "Only a site admin can put it back."}
         </Typography>
+
+        {!canAct && ask ? (
+          <AskForReview kind={kind} id={ask.id} slug={ask.slug}
+            askedAt={ask.askedAt} askedNote={ask.askedNote} />
+        ) : null}
       </Stack>
     </Alert>
   );

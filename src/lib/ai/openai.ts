@@ -34,6 +34,13 @@ export const openai: Provider = {
         body: JSON.stringify({
           model,
           max_output_tokens: request.maxTokens,
+          // The gpt-5 family thinks before it writes and bills that thinking
+          // as output. The evidence here is already worked out in code and
+          // the model is writing it up, which is the same reasoning legacy
+          // used to put the small model on the list coach, so a low effort
+          // leaves the budget for the answer rather than spending it on the
+          // way there. Ignored by any model that does not reason.
+          reasoning: { effort: "low" },
           input: [
             { role: "system", content: system },
             { role: "user", content: request.user },
@@ -57,17 +64,38 @@ export const openai: Provider = {
     }
 
     const body = await response.json() as {
-      output_text?: string;
-      output?: { content?: { text?: string }[] }[];
+      status?: string;
+      incomplete_details?: { reason?: string } | null;
+      output_text?: string | null;
+      output?: { type?: string; content?: { type?: string; text?: string }[] }[];
       usage?: {
         input_tokens?: number; output_tokens?: number;
         input_tokens_details?: { cached_tokens?: number };
       };
     };
 
+    // The budget went on thinking and the answer never got written. Its own
+    // error, because "nothing came back to parse" sends somebody looking at
+    // the schema for a fault that is a number in `MAX_TOKENS`.
+    if (body.status && body.status !== "completed") {
+      throw new AiError("provider",
+        `OpenAI stopped at "${body.status}"`
+        + `${body.incomplete_details?.reason ? `: ${body.incomplete_details.reason}` : ""}.`);
+    }
+
+    // Every item, not the first one. `output_text` is a convenience the SDKs
+    // assemble and is **null** over plain HTTP, and a reasoning model puts a
+    // `reasoning` item at output[0] with the message behind it, so reading
+    // `output[0].content[0].text` found nothing and every run came back as
+    // "the answer came back in a shape we could not read". Measured against
+    // gpt-5-mini: output[0] is reasoning, output[1] is the message, and
+    // output_text is null.
     const text = body.output_text
-      ?? body.output?.[0]?.content?.[0]?.text
-      ?? "";
+      || body.output
+        ?.flatMap((item) => item.content ?? [])
+        .find((part) => typeof part.text === "string" && part.text.length > 0)
+        ?.text
+      || "";
     if (!text) throw new AiError("unparseable", "Nothing came back to parse.");
 
     let json: unknown;

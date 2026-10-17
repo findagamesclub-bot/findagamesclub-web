@@ -1,3 +1,4 @@
+import NextLink from "next/link";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -9,6 +10,16 @@ export type Tile = {
   /** The working behind the figure. "44.4%" on its own invites "out of what". */
   note: string;
   emphasis?: boolean;
+  /**
+   * Where the people behind the figure are.
+   *
+   * The client's words: "we show the data but cannot access it without going
+   * to other pages". A count is the start of a question, and a tile that
+   * cannot answer "which four" makes the reader go and find them by hand.
+   * Left off where there is no list to land on, and off a zero, because a
+   * link to an empty page is worse than no link.
+   */
+  href?: string;
   /**
    * A small graphic under the note. Optional on purpose: a tile whose figure
    * has nothing to show is better plain than padded out with a chart of one
@@ -43,9 +54,13 @@ export default function StatTiles({
                  lg: `repeat(${columns}, minmax(0, 1fr))`,
                } }}>
       {tiles.map((t) => (
-        <Stack key={t.label} spacing={0.5}
-          sx={{ p: 2, border: `1px solid ${tokens.rule}`, borderRadius: 1.5,
-                backgroundColor: tokens.paper }}>
+        <Shell key={t.label} href={t.href}>
+        <Stack spacing={0.5}
+          sx={{ height: "100%", p: 2, borderRadius: 1.5,
+                border: `1px solid ${tokens.rule}`,
+                backgroundColor: tokens.paper,
+                transition: "border-color 150ms ease",
+                ...(t.href ? { "&:hover": { borderColor: tokens.brand } } : null) }}>
           <Typography sx={{ fontFamily: mono, fontSize: "0.64rem", fontWeight: 700,
                             letterSpacing: "0.12em", color: tokens.inkMuted }}>
             {t.label.toUpperCase()}
@@ -61,8 +76,34 @@ export default function StatTiles({
           {/* Pushed to the bottom, so the graphics line up across a row even
               when one tile's note wraps onto a second line. */}
           {t.chart ? <Box sx={{ pt: 1.25, mt: "auto" }}>{t.chart}</Box> : null}
+          {/* Named rather than left to the border, because a hover state is
+              not something a phone or a screen reader can discover. */}
+          {t.href ? (
+            <Typography sx={{ fontFamily: mono, fontSize: "0.64rem", fontWeight: 700,
+                              letterSpacing: "0.08em", color: tokens.brand, mt: 0.5 }}>
+              SEE THEM
+            </Typography>
+          ) : null}
         </Stack>
+        </Shell>
       ))}
     </Box>
+  );
+}
+
+/**
+ * A link where there is one, and nothing at all where there is not.
+ *
+ * A plain anchor rather than `component={NextLink}`: this renders from a
+ * Server Component and handing MUI a component reference throws at request
+ * time with every check green.
+ */
+function Shell({ href, children }: { href?: string; children: React.ReactNode }) {
+  if (!href) return <>{children}</>;
+  return (
+    <NextLink href={href}
+      style={{ textDecoration: "none", color: "inherit", display: "block", height: "100%" }}>
+      {children}
+    </NextLink>
   );
 }

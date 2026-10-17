@@ -11,6 +11,7 @@ import { nightLabel } from "@/utils/dates";
 import type { CalendarSession } from "@/types/booking";
 import type { QueueEntry } from "@/services/waitlist.service";
 import type { LookingForGame } from "@/services/lookingForGames.service";
+import { tableNumber } from "@/utils/table-number";
 
 /**
  * One club night, as a fixture rather than a card.
@@ -133,7 +134,7 @@ export default function BookingNight({
               sx={{ alignItems: "baseline", pr: 1 }}>
               <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.7rem",
                                 color: tokens.inkMuted }}>
-                {String(b.tableIndex + 1).padStart(2, "0")}
+                {String(tableNumber(b.tableIndex)).padStart(2, "0")}
               </Typography>
               <Typography variant="body2" sx={{ fontWeight: b.isMine ? 700 : 400 }}>
                 {/* Each seat says "You" only if that seat is you. */}

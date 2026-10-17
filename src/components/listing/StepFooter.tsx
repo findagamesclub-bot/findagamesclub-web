@@ -21,6 +21,7 @@ export default function StepFooter({
   pending: boolean;
 }) {
   const live = target.kind === "club";
+  const asAdmin = target.kind === "draft" && target.asAdmin === true;
 
   return (
     <Stack direction="row" spacing={2}
@@ -28,7 +29,9 @@ export default function StepFooter({
       <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
         {live
           ? "Saving publishes straight away. Members see this on your club page."
-          : "Saved as you go, and nobody sees it yet. You send it to us from the last step."}
+          : asAdmin
+            ? "Saved as you go. The club sees what you change, and the listing stays in the queue until you answer it."
+            : "Saved as you go, and nobody sees it yet. You send it to us from the last step."}
       </Typography>
       <SubmitButton label={live ? "Save changes" : "Save and carry on"}
         pendingLabel="Saving" pending={pending} />

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { table } from "@/lib/supabase/table";
+import { callRpc, table } from "@/lib/supabase/table";
 
 /**
  * Every club badge one member holds, across every club.
@@ -34,3 +34,20 @@ export async function findBadgesHeldBy(profileId: string): Promise<HeldBadgeRow[
   if (error) throw new Error(error.message);
   return data ?? [];
 }
+
+/** One row per podium finish a member's podium badges stand for (0198). */
+export type PodiumFinishRow = {
+  award_id: number;
+  note: string;
+  on_date: string | null;
+};
+
+/**
+ * What each podium badge is actually for.
+ *
+ * Keyed on the AWARD rather than the club and the rank, so nothing here has to
+ * select `club_badges.podium_rank`: that column is 0167's and the generated
+ * types predate it, which `check:columns` is right to refuse.
+ */
+export const findPodiumFinishes = (profileId: string) =>
+  callRpc<PodiumFinishRow[]>("member_podium_finishes", { p_profile: profileId });

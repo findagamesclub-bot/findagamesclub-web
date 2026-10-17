@@ -11,6 +11,7 @@ import { findEventImages } from "@/repositories/eventImages.repository";
 import { clubImageUrl } from "@/utils/club-media";
 import { publicUrl } from "@/lib/supabase/storage";
 import { getRoundArmiesForReaders, getRoundSetup } from "./eventPairingArmies.service";
+import type { MatchSetup } from "@/utils/result-meta";
 import { listFromSnapshot } from "@/utils/army-snapshot";
 import { toMembershipTiers } from "@/utils/membership-tiers";
 import { formatPrice } from "@/utils/format";
@@ -209,7 +210,33 @@ export async function getEventDetail(
       findTeamDraw(row.id).catch(() => []),
     ]);
   const teams = teamEvent ? allTeams : [];
-  const teamFixtures = teamEvent ? allFixtures : [];
+
+  // A fixture's tables are ordinary pairing matches, so what was played on
+  // them is in the same two reads the flat draw uses. The fixture jsonb cannot
+  // carry it: armies are rows of their own, one per side. Attached here rather
+  // than fetched again, so a team event costs a team event's reads and not two
+  // of everything.
+  //
+  // Both reads are cheap and already catch, and a failure costs the control on
+  // a table rather than the draw.
+  const tableArmies: Record<string, ResultArmy | null> = teamEvent
+    ? await getRoundArmiesForReaders(row.id).catch(() => ({}))
+    : {};
+  const tableSetup: Record<number, MatchSetup> = teamEvent
+    ? await getRoundSetup(row.id).catch(() => ({}))
+    : {};
+
+  const teamFixtures = teamEvent
+    ? allFixtures.map((fixture) => ({
+        ...fixture,
+        tables: fixture.tables.map((table) => ({
+          ...table,
+          armyOne: tableArmies[`${table.id}:one`] ?? null,
+          armyTwo: tableArmies[`${table.id}:two`] ?? null,
+          setup: tableSetup[table.id] ?? null,
+        })),
+      }))
+    : [];
   const canSeePrivate = canManageClub || myBookings.length > 0;
   // The draw is a record, not a plan. Before the event it belongs to the room;
   // after it, it is the same public history as the standings underneath it,

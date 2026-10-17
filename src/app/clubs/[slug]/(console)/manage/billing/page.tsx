@@ -9,20 +9,22 @@ import StarIcon from "@mui/icons-material/StarBorder";
 import TuneIcon from "@mui/icons-material/Tune";
 import Panel from "@/components/members/Panel";
 import PageHead from "@/components/ui/PageHead";
-import EmptyState from "@/components/ui/EmptyState";
 import Markdown from "@/components/ui/Markdown";
 import PlanPicker from "@/components/billing/PlanPicker";
 import FeaturedAsk from "@/components/billing/FeaturedAsk";
+import FeaturedSlots from "@/components/billing/FeaturedSlots";
+import ListingPayments from "@/components/billing/ListingPayments";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
 import { getClubDetail } from "@/services/clubDetail.service";
 import {
   getBillingSettings, getPayments, getSubscriptionForClub,
 } from "@/services/billing.service";
-import { getFeaturedRequest } from "@/services/featuredRequests.service";
-import { methodLabel, ownerStanding, standingLabel, standingTone } from "@/utils/listing-billing";
+import { getClubSlots } from "@/services/featured.service";
+import { getClubFeaturedAsks } from "@/services/featuredRequests.service";
+import { ownerStanding, standingLabel, standingTone } from "@/utils/listing-billing";
 import { formatPence } from "@/utils/format";
-import { shortDate } from "@/utils/dates";
+import { londonNow, shortDate } from "@/utils/dates";
 import { mono, tokens } from "@/lib/tokens";
 
 export const metadata = { title: "Billing" };
@@ -47,13 +49,14 @@ export default async function ClubBillingPage({
   const access = await getClubAccess(club.id, viewer);
   if (access.role !== "owner" && access.role !== "admin") notFound();
 
-  const [subscription, settings, featured] = await Promise.all([
+  const [subscription, settings, asks, slots] = await Promise.all([
     getSubscriptionForClub(club.id),
     getBillingSettings(),
-    // Deliberately in the same wave and outside the billing switch below: a
-    // club can lead the homepage while listing charges are off, which is the
+    // Both deliberately in the same wave and outside the billing switch below:
+    // a club can lead the homepage while listing charges are off, which is the
     // state the site is in today (0155 draws the same line).
-    getFeaturedRequest(club.id),
+    getClubFeaturedAsks(club.id),
+    getClubSlots(club.id),
   ]);
 
   const payments = subscription ? await getPayments(subscription.id) : [];
@@ -139,13 +142,19 @@ export default async function ClubBillingPage({
         ) : null}
 
         <Panel title="Lead the homepage" icon={StarIcon}>
-          <FeaturedAsk
-            slug={slug}
-            request={featured}
-            pricePence={settings.featured_price_pence}
-            days={settings.featured_duration_days}
-            currency={settings.currency ?? "GBP"}
-          />
+          <Stack spacing={2.5}>
+            {/* The slots first, because "where am I up to" comes before "ask
+                for another". A London day, like every other date here. */}
+            <FeaturedSlots slots={slots} today={londonNow().date} />
+            <FeaturedAsk
+              slug={slug}
+              open={asks.open}
+              answered={asks.answered}
+              pricePence={settings.featured_price_pence}
+              days={settings.featured_duration_days}
+              currency={settings.currency ?? "GBP"}
+            />
+          </Stack>
         </Panel>
 
         {/* Only when there is something to pay. A free listing being shown bank
@@ -157,41 +166,7 @@ export default async function ClubBillingPage({
         ) : null}
 
         <Panel title="What you have paid" icon={ReceiptIcon}>
-          {payments.length === 0 ? (
-            <EmptyState
-              title="Nothing recorded yet"
-              description="Payments appear here once we have written them down. If you have sent one and it is not here, get in touch."
-            />
-          ) : (
-            <Stack spacing={2}>
-              {payments.map((payment) => (
-                <Stack key={payment.id} spacing={0.4}
-                  sx={{ pb: 1.5, borderBottom: `1px solid ${tokens.rule}`,
-                        "&:last-of-type": { borderBottom: 0, pb: 0 } }}>
-                  <Stack direction="row" spacing={1}
-                    sx={{ alignItems: "baseline", flexWrap: "wrap" }} useFlexGap>
-                    <Typography sx={{ fontFamily: mono, fontSize: "0.95rem", fontWeight: 700 }}>
-                      {formatPence(payment.amount_pence, payment.currency)}
-                    </Typography>
-                    <Typography sx={{ fontFamily: mono, fontSize: "0.68rem",
-                                      color: tokens.inkMuted }}>
-                      {[
-                        shortDate(payment.paid_at.slice(0, 10)),
-                        methodLabel(payment.method),
-                        payment.reference,
-                      ].filter(Boolean).join(" · ")}
-                    </Typography>
-                  </Stack>
-                  {payment.period_start && payment.period_end ? (
-                    <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-                      {`Covers ${shortDate(payment.period_start.slice(0, 10))} to `
-                        + `${shortDate(payment.period_end.slice(0, 10))}.`}
-                    </Typography>
-                  ) : null}
-                </Stack>
-              ))}
-            </Stack>
-          )}
+          <ListingPayments payments={payments} />
         </Panel>
       </Stack>
     </Container>

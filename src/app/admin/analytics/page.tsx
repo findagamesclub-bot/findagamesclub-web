@@ -6,6 +6,7 @@ import MonoLabel from "@/components/ui/MonoLabel";
 import EmptyState from "@/components/ui/EmptyState";
 import PeriodTabs from "@/app/clubs/[slug]/(console)/manage/analytics/PeriodTabs";
 import GrowthStat from "@/components/admin/GrowthStat";
+import DownloadButton from "@/components/ui/DownloadButton";
 import SiteGrowthCharts from "@/components/admin/SiteGrowthCharts";
 import { getSiteGrowth } from "@/services/siteGrowth.service";
 import { PERIODS, periodLabel, readPeriod } from "@/utils/analytics-period";
@@ -131,7 +132,19 @@ export default async function AdminAnalyticsPage({
           </Box>
 
           <Box>
-            <MonoLabel>Month by month</MonoLabel>
+            <Stack direction="row" spacing={2}
+              sx={{ alignItems: "baseline", justifyContent: "space-between",
+                    flexWrap: "wrap" }}>
+              <MonoLabel>Month by month</MonoLabel>
+              {/* The ledger, not the chart. A tax return is made of lines, so
+                  the file is one row per transaction with the date, the period
+                  it bought, the renewal date, the club, the note and the
+                  amount. It covers the window above it, which is what makes
+                  the two checkable against each other. */}
+              <DownloadButton variant="outlined" size="small"
+                label="Download every transaction"
+                href={`/admin/analytics/export?period=${period}`} />
+            </Stack>
             <SiteGrowthCharts months={months} />
           </Box>
         </Stack>

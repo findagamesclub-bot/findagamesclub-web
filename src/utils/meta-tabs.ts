@@ -8,7 +8,8 @@
  */
 
 export type MetaTab =
-  | "factions" | "detachments" | "matchups" | "context" | "units" | "trend";
+  | "factions" | "detachments" | "dispositions" | "matchups"
+  | "context" | "units" | "trend";
 
 export type MetaRead =
   | "factions" | "detachments" | "dispositions" | "matchups"
@@ -17,6 +18,12 @@ export type MetaRead =
 export const META_TABS: { value: MetaTab; label: string }[] = [
   { value: "factions", label: "Factions" },
   { value: "detachments", label: "Detachments" },
+  // Its own tab, not a second list tacked onto Detachments. The client
+  // reported it missing from the options, and they were reading the tab row:
+  // dispositions were rendered by appending them to the detachment ranking,
+  // so one tab held two kinds of row and neither was named. "One tab, one
+  // list" is this component's own rule.
+  { value: "dispositions", label: "Dispositions" },
   { value: "matchups", label: "Matchups" },
   { value: "context", label: "Battle context" },
   { value: "units", label: "Units" },
@@ -43,6 +50,7 @@ export function readTab(raw: unknown): MetaTab {
 export const READS_FOR: Record<MetaTab, MetaRead[]> = {
   factions: ["factions", "detachments", "dispositions"],
   detachments: ["factions", "detachments", "dispositions"],
+  dispositions: ["factions", "detachments", "dispositions"],
   matchups: ["factions", "matchups"],
   context: ["factions", "context"],
   units: ["factions", "units"],

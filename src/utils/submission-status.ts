@@ -86,6 +86,25 @@ export function ownerCanSubmit(status: string): boolean {
   return ownerCanEdit(status);
 }
 
+/**
+ * An admin, on somebody else's listing that is not published yet.
+ *
+ * The client's words: "there is still no way for admin to make changes to a
+ * listing that is not already published. Can we allow admin to go through the
+ * usual edit listing steps for unpublished listings?"
+ *
+ * So the same five steps, not a second editor. What differs is which states
+ * they reach: a draft is somebody typing and is not in the queue, so it is
+ * deliberately not here. Everything that has been sent is.
+ *
+ * `club_submissions_edit` (0202) says the same thing, and that is what
+ * actually stops a save; this is what stops the screen offering one.
+ */
+export function adminCanEdit(status: string): boolean {
+  return status === "review_pending" || status === "changes_requested"
+    || status === "payment_pending";
+}
+
 /** Cancellable until it is decided. A decided one is history, not a live thing. */
 export function ownerCanCancel(status: string): boolean {
   return status === "draft" || status === "changes_requested"

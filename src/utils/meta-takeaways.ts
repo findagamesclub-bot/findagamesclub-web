@@ -90,9 +90,14 @@ export function metaTakeaways(input: {
   const mostPlayed = [...input.factions].sort(
     (a, b) => b.appearances - a.appearances || (b.winRate ?? 0) - (a.winRate ?? 0))[0];
   if (mostPlayed) {
-    lines.push(`${mostPlayed.label} is the most played faction in this window `
-      + `with ${mostPlayed.appearances} logged `
-      + `${mostPlayed.appearances === 1 ? "appearance" : "appearances"}.`);
+    // Both counts in one sentence. It said "12 logged appearances" over a card
+    // reading "8 scored games" and the client counted them: two true figures
+    // that could not be reconciled from anything on the screen. A podium and a
+    // league standing are armies somebody brought and neither carries a score.
+    lines.push(`${mostPlayed.label} turned up most often in this window: `
+      + `${mostPlayed.appearances} `
+      + `${mostPlayed.appearances === 1 ? "army" : "armies"} recorded, `
+      + `${mostPlayed.games} of them with a score.`);
   }
 
   const detachment = input.detachments[0];
@@ -151,7 +156,7 @@ export function metaTakeaways(input: {
  */
 export const META_CAVEATS = [
   "This tracker is built only from results entered inside the app, so it reflects the Find A Games Club community sample rather than any external tournament feed.",
-  "Win-rate and matchup views use scored games only. Event podiums and league tables strengthen faction, detachment and unit signals but do not create synthetic wins or losses.",
+  "Win-rate and matchup views use scored games only. Event podiums and league tables strengthen faction, detachment and unit signals but do not create synthetic wins or losses, which is why a card can read twelve armies in all and eight scored games.",
   "A table booking counts once the club has confirmed the result. Until then it is one player's word and it stays out of the numbers.",
   "Small samples are still shown, and they are flagged as early signals rather than hidden. Fewer than two scored games is a hint, not a rate.",
   "A disposition is counted under the detachment it was played with, never on its own. The tracker never invents combinations between them.",

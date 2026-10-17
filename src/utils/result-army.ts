@@ -158,6 +158,8 @@ export function armyLabel(army: {
  * recorded last week.
  */
 export function armyFromRow(row: {
+  list_id?: number | null;
+  list_name?: string | null;
   faction_id?: string | null;
   faction_label?: string | null;
   detachment?: string | null;
@@ -169,9 +171,15 @@ export function armyFromRow(row: {
   painted?: boolean | null;
   first_turn?: string | null;
   battle_role?: string | null;
-} | null | undefined): ResultArmy {
-  if (!row) return EMPTY_ARMY;
+} | null | undefined): GameSide {
+  // `GameSide` rather than `ResultArmy`, which is this type's own comment
+  // arriving: a table booking records the same thing a table of a draw does,
+  // and the only reason the booking's dialog could not name a list was that
+  // the read dropped the two columns on the way back.
+  if (!row) return EMPTY_SIDE;
   return {
+    listId: row.list_id ?? null,
+    listName: row.list_name ?? "",
     factionId: row.faction_id ?? "",
     factionLabel: row.faction_label ?? "",
     detachment: row.detachment ?? "",

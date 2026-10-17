@@ -19,6 +19,19 @@ export type MetaRow = {
   /** Null when nothing has been scored, which is not the same as nought. */
   winRate: number | null;
   games: number;
+  /**
+   * Every row recorded for this thing, scored or not.
+   *
+   * A podium and a league standing are armies somebody brought and neither
+   * carries an outcome, so a faction can appear twelve times and have eight
+   * scored games. Both figures were true and only one was on the card, so the
+   * bullet above saying "12 logged appearances" read as a contradiction of the
+   * "8 scored games" underneath. The client counted them.
+   *
+   * Absent on the tabs where the two are the same number, and shown only when
+   * they differ: the same figure twice is noise.
+   */
+  appearances?: number;
   earlySignal: boolean;
   /** An extra figure in the footer, such as how often it turned up. */
   note?: string;
@@ -133,8 +146,12 @@ export default function MetaRows({
           <Typography sx={{ pt: 1, borderTop: `1px solid ${tokens.rule}`,
                             fontFamily: mono, fontSize: "0.66rem",
                             color: tokens.inkMuted }}>
-            {[`${row.games} scored ${row.games === 1 ? "game" : "games"}`, row.note]
-              .filter(Boolean).join(" · ")}
+            {[
+              `${row.games} scored ${row.games === 1 ? "game" : "games"}`,
+              row.appearances !== undefined && row.appearances > row.games
+                ? `${row.appearances} armies in all` : null,
+              row.note,
+            ].filter(Boolean).join(" · ")}
           </Typography>
         </Stack>
       ))}

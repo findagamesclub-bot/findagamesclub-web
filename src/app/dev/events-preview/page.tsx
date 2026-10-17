@@ -322,7 +322,7 @@ export default async function EventsPreviewPage({
           {/* Two ticket types, one capped and one not, so the dialog's "N of
               X left" line and its "no limit" line are both measurable on one
               screen. One member, so the optional link has something in it. */}
-          <RosterBoard slug="didcot-wargames-didcot" eventId={1} rows={roster}
+          <RosterBoard accountNames={{}} slug="didcot-wargames-didcot" eventId={1} rows={roster}
             faction={faction} canAdd
             members={[{ id: "00000000-0000-0000-0000-0000000000aa",
                         name: "Gulnabi Afridi" }]}

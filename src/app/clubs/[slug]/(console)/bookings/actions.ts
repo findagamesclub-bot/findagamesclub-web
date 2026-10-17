@@ -8,6 +8,7 @@ import * as lfg from "@/services/lookingForGames.service";
 import { notifyClubOfLookingForGame, notifyGameFound } from "@/services/booking-notify.service";
 import { getClubDetail } from "@/services/clubDetail.service";
 import { getBookingCalendar } from "@/services/bookingCalendar.service";
+import { tableNumber } from "@/utils/table-number";
 
 export type BookingState = { error?: string; notice?: string };
 
@@ -45,8 +46,8 @@ export async function bookingAction(
     if (!result.ok) return { error: result.error };
     return {
       notice: result.postWithdrawn
-        ? `Table ${result.tableIndex + 1} is yours. Your looking-for-a-game post came down.`
-        : `Table ${result.tableIndex + 1} is yours.`,
+        ? `Table ${tableNumber(result.tableIndex)} is yours. Your looking-for-a-game post came down.`
+        : `Table ${tableNumber(result.tableIndex)} is yours.`,
     };
   }
 
@@ -75,7 +76,7 @@ export async function bookingAction(
     // reads as a figure nobody worked out.
     const who = String(data.get("memberName") ?? "").trim() || "They";
     const owed = result.price === "£0.00" ? "Nothing to pay." : `${result.price} to pay.`;
-    return { notice: `Table ${result.tableIndex + 1} is ${who}'s. ${owed}` };
+    return { notice: `Table ${tableNumber(result.tableIndex)} is ${who}'s. ${owed}` };
   }
 
   if (intent === "edit") {

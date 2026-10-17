@@ -17,9 +17,11 @@ import { recordResultAction, clearResultAction, type ResultState }
   from "@/app/account/games/actions";
 import MatchContextFields from "./MatchContextFields";
 import ArmyFields from "@/components/results/ArmyFields";
+import ArmyListPicker from "@/components/results/ArmyListPicker";
 import GameField from "@/components/results/GameField";
 import { useCatalogue } from "@/hooks/useCatalogue";
-import { type ResultArmy } from "@/utils/result-army";
+import { type GameSide } from "@/utils/result-army";
+import type { MemberList } from "@/services/resultArmies.service";
 import { confirmationLabel, toConfirmation } from "@/utils/result-meta";
 import { playsFortyK } from "@/utils/event-meta";
 import { knownGames } from "@/utils/game-label";
@@ -34,11 +36,21 @@ import type { MyGame } from "@/services/games.service";
  * the service's job, so neither player has to think about who booked.
  */
 export default function ResultDialog({
-  game, canManageClub = false,
+  game, canManageClub = false, myLists = [],
 }: {
   game: MyGame;
   /** The club may set the result state, and may edit a settled one. */
   canManageClub?: boolean;
+  /**
+   * Their own saved lists at this club, so they can say which one they
+   * brought.
+   *
+   * Only theirs, and only their own side of the result: `link_result_army_list`
+   * refuses anything else, because on a club night the only person who knows
+   * which list came out of the bag is the person who built it. The opponent
+   * names theirs from their own copy of this game.
+   */
+  myLists?: MemberList[];
 }) {
   // Wider than the rest of the site's dialogs, and the whole screen on a
   // phone. A result is eleven fields per side once the army is open, and at
@@ -51,8 +63,8 @@ export default function ResultDialog({
   // Started from what was recorded, never from an empty army: saving an empty
   // one deletes the row, so a dialog that forgot last week's army would throw
   // it away the moment somebody corrected a score.
-  const [mine, setMine] = useState<ResultArmy>(game.armies.mine);
-  const [theirs, setTheirs] = useState<ResultArmy>(game.armies.theirs);
+  const [mine, setMine] = useState<GameSide>(game.armies.mine);
+  const [theirs, setTheirs] = useState<GameSide>(game.armies.theirs);
   const [mission, setMission] = useState(game.mission);
   const [deployment, setDeployment] = useState(game.deployment);
   const [terrain, setTerrain] = useState(game.terrain);
@@ -125,6 +137,21 @@ export default function ResultDialog({
 
   const done = game.myScore !== null;
 
+  /**
+   * Naming a list fills the cascade in.
+   *
+   * A list already says its faction, detachment and disposition, and typing
+   * them again is two chances to disagree with it. It also matters on save:
+   * an empty army writes no row, and a list hangs off that row, so a list
+   * named against nothing would have nowhere to go.
+   */
+  const pickList = (list: MemberList | null) => {
+    if (!list) { setMine({ ...mine, listId: null, listName: "" }); return; }
+    setMine({ ...mine, listId: list.id, listName: list.name,
+              factionId: list.factionId, factionLabel: list.faction,
+              detachment: list.detachment, disposition: list.disposition });
+  };
+
   return (
     <>
       <Button size="small" variant={done ? "text" : "outlined"}
@@ -185,8 +212,28 @@ export default function ResultDialog({
                 builder={isFortyK ? game.builder : null} catalogue={catalogue}
                 loading={loading} failed={failed}
                 one={mine} two={theirs}
-                onOne={setMine} onTwo={setTheirs}
+                // Spread over what is held rather than replaced, so the
+                // list named above survives a change to the cascade under it.
+                // The same shape the league dialog uses.
+                onOne={(next) => setMine({ ...mine, ...next })}
+                onTwo={(next) => setTheirs({ ...theirs, ...next })}
                 twoTitle={`${game.opponentName}'s army`}
+                underOne={(
+                  <>
+                    {/* Inside the slot on purpose: it renders only once the
+                        catalogue is in, so a club with the builder off posts
+                        no field at all and any link is left alone. */}
+                    <input type="hidden" name="myList"
+                      value={mine.listId === null ? "" : String(mine.listId)} />
+                    <ArmyListPicker lists={myLists} playerNamed unnamedNote=""
+                      label="Your army list"
+                      emptyNote="You have not built an army list at this club yet. Build one in the Army Builder and you can name it here."
+                      value={mine.listId} disabled={readOnly}
+                      onChange={pickList} />
+                  </>
+                )}
+                underTwo={<TheirList name={game.opponentName}
+                  listName={theirs.listName} hasAccount={Boolean(game.opponentId)} />}
                 fallback={isFortyK ? (
                   <Stack direction="row" spacing={2}>
                     <TextField name="myArmy" label="Your army" fullWidth
@@ -242,5 +289,28 @@ export default function ResultDialog({
         </form>
       </Dialog>
     </>
+  );
+}
+
+/**
+ * What the other side brought, read-only.
+ *
+ * A list belongs to whoever built it, so this is a sentence and not a control:
+ * 0145 refuses anybody but the owner of that side. Without it the dialog
+ * offers a picker under one army and nothing at all under the other, which
+ * reads as the feature being half-built rather than as a rule.
+ */
+function TheirList({ name, listName, hasAccount }: {
+  name: string; listName: string; hasAccount: boolean;
+}) {
+  const said = listName.trim();
+  return (
+    <Typography variant="caption" sx={{ color: tokens.inkMuted }}>
+      {said
+        ? `They named ${said}.`
+        : hasAccount
+          ? `Only ${name} can name the list they brought, from their own copy of this game.`
+          : `${name} is not linked to a member account, so there is no saved list to name.`}
+    </Typography>
   );
 }

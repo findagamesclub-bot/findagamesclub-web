@@ -70,7 +70,9 @@ export default async function EventEditorPage({
           underneath are not there. */}
       {takenDown ? (
         <TakenDownNotice kind="event" reason={takenDown.reason} at={takenDown.at}
-          byName={takenDown.byName} canAct={viewer.role === "admin"} />
+          byName={takenDown.byName} canAct={viewer.role === "admin"}
+          ask={{ id: event.id, slug,
+                 askedAt: takenDown.askedAt, askedNote: takenDown.askedNote }} />
       ) : null}
 
       <SectionNav />

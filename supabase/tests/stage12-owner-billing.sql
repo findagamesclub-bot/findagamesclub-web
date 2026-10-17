@@ -70,6 +70,7 @@ declare
   v_owner uuid := (select owner from who);
   v_member uuid := (select member from who);
   v_id bigint;
+  v_other bigint;
   v_before bigint;
 begin
   set local role authenticated;
@@ -91,12 +92,21 @@ begin
     raise exception 'FAIL 5: nobody was told a club asked';
   end if;
 
-  -- 6 · Pressing it twice is one club wanting one slot.
+  -- 6 · Pressing it twice for the same week is one club wanting one slot.
+  --
+  -- It read "a second open request was allowed" until 0204, when the rule
+  -- moved from one ask per club to one ask per date. That half still has to
+  -- hold, because it is what catches the double press.
   begin
-    perform public.request_featured_slot(v_club, null, '');
-    raise exception 'FAIL 6: a second open request was allowed';
+    perform public.request_featured_slot(v_club, current_date + 14, '');
+    raise exception 'FAIL 6: the same week was asked for twice';
   exception when check_violation then null;
   end;
+
+  -- 6b · A different week is a different thing to answer, which is what the
+  -- client asked for. Taken back again so section 7 reads a clean bell.
+  v_other := public.request_featured_slot(v_club, current_date + 28, 'And our tournament');
+  perform public.withdraw_featured_request(v_other);
 
   -- 7 · Taking it back stops it asking anybody.
   perform public.withdraw_featured_request(v_id);

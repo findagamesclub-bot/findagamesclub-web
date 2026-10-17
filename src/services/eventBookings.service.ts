@@ -5,6 +5,7 @@ import { findPaymentStanding, type PaymentStanding }
   from "@/repositories/eventRoster.repository";
 import { formatPrice } from "@/utils/format";
 import type { CartLine, EventBooking } from "@/types/ticket";
+import { owed, type PaymentStatus } from "@/utils/door-list";
 
 /**
  * Reading and cancelling event bookings.
@@ -111,6 +112,9 @@ export async function getAttendees(eventId: number) {
       summary: items.map((i) => `${i.quantity}× ${i.label}`).join(", "),
       // The types on this booking, so the door can filter to one of them.
       types: [...new Set(items.map((i) => i.label).filter(Boolean))],
+      // Carried so the sales board can total what is still owed rather than
+      // what was sold. Unpaid is the honest default, the same as `toBooking`.
+      paymentStatus: (r.payment_status ?? "unpaid") as PaymentStatus,
     };
   });
 }
@@ -137,7 +141,13 @@ export async function getEventBookingCounts(
     const held = sales.get(row.event_id) ?? { bookings: 0, tickets: 0, due: 0 };
     held.bookings += 1;
     held.tickets += items.reduce((n, i) => n + i.quantity, 0);
-    held.due += Number(row.total ?? 0);
+    // Only what is still owed. Counting a booking the club has already been
+    // paid for leaves the figure climbing while the money comes in, which is
+    // the opposite of what a column headed "due" is for.
+    held.due += owed([{
+      paymentStatus: (row.payment_status ?? "unpaid") as PaymentStatus,
+      total: Number(row.total ?? 0),
+    }]).amount;
     sales.set(row.event_id, held);
   }
   return sales;

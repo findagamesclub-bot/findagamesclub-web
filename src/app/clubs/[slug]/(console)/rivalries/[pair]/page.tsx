@@ -2,6 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import Container from "@mui/material/Container";
 import ClubSectionHeader from "@/components/clubs/ClubSectionHeader";
 import HeadToHead from "@/components/clubs/HeadToHead";
+import { getGameDetails } from "@/services/gameDetails.service";
+import { NO_GAME_DETAILS } from "@/utils/game-details";
 import { getClubDetail } from "@/services/clubDetail.service";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
@@ -45,6 +47,13 @@ export default async function RivalryDetailPage({
   const detail = await getRivalryDetail(club.id, pair.replace("_", ":"));
   if (!detail) notFound();
 
+  // A second wave, because there are no game ids to ask about until the
+  // rivalry answers. Catching costs the control on each row rather than the
+  // page, which is the state this screen was in before today.
+  const played = await getGameDetails(
+    detail.matches.map((m) => ({ source: m.source, id: m.bookingId })),
+  ).catch(() => NO_GAME_DETAILS);
+
   const { faction } = clubIdentity(club.slug, club.name);
 
   return (
@@ -78,7 +87,8 @@ export default async function RivalryDetailPage({
         ]}
       />
 
-      <HeadToHead detail={detail} faction={faction} viewerId={viewer.id} slug={slug} />
+      <HeadToHead detail={detail} faction={faction} viewerId={viewer.id} slug={slug}
+        played={played} />
     </Container>
   );
 }

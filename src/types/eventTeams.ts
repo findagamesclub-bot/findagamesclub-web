@@ -1,3 +1,5 @@
+import type { ResultArmy } from "./event";
+
 /**
  * A team event, at both of its levels.
  *
@@ -49,6 +51,18 @@ export type TeamTable = {
   pointsOne: number | null;
   pointsTwo: number | null;
   position: number;
+  /**
+   * What was played on it, attached by `eventDetail.service` from the same
+   * two reads the flat draw uses (0172). The fixture read cannot carry them:
+   * it is one jsonb per fixture and the armies are rows of their own.
+   *
+   * Without these a team event's tables were the one part of the site with no
+   * way into a match, which is what the client asked for: "the draw and teams
+   * sections on the front end should show a list/game icon".
+   */
+  armyOne?: ResultArmy | null;
+  armyTwo?: ResultArmy | null;
+  setup?: { mission: string; deployment: string; terrain: string } | null;
 };
 
 export type TeamFixture = {

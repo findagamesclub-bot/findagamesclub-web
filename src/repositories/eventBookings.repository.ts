@@ -10,7 +10,8 @@ import { createClient } from "@/lib/supabase/server";
 const BOOKING_COLUMNS =
   `id, reference, event_id, club_id, full_name, email, status, currency,
    subtotal, tier_discount_percent, tier_discount_amount, membership_tier_label,
-   loyalty_points_spent, loyalty_discount_amount, total, created_at` as const;
+   loyalty_points_spent, loyalty_discount_amount, total, created_at,
+   payment_status` as const;
 
 // The two loyalty columns 0050 adds are selected now. They were deliberately
 // left out while "nothing on a receipt shows points spent yet", and the
@@ -119,7 +120,7 @@ export async function findBookingCountsByClub(clubIds: number[]) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("club_event_bookings")
-    .select("event_id, total, club_event_booking_items(quantity)")
+    .select("event_id, total, payment_status, club_event_booking_items(quantity)")
     .in("club_id", clubIds)
     .eq("status", "reserved");
 

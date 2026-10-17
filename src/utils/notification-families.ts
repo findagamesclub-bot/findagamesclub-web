@@ -158,6 +158,10 @@ const MAP = {
   "club-suspended": "running",
   "club-restored": "running",
   "listing-suspended": "running",
+  // A club telling the admins a suspension is settled (0202). Platform news
+  // about a listing, so it sits with the suspension it answers.
+  "listing-review-asked": "running",
+  "event-review-asked": "running",
   "listing-restored": "running",
   "event-taken-down": "running",
   "event-put-back": "running",

@@ -8,6 +8,7 @@ import { getCurrentProfile } from "@/services/auth.service";
 import { getMyCoaching, getOpenCoaching } from "@/services/myActivity.service";
 import { getMyMemberships } from "@/services/myMemberships.service";
 import { countUnpaid } from "@/utils/coaching-filter";
+import { paymentNote } from "@/utils/payment-note";
 
 export const metadata = { title: "Your coaching" };
 
@@ -42,7 +43,7 @@ export default async function AccountCoachingPage() {
       <PageHead
         title="Coaching"
         lede={owing
-          ? `${owing === 1 ? "One session is" : `${owing} sessions are`} still to pay for. Clubs take payment on the day.`
+          ? `${owing === 1 ? "One session is" : `${owing} sessions are`} still to pay for. ${paymentNote()}`
           : open.length
             ? `${open.length === 1 ? "One coaching slot has" : `${open.length} coaching slots have`} places left at your clubs.`
             : "Sessions you have booked with a coach at any of your clubs."}

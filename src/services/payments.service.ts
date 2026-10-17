@@ -30,6 +30,7 @@ function toPayment(row: Awaited<ReturnType<typeof repo.findPaymentsForMembership
     periodEnd: row.period_end_at,
     note: row.note,
     recordedAt: row.created_at,
+    editedAt: row.edited_at,
   };
 }
 
@@ -136,5 +137,82 @@ async function announcePayment(
     });
   } catch (error) {
     console.error("payment receipt failed", { clubId, memberId, error });
+  }
+}
+
+
+/**
+ * The club putting a recorded payment right.
+ *
+ * 0012 made this ledger insert-only, which was the right instinct about the
+ * wrong thing: nothing here takes money, so the row is a club typing what
+ * arrived at the door, and a mistyped one had no route back except the SQL
+ * console. 0195 opens the correction and stamps it, so the ledger stays
+ * auditable rather than becoming editable-and-silent.
+ *
+ * The member is deliberately not told. 0171 drew that line for a corrected
+ * join date: somebody is told when a club does something TO them, not because
+ * a club fixed its own typing. The mark on the row is what keeps it honest,
+ * and both sides of the ledger show it.
+ */
+export async function editPayment(params: {
+  paymentId: number;
+  /** Null corrects only the note and leaves the money alone. */
+  billingOptionId: string | null;
+  note: string;
+}): Promise<RecordResult> {
+  const payment = await repo.findPayment(params.paymentId);
+  if (!payment) return { ok: false, error: "That payment is not here any more." };
+
+  const patch: Record<string, unknown> = {
+    note: params.note.trim().slice(0, 300) || null,
+  };
+
+  if (params.billingOptionId) {
+    const history = await getPayments(payment.membership_id);
+    // Only the newest one. Every payment stacks onto the end of the one before
+    // it, so changing an older term would leave every period after it quietly
+    // wrong, and rewriting those is the club correcting rows it never asked to
+    // touch. The note is correctable on any of them, because a note is not in
+    // the arithmetic.
+    if (history[0]?.id !== payment.id) {
+      return { ok: false, error:
+        "Only the newest payment's amount can be changed, because the ones after it "
+        + "were worked out from this one. The note can be put right on any of them." };
+    }
+
+    const row = await memberships.findMembershipForPayment(payment.membership_id);
+    if (!row?.tier_key) {
+      return { ok: false, error: "Set a membership tier before correcting a payment." };
+    }
+    const tier = await repo.findTier(payment.club_id, row.tier_key);
+    if (!tier) return { ok: false, error: "That tier no longer exists." };
+
+    const options = billingOptions(tier.billing_options, tier.price, tier.price_duration);
+    const option = options.find((o) => o.id === params.billingOptionId);
+    if (!option) return { ok: false, error: "Choose how they paid." };
+
+    // The period keeps the start it was given. A correction changes how long
+    // the money bought, never when the club says it arrived: re-reading `now()`
+    // here would walk the start date forward every time somebody fixed a typo.
+    const from = payment.period_start_at ? new Date(payment.period_start_at) : new Date();
+    const until =
+      option.cadence === "month" ? addMonths(from, 1)
+      : option.cadence === "year" ? addYears(from, 1)
+      : null;
+
+    patch.tier_key = row.tier_key;
+    patch.tier_label = tier.label;
+    patch.billing_option_label = option.label;
+    patch.price = option.price;
+    patch.price_duration = option.cadence;
+    patch.period_end_at = until ? until.toISOString() : null;
+  }
+
+  try {
+    await repo.updatePayment(params.paymentId, patch);
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "Only the club can correct a payment." };
   }
 }

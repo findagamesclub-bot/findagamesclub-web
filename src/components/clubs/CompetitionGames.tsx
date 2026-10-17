@@ -1,13 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import MatchDetailDialog, { SetupNote, type MatchDetail }
-  from "@/components/events/MatchDetailDialog";
-import { mono, tokens, type Faction } from "@/lib/tokens";
+import { useMatchDetail, MatchDetailButton }
+  from "@/components/results/MatchDetailControl";
+import { mono, type Faction } from "@/lib/tokens";
 import type { CompetitionMatch } from "@/types/competition";
 import type { ResultArmy } from "@/types/event";
 
@@ -26,6 +23,9 @@ export type PlayedGames = {
  *
  * `played` is absent on the club page, which shows three competitions and
  * does not read the armies. The row then draws exactly what it always drew.
+ *
+ * The dialog half is `useMatchDetail`, shared with both rivalry lists: four
+ * screens asking the same question should not be four answers to it.
  */
 export default function CompetitionGames({
   matches, faction, played,
@@ -34,7 +34,7 @@ export default function CompetitionGames({
   faction: Faction;
   played?: PlayedGames;
 }) {
-  const [game, setGame] = useState<MatchDetail | null>(null);
+  const detail = useMatchDetail(faction);
 
   return (
     <>
@@ -63,22 +63,13 @@ export default function CompetitionGames({
             {/* The same line and the same way in as a table of an event draw,
                 because a game is a game wherever it was played. */}
             {recorded ? (
-              <Stack direction="row" spacing={1} useFlexGap
-                sx={{ alignItems: "baseline", flexWrap: "wrap" }}>
-                <SetupNote setup={setup} />
-                <Button size="small" variant="text"
-                  startIcon={<InfoOutlinedIcon sx={{ fontSize: 14 }} />}
-                  onClick={() => setGame({
-                    label: `${match.playerOne} v ${match.playerTwo}`,
-                    playerOne: match.playerOne, playerTwo: match.playerTwo,
-                    scoreOne: match.playerOneScore, scoreTwo: match.playerTwoScore,
-                    armyOne: one, armyTwo: two, setup,
-                  })}
-                  sx={{ minWidth: 0, px: 0.75, py: 0, fontSize: "0.72rem",
-                        color: faction.deep }}>
-                  The game
-                </Button>
-              </Stack>
+              <MatchDetailButton faction={faction} setup={setup}
+                onOpen={() => detail.open({
+                  label: `${match.playerOne} v ${match.playerTwo}`,
+                  playerOne: match.playerOne, playerTwo: match.playerTwo,
+                  scoreOne: match.playerOneScore, scoreTwo: match.playerTwoScore,
+                  armyOne: one, armyTwo: two, setup,
+                })} />
             ) : null}
           </Stack>
         );
@@ -86,7 +77,7 @@ export default function CompetitionGames({
 
       {/* One dialog for the round rather than one per game: only one is ever
           open and a season has a great many games. */}
-      <MatchDetailDialog match={game} onClose={() => setGame(null)} faction={faction} />
+      {detail.dialogs}
     </>
   );
 }

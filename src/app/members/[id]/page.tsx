@@ -7,6 +7,8 @@ import { getMemberRecords } from "@/services/memberRecords.service";
 import { getOverallRecord } from "@/services/memberOverall.service";
 import { getHeldBadges } from "@/services/memberBadges.service";
 import { getGrudgeTracker } from "@/services/grudgeTracker.service";
+import { getGameDetails } from "@/services/gameDetails.service";
+import { NO_GAME_DETAILS } from "@/utils/game-details";
 import { getRivalMarks } from "@/services/clubExtras.service";
 import { getCurrentProfile } from "@/services/auth.service";
 
@@ -65,6 +67,14 @@ export default async function MemberPage({ params }: PageProps<"/members/[id]">)
   // done" and this answers "what have I said about them": a failure here
   // should cost the button and not the record. Nothing is read on your own
   // profile, where the button is not drawn at all.
+
+  // What was played in those games. One read for every club on the page,
+  // because the key already carries the source and the id, and it has to wait
+  // for the tracker: there are no game ids to ask about until it answers.
+  const played = await getGameDetails(
+    trackers.flatMap((t) => t.matches.map((m) => ({ source: m.source, id: m.id }))),
+  ).catch(() => NO_GAME_DETAILS);
+
   const rivalMarks = isSelf || !trackers.length
     ? undefined
     : await getRivalMarks(trackers.map((t) => t.club.id), viewer.id, profile.id)
@@ -78,6 +88,7 @@ export default async function MemberPage({ params }: PageProps<"/members/[id]">)
       records={{ ...records, badges: [...held, ...records.badges] }}
       trackers={trackers}
       rivalMarks={rivalMarks}
+      played={played}
       armies={armies}
       overall={overall}
     />

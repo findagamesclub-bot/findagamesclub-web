@@ -20,6 +20,7 @@ import { bookingAction, type BookingState } from "@/app/clubs/[slug]/(console)/b
 import { nightLabel } from "@/utils/dates";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { Booking } from "@/types/booking";
+import { tableNumber } from "@/utils/table-number";
 
 /**
  * Correcting what is written on a booking.
@@ -105,7 +106,7 @@ export default function EditBookingDialog({
           <Typography variant="h4" component="span" sx={{ fontSize: "1.15rem" }}>Edit this booking</Typography>
           <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem",
                             letterSpacing: "0.06em", color: tokens.inkMuted, mt: 0.5 }}>
-            {`${nightLabel(booking.date).toUpperCase()} · TABLE ${booking.tableIndex + 1}`}
+            {`${nightLabel(booking.date).toUpperCase()} · TABLE ${tableNumber(booking.tableIndex)}`}
           </Typography>
         </DialogTitle>
 

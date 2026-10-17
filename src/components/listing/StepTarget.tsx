@@ -10,7 +10,19 @@
  */
 export type StepTarget =
   | { kind: "club"; slug: string }
-  | { kind: "draft"; id: number };
+  | {
+      kind: "draft";
+      id: number;
+      /**
+       * A site admin, on a listing somebody else sent in (0202).
+       *
+       * It saves to the same place as the club's own draft, so this changes
+       * nothing about the write. What it changes is the sentence at the foot
+       * of every step: "nobody sees it yet, you send it to us from the last
+       * step" is written for the club, and the admin IS us.
+       */
+      asAdmin?: boolean;
+    };
 
 export default function StepTargetFields({
   target, step,

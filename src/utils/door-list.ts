@@ -97,9 +97,28 @@ export function filterDoorRows(
   });
 }
 
-/** What the club still has to collect, which is the number they ask for. */
-export function owed(rows: DoorRow[]): { people: number; amount: number } {
-  const live = rows.filter((row) => !isCancelled(row) && !isPaid(row));
+/**
+ * The least a row needs before it can answer "do you still owe us for this".
+ *
+ * Structural rather than `DoorRow`, because the three screens that ask have
+ * three different rows: the door list has everything, the event page's sales
+ * board has a name and a total, and the club's events list has a total and
+ * nothing else. `status` is optional since two of the three reads already
+ * filter to reserved in SQL.
+ */
+export type Owing = { status?: string; paymentStatus: PaymentStatus; total: number };
+
+/**
+ * What the club still has to collect, which is the number they ask for.
+ *
+ * Three screens printed a figure labelled "due" and only this one took
+ * payment into account: the event page and the club's events list both summed
+ * every live booking, so money a club had already banked went on being shown
+ * as outstanding. An owner reading £104.50 due against a door list saying
+ * £61.75 cannot tell which of the two is lying.
+ */
+export function owed(rows: Owing[]): { people: number; amount: number } {
+  const live = rows.filter((row) => row.status !== "cancelled" && row.paymentStatus === "unpaid");
   return {
     people: live.length,
     amount: live.reduce((sum, row) => sum + row.total, 0),

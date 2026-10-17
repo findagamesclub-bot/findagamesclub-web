@@ -35,6 +35,7 @@ import type { MemberList } from "@/services/resultArmies.service";
  */
 export default function ArmyListPicker({
   lists, value, playerNamed, unnamedNote, disabled = false, onChange,
+  label = "Army list", emptyNote,
 }: {
   /** Already narrowed to the person this side of the result is filed under. */
   lists: MemberList[];
@@ -45,6 +46,15 @@ export default function ArmyListPicker({
   unnamedNote: string;
   disabled?: boolean;
   onChange: (list: MemberList | null) => void;
+  /**
+   * Whose list this is, in the second person where it is the reader's own.
+   *
+   * The club's screens talk about a player; a member recording their own game
+   * is the player, and "they have not built an army list at your club" about
+   * yourself reads as the control being pointed at somebody else.
+   */
+  label?: string;
+  emptyNote?: string;
 }) {
   if (!playerNamed) {
     return unnamedNote ? (
@@ -57,13 +67,14 @@ export default function ArmyListPicker({
   if (lists.length === 0) {
     return (
       <Typography variant="caption" sx={{ color: tokens.inkMuted }}>
-        They have not built an army list at your club, so there is none to name.
+        {emptyNote
+          ?? "They have not built an army list at your club, so there is none to name."}
       </Typography>
     );
   }
 
   return (
-    <TextField select fullWidth label="Army list" disabled={disabled}
+    <TextField select fullWidth label={label} disabled={disabled}
       value={value === null ? "" : String(value)}
       onChange={(event) => {
         const next = event.target.value;

@@ -5,6 +5,8 @@ import { getProfile } from "@/services/profiles.service";
 import { getMemberContext } from "@/services/memberContext.service";
 import { getMemberRecords } from "@/services/memberRecords.service";
 import { getGrudgeTracker } from "@/services/grudgeTracker.service";
+import { getGameDetails } from "@/services/gameDetails.service";
+import { NO_GAME_DETAILS } from "@/utils/game-details";
 import { getOverallRecord } from "@/services/memberOverall.service";
 
 export const metadata = { title: "Your profile" };
@@ -32,6 +34,11 @@ export default async function AdminProfilePage() {
       sources: [], total: { played: 0, wins: 0, draws: 0, losses: 0 }, rate: null })),
   ]);
   const trackers = await getGrudgeTracker(profile.id, context.clubs).catch(() => []);
+  // The same read the public profile makes, so an admin reading their own page
+  // gets the same controls as anybody reading somebody else's.
+  const played = await getGameDetails(
+    trackers.flatMap((t) => t.matches.map((m) => ({ source: m.source, id: m.id }))),
+  ).catch(() => NO_GAME_DETAILS);
 
   return (
     <MemberProfileView
@@ -42,6 +49,7 @@ export default async function AdminProfilePage() {
       context={context}
       records={records}
       trackers={trackers}
+      played={played}
       overall={overall}
     />
   );

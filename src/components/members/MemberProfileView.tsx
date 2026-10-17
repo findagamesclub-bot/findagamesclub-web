@@ -23,6 +23,7 @@ import SportsScoreIcon from "@mui/icons-material/SportsScore";
 import ScoreboardIcon from "@mui/icons-material/ScoreboardOutlined";
 import OverallRecord from "./OverallRecord";
 import type { OverallRecord as Overall } from "@/services/memberOverall.service";
+import type { GameDetails } from "@/utils/game-details";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 
 /**
@@ -39,6 +40,7 @@ export default function MemberProfileView({
   records,
   trackers,
   rivalMarks,
+  played,
   armies,
   overall,
   editHref = "/account/profile",
@@ -66,6 +68,8 @@ export default function MemberProfileView({
    * than the card it sits in.
    */
   rivalMarks?: Map<number, RivalMark>;
+  /** The armies, lists and setups behind the games in the grudge tracker. */
+  played?: GameDetails;
   armies?: MemberArmy[];
   /** Everything they have played, from club nights, events and leagues. */
   overall?: Overall;
@@ -159,6 +163,7 @@ export default function MemberProfileView({
               firstName={profile.fullName.trim().split(" ")[0] || profile.fullName}
               isSelf={isSelf}
               rivalMarks={rivalMarks}
+              played={played}
             />
           </Panel>
         ) : null}

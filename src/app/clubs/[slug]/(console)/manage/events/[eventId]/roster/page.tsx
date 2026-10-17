@@ -12,6 +12,7 @@ import { getRoster } from "@/services/memberships.service";
 import { londonToday } from "@/services/bookingCalendar.service";
 import { clubIdentity } from "@/utils/club-identity";
 import { consoleBackTarget } from "@/utils/back-link";
+import { namesFor } from "@/services/profiles.service";
 
 export const metadata = { title: "Who is coming" };
 
@@ -50,6 +51,18 @@ export default async function RosterPage({
     getDoorList(event.id),
     getRoster(club.id).catch(() => []),
   ]);
+
+  // Names for the accounts on this list, including the ones the roster has
+  // never heard of.
+  //
+  // A place can be linked to somebody from another club by their member code
+  // (0177), and every name on this screen was being looked up in the club's
+  // own roster, so exactly those people came back nameless: the row could not
+  // say who it was booked under and the dialog could only say "Attached to an
+  // account". Same fault 0177 already fixed on the matching screen, one page
+  // over. Usually fetches nothing, because usually everybody is a member.
+  const linkedNames = await namesFor(
+    rows.map((row) => row.profileId).filter((id): id is string => Boolean(id)));
   // Its last day, by the same London wall-clock rule the rest of the app uses.
   const lastDay = event.endDate || event.startDate;
   const over = Boolean(lastDay) && lastDay < londonToday();
@@ -78,6 +91,7 @@ export default async function RosterPage({
         members={members
           .filter((m) => m.status === "approved")
           .map((m) => ({ id: m.profileId, name: m.fullName }))}
+        accountNames={Object.fromEntries(linkedNames)}
         canAdd={!over && event.status !== "cancelled"} />
     </Container>
   );

@@ -17,6 +17,7 @@ import { clubIdentity } from "@/utils/club-identity";
 import { display, mono, tokens } from "@/lib/tokens";
 import type { ClubTracker } from "@/services/grudgeTracker.service";
 import type { RivalMark } from "@/services/clubExtras.service";
+import type { GameDetails } from "@/utils/game-details";
 
 /**
  * How a member has done at each club they play at.
@@ -30,7 +31,7 @@ import type { RivalMark } from "@/services/clubExtras.service";
  * neither.
  */
 export default function GrudgeTracker({
-  trackers, memberId, memberName, firstName, isSelf, rivalMarks,
+  trackers, memberId, memberName, firstName, isSelf, rivalMarks, played,
 }: {
   trackers: ClubTracker[];
   memberId: string;
@@ -45,25 +46,34 @@ export default function GrudgeTracker({
    * and not the card.
    */
   rivalMarks?: Map<number, RivalMark>;
+  /**
+   * What was played in their games, across every club on this page.
+   *
+   * One map rather than one per club: it is one read for the profile, and the
+   * keys already carry the source and the id. Absent where the read failed,
+   * which costs the control and not the record.
+   */
+  played?: GameDetails;
 }) {
   return (
     <Stack spacing={2.5}>
       {trackers.map((tracker) => (
         <ClubCard key={tracker.club.id} tracker={tracker} memberId={memberId}
           memberName={memberName} firstName={firstName} isSelf={isSelf}
-          mark={rivalMarks?.get(tracker.club.id) ?? null} />
+          mark={rivalMarks?.get(tracker.club.id) ?? null} played={played} />
       ))}
     </Stack>
   );
 }
 
-function ClubCard({ tracker, memberId, memberName, firstName, isSelf, mark }: {
+function ClubCard({ tracker, memberId, memberName, firstName, isSelf, mark, played }: {
   tracker: ClubTracker;
   memberId: string;
   memberName: string;
   firstName: string;
   isSelf: boolean;
   mark: RivalMark | null;
+  played?: GameDetails;
 }) {
   const [tab, setTab] = useState<"overview" | "insights">("overview");
   const { faction } = clubIdentity(tracker.club.slug, tracker.club.name);
@@ -103,7 +113,8 @@ function ClubCard({ tracker, memberId, memberName, firstName, isSelf, mark }: {
 
       <Box sx={{ px: { xs: 2, sm: 2.5 }, pb: { xs: 2, sm: 2.5 }, pt: 0.5 }}>
         {tab === "overview"
-          ? <GrudgeOverview tracker={tracker} faction={faction} memberId={memberId} />
+          ? <GrudgeOverview tracker={tracker} faction={faction} memberId={memberId}
+              memberName={memberName} played={played} />
           : <GrudgeInsights tracker={tracker} mineLabel={isSelf ? "You" : firstName} />}
       </Box>
 

@@ -163,7 +163,7 @@ export default function AnalyticsSection({
     const { items, sessions } = data.sales;
     return (
       <Section flush title="Shop and coaching" icon={StorefrontIcon}
-        note="What sold and what filled up, inside the window you picked. Ranked by how many went rather than by what they brought in: the most popular thing and the most valuable one are often not the same, so both figures are on the row.">
+        note="What sold and what was booked, inside the window you picked. Ranked by how many went rather than by what they brought in: the most popular thing and the most valuable one are often not the same, so both figures are on the row.">
         {!items.length && !sessions.length ? (
           <EmptyState title="Nothing sold in this window"
             description="An order or a coaching place inside the window puts a ranking here. Try a wider one if the club has been going longer than this." />
@@ -188,14 +188,18 @@ export default function AnalyticsSection({
             </Box>
 
             <Box>
-              <MonoLabel>{`COACHING · ${data.sales.placesTaken} PLACES`}</MonoLabel>
+              {/* "51 places" answers neither question a club has: the client
+                  asked whether it was places left or places taken. It is what
+                  members booked, so it says booked, which also reads as the
+                  pair of "15 sold" opposite. */}
+              <MonoLabel>{`COACHING · ${data.sales.placesTaken} PLACES BOOKED`}</MonoLabel>
               {sessions.length ? (
                 <RankedBars
                   rows={sessions.map((s) => ({
                     label: s.label, value: s.booked,
                     note: pounds(Number(s.revenue ?? 0)),
                   }))}
-                  suffix={(n: number) => (n === 1 ? "place" : "places")} />
+                  suffix={(n: number) => (n === 1 ? "place booked" : "places booked")} />
               ) : (
                 <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
                   No coaching ran in this window.
@@ -215,9 +219,21 @@ export default function AnalyticsSection({
         <DownloadButton variant="outlined" size="small"
           href={`/clubs/${slug}/manage/analytics/export/memberships`} />
       )}>
+      {/* Every figure here is a set of people, and until now none of them was
+          a way to reach them: the client's own words were that we show the
+          data and they cannot get at it without going to other pages. Each
+          tile links to the list already narrowed to what it counts, and only
+          when it counts somebody, because a link to an empty page is a dead
+          end wearing an affordance.
+
+          Joined deliberately has none. The roster has no "arrived in this
+          window" filter, so the honest options were a link that ignores the
+          window or no link, and a link that lands on the wrong list is worse
+          than the figure on its own. */}
       <StatTiles columns={4} tiles={[
         { label: "Approved", value: String(data.health.total),
-          note: "On the roster right now" },
+          note: "On the roster right now",
+          href: data.health.total ? `/clubs/${slug}/members` : undefined },
         // Not the period's own label: "All time" lowercased reads "In the all
         // time you picked", and the window is named on the picker directly
         // above this anyway.
@@ -225,10 +241,14 @@ export default function AnalyticsSection({
           note: "Inside the window you picked" },
         { label: "Due to renew", value: String(data.health.dueSoon),
           note: "Paid period ends within thirty days",
-          emphasis: data.health.dueSoon > 0 },
+          emphasis: data.health.dueSoon > 0,
+          href: data.health.dueSoon
+            ? `/clubs/${slug}/members/renewals?show=expiring` : undefined },
         { label: "Lapsed", value: String(data.health.lapsed),
           note: "Paid period has already ended",
-          emphasis: data.health.lapsed > 0 },
+          emphasis: data.health.lapsed > 0,
+          href: data.health.lapsed
+            ? `/clubs/${slug}/members/renewals?show=overdue` : undefined },
       ]} />
 
       {/* The tier split has been in this read since 0117 and only the
@@ -248,6 +268,12 @@ export default function AnalyticsSection({
             <RankedBars
               rows={data.health.byTier.map((row) => ({
                 label: row.label, value: row.members,
+                // The roster filters on the club's own label, folded, which
+                // is the value its dropdown carries. Sending the tier KEY
+                // would land on a filter that matches nobody.
+                href: row.members
+                  ? `/clubs/${slug}/members?tier=${encodeURIComponent(row.label.trim().toLowerCase())}`
+                  : undefined,
                 // How many of them arrived inside the window. The count
                 // itself cannot follow the window, because every window on
                 // this page ends today and the answer would be the same five
@@ -265,6 +291,9 @@ export default function AnalyticsSection({
               emphasiseLeader={false}
               rows={ladder.map((rung) => ({
                 label: rung.label, value: rung.members,
+                href: rung.members
+                  ? `/clubs/${slug}/members?loyalty=${encodeURIComponent(rung.label.trim().toLowerCase())}`
+                  : undefined,
               }))}
               suffix={(n: number) => (n === 1 ? "member" : "members")} />
             <Typography sx={{ fontFamily: display, fontSize: "0.75rem",

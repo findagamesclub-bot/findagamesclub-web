@@ -37,12 +37,18 @@ export type MatchDetail = {
  * April, and the mission is whatever the club typed against the game.
  */
 export default function MatchDetailDialog({
-  match, onClose, faction,
+  match, onClose, faction, onShowList,
 }: {
   /** Null keeps this shut. */
   match: MatchDetail | null;
   onClose: () => void;
   faction: Faction;
+  /**
+   * Asked for one side's full list. The caller swaps this dialog for
+   * `ArmyListDialog` rather than stacking them, so there is one dialog open
+   * at a time and Close still means close.
+   */
+  onShowList?: (side: "one" | "two") => void;
 }) {
   const small = useMediaQuery("(max-width:599px)");
   const setup = setupLine(match?.setup);
@@ -72,10 +78,12 @@ export default function MatchDetailDialog({
                    gridTemplateColumns: { xs: "minmax(0, 1fr)",
                                           md: "repeat(2, minmax(0, 1fr))" } }}>
           <ArmyDetail player={match?.playerOne ?? ""} army={match?.armyOne ?? null}
-            faction={faction} scoreLine={match?.scoreOne} />
+            faction={faction} scoreLine={match?.scoreOne} listMode="summary"
+            onShowList={onShowList ? () => onShowList("one") : undefined} />
           {match?.playerTwo?.trim() ? (
             <ArmyDetail player={match.playerTwo} army={match.armyTwo}
-              faction={faction} scoreLine={match.scoreTwo} />
+              faction={faction} scoreLine={match.scoreTwo} listMode="summary"
+              onShowList={onShowList ? () => onShowList("two") : undefined} />
           ) : (
             <Stack spacing={1}>
               <Typography sx={{ fontWeight: 700 }}>No opponent</Typography>

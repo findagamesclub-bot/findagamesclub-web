@@ -113,7 +113,42 @@ function toSuspension(rows: repo.Suspension[] | null) {
     reason: (row.reason ?? "").trim(),
     at: row.suspended_at,
     byName: (row.by_name ?? "").trim(),
+    // What the club has already said about it, so the banner can answer
+    // "did that go anywhere" instead of offering the button again.
+    askedAt: row.asked_at ?? null,
+    askedNote: (row.asked_note ?? "").trim(),
   };
+}
+
+/**
+ * "I have put it right, please look again."
+ *
+ * The client asked how an owner resolves a suspension, and until now the
+ * answer was that they could not: the banner told them only an admin could put
+ * it back. Their own two suggestions were a message button and sending it back
+ * through club requests; the second does not reach an event, which they said
+ * themselves, and the first does not exist, because `getContacts` only ever
+ * returns clubmates so a member cannot start a thread with the site.
+ *
+ * So it is one action on the thing that was taken down, for both kinds.
+ */
+export async function askSuspensionReview(
+  kind: "club" | "event", id: number, note: string,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await repo.askSuspensionReview(kind, id, note.trim().slice(0, 1000));
+    return { ok: true };
+  } catch (error) {
+    const raw = error instanceof Error ? error.message : "";
+    if (raw.includes("REVIEW_NOT_DOWN")) {
+      return { ok: false, error: "That is not taken down, so there is nothing to look at again." };
+    }
+    if (raw.includes("NOT_PERMITTED") || raw.includes("REVIEW_SIGN_IN")) {
+      return { ok: false, error: "Only the club can ask for another look at this." };
+    }
+    console.error("ask for review failed", { kind, id, raw });
+    return { ok: false, error: "That did not send. Try again." };
+  }
 }
 
 export type ListingSuspension = NonNullable<Awaited<ReturnType<typeof getClubSuspension>>>;

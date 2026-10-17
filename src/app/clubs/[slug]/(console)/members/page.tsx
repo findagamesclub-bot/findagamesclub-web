@@ -296,6 +296,15 @@ export default async function ClubMembersPage({
 
         <RosterFilters
           members={roster}
+          // Opened already narrowed when the analytics sent them here. A
+          // searchParam can arrive as an array, so only a plain string counts
+          // and anything else opens the list whole rather than on nothing.
+          openOn={{
+            membership: typeof query.tier === "string"
+              ? query.tier.trim().toLowerCase() : undefined,
+            loyalty: typeof query.loyalty === "string"
+              ? query.loyalty.trim().toLowerCase() : undefined,
+          }}
           // The same two the cards already draw, so a filter and the card it
           // narrows to cannot disagree about which tier somebody is on.
           facets={roster.map((m) => ({

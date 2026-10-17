@@ -29,7 +29,7 @@ import { PER_PAGE } from "@/utils/paging";
  * one option rather than a list of forty it has never heard of.
  */
 export default function RosterFilters({
-  members, cards, facets = [],
+  members, cards, facets = [], openOn,
 }: {
   members: ClubMember[];
   /** One entry per member, keyed by profile id. */
@@ -41,13 +41,24 @@ export default function RosterFilters({
    * dropdowns do not appear.
    */
   facets?: { id: string; membership: string; loyalty: string }[];
+  /**
+   * What the page was opened on, from the address.
+   *
+   * The analytics tiers link here already narrowed, which is the client's own
+   * ask: a count that cannot say which people is a count somebody has to go
+   * and reproduce by hand. A seed rather than a filter held in the address
+   * throughout, so the link works, survives a refresh and can be sent to a
+   * co-manager, and changing a dropdown afterwards does not rewrite the URL.
+   * Folded, because that is what the dropdowns and `filterRoster` compare.
+   */
+  openOn?: { membership?: string; loyalty?: string };
 }) {
   const [query, setQuery] = useState("");
   const [game, setGame] = useState(ANY);
   const [army, setArmy] = useState(ANY);
   const [style, setStyle] = useState(ANY);
-  const [membership, setMembership] = useState(ANY);
-  const [loyalty, setLoyalty] = useState(ANY);
+  const [membership, setMembership] = useState(openOn?.membership ?? ANY);
+  const [loyalty, setLoyalty] = useState(openOn?.loyalty ?? ANY);
 
   const settled = useDeferredValue(query);
   const busy = settled !== query;

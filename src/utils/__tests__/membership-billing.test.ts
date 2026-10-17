@@ -14,7 +14,7 @@ const iso = (offset: number) => new Date(Date.now() + offset * day).toISOString(
 const pay = (o: Partial<MembershipPayment>): MembershipPayment => ({
   id: 1, tierKey: "basic", tierLabel: "Basic", billingOptionLabel: "Monthly",
   price: "£10", priceDuration: "month", periodStart: iso(-30), periodEnd: iso(0),
-  note: null, recordedAt: iso(-30), ...o,
+  note: null, recordedAt: iso(-30), editedAt: null, ...o,
 });
 
 let failed = 0;

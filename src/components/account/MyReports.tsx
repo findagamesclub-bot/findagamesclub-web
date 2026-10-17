@@ -30,6 +30,17 @@ const TYPES = [
   ...MODERATION_TARGETS.map((t) => ({ value: t.key, label: t.plural })),
 ];
 
+/**
+ * Whether this row came from a database that knows who answers a report.
+ *
+ * 0196 added `with_club`, and the app is deployed before anybody runs a
+ * migration in a window measured in minutes. A missing value is falsy, which
+ * would read as "a site admin has it" about every report on the page, so the
+ * line is drawn only once the answer is really there. Deleting this is safe
+ * once 0196 is on every environment.
+ */
+const knows = (row: { with_club?: boolean }) => typeof row.with_club === "boolean";
+
 export default function MyReports({
   page, tab, type, query, sort,
 }: {
@@ -129,13 +140,35 @@ export default function MyReports({
                     You said: {row.reason}
                   </Typography>
 
-                  {/* Not "the admin said": since 0128 the club answers its own
-                      reports first, so most of these are the club. Naming the
-                      wrong person is worse than naming nobody. */}
+                  {/* Who has it, which nothing on this page used to say.
+                      0128 sends a review, and anything a club's own team
+                      wrote, to a site admin instead of to the club. The rule
+                      is right and it was invisible, so a member comparing this
+                      list against the club's own queue saw one report in both
+                      and one in only this one, and read that as the routing
+                      being broken. Reported three times.
+
+                      "not the club" is the half that closes it: it says the
+                      absence from the club's queue is the rule working. */}
+                  {row.status === "open" && knows(row) ? (
+                    <Typography sx={{ fontSize: "0.85rem", color: tokens.inkMuted }}>
+                      {row.with_club && row.club_name
+                        ? `${row.club_name} is looking at it.`
+                        : "A site admin is looking at it, not the club."}
+                    </Typography>
+                  ) : null}
+
+                  {/* This read "They said" because, since 0128, the club
+                      answers its own reports first and naming the wrong person
+                      is worse than naming nobody. 0196 returns which it was,
+                      so it can be named. */}
                   {row.resolution ? (
                     <Typography sx={{ fontSize: "0.85rem", color: tokens.ink,
                                       pl: 1.5, borderLeft: `2px solid ${tokens.rule}` }}>
-                      They said: {row.resolution}
+                      {!knows(row) ? "They said: "
+                        : row.with_club && row.club_name ? `${row.club_name} said: `
+                        : "A site admin said: "}
+                      {row.resolution}
                     </Typography>
                   ) : null}
 

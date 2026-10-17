@@ -10,7 +10,7 @@ import { getClubDetail } from "@/services/clubDetail.service";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
 import { getClubRenewals } from "@/services/renewals.service";
-import { countRenewals } from "@/utils/renewal-filter";
+import { countRenewals, type RenewalFilter } from "@/utils/renewal-filter";
 import { clubIdentity } from "@/utils/club-identity";
 import { backTarget } from "@/utils/back-link";
 import { londonToday } from "@/services/bookingCalendar.service";
@@ -29,6 +29,19 @@ export async function generateMetadata({ params }: PageProps<"/clubs/[slug]/memb
  * than mixed into the roster, because chasing money and browsing a roster are
  * different jobs done at different times.
  */
+/**
+ * Which tab an inbound link asked for.
+ *
+ * Checked against the real set rather than cast: a `searchParam` is whatever
+ * somebody typed into the address bar, and `"show=nonsense" as RenewalFilter`
+ * would seed a tab that does not exist and show nothing, which reads as a
+ * club with no members.
+ */
+const TABS: RenewalFilter[] = ["all", "due", "expiring", "overdue", "paid"];
+const openTab = (value: unknown): RenewalFilter | undefined =>
+  typeof value === "string" && (TABS as string[]).includes(value)
+    ? (value as RenewalFilter) : undefined;
+
 export default async function ClubRenewalsPage({
   params, searchParams,
 }: PageProps<"/clubs/[slug]/members/renewals">) {
@@ -84,7 +97,8 @@ export default async function ClubRenewalsPage({
       ) : null}
 
       <RenewalBrowser rows={rows} slug={club.slug} today={londonToday()}
-        tiers={club.membershipTiers} faction={faction} />
+        tiers={club.membershipTiers} faction={faction}
+        openOn={openTab(query.show)} />
     </Container>
   );
 }

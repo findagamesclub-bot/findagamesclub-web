@@ -6,6 +6,7 @@ import NextLink from "next/link";
 import ClubLogo from "@/components/clubs/ClubLogo";
 import LockIcon from "@mui/icons-material/Lock";
 import ResultDialog from "./ResultDialog";
+import type { MemberList } from "@/services/resultArmies.service";
 import { confirmationLabel, deploymentLabel } from "@/utils/result-meta";
 import { nightLabel } from "@/utils/dates";
 import { display, mono, tokens } from "@/lib/tokens";
@@ -24,7 +25,11 @@ const OUTCOME = {
  * A game that has happened with no result gets the prompt instead, which is
  * how the history fills itself in.
  */
-export default function GameCard({ game }: { game: MyGame }) {
+export default function GameCard({ game, myLists = [] }: {
+  game: MyGame;
+  /** Their own lists at this game's club, for the result dialog to offer. */
+  myLists?: MemberList[];
+}) {
   const state = game.outcome ? OUTCOME[game.outcome] : null;
   const waiting = game.played && !game.outcome;
 
@@ -134,7 +139,8 @@ export default function GameCard({ game }: { game: MyGame }) {
         ) : null}
 
         {game.played
-          ? <ResultDialog game={game} canManageClub={game.canManageClub} />
+          ? <ResultDialog game={game} canManageClub={game.canManageClub}
+              myLists={myLists} />
           : null}
       </Stack>
     </Stack>

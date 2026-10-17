@@ -27,24 +27,28 @@ const COLUMNS =
    decline_reason, slot_id, club:clubs(slug, name, city)`;
 
 /**
- * This club's most recent ask.
+ * This club's own asks, newest first.
  *
- * One row rather than a history: the panel answers "where is my request", and
- * a club that has asked four times over two years does not need the first
- * three on its billing page.
+ * It read one row until 0204, which was right while the unique index allowed
+ * one open ask per club. A club running four events a year wants four weeks,
+ * each with its own date and its own answer, so the panel lists every open one
+ * and each gets its own way back out.
+ *
+ * Capped, because the panel draws the open asks and one answer: a club a few
+ * years in has a history nobody reads to the end of.
  */
-export async function findRequestForClub(
+export async function findRequestsForClub(
   clubId: number,
-): Promise<FeaturedRequestRow | null> {
+): Promise<FeaturedRequestRow[]> {
   const rows = await table<FeaturedRequestRow>("featured_requests");
   const { data, error } = await rows
     .select(COLUMNS)
     .eq("club_id", clubId)
     .order("id", { ascending: false })
-    .limit(1);
+    .limit(20);
 
-  if (error) throw new Error(`Failed to load the featured request: ${error.message}`);
-  return data?.[0] ?? null;
+  if (error) throw new Error(`Failed to load the featured requests: ${error.message}`);
+  return data ?? [];
 }
 
 /** The admin's queue. Open ones first, oldest at the top of those. */

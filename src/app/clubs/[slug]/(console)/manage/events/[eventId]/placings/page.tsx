@@ -15,6 +15,7 @@ import { getEventDetail } from "@/services/eventDetail.service";
 import { getRoster } from "@/services/memberships.service";
 import { getBuilderFor } from "@/services/armyBuilder.service";
 import { getMemberLists } from "@/services/resultArmies.service";
+import { namesFor } from "@/services/profiles.service";
 import { clubIdentity } from "@/utils/club-identity";
 import { eventRecordsArmies } from "@/utils/event-meta";
 import { consoleBackTarget } from "@/utils/back-link";
@@ -69,6 +70,16 @@ export default async function PlacingsPage({
     .filter((m) => m.status === "approved")
     .map((m) => ({ id: m.profileId, name: m.fullName }));
 
+  // A placing stores only the account's id, and the editor looked every name
+  // up in this club's own roster, so somebody linked by their member code
+  // (0177) came back nameless: reopening the row read "Attached to an account"
+  // about a player the club had just named. Same fault, same fix, as the door
+  // list one page over. Usually fetches nothing, because usually everybody on
+  // a club's results is one of its own members.
+  const linkedNames = await namesFor(
+    detail.placings.map((p) => p.profileId).filter((id): id is string => Boolean(id)));
+  const accountNames = Object.fromEntries(linkedNames);
+
   // Two short strings, not the catalogue: the dialog fetches that on its first
   // open. The event's own games gate it as well as the club's switch, so a
   // Blood Bowl weekend at a 40k club offers no army fields.
@@ -118,7 +129,7 @@ export default async function PlacingsPage({
                   viewerName={viewer.full_name ?? null}
                   admin={{
                     slug, eventKey: event.legacyId, eventId: event.id,
-                    roster, builder: records, lists,
+                    roster, builder: records, lists, accountNames,
                   }}
                 />
               </Stack>
@@ -131,7 +142,7 @@ export default async function PlacingsPage({
             viewerName={viewer.full_name ?? null}
             admin={{
               slug, eventKey: event.legacyId, eventId: event.id,
-              roster, builder: records, lists,
+              roster, builder: records, lists, accountNames,
             }}
           />
         )}

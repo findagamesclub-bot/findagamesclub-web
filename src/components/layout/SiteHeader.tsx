@@ -49,14 +49,20 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { label: "Directory", href: "/clubs" },
-  { label: "Events", href: "/events", owns: /\/events(\/|$)/ },
+  // Anchored, all of them. An unanchored `/\/events(\/|$)/` matches
+  // `/admin/events` and `/clubs/x/manage/events` as well, and `NAV.find`
+  // returns the first match in this array, so a console page lit the public
+  // tab above it. Each item claims the paths it actually owns, from the start
+  // of the path.
+  { label: "Events", href: "/events",
+    owns: /^\/(events|clubs\/[^/]+\/events)(\/|$)/ },
   { label: "Map", href: "/clubs?view=map" },
   { label: "Meta Tracker", href: "/meta-tracker" },
   { label: "My Clubs", href: "/my-clubs", ownerOnly: true,
     // The console lives under a club's own path, so on path alone it lights
     // Directory. It is the club you run, and My Clubs is where you came from.
-    owns: /\/clubs\/[^/]+\/manage(\/|$)/ },
-  { label: "Admin", href: "/admin", adminOnly: true },
+    owns: /^\/clubs\/[^/]+\/manage(\/|$)/ },
+  { label: "Admin", href: "/admin", adminOnly: true, owns: /^\/admin(\/|$)/ },
 ];
 
 const linkSx = (active: boolean) => ({
@@ -145,13 +151,16 @@ export default function SiteHeader({
   const renderNav = (onNavigate?: () => void) =>
     NAV
       // My Clubs is meaningless to somebody who runs none, so it is absent
-      // rather than present and permanently empty.
+      // rather than present and permanently empty. Admin is the mirror of it.
       //
-      // An admin gets no header nav at all. Their console is the whole job and
-      // its rail carries every part of it, notifications and messages
-      // included. A row of visitor tabs above it is only ways to leave.
-      .filter((item) => viewer?.role !== "admin"
-        && (!item.ownerOnly || ownsClubs) && !item.adminOnly)
+      // An admin used to get no header nav AT ALL, on the reasoning that the
+      // console rail carries every part of their job. True of the console and
+      // false everywhere else: this header is on the directory, an event, the
+      // Meta Tracker and every club page, where an admin had a logo, an
+      // account menu and no way to reach any of it. A club's own team gets the
+      // full nav above their rail, so the admin was the one role missing it.
+      .filter((item) => (!item.ownerOnly || ownsClubs)
+        && (!item.adminOnly || viewer?.role === "admin"))
       .map((item) =>
         item.href ? (
           <Box
@@ -220,12 +229,13 @@ export default function SiteHeader({
                   notification is the one thing in the header that is
                   time-sensitive, and burying it two taps into a drawer on the
                   device people actually carry is where it is least use. */}
-              {/* Not for an admin: theirs is a row in the console rail, so the
-                  header stays the brand and the account and nothing else. */}
-              {viewer.role === "admin" ? null : (
-                <NotificationBell viewerId={viewer.id} initialUnread={live.notifications}
-                  isAdmin={viewer.role === "admin"} />
-              )}
+              {/* An admin has one too. It was hidden on the same reasoning as
+                  the nav above, and the console rail's Notifications row is
+                  not on the directory or on an event page either. The bell has
+                  always known who it is for: `isAdmin` decides which messages
+                  shell a message notice opens in. */}
+              <NotificationBell viewerId={viewer.id} initialUnread={live.notifications}
+                isAdmin={viewer.role === "admin"} />
               <Box sx={{ display: { xs: "none", sm: "block" } }}>
                 <AccountMenu viewer={viewer} unreadMessages={live.messages} manage={manage} />
               </Box>

@@ -101,7 +101,8 @@ export default function MetaBoard({
 
 /** What the pager counts on each tab. */
 const NOUN: Record<MetaTab, string> = {
-  factions: "factions", detachments: "detachments", matchups: "matchups",
+  factions: "factions", detachments: "detachments",
+  dispositions: "dispositions", matchups: "matchups",
   context: "settings", units: "units", trend: "months",
 };
 
@@ -112,9 +113,8 @@ const KIND_LABEL: Record<string, string> = {
 
 /** One tab, one list. Everything the tracker shows is a ranking. */
 function pick(view: MetaView, tab: MetaTab, lens: string): MetaRow[] {
-  if (tab === "detachments") {
-    return [...view.detachments, ...view.dispositions];
-  }
+  if (tab === "detachments") return view.detachments;
+  if (tab === "dispositions") return view.dispositions;
   if (tab === "matchups") {
     return view.matchups.map((m) => ({
       label: m.label, parent: `into ${m.opponent}`,
@@ -149,8 +149,12 @@ function pick(view: MetaView, tab: MetaTab, lens: string): MetaRow[] {
   }
   return view.factions.map((f) => ({
     label: f.label, winRate: f.winRate, games: f.games,
+    appearances: f.appearances,
     earlySignal: f.earlySignal,
-    note: `${f.representation}% of what was taken`
+    // "What was taken" named no denominator, so 19% was a share of something
+    // nowhere on the page. The lead sentence above already calls this run of
+    // results the sample, so the card uses the same word.
+    note: `${f.representation}% of the sample`
       + (f.podiums ? ` · ${f.podiums} on a podium` : ""),
   }));
 }
@@ -161,5 +165,6 @@ function emptyTitle(tab: MetaTab): string {
   if (tab === "units") return "No units tagged yet";
   if (tab === "trend") return "Not enough months yet";
   if (tab === "detachments") return "No detachments recorded yet";
+  if (tab === "dispositions") return "No dispositions recorded yet";
   return "Nothing has been recorded yet";
 }

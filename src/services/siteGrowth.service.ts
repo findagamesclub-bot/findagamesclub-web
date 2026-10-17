@@ -38,3 +38,19 @@ export async function getSiteGrowth(period: PeriodKey) {
     failed: months === null || summary === null,
   };
 }
+
+/**
+ * The lines behind the money, for the spreadsheet.
+ *
+ * Its own read rather than part of `getSiteGrowth`: the page draws months and
+ * the file wants transactions, and shipping every payment to a dashboard that
+ * never shows one is the scale rule this console keeps.
+ *
+ * Throws rather than catching. A download that quietly hands back an empty
+ * file is worse than one that says it could not be made: a treasurer filing a
+ * blank return would not know.
+ */
+export async function getRevenueLines(period: PeriodKey) {
+  const { from, to } = periodRange(period, londonToday());
+  return { from, to, lines: await repo.findRevenueLines(from, to) };
+}

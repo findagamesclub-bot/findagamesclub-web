@@ -1,4 +1,5 @@
 import { build, greet, type Email } from "./build";
+import { paymentNote } from "@/utils/payment-note";
 
 /**
  * Merchandise and coaching confirmations.
@@ -57,7 +58,7 @@ export function coachingBooked(params: {
     body: [
       greet(params.name),
       `${params.clubName} has your place on ${params.title}.`,
-      "Nothing has been charged. The club takes payment on the day unless they tell you otherwise.",
+      `Nothing has been charged. ${paymentNote(params.clubName)}`,
     ],
     details: {
       rows: [

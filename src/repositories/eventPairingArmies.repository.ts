@@ -55,6 +55,21 @@ export type PairingArmyRow = {
 export const findPairingArmies = (eventId: number) =>
   callRpc<PairingArmyRow[]>("event_pairing_armies", { p_event: eventId });
 
+/**
+ * How every table of a draw was set up, read from the match rows (0200).
+ *
+ * `event_pairing_armies` carries the same three columns, but it selects FROM
+ * `game_result_armies`, so a table with a mission typed and no army recorded
+ * came back with nothing: `put_result_army` deletes a side that names no
+ * faction, and the setup went with it on the way out.
+ */
+export type PairingSetupRow = {
+  match_id: number; mission: string; deployment: string; terrain: string;
+};
+
+export const findPairingSetup = (eventId: number) =>
+  callRpc<PairingSetupRow[]>("event_pairing_setup", { p_event: eventId });
+
 /** Both armies on one table, and how the game was set up. */
 export const savePairingArmies = (params: {
   matchId: number; armies: unknown;

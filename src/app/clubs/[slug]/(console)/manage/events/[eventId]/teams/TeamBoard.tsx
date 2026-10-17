@@ -69,8 +69,8 @@ export default function TeamBoard({
     startTransition(() => submit(data));
   };
 
-  const boards = teams.map((team) => team.players.length);
-  const uneven = boards.length > 1 && new Set(boards).size > 1;
+  const sizes = teams.map((team) => team.players.length);
+  const uneven = sizes.length > 1 && new Set(sizes).size > 1;
 
   return (
     <Stack spacing={2.5}>

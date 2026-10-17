@@ -125,7 +125,13 @@ export async function saveSubmissionDraft(
   const { data, error } = await rows
     .update(patch)
     .eq("id", id)
-    .in("status", ["draft", "changes_requested"])
+    // The states `club_submissions_edit` allows, which is what this list is
+    // for: match on state and not on id alone, so a stale tab cannot write
+    // into a listing that has moved on. It had drifted twice. 0112 let an
+    // owner keep typing while payment was pending and this filter did not,
+    // and 0202 lets an admin edit one under review and this filter did not,
+    // both of which arrive as NOT_PERMITTED on a save the policy allows.
+    .in("status", ["draft", "changes_requested", "payment_pending", "review_pending"])
     .select(LIST_COLUMNS)
     .maybeSingle();
 

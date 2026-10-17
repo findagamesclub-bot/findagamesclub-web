@@ -21,11 +21,22 @@ import type { EventPlacing } from "@/types/event";
  * past is a faction somebody will believe they typed.
  */
 export function usePlacingArmy(open: boolean, placing: EventPlacing | null,
-                               lists: MemberList[]) {
+                               lists: MemberList[],
+                               accountNames: Record<string, string> = {}) {
   // The account this row points at, not just its id: the linked line names
   // them, and a code brings the name back with it.
   const [linked, setLinked] = useState<Linked | null>(null);
   const profileId = linked?.id ?? null;
+  /**
+   * What is in the Player box.
+   *
+   * Held here rather than left to the Autocomplete because a member code can
+   * fill it: linking somebody from another club by their code knows their
+   * name, and the box was staying empty, so the form refused to save with
+   * "Please fill in this field" on a row the club had just linked correctly.
+   * The client hit exactly that with a Joe Bloggs who is not a Didcot member.
+   */
+  const [playerName, setPlayerName] = useState("");
   const [army, setArmy] = useState<ArmyNaming>(NO_ARMY);
   const [listId, setListId] = useState<number | null>(null);
   const [seen, setSeen] = useState<number | string | null>(null);
@@ -42,9 +53,13 @@ export function usePlacingArmy(open: boolean, placing: EventPlacing | null,
     // Read here rather than as a `useState` initialiser: an initialiser runs
     // on the first mount and never again, so this dialog carried the previous
     // winner's profile link onto the next row it opened.
-    // No name: all a saved row stores is the id, and the typed name is the
-    // club's own wording rather than the account's.
-    setLinked(placing?.profileId ? { id: placing.profileId } : null);
+    // Only the id is stored, so the name has to come from the account rather
+    // than from `placing.name`, which is the club's own typing: echoing that
+    // back would confirm a wrong link instead of exposing it (0177).
+    setLinked(placing?.profileId
+      ? { id: placing.profileId, name: accountNames[placing.profileId] }
+      : null);
+    setPlayerName(placing?.name ?? "");
     setArmy({
       factionId: placing?.army?.factionLabel ?? "",
       factionLabel: placing?.army?.factionLabel ?? "",
@@ -87,5 +102,17 @@ export function usePlacingArmy(open: boolean, placing: EventPlacing | null,
     });
   };
 
-  return { linked, setLinked, profileId, army, setArmy, listId, pickList, theirLists };
+  /**
+   * Linked by code, which also answers who is in the Player box.
+   *
+   * The picker above fills the box itself when a member is chosen from the
+   * roster; a code is the other way in and knew the name without saying so.
+   */
+  const linkByCode = (holder: Linked) => {
+    setLinked(holder);
+    if (holder.name) setPlayerName(holder.name);
+  };
+
+  return { linked, setLinked, linkByCode, profileId, army, setArmy, listId,
+           pickList, theirLists, playerName, setPlayerName };
 }

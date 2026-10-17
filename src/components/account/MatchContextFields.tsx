@@ -62,10 +62,18 @@ export default function MatchContextFields({
             MATCH CONTEXT · OPTIONAL
           </Typography>
 
+          {/* `inputValue`, not `value`.
+              On a freeSolo Autocomplete `value` is the chosen OPTION and the
+              text in the box is `inputValue`. Controlling one and listening to
+              the other meant the state was always right and the box was not:
+              MUI seeds the text from `value` when it mounts, so a fresh page
+              showed what was saved, and re-opening the dialog on an already
+              mounted field showed nothing. The club read that as the save
+              having failed, which is exactly what was reported. */}
           <Autocomplete
             freeSolo
             options={MISSION_SUGGESTIONS}
-            value={mission}
+            inputValue={mission}
             onInputChange={(_event, value) => onMission(value)}
             renderInput={(params) => (
               <TextField {...params} label="Mission" size="small"
@@ -87,7 +95,7 @@ export default function MatchContextFields({
               <Autocomplete
                 freeSolo
                 options={TERRAIN_SUGGESTIONS}
-                value={terrain}
+                inputValue={terrain}
                 onInputChange={(_event, value) => onTerrain(value)}
                 renderInput={(params) => (
                   <TextField {...params} label="Terrain" size="small" />

@@ -13,13 +13,16 @@ import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import CloseIcon from "@mui/icons-material/Close";
 import TuneIcon from "@mui/icons-material/Tune";
-import { changeTierAction, dismissTierRequestAction, recordPaymentAction, setJoinDateAction }
+import { changeTierAction, dismissTierRequestAction, editPaymentAction,
+  recordPaymentAction, setJoinDateAction }
   from "@/app/clubs/[slug]/membership-actions";
 import MemberJoinDate from "./MemberJoinDate";
 import MemberTierPicker from "./MemberTierPicker";
 import PaymentHistory from "./PaymentHistory";
+import EditPaymentDialog from "./EditPaymentDialog";
 import RecordPayment from "./RecordPayment";
 import { useActionToast } from "@/components/ui/Toaster";
+import { useActionSuccess } from "@/hooks/useActionSuccess";
 import { shortDate, sinceLabel } from "@/utils/dates";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { MembershipTier } from "@/types/clubDetail";
@@ -80,11 +83,20 @@ export default function MemberAdmin({
   const [dismissState, dismiss, dismissing] = useActionState(dismissTierRequestAction, {});
   const [payState, recordPayment, paying] = useActionState(recordPaymentAction, {});
   const [joinState, setJoinDate, savingJoin] = useActionState(setJoinDateAction, {});
+  const [editState, editPayment, editing] = useActionState(editPaymentAction, {});
+
+  // Which payment is open for correction. Held here rather than in the row so
+  // the dialog seeds from one record and keeps it through its exit transition.
+  const [correcting, setCorrecting] = useState<MembershipPayment | null>(null);
+  // Closes when the answer lands, never on the click: closing on the click
+  // takes a refusal off the screen along with whatever was typed into it.
+  useActionSuccess(editState, () => setCorrecting(null));
 
   useActionToast(tierState);
   useActionToast(payState);
   useActionToast(dismissState);
   useActionToast(joinState);
+  useActionToast(editState);
 
   const tier = tiers.find((t) => t.key === tierKey) ?? null;
   const options = tier?.billingOptions ?? [];
@@ -221,11 +233,17 @@ export default function MemberAdmin({
                                 letterSpacing: "0.1em", color: tokens.inkMuted, mb: 1 }}>
                 PAYMENT HISTORY
               </Typography>
-              <PaymentHistory payments={payments} emptyText="Nothing recorded yet." />
+              <PaymentHistory payments={payments} emptyText="Nothing recorded yet."
+                onEdit={setCorrecting} />
             </Box>
           </Stack>
         </DialogContent>
       </Dialog>
+
+      <EditPaymentDialog payment={correcting} slug={slug} options={options}
+        isNewest={correcting?.id === payments[0]?.id}
+        busy={editing} send={editPayment}
+        onClose={() => setCorrecting(null)} />
     </Box>
   );
 }

@@ -107,6 +107,10 @@ export default function PairingsBoard({
     setPairingTeams(false);
     setEditing(undefined);
     setUnderFixture(null);
+    // The armies and match context dialog was the one left out of this list,
+    // so it alone stayed open after a save: "the pop up does not auto close
+    // on save". A list of things to close is a list with one missing.
+    setArming(null);
   });
 
   const asTeams = teamEvent;

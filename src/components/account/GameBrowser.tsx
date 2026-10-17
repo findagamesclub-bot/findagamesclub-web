@@ -10,6 +10,7 @@ import Pager from "@/components/ui/Pager";
 import { usePagedList } from "@/hooks/usePagedList";
 import FilterBar from "./FilterBar";
 import GameCard from "./GameCard";
+import type { MemberList } from "@/services/resultArmies.service";
 import {
   countUnrecorded, filterGames, tally, type GameFilter, type GameSort,
 } from "@/utils/game-filter";
@@ -21,11 +22,19 @@ const PAGE = PER_PAGE.cards;
 
 /** Search, filter and sort a member's games, then a grid. */
 export default function GameBrowser({
-  games, initialQuery = "",
+  games, initialQuery = "", listsByClub = {},
 }: {
   games: MyGame[];
   /** Arriving from a profile, already narrowed to that person. */
   initialQuery?: string;
+  /**
+   * Their own army lists, by club slug.
+   *
+   * One map for the page rather than a copy on every game: a member has a
+   * handful of lists and twenty-four games, and the dialog only needs the
+   * ones built at the club the game was played at.
+   */
+  listsByClub?: Record<string, MemberList[]>;
 }) {
   const [query, setQuery] = useState(initialQuery);
   const [filter, setFilter] = useState<GameFilter>("all");
@@ -97,7 +106,10 @@ export default function GameBrowser({
                        md: "repeat(2, minmax(0, 1fr))",
                        xl: "repeat(3, minmax(0, 1fr))",
                      } }}>
-            {paged.shown.map((game) => <GameCard key={game.id} game={game} />)}
+            {paged.shown.map((game) => (
+              <GameCard key={game.id} game={game}
+                myLists={listsByClub[game.club.slug] ?? []} />
+            ))}
           </Box>
 
           <Pager page={paged.page} total={paged.total} noun="games" size={PAGE}

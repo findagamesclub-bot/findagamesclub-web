@@ -5,11 +5,16 @@ import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import BusyOverlay from "@/components/ui/BusyOverlay";
+import ArmyListDialog from "./ArmyListDialog";
+import MatchDetailDialog, { SetupNote, type MatchDetail } from "./MatchDetailDialog";
 import { fold } from "@/utils/text";
 import { fixtureScores } from "@/utils/team-standings";
 import { display, mono, tokens, type Faction } from "@/lib/tokens";
 import type { TeamFixture } from "@/types/eventTeams";
+import type { ResultArmy } from "@/types/event";
 
 /**
  * A team event's draw as somebody playing in it reads it.
@@ -28,6 +33,19 @@ export default function EventTeamDraw({ fixtures, faction, viewerName }: {
   viewerName: string | null;
 }) {
   const [query, setQuery] = useState("");
+  // The same two dialogs a league round and an ordinary draw already open, so
+  // a game reads the same way wherever it was played. One of each rather than
+  // one per table: a tournament has a great many and only one is ever open.
+  const [game, setGame] = useState<MatchDetail | null>(null);
+  const [list, setList] = useState<{ player: string; army: ResultArmy } | null>(null);
+
+  const showList = (side: "one" | "two") => {
+    const army = side === "one" ? game?.armyOne : game?.armyTwo;
+    const player = side === "one" ? game?.playerOne : game?.playerTwo;
+    if (!army?.list) return;
+    setGame(null);
+    setList({ player: player ?? "", army });
+  };
   // The same spinner the individual draw shows, for the house rule that every
   // filter has one.
   const settled = useDeferredValue(query);
@@ -129,6 +147,31 @@ export default function EventTeamDraw({ fixtures, faction, viewerName }: {
                                               color: table_scored ? tokens.ink : tokens.inkMuted }}>
                               {table_scored ? `${table.scoreOne} - ${table.scoreTwo}` : "to play"}
                             </Typography>
+                            {/* Only where the club recorded something. A row
+                                of controls that all say "nothing here" is
+                                worse than no control. */}
+                            {table.armyOne || table.armyTwo || table.setup ? (
+                              <Stack direction="row" spacing={1} useFlexGap
+                                sx={{ alignItems: "center", flexShrink: 0 }}>
+                                <SetupNote setup={table.setup} />
+                                <Button size="small" variant="text"
+                                  startIcon={<InfoOutlinedIcon sx={{ fontSize: 14 }} />}
+                                  onClick={() => setGame({
+                                    label: `${table.tableLabel || "Table"}`,
+                                    playerOne: table.playerOne,
+                                    playerTwo: table.playerTwo,
+                                    scoreOne: table.scoreOne === null ? "" : String(table.scoreOne),
+                                    scoreTwo: table.scoreTwo === null ? "" : String(table.scoreTwo),
+                                    armyOne: table.armyOne ?? null,
+                                    armyTwo: table.armyTwo ?? null,
+                                    setup: table.setup ?? null,
+                                  })}
+                                  sx={{ minWidth: 0, px: 0.75, py: 0,
+                                        fontSize: "0.72rem", color: faction.deep }}>
+                                  The game
+                                </Button>
+                              </Stack>
+                            ) : null}
                           </Stack>
                         );
                       })}
@@ -144,6 +187,12 @@ export default function EventTeamDraw({ fixtures, faction, viewerName }: {
           </Typography>
         )}
       </BusyOverlay>
+
+      <MatchDetailDialog match={game} onClose={() => setGame(null)} faction={faction}
+        onShowList={showList} />
+
+      <ArmyListDialog open={list !== null} onClose={() => setList(null)}
+        player={list?.player ?? ""} army={list?.army ?? null} faction={faction} />
     </Stack>
   );
 }

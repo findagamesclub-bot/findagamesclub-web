@@ -26,7 +26,7 @@ import { tokens } from "@/lib/tokens";
  * somebody agreed to it is not a thing this app allows.
  */
 export default function EditBookingDialog({
-  row, slug, members = [], saving, onClose, onSave,
+  row, slug, members = [], accountNames = {}, saving, onClose, onSave,
 }: {
   row: DoorRow | null;
   /** For the member-code lookup, which works at any club. */
@@ -38,6 +38,8 @@ export default function EditBookingDialog({
    * something it cannot.
    */
   members?: Person[];
+  /** Linked accounts' own names by id, roster or not (0177's own lesson). */
+  accountNames?: Record<string, string>;
   saving: boolean;
   onClose: () => void;
   onSave: (fields: Record<string, string>) => void;
@@ -61,7 +63,12 @@ export default function EditBookingDialog({
     // make a wrong link unspottable, which 0177 already paid for.
     setLinked(row.profileId
       ? { id: row.profileId,
-          name: members.find((m) => m.id === row.profileId)?.name }
+          // The roster first, then every other account on this list. Somebody
+          // linked by their member code is not a member of this club, which
+          // is exactly when the roster lookup came back empty and the line
+          // could only say "Attached to an account".
+          name: members.find((m) => m.id === row.profileId)?.name
+            ?? accountNames[row.profileId] }
       : null);
   });
 
@@ -90,7 +97,7 @@ export default function EditBookingDialog({
             isOptionEqualToValue={(a, b) => a.id === b.id}
             renderInput={(params) => (
               <TextField {...params} label="Whose place is it"
-                helperText="A member of your club. Leave it empty for somebody with no account." />
+                helperText="A member of your club. Leave it empty for somebody who is not a member of your club." />
             )}
           />
           ) : null}

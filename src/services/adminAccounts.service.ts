@@ -1,5 +1,6 @@
 import "server-only";
 
+import { toSocialLinks } from "@/utils/social-links";
 import * as repo from "@/repositories/adminAccounts.repository";
 import { sendRecoveryEmail } from "./auth.service";
 import { siteUrl } from "./mail-recipient.service";
@@ -100,11 +101,14 @@ export async function getAccount(profileId: string) {
       games: profile.games_interested ?? [],
       armies: profile.factions_armies ?? [],
       playStyle: profile.play_style_tags ?? [],
-      // The object the person typed, flattened to label/url pairs. A platform
-      // with no address is a key they cleared rather than a link to nowhere.
-      links: Object.entries(profile.social_profiles ?? {})
-        .map(([label, url]) => ({ label, url: String(url ?? "").trim() }))
-        .filter((link) => link.url),
+      // `toSocialLinks`, not a second reading of the column.
+      //
+      // `social_profiles` is an ARRAY of `{label, url}` and this read it with
+      // `Object.entries`, which on an array hands back the INDEX as the key:
+      // the panel printed "0: [object Object], 1: [object Object]" and the
+      // client reported it as random objects. One column, one reader, and it
+      // has been in `utils/social-links.ts` since Stage 2.
+      links: toSocialLinks(profile.social_profiles),
       memberCode: profile.member_code,
       updatedAt: profile.profile_updated_at,
     } : null,

@@ -8,7 +8,7 @@ import EventArmyMeta from "@/components/events/EventArmyMeta";
 import { getEventDetail } from "@/services/eventDetail.service";
 import { getEventMeta } from "@/services/meta.service";
 import { getCurrentProfile } from "@/services/auth.service";
-import { mayHaveArmyMeta } from "@/utils/event-meta";
+import { eventRecordsArmies } from "@/utils/event-meta";
 import { londonToday } from "@/services/bookingCalendar.service";
 import { tokens } from "@/lib/tokens";
 
@@ -40,9 +40,7 @@ export default async function EventArmiesPage(
   const event = await getEventDetail(slug, eventId, viewer);
   if (!event) notFound();
 
-  const open = mayHaveArmyMeta({
-    startDate: event.startDate, games: event.featuredGames, today: londonToday(),
-  });
+  const open = eventRecordsArmies(event.featuredGames);
   const rows = open ? await getEventMeta(event.id).catch(() => []) : [];
   if (!rows.length) notFound();
 

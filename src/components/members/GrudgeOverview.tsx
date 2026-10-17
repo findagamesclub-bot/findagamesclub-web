@@ -6,6 +6,10 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import Pager from "@/components/ui/Pager";
+import { useMatchDetail, MatchDetailButton }
+  from "@/components/results/MatchDetailControl";
+import { armyOf, gameWasRecorded, setupOf, sideOf, NO_GAME_DETAILS,
+  type GameDetails } from "@/utils/game-details";
 import { usePagedList } from "@/hooks/usePagedList";
 import { shortDate } from "@/utils/dates";
 import { mono, tokens, type Faction } from "@/lib/tokens";
@@ -24,13 +28,24 @@ const MATCHES = PER_PAGE.rows;
  * repeating it, so this stays a summary and the detail lives in one place.
  */
 export default function GrudgeOverview({
-  tracker, faction, memberId,
+  tracker, faction, memberId, memberName = "", played = NO_GAME_DETAILS,
 }: {
   tracker: ClubTracker;
   faction: Faction;
   /** Whose profile this is. Half of every head-to-head link. */
   memberId: string;
+  /** Their side of the dialog is named, so it reads as a game and not a row. */
+  memberName?: string;
+  /**
+   * What was played in these games: the army, the list and the setup.
+   *
+   * The client asked for a way into a result from here, which every other
+   * results list on the site has had since 0172. Absent where the read did
+   * not happen or did not answer, and the control simply does not appear.
+   */
+  played?: GameDetails;
 }) {
+  const detail = useMatchDetail(faction);
   const top = useRef<HTMLDivElement>(null);
   const paged = usePagedList(tracker.matches, MATCHES, top);
   const rivals = tracker.headToHeads.slice(0, RIVALS);
@@ -81,7 +96,11 @@ export default function GrudgeOverview({
         <MonoLabel>Recent match results</MonoLabel>
         <Box ref={top}
           sx={{ border: `1px solid ${tokens.rule}`, borderRadius: 1.5, overflow: "hidden" }}>
-          {paged.shown.map((m, i) => (
+          {paged.shown.map((m, i) => {
+            const ref = { source: m.source, id: m.id };
+            const mine = sideOf(played, ref, { id: memberId, name: memberName });
+            const theirs = mine === "one" ? "two" : "one";
+            return (
             <Box key={`${m.source}-${m.id}`}
               sx={{ display: "grid", gap: { xs: 0.5, sm: 1.5 }, px: 2, py: 1.5,
                     alignItems: { sm: "baseline" },
@@ -98,6 +117,23 @@ export default function GrudgeOverview({
                   {`${m.game.toUpperCase()} · ${m.source === "competition"
                     ? m.competition.toUpperCase() : "TABLE BOOKING"}`}
                 </Typography>
+                {/* Drawn only where the club recorded something, so a list of
+                    casual games does not grow a column of controls that all
+                    open an empty dialog. */}
+                {gameWasRecorded(played, ref) ? (
+                  <Box sx={{ mt: 0.5 }}>
+                    <MatchDetailButton faction={faction} setup={setupOf(played, ref)}
+                      onOpen={() => detail.open({
+                        label: `${memberName || "Them"} v ${m.opponentName}`,
+                        playerOne: memberName || "Them",
+                        playerTwo: m.opponentName,
+                        scoreOne: String(m.myScore), scoreTwo: String(m.theirScore),
+                        armyOne: armyOf(played, ref, mine),
+                        armyTwo: armyOf(played, ref, theirs),
+                        setup: setupOf(played, ref),
+                      })} />
+                  </Box>
+                ) : null}
               </Box>
               <Typography sx={{ fontFamily: mono, fontVariantNumeric: "tabular-nums",
                                 fontSize: "0.9rem", fontWeight: 700,
@@ -114,7 +150,8 @@ export default function GrudgeOverview({
                 {m.outcome === "won" ? "WON" : m.outcome === "lost" ? "LOST" : "DREW"}
               </Typography>
             </Box>
-          ))}
+            );
+          })}
         </Box>
 
         <Box sx={{ mt: 2 }}>
@@ -122,6 +159,9 @@ export default function GrudgeOverview({
             onChange={paged.goTo} />
         </Box>
       </Box>
+
+      {/* One pair of dialogs for the whole list, not one per row. */}
+      {detail.dialogs}
     </Stack>
   );
 }

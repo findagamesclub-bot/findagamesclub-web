@@ -17,6 +17,7 @@ import {
 import { tokens } from "@/lib/tokens";
 import type { MyCoaching } from "@/services/myActivity.service";
 import { PER_PAGE } from "@/utils/paging";
+import { paymentNote } from "@/utils/payment-note";
 
 const PAGE = PER_PAGE.cards;
 
@@ -73,8 +74,8 @@ export default function CoachingBrowser({ sessions }: { sessions: MyCoaching[] }
                 backgroundColor: tokens.brassSoft }}>
           <Typography variant="body2" sx={{ color: "#5c4310", flex: 1 }}>
             {counts.unpaid === 1
-              ? "One session still to pay for. The club takes payment on the day."
-              : `${counts.unpaid} sessions still to pay for. Clubs take payment on the day.`}
+              ? `One session still to pay for. ${paymentNote()}`
+              : `${counts.unpaid} sessions still to pay for. ${paymentNote()}`}
           </Typography>
           <Button size="small" variant="text" sx={{ color: "#5c4310", flexShrink: 0 }}
             onClick={() => startReorder(() => setFilter("unpaid"))}>

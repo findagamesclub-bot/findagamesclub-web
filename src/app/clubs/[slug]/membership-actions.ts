@@ -122,6 +122,34 @@ export async function recordPaymentAction(
   return { notice: "Payment recorded." };
 }
 
+/**
+ * Owner puts a payment they already recorded right (0195).
+ *
+ * An empty `billingOptionId` means "leave the money alone", which is all an
+ * older payment may change: the periods after it were stacked onto its end.
+ */
+export async function editPaymentAction(
+  _prev: MembershipState,
+  data: FormData,
+): Promise<MembershipState> {
+  const viewer = await getCurrentProfile();
+  if (!viewer) return { error: "Sign in first." };
+
+  const paymentId = Number(data.get("paymentId"));
+  const slug = String(data.get("slug") ?? "");
+  if (!paymentId || !slug) return { error: "Something went wrong. Reload and try again." };
+
+  const result = await payments.editPayment({
+    paymentId,
+    billingOptionId: String(data.get("billingOptionId") ?? "").trim() || null,
+    note: String(data.get("note") ?? ""),
+  });
+
+  refresh(slug);
+  if (!result.ok) return { error: result.error };
+  return { notice: "Payment corrected." };
+}
+
 /** Owner moves a member between tiers. */
 export async function changeTierAction(
   _prev: MembershipState,

@@ -127,19 +127,22 @@ export async function getRoundArmies(
  *
  * Its own read rather than a field on the army, because the setup belongs to
  * the game and not to a side: both sides of one table share one mission. The
- * army rows carry a copy for the rollups, which is 0141's shape, and this is
- * what a screen reads so a table with the mission typed and no army recorded
- * still has something to show.
+ * Read from the match rows, which is where `save_pairing_armies` puts it. The
+ * army rows carry a copy for the rollups (0141's shape) and this used to read
+ * THOSE, under a comment claiming it was so "a table with the mission typed
+ * and no army recorded still has something to show". It was the opposite: an
+ * army row only exists where a faction was named, so exactly that table came
+ * back empty. 0200 gives it its own read.
  */
 export async function getRoundSetup(
   eventId: number,
 ): Promise<Record<number, MatchSetup>> {
-  const rows = await repo.findPairingArmies(eventId).catch(() => []);
+  const rows = await repo.findPairingSetup(eventId).catch(() => []);
   const out: Record<number, MatchSetup> = {};
   for (const row of rows) {
-    if (!row.mission && !row.deployment && !row.terrain) continue;
-    out[row.source_id] = {
-      mission: row.mission, deployment: row.deployment, terrain: row.terrain,
+    out[row.match_id] = {
+      mission: row.mission ?? "", deployment: row.deployment ?? "",
+      terrain: row.terrain ?? "",
     };
   }
   return out;

@@ -33,3 +33,32 @@ export const findGrowthMonths = (from: string, to: string) =>
 
 export const findGrowthSummary = (from: string, to: string) =>
   callRpc<GrowthSummaryRow>("admin_growth_summary", { p_from: from, p_to: to });
+
+/**
+ * Every transaction behind those figures, one row each.
+ *
+ * The client's words: "a way to download each transaction and payment recorded
+ * for either a club listing or a featured listing as a download". The months
+ * above answer how much; this answers which, which is what a tax return is
+ * made of. Same two sources and the same filters, so the file and the chart
+ * cannot disagree about a window.
+ */
+export type RevenueLineRow = {
+  kind: string;
+  received: boolean;
+  on_date: string;
+  club_id: number | null;
+  club_name: string;
+  club_slug: string;
+  plan: string;
+  period_start: string | null;
+  period_end: string | null;
+  amount_pence: number;
+  currency: string;
+  method: string;
+  reference: string;
+  note: string;
+};
+
+export const findRevenueLines = (from: string, to: string) =>
+  callRpc<RevenueLineRow[]>("admin_revenue_lines", { p_from: from, p_to: to });

@@ -8,6 +8,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ChecklistIcon from "@mui/icons-material/FactCheck";
 import PersonIcon from "@mui/icons-material/PersonOutlineOutlined";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import EditNoteIcon from "@mui/icons-material/EditNote";
 import Panel from "@/components/members/Panel";
 import PageHead from "@/components/ui/PageHead";
 import HealthCheck from "@/components/listing/HealthCheck";
@@ -20,7 +21,7 @@ import {
   getEarlierAttempt, getReviewHistory, getSubmissionForReview, getSubmitter,
 } from "@/services/submissionReview.service";
 import { draftReadiness } from "@/services/submissions.service";
-import { adminCanReview, STATUS_LABELS, STATUS_TONES } from "@/utils/submission-status";
+import { adminCanEdit, adminCanReview, STATUS_LABELS, STATUS_TONES } from "@/utils/submission-status";
 import { draftValues } from "@/utils/draft-values";
 import { shortDate } from "@/utils/dates";
 import { mono, tokens } from "@/lib/tokens";
@@ -209,6 +210,29 @@ export default async function ReviewSubmissionPage({
                 variant="outlined" fullWidth startIcon={<VisibilityIcon />}>
                 See the listing
               </LinkButton>
+
+              {/* And the half the preview could not do. The client's words:
+                  "there is still no way for admin to make changes to a listing
+                  that is not already published". It opens the club's own five
+                  steps on this listing, so a typo is a correction rather than
+                  a round trip through "send it back".
+
+                  Only while it is still ours to answer. Once it is approved
+                  the club has a console and a live editor of its own, and once
+                  it is declined there is nothing to edit. */}
+              {adminCanEdit(submission.status) ? (
+                <>
+                  <LinkButton href={`/list-your-club/${submission.id}/profile`}
+                    variant="text" fullWidth startIcon={<EditNoteIcon />}>
+                    Edit the listing
+                  </LinkButton>
+                  <Typography sx={{ fontFamily: mono, fontSize: "0.66rem",
+                                    color: tokens.inkMuted }}>
+                    The club sees what you change, and it stays in the queue
+                    until you answer.
+                  </Typography>
+                </>
+              ) : null}
             </Stack>
           </Panel>
 

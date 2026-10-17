@@ -55,9 +55,14 @@ begin
     raise exception 'FAIL 3: two wins filed % badges rather than 1', v_rows;
   end if;
 
+  -- 0199 took ", and 1 more." back off. The chip counts the wins and opens
+  -- the list (0198), so the note saying it too was the same fact twice, in the
+  -- exact words the client objected to. What still has to hold is the half
+  -- 0182 was really about: the note MOVES to the newest win rather than
+  -- staying on the first, which is what "does not show or update" meant.
   select note into v_note from public.member_badges
    where badge_id = v_badge and profile_id = w.member and revoked_at is null;
-  if v_note is distinct from '1st place at Autumn Open, and 1 more.' then
+  if v_note is distinct from '1st place at Autumn Open.' then
     raise exception 'FAIL 4: two wins read "%"', v_note;
   end if;
 

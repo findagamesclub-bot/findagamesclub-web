@@ -8,8 +8,8 @@ import { isLocked, matchSetupFor, safeDeployment, toConfirmation,
   from "@/utils/result-meta";
 
 import * as repo from "@/repositories/games.repository";
-import { getArmyContext, type Builder } from "./resultArmies.service";
-import { type ResultArmy } from "@/utils/result-army";
+import { getArmyContext, setMyResultList, type Builder } from "./resultArmies.service";
+import { type GameSide } from "@/utils/result-army";
 import { londonToday } from "./bookingCalendar.service";
 import { suggestOpponents, winRate, type Suggestion } from "@/utils/opponent-finder";
 import { intensityOf, type Intensity } from "@/utils/rivalry-intensity";
@@ -69,7 +69,7 @@ export type MyGame = {
    * What each side played, turned round the same way the scores are, so the
    * dialog never has to think about who booked.
    */
-  armies: { mine: ResultArmy; theirs: ResultArmy };
+  armies: { mine: GameSide; theirs: GameSide };
   /**
    * The catalogue this club records against, or null when it does not run the
    * builder. Two short strings rather than the catalogue itself: the snapshot
@@ -205,6 +205,15 @@ export async function recordResult(params: {
   armies?: { one?: unknown; two?: unknown };
   /** Undefined leaves the booking's own game alone. */
   game?: string;
+  /**
+   * Which of their own saved lists they brought, or null to take it off.
+   *
+   * Undefined means the dialog did not ask, which is every club with the
+   * builder switched off. Only ever their own side: `link_result_army_list`
+   * refuses the other one, which is why the opponent names theirs from their
+   * own copy of this game.
+   */
+  listId?: number | null;
 }): Promise<{ ok: boolean; error?: string }> {
   const { myScore, theirScore } = params;
   if (!Number.isFinite(myScore) || !Number.isFinite(theirScore)) {
@@ -246,6 +255,26 @@ export async function recordResult(params: {
           : { one: kept.two, two: kept.one };
       })(),
     });
+
+    // Second, and only once the army row exists to hang it on. A side with no
+    // faction writes no row, so there is nothing to attach a list to and
+    // nothing to clear: without that clause this raises RESULT_NOT_FOUND about
+    // a result that has just saved, which is what 0164 paid for on the placing
+    // dialog. The same guard the draw and the placings already carry.
+    //
+    // Their own side, in the booking's order. The dialog always shows them
+    // first, so the swap is the same one the scores get.
+    const mine = armiesFor(params.game, params.armies).one as
+      { factionId?: string } | undefined;
+    if (params.listId !== undefined && (mine?.factionId ?? "").trim()) {
+      const linked = await setMyResultList(
+        "booking", params.bookingId, params.iBooked ? "one" : "two", params.listId);
+      // Reported as itself rather than rolled into the save: the result is
+      // recorded and only the list is missing.
+      if (!linked.ok) {
+        return { ok: false, error: linked.error ?? "That list did not save. Try again." };
+      }
+    }
     return { ok: true };
   } catch (error) {
     return { ok: false, error: resultRefusal(error, params.bookingId) };

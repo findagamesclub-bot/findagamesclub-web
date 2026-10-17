@@ -28,8 +28,12 @@ const MESSAGES: [string, string][] = [
   ["PLAN_UNKNOWN", "Pick monthly or yearly."],
   ["NO_SUBSCRIPTION",
    "There is nothing to bill on this listing yet, so there is no plan to change."],
+  // Per date since 0204, not per club: a club may have several asks open, and
+  // the only one refused is a second ask for the same week.
   ["ALREADY_ASKED",
-   "You have already asked to be featured. We will come back to you."],
+   "You have already asked for that week. Pick other dates, or wait for an answer on that one."],
+  ["TOO_MANY_ASKS",
+   "That is as many asks as we hold at once. Take one back if you would rather ask for different dates."],
   ["REQUEST_NOT_FOUND", "That request is not here any more."],
   ["REQUEST_ANSWERED",
    "Somebody has already answered this one. Reload to see where it got to."],

@@ -1,6 +1,7 @@
 "use client";
 
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { armySummary } from "@/utils/army-snapshot";
@@ -17,13 +18,24 @@ import type { ResultArmy } from "@/types/event";
  * page's only way in; this is what it puts inside.
  */
 export default function ArmyDetail({
-  player, army, faction, scoreLine,
+  player, army, faction, scoreLine, listMode = "full", onShowList,
 }: {
   player: string;
   army: ResultArmy | null;
   faction: Faction;
   /** The game's own score for this side, where the caller has one. */
   scoreLine?: string;
+  /**
+   * How much of the list to draw.
+   *
+   * "full" is `ArmyListDialog`, which exists to show one, so it prints every
+   * unit. "summary" is the match dialog, which already holds two of these
+   * side by side: two full lists in one dialog is the printout the client
+   * asked to be rid of on a placing, and the same argument applies here.
+   */
+  listMode?: "full" | "summary";
+  /** Given with "summary", so the name has somewhere to lead. */
+  onShowList?: () => void;
 }) {
   const list = army?.list ?? null;
   const summary = armySummary(army);
@@ -77,25 +89,41 @@ export default function ArmyDetail({
         </Typography>
       ) : null}
 
-      {army?.mvpUnits.length ? (
-        <Stack direction="row" spacing={0.75} useFlexGap
-          sx={{ flexWrap: "wrap", alignItems: "baseline" }}>
+      <UnitRow label="MVP" units={army?.mvpUnits ?? []}
+        bg={faction.soft} fg={faction.deep} />
+
+      {/* The other half of the same question, and it was recorded, carried
+          through `readerArmy` and then never drawn: the club typed "Units that
+          did not" into the result and no reader ever saw one. Quiet rather
+          than coloured, because the faction colour is the badge of honour on
+          the row above and these are the opposite of that. */}
+      <UnitRow label="UNDERPERFORMED" units={army?.underwhelmingUnits ?? []}
+        bg={tokens.surface} fg={tokens.inkMuted} outlined />
+
+      {list && listMode === "summary" ? (
+        <Stack direction="row" spacing={1} useFlexGap
+          sx={{ mt: 0.5, alignItems: "baseline", flexWrap: "wrap" }}>
           <Typography sx={{ fontFamily: mono, fontSize: "0.64rem",
                             letterSpacing: "0.1em", color: tokens.inkMuted }}>
-            MVP
+            {(list.name ?? "ARMY LIST").toUpperCase()}
           </Typography>
-          {army.mvpUnits.map((unit) => (
-            <Box key={unit}
-              sx={{ px: 1, py: 0.3, borderRadius: 0.75, bgcolor: faction.soft,
-                    color: faction.deep, fontFamily: mono, fontSize: "0.72rem",
-                    fontWeight: 600 }}>
-              {unit}
-            </Box>
-          ))}
+          {list.totalPoints ? (
+            <Typography sx={{ fontFamily: mono, fontSize: "0.78rem",
+                              color: tokens.brass, fontWeight: 700 }}>
+              {`${list.totalPoints} pts`}
+            </Typography>
+          ) : null}
+          {onShowList ? (
+            <Button size="small" variant="text" onClick={onShowList}
+              sx={{ minWidth: 0, px: 0.75, py: 0, fontSize: "0.72rem",
+                    color: faction.deep }}>
+              See the list
+            </Button>
+          ) : null}
         </Stack>
       ) : null}
 
-      {list ? (
+      {list && listMode === "full" ? (
         <Box sx={{ mt: 0.5 }}>
           <Stack direction="row" spacing={1}
             sx={{ alignItems: "baseline", flexWrap: "wrap", mb: 1 }}>
@@ -129,6 +157,40 @@ export default function ArmyDetail({
           </Box>
         </Box>
       ) : null}
+    </Stack>
+  );
+}
+
+/**
+ * A labelled row of unit chips.
+ *
+ * MVP and the underperformers are the same shape and were one copy away from
+ * being two: the second one is why this exists rather than a second block of
+ * markup under the first.
+ */
+function UnitRow({ label, units, bg, fg, outlined = false }: {
+  label: string;
+  units: string[];
+  bg: string;
+  fg: string;
+  outlined?: boolean;
+}) {
+  if (!units.length) return null;
+  return (
+    <Stack direction="row" spacing={0.75} useFlexGap
+      sx={{ flexWrap: "wrap", alignItems: "baseline" }}>
+      <Typography sx={{ fontFamily: mono, fontSize: "0.64rem",
+                        letterSpacing: "0.1em", color: tokens.inkMuted }}>
+        {label}
+      </Typography>
+      {units.map((unit) => (
+        <Box key={unit}
+          sx={{ px: 1, py: 0.3, borderRadius: 0.75, bgcolor: bg, color: fg,
+                border: outlined ? `1px solid ${tokens.rule}` : "none",
+                fontFamily: mono, fontSize: "0.72rem", fontWeight: 600 }}>
+          {unit}
+        </Box>
+      ))}
     </Stack>
   );
 }

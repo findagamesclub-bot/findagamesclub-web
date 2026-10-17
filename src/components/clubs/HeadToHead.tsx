@@ -6,6 +6,7 @@ import RivalryBreakdown from "@/components/clubs/RivalryBreakdown";
 import RivalryMatches from "@/components/clubs/RivalryMatches";
 import { type Faction } from "@/lib/tokens";
 import type { RivalryDetail } from "@/services/games.service";
+import type { GameDetails } from "@/utils/game-details";
 
 /**
  * Two members, every game they have played, and where it turns.
@@ -18,11 +19,13 @@ import type { RivalryDetail } from "@/services/games.service";
  * database returns, so a reader never has to work out whose column is whose.
  */
 export default function HeadToHead({
-  detail, faction, viewerId, slug,
+  detail, faction, viewerId, slug, played,
 }: {
   detail: RivalryDetail;
   faction: Faction;
   slug: string;
+  /** What was played in each game, so a row can be opened (client ask 3). */
+  played?: GameDetails;
   /** Their own name is marked, so they can find their side of it. */
   viewerId: string | null;
 }) {
@@ -65,8 +68,11 @@ export default function HeadToHead({
             matches={matches}
             oneName={rivalry.one.name}
             twoName={rivalry.two.name}
+            oneId={rivalry.one.id}
             iAmOne={iAmOne}
             iAmTwo={iAmTwo}
+            faction={faction}
+            played={played}
           />
         </>
       )}

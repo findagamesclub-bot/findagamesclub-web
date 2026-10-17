@@ -31,7 +31,7 @@ export default async function MyEventsPage() {
     ...(totals.tickets
       ? [
           { label: totals.tickets === 1 ? "ticket sold" : "tickets sold", value: String(totals.tickets) },
-          { label: "due on the door", value: formatMoney(totals.due) },
+          { label: "still to pay", value: formatMoney(totals.due) },
         ]
       : []),
   ];
@@ -72,7 +72,7 @@ export default async function MyEventsPage() {
 
           <Typography variant="body2" sx={{ color: tokens.inkMuted, mb: 3 }}>
             {anyEvents
-              ? `Across ${clubCount === 1 ? "your club" : `your ${clubCount} clubs`}. Figures count reserved bookings only.`
+              ? `Across ${clubCount === 1 ? "your club" : `your ${clubCount} clubs`}. Counts are reserved bookings, and the money is what is still owed.`
               : `Nothing scheduled at ${clubCount === 1 ? "your club" : `any of your ${clubCount} clubs`} yet.`}
           </Typography>
 

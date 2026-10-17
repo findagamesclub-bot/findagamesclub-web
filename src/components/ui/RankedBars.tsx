@@ -1,3 +1,4 @@
+import NextLink from "next/link";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -15,6 +16,14 @@ export type RankedRow = {
    * a club finds out that its best seller is not its best earner.
    */
   note?: string;
+  /**
+   * The list this row stands for.
+   *
+   * A ranking answers "how many" and the next question is always "which
+   * ones", which the client asked in those words. Left off a row worth
+   * nothing: a link to an empty list is a dead end wearing an affordance.
+   */
+  href?: string;
 };
 
 /**
@@ -41,14 +50,27 @@ export default function RankedBars({
   emphasiseLeader?: boolean;
 }) {
   const top = Math.max(...rows.map((r) => r.value), 1);
+  // Padded as a set rather than per row. Half of a loyalty ladder is usually
+  // empty, so linking only the rows worth linking and padding only those
+  // would draw a list whose spacing changed partway down.
+  const linkable = rows.some((row) => row.href);
 
   return (
     <Stack spacing={monograms ? 2 : 1.5}>
       {rows.map((row, index) => {
         const lead = emphasiseLeader && index === 0;
         return (
-          <Stack key={row.label} direction="row" spacing={1.5}
-            sx={{ alignItems: "center" }}>
+          <Row key={row.label} href={row.href}>
+          <Stack direction="row" spacing={1.5}
+            sx={{ alignItems: "center",
+                  // A link has to be worth aiming at on a phone. The rows
+                  // themselves are about 33px, which is under the floor.
+                  ...(linkable ? { py: 0.75 } : null),
+                  ...(row.href ? {
+                    borderRadius: 1,
+                    transition: "background-color 150ms ease",
+                    "&:hover": { backgroundColor: tokens.surface },
+                  } : null) }}>
             {monograms ? (
               <Box aria-hidden sx={{
                 flexShrink: 0, width: 34, height: 34, borderRadius: "50%",
@@ -88,8 +110,26 @@ export default function RankedBars({
               </Box>
             </Stack>
           </Stack>
+          </Row>
         );
       })}
     </Stack>
+  );
+}
+
+/**
+ * A row that leads somewhere, or the row on its own.
+ *
+ * A plain anchor, not `component={NextLink}`: these lists render from Server
+ * Components and handing MUI a component reference throws at request time with
+ * every static check green.
+ */
+function Row({ href, children }: { href?: string; children: React.ReactNode }) {
+  if (!href) return <>{children}</>;
+  return (
+    <NextLink href={href}
+      style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+      {children}
+    </NextLink>
   );
 }

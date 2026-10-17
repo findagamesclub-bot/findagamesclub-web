@@ -34,10 +34,22 @@ function shape(row: repo.FeaturedRequestRow): FeaturedRequest {
   };
 }
 
-/** The club's latest ask, or null if it has never asked. */
-export async function getFeaturedRequest(clubId: number) {
-  const row = await repo.findRequestForClub(clubId).catch(() => null);
-  return row ? shape(row) : null;
+/**
+ * What this club has asked for, as the billing panel needs it.
+ *
+ * Two different questions out of one read. The open asks are work in progress
+ * and each needs its own way back out; the latest answered one is only there
+ * to carry a decline reason, which is the one thing nothing else on the page
+ * says. A booked ask needs no line of its own any more, because the slot it
+ * became is now listed above it.
+ */
+export async function getClubFeaturedAsks(clubId: number) {
+  const rows = (await repo.findRequestsForClub(clubId).catch(() => [])).map(shape);
+  return {
+    // Oldest first: the one that has waited longest is the one being waited on.
+    open: rows.filter((row) => row.status === "pending").reverse(),
+    answered: rows.find((row) => row.status !== "pending") ?? null,
+  };
 }
 
 /** Open ones first, oldest of those at the top, which is the order to work in. */

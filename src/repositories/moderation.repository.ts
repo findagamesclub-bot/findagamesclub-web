@@ -78,6 +78,15 @@ export type MyReportRow = {
   body: string;
   title: string;
   target_gone: boolean;
+  /**
+   * Whether the club answers this one, or a site admin does (0196).
+   *
+   * `club_may_judge` sends a review, and anything the club's own team wrote,
+   * to a site admin instead. That rule was right and invisible, and a member
+   * comparing their own list against the club's queue read the gap as a
+   * routing fault three times running.
+   */
+  with_club: boolean;
   total_count: number;
 };
 

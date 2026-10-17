@@ -12,6 +12,7 @@ import { getCurrentProfile } from "@/services/auth.service";
 import TicketStub from "@/components/tickets/TicketStub";
 import { clubIdentity } from "@/utils/club-identity";
 import { tokens } from "@/lib/tokens";
+import { paymentNote } from "@/utils/payment-note";
 
 export const metadata = { title: "Your tickets" };
 
@@ -51,7 +52,7 @@ export default async function BookingPage({ params }: PageProps<"/tickets/[refer
           Paying for the event
         </Typography>
         <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-          {booking.clubName} takes payment either before the event or when you arrive.
+          {paymentNote(booking.clubName)}{" "}
           Bring your reference. Quoting it is enough, you do not need to print anything.
         </Typography>
       </Box>

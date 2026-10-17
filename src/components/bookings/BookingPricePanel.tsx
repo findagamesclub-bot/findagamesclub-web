@@ -7,6 +7,7 @@ import { formatPounds } from "@/utils/format";
 import { priceBooking, type BookingStanding } from "@/utils/booking-pricing";
 import { tokens } from "@/lib/tokens";
 import { pointsCapNote } from "@/utils/points-cap";
+import { paymentNote } from "@/utils/payment-note";
 
 /**
  * What this table costs you, and what you can pay with.
@@ -85,7 +86,7 @@ export default function BookingPricePanel({
       </Stack>
 
       <Typography variant="caption" sx={{ color: tokens.inkMuted }}>
-        The club takes payment on the night. Nothing is charged here.
+        Nothing is charged here. {paymentNote()}
       </Typography>
     </Stack>
   );

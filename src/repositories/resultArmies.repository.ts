@@ -21,6 +21,8 @@ import { callRpc, table } from "@/lib/supabase/table";
 export type ResultArmyRow = {
   source_id: number;
   side: string;
+  list_id: number | null;
+  list_name: string;
   faction_id: string;
   faction_label: string;
   detachment: string;
@@ -40,11 +42,54 @@ export async function findResultArmies(source: string, ids: number[]) {
   const { data, error } = await rows
     .select(`source_id, side, faction_id, faction_label, detachment, disposition,
              mvp_units, underwhelming_units, primary_score, secondary_score,
-             painted, first_turn, battle_role`)
+             painted, first_turn, battle_role, list_id, list_name`)
     .eq("source_type", source)
     .in("source_id", ids);
 
   if (error) throw new Error(`Failed to load the armies: ${error.message}`);
+  return data ?? [];
+}
+
+/**
+ * Both sides of a set of games, whatever kind of game they were.
+ *
+ * `findResultArmies` answers one source type at a time, which is right for a
+ * page about one kind of result. A member's record is not that: a club night
+ * and a league round sit in the same list, so asking twice would be two round
+ * trips to draw one page.
+ *
+ * `source_type` comes back and is part of the key, so the deliberately wide
+ * `in` on the ids cannot cross a booking with a competition game that happens
+ * to share a number. The setup rides along on the row: 0181 mirrors the
+ * game's own mission, deployment and terrain onto both army rows, so a reader
+ * needs no second read to say how a table was laid out.
+ */
+export type GameArmyRow = ResultArmyRow & {
+  source_type: string;
+  profile_id: string | null;
+  player_name: string;
+  mission: string;
+  deployment: string;
+  terrain: string;
+  list_id: number | null;
+  list_name: string;
+  list_version_number: number | null;
+  snapshot: unknown;
+};
+
+export async function findGameArmies(sources: string[], ids: number[]) {
+  if (!sources.length || !ids.length) return [];
+  const rows = await table<GameArmyRow>("game_result_armies");
+  const { data, error } = await rows
+    .select(`source_type, source_id, side, faction_id, faction_label, detachment,
+             disposition, mvp_units, underwhelming_units, primary_score,
+             secondary_score, painted, first_turn, battle_role,
+             mission, deployment, terrain, profile_id, player_name,
+             list_id, list_name, list_version_number, snapshot`)
+    .in("source_type", [...new Set(sources)])
+    .in("source_id", [...new Set(ids)]);
+
+  if (error) throw new Error(`Failed to load the games: ${error.message}`);
   return data ?? [];
 }
 
@@ -97,4 +142,18 @@ export const setResultList = (
   source: string, sourceId: number, side: string, list: number | null,
 ) =>
   callRpc<void>("club_set_result_list",
+    { p_source: source, p_source_id: sourceId, p_side: side, p_list: list });
+
+/**
+ * A member saying which of their own lists they brought.
+ *
+ * 0145's own door, and until now it had no caller at all: the function, its
+ * grant and its guards all shipped with stage 10 and nothing above SQL ever
+ * reached them. It refuses anybody but the owner of that side, which is why
+ * the club's booking dialog does not get a picker and says so instead.
+ */
+export const linkMyResultList = (
+  source: string, sourceId: number, side: string, list: number | null,
+) =>
+  callRpc<void>("link_result_army_list",
     { p_source: source, p_source_id: sourceId, p_side: side, p_list: list });

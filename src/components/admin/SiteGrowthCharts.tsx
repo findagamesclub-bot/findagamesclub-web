@@ -56,6 +56,7 @@ export default function SiteGrowthCharts({ months }: { months: GrowthMonthRow[] 
         <MonthBarChart
           labels={labels}
           unit="£"
+          decimals={2}
           series={SITE_REVENUE.map((s) => ({
             name: s.label,
             color: s.colour,

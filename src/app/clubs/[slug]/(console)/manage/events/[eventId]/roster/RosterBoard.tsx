@@ -37,7 +37,7 @@ import { mono, tokens, type Faction } from "@/lib/tokens";
  * is the number somebody at the door actually needs.
  */
 export default function RosterBoard({
-  slug, eventId, rows, faction, tickets, members, canAdd,
+  slug, eventId, rows, faction, tickets, members, accountNames, canAdd,
 }: {
   slug: string;
   eventId: number;
@@ -47,6 +47,11 @@ export default function RosterBoard({
   tickets: EditableTicketType[];
   /** Approved members, for the optional link to an account. */
   members: Person[];
+  /**
+   * Every linked account's own name, by id, including people the roster has
+   * never heard of because they were linked by their member code.
+   */
+  accountNames: Record<string, string>;
   /**
    * False once the event is over or called off. The database refuses it too;
    * this is so the button is not offered for something that cannot happen.
@@ -208,7 +213,7 @@ export default function RosterBoard({
 
           {paged.shown.map((row) => (
             <RosterRow key={row.bookingId} row={row} faction={faction}
-              members={members}
+              members={members} accountNames={accountNames}
               busy={busy && pendingId === row.bookingId}
               onCheckIn={(arrived) => send(row.bookingId, {
                 intent: "check-in", arrived: arrived ? "yes" : "no",
@@ -240,6 +245,7 @@ export default function RosterBoard({
         }} />
 
       <EditBookingDialog row={editing} slug={slug} members={members}
+        accountNames={accountNames}
         saving={busy} onClose={() => setEditing(null)}
         onSave={(fields) => {
           if (!editing) return;

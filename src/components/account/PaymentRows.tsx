@@ -54,6 +54,11 @@ export default function PaymentRows({ payments }: { payments: MembershipPayment[
         const when = [
           payment.periodEnd ? `Covers to ${shortDate(payment.periodEnd)}` : null,
           payment.recordedAt ? `Recorded ${shortDate(payment.recordedAt)}` : null,
+          // The club can put a payment right since 0195. A member reading the
+          // same ledger has to be able to see that one was changed, or the
+          // correction is the club quietly editing its own record of what the
+          // member handed over.
+          payment.editedAt ? `Corrected ${shortDate(payment.editedAt)}` : null,
         ].filter(Boolean).join(" · ");
 
         return (

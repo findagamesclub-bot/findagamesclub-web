@@ -28,6 +28,7 @@ import ManageStrip from "@/components/ui/ManageStrip";
 import EventPairings from "@/components/events/EventPairings";
 import EventTeams from "@/components/events/EventTeams";
 import EventTeamDraw from "@/components/events/EventTeamDraw";
+import TeamResults from "@/components/events/TeamResults";
 import EventArmyMeta from "@/components/events/EventArmyMeta";
 import EmptyState from "@/components/ui/EmptyState";
 import FacilityChips from "@/components/clubs/FacilityChips";
@@ -35,7 +36,7 @@ import EventHero from "@/components/events/EventHero";
 import { getEventDetail } from "@/services/eventDetail.service";
 import { countClaimableNames } from "@/services/memberCodes.service";
 import { getEventMeta } from "@/services/meta.service";
-import { armyMetaWait, mayHaveArmyMeta } from "@/utils/event-meta";
+import { armyMetaWait, eventRecordsArmies } from "@/utils/event-meta";
 import { londonToday } from "@/services/bookingCalendar.service";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getMyMembership } from "@/services/memberships.service";
@@ -48,7 +49,8 @@ import TicketSalesBoard from "@/components/tickets/TicketSalesBoard";
 import { clubIdentity } from "@/utils/club-identity";
 import { backTarget, carryFrom } from "@/utils/back-link";
 import VenueMap from "@/components/map/VenueMap";
-import { tokens } from "@/lib/tokens";
+import { mono, tokens } from "@/lib/tokens";
+import { owed } from "@/utils/door-list";
 
 export async function generateMetadata({ params }: PageProps<"/clubs/[slug]/events/[eventId]">) {
   const { slug, eventId } = await params;
@@ -118,8 +120,11 @@ export default async function EventPage({
       ? getEventThreads(event.id, 1)
       : Promise.resolve({ threads: [], total: 0, replies: 0, page: 1, perPage: 8,
                           failed: false }),
-    mayHaveArmyMeta({ startDate: event.startDate, games: event.featuredGames,
-                      today: londonToday() })
+    // Asked whenever the event could have 40k armies against it, which is no
+    // longer gated on the event having started: a club types its placings and
+    // its draw in before and during the day, and waiting for the start date
+    // meant the panel was empty exactly when they were looking for it.
+    eventRecordsArmies(event.featuredGames)
       ? getEventMeta(event.id).catch(() => [])
       : Promise.resolve([]),
   ]);
@@ -128,9 +133,13 @@ export default async function EventPage({
   // at the call site, because the three reasons are a date rule, a game-list
   // rule and "nothing typed in yet", and the sentence has to name the right
   // one.
+  // A team event's own result. `event.placings` is the individual table and
+  // stays empty at a team event, which is why the Results section used to show
+  // nothing at all however the teams had finished.
+  const placedTeams = event.teams.some((team) => team.finalRank !== null);
+
   const metaWait = armyMetaWait({
-    startDate: event.startDate, games: event.featuredGames,
-    today: londonToday(), rows: eventArmies.length,
+    games: event.featuredGames, rows: eventArmies.length,
   });
 
   // The roster, the army switch and the club's army lists used to be read
@@ -178,7 +187,9 @@ export default async function EventPage({
           telling two different stories about the same evening. */}
       {takenDown ? (
         <TakenDownNotice kind="event" reason={takenDown.reason} at={takenDown.at}
-          byName={takenDown.byName} canAct={isSiteAdmin} />
+          byName={takenDown.byName} canAct={isSiteAdmin}
+          ask={{ id: event.id, slug: event.clubSlug,
+                 askedAt: takenDown.askedAt, askedNote: takenDown.askedNote }} />
       ) : null}
 
       {/* First thing on the page, above the artwork. Everything under it reads
@@ -315,7 +326,7 @@ export default async function EventPage({
           up to yet is a section asking to be filled in with results that do
           not exist. Everybody else sees nothing until there is something to
           see. */}
-      {event.placings.length || (event.canManageClub && event.hasEnded) ? (
+      {event.placings.length || placedTeams || (event.canManageClub && event.hasEnded) ? (
         <Section title="Results" icon={EmojiEventsIcon}
           note={!event.placings.length && event.canManageClub
             ? "Nobody is on the results yet. Record the winner and any other places you want to show."
@@ -324,11 +335,28 @@ export default async function EventPage({
               done in the console beside the draw, because that is the same
               evening's work and doing half of it on the page members read was
               what the client asked about. */}
-          <EventPlacings
-            placings={event.placings}
-            faction={faction}
-            viewerName={viewer?.full_name ?? null}
-          />
+          {/* A team event finished as teams, so that is the result and it
+              leads. The individual placings stay underneath where there are
+              any: an event switched to teams part way through can be carrying
+              both, and the one nobody can reach is the one that goes stale. */}
+          {placedTeams ? <TeamResults teams={event.teams} faction={faction} /> : null}
+
+          {event.placings.length ? (
+            <Box sx={{ mt: placedTeams ? 3 : 0 }}>
+              {placedTeams ? (
+                <Typography sx={{ fontFamily: mono, fontSize: "0.68rem",
+                                  letterSpacing: "0.1em", color: tokens.inkMuted,
+                                  mb: 1.25 }}>
+                  INDIVIDUAL PLACES
+                </Typography>
+              ) : null}
+              <EventPlacings
+                placings={event.placings}
+                faction={faction}
+                viewerName={viewer?.full_name ?? null}
+              />
+            </Box>
+          ) : null}
 
           {event.canManageClub ? (
             <Box sx={{ mt: 2 }}>
@@ -454,10 +482,11 @@ export default async function EventPage({
           {event.ticketTypes.length && event.canManageClub ? (
             <TicketSalesBoard
               tickets={tickets}
-              // Totalled from the bookings rather than from the price list,
-              // so the club is shown what it is owed and not what the tickets
-              // would have cost at full price.
-              due={attendees.reduce((sum, a) => sum + a.total, 0)}
+              // What is still owed, through the same `owed()` the door list
+              // uses. Totalling every booking here read £104.50 against a door
+              // list saying £61.75, because it counted the ones the club had
+              // already been paid for.
+              due={owed(attendees).amount}
               faction={faction}
               slug={event.clubSlug}
               eventId={event.id}

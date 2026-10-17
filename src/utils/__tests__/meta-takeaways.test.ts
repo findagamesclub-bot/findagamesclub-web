@@ -59,7 +59,14 @@ const dispositions = [
   assert.equal(lines[0], "Death Guard tops this view at 66.7% over 12 games.");
   // Most PLAYED is by appearances, not by rate: Aeldari turn up more often and
   // win less, which is the whole point of showing both.
-  assert.ok(lines[1]!.startsWith("Aeldari is the most played faction"));
+  //
+  // And it names BOTH counts, which is the fix for the client's own report:
+  // "12 logged appearances" over a card reading "8 scored games" is two true
+  // figures that cannot be reconciled from anything on the page. 22 armies,
+  // 20 of them scored, in one sentence.
+  assert.equal(lines[1],
+    "Aeldari turned up most often in this window: 22 armies recorded, "
+    + "20 of them with a score.");
   // Highest average VP is a third ordering again, and Aeldari lead that too.
   assert.ok(lines.some((l) => l.startsWith("Aeldari is posting the highest average total VP")));
   assert.ok(lines.some((l) => l.includes("strongest matchup signal into Aeldari at 80.0%")));

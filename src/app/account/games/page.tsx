@@ -10,6 +10,8 @@ import RivalTable from "@/components/account/RivalTable";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getMyGames, getRecord } from "@/services/games.service";
 import { getMyRivalIds } from "@/services/clubExtras.service";
+import { getMyLists } from "@/services/armyLists.service";
+import { listsByClubSlug } from "@/utils/member-lists";
 import { countUnrecorded } from "@/utils/game-filter";
 import { mono, tokens } from "@/lib/tokens";
 
@@ -33,10 +35,15 @@ export default async function AccountGamesPage({
 
   // The record is one grouped query in the database, not counted from the
   // games above: the page shows a window of history, the record is all of it.
-  const [games, record, rivals] = await Promise.all([
+  // Their own lists ride in the same wave: it needs nothing the games read
+  // produces, so saying which list you brought costs no extra round trip. A
+  // failure costs the picker and not the page, which is the state this screen
+  // was in before today.
+  const [games, record, rivals, lists] = await Promise.all([
     getMyGames(viewer.id).catch(() => []),
     getRecord().catch(() => []),
     getMyRivalIds(viewer.id).catch(() => new Set<string>()),
+    getMyLists(viewer.id).catch(() => []),
   ]);
 
   const owing = countUnrecorded(games);
@@ -69,7 +76,8 @@ export default async function AccountGamesPage({
                               pb: 1, mb: 2, borderBottom: `1px solid ${tokens.rule}` }}>
               EVERY GAME
             </Typography>
-            <GameBrowser games={games} initialQuery={opponent} />
+            <GameBrowser games={games} initialQuery={opponent}
+              listsByClub={listsByClubSlug(lists)} />
           </Box>
         </Stack>
       ) : (

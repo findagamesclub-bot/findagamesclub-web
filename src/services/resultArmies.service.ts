@@ -1,15 +1,16 @@
 import "server-only";
 
 import {
-  findBuildersFor, findMemberLists, findResultArmies, setResultList as writeList,
+  findBuildersFor, findMemberLists, findResultArmies, linkMyResultList,
+  setResultList as writeList,
 } from "@/repositories/resultArmies.repository";
 import { armyRefusalFrom } from "./armyRefusals";
-import { armyFromRow, EMPTY_ARMY, type ResultArmy } from "@/utils/result-army";
+import { armyFromRow, EMPTY_SIDE, type GameSide } from "@/utils/result-army";
 
 /** What a club records against, small enough to send to a browser. */
 export type Builder = { editionId: string; catalogueVersion: string };
 
-export type ResultArmies = { one: ResultArmy; two: ResultArmy };
+export type ResultArmies = { one: GameSide; two: GameSide };
 
 export type ArmyContext = {
   /** The two sides of one game, in the source's own order. */
@@ -18,7 +19,7 @@ export type ArmyContext = {
   builder(clubId: number): Builder | null;
 };
 
-const NOTHING: ResultArmies = { one: EMPTY_ARMY, two: EMPTY_ARMY };
+const NOTHING: ResultArmies = { one: EMPTY_SIDE, two: EMPTY_SIDE };
 
 /**
  * For a list that cannot have an army yet.
@@ -110,6 +111,24 @@ export async function getMemberLists(clubId: number): Promise<MemberList[]> {
     points: row.total_points,
     version: row.version_number,
   }));
+}
+
+/**
+ * A member naming which of their own lists they brought.
+ *
+ * `link_result_army_list` rather than `club_set_result_list`: 0145 is the
+ * member's own door and refuses any side but theirs, which is the right rule
+ * for a club night. The club's door is event sources only, deliberately.
+ */
+export async function setMyResultList(
+  source: "booking", sourceId: number, side: "one" | "two", listId: number | null,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await linkMyResultList(source, sourceId, side, listId);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: armyRefusalFrom(error) };
+  }
 }
 
 /** The club naming which list was brought, or taking the naming back. */

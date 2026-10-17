@@ -46,7 +46,7 @@ export type PlacingTarget = { placing: EventPlacing | null };
  */
 export default function PlacingEditor({
   open, target, nextRank, roster, slug, eventKey, eventId, onClose,
-  builder = null, lists = [],
+  builder = null, lists = [], accountNames = {},
 }: {
   open: boolean;
   /** null placing means a new one. */
@@ -62,6 +62,16 @@ export default function PlacingEditor({
   builder?: Builder | null;
   /** Every list the people on this event's results have built here. */
   lists?: MemberList[];
+  /**
+   * Linked accounts' own names by id, resolved by the page.
+   *
+   * Not folded in from `roster` here: the roster's own name IS
+   * `profiles.full_name`, the column the page already read for every linked
+   * placing, so merging the two would be one source of truth wearing two
+   * hats and an object rebuilt on every keystroke at a club with a long
+   * roster.
+   */
+  accountNames?: Record<string, string>;
 }) {
   const fullScreen = useMediaQuery("(max-width:600px)");
   const [state, submit, busy] = useActionState<PlacingState, FormData>(placingAction, {});
@@ -77,8 +87,9 @@ export default function PlacingEditor({
   // Everything the army half of this dialog holds, including the reset that
   // follows whichever placing was opened. The form itself is keyed on the same
   // id, which is what resets the plain fields.
-  const { linked, setLinked, profileId, army, setArmy, listId, pickList, theirLists } =
-    usePlacingArmy(open, placing, lists);
+  const { linked, setLinked, linkByCode, profileId, army, setArmy, listId,
+          pickList, theirLists, playerName, setPlayerName } =
+    usePlacingArmy(open, placing, lists, accountNames);
 
   const send = (data: FormData) => {
     data.set("slug", slug);
@@ -149,10 +160,10 @@ export default function PlacingEditor({
               />
 
               <Box>
-                <PlacingPlayerField roster={roster} name={placing?.name ?? ""}
-                  onPick={setLinked} />
+                <PlacingPlayerField roster={roster} name={playerName}
+                  onPick={setLinked} onName={setPlayerName} />
                 <MemberCodeField
-                  slug={slug} linked={linked} onFound={setLinked}
+                  slug={slug} linked={linked} onFound={linkByCode}
                   onClear={() => setLinked(null)}
                   unlinkedNote={"Leave it and the result still shows, under this "
                     + "name, with nobody's profile behind it."}

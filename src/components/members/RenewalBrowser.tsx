@@ -29,7 +29,7 @@ const PAGE = PER_PAGE.cards;
  * whole set is already on the page for the counts.
  */
 export default function RenewalBrowser({
-  rows, slug, tiers, faction, today,
+  rows, slug, tiers, faction, today, openOn,
   }: {
   rows: Row[];
   slug: string;
@@ -37,9 +37,18 @@ export default function RenewalBrowser({
   today: string;
   tiers: MembershipTier[];
   faction: Faction;
+  /**
+   * Which tab the page was opened on, from the address.
+   *
+   * Analytics counts "due to renew" and "lapsed" and had no way of showing
+   * who, which is what the client asked for. Seeded rather than held in the
+   * address, so the link lands right and pressing another tab afterwards does
+   * not rewrite the URL.
+   */
+  openOn?: RenewalFilter;
 }) {
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<RenewalFilter>("all");
+  const [filter, setFilter] = useState<RenewalFilter>(openOn ?? "all");
   const [billing, setBilling] = useState<RenewalBilling>("any");
   const [sort, setSort] = useState<RenewalSort>("soonest");
   const [busy, startReorder] = useTransition();

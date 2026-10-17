@@ -20,6 +20,9 @@ export type Suspension = {
   reason: string;
   suspended_at: string | null;
   by_name: string;
+  /** When the club last asked for another look, and what they said (0202). */
+  asked_at: string | null;
+  asked_note: string;
 };
 
 export const suspendClub = (clubId: number, reason: string) =>
@@ -39,6 +42,18 @@ export const findClubSuspension = (clubId: number) =>
 
 export const findEventSuspension = (eventId: number) =>
   callRpc<Suspension[]>("event_suspension", { p_event: eventId });
+
+/**
+ * The club saying they have put it right.
+ *
+ * One function for a club and an event, because the two screens ask the same
+ * question. The stamp is not grantable, so this is the only way to set it.
+ */
+export const askSuspensionReview = (
+  kind: "club" | "event", id: number, note: string,
+) =>
+  callRpc<void>("ask_suspension_review",
+    { p_kind: kind, p_id: id, p_note: note });
 
 /**
  * Just enough of the row to write a letter about it.

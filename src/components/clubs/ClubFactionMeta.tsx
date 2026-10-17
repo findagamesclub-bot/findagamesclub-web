@@ -99,7 +99,7 @@ export default function ClubFactionMeta({
           rows={topFactions.map((f) => ({
             label: f.label, winRate: f.winRate, games: f.games,
             earlySignal: f.earlySignal,
-            note: `${f.representation}% of what was taken`,
+            note: `${f.representation}% of the sample`,
           }))}
           perPage={TOP}
           paged={false}

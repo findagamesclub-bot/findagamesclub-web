@@ -16,17 +16,24 @@ import { tokens } from "@/lib/tokens";
  * inferred option type collapse to string.
  */
 export default function PlacingPlayerField({
-  roster, name, onPick,
+  roster, name, onPick, onName,
 }: {
   roster: { id: string; name: string }[];
+  /** What is in the box. Controlled, so a member code can fill it. */
   name: string;
   onPick: (member: { id: string; name: string } | null) => void;
+  onName: (value: string) => void;
 }) {
   return (
     <Autocomplete<{ id: string; name: string }, false, false, true>
       freeSolo
       options={roster}
-      defaultValue={name}
+      // `inputValue`, never `value`: on a freeSolo Autocomplete `value` is the
+      // chosen option and the text in the box is `inputValue`, so controlling
+      // the wrong one leaves the state right and the box empty.
+      // `MatchContextFields` shipped that fault once.
+      inputValue={name}
+      onInputChange={(_event, value) => onName(value)}
       slotProps={{
         paper: {
           sx: { mt: 0.5, border: `1px solid ${tokens.rule}`,

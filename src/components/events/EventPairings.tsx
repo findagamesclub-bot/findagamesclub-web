@@ -175,7 +175,16 @@ export default function EventPairings({
 
       {/* One dialog for the section rather than one per table: twenty tables
           is forty mounted dialogs, and only one is ever open. */}
-      <MatchDetailDialog match={game} onClose={() => setGame(null)} faction={faction} />
+      <MatchDetailDialog match={game} onClose={() => setGame(null)} faction={faction}
+        // Swapped in, not stacked: the match dialog closes and the list one
+        // opens, so Close still means close and there is one at a time.
+        onShowList={(side) => {
+          const army = side === "one" ? game?.armyOne : game?.armyTwo;
+          const player = side === "one" ? game?.playerOne : game?.playerTwo;
+          if (!army?.list) return;
+          setGame(null);
+          setList({ player: player ?? "", army });
+        }} />
 
       <ArmyListDialog
         open={list !== null}

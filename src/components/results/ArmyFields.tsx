@@ -24,6 +24,7 @@ import { mono, tokens } from "@/lib/tokens";
 export default function ArmyFields({
   builder, catalogue, loading, failed,
   one, two, onOne, onTwo, oneTitle = "Your army", twoTitle, fallback,
+  underOne, underTwo,
 }: {
   builder: { editionId: string; catalogueVersion: string } | null;
   catalogue: Catalogue | null;
@@ -37,6 +38,14 @@ export default function ArmyFields({
   twoTitle: string;
   /** What a club with the builder off sees, unchanged. */
   fallback: ReactNode;
+  /**
+   * Under each side's own block, where the league dialog already puts its
+   * list picker. Slots rather than a `lists` prop, because who may name a
+   * list differs by screen: on a booking only the member can name their own,
+   * and the other side gets a sentence instead of a control.
+   */
+  underOne?: ReactNode;
+  underTwo?: ReactNode;
 }) {
   if (!builder) return <>{fallback}</>;
 
@@ -72,10 +81,16 @@ export default function ArmyFields({
           armies are a shape. */}
       <input type="hidden" name="armies"
         value={JSON.stringify({ one, two })} />
-      <ArmyResultFields title={oneTitle} catalogue={catalogue}
-        value={one} onChange={onOne} />
-      <ArmyResultFields title={twoTitle} catalogue={catalogue}
-        value={two} onChange={onTwo} />
+      <Stack spacing={1.25}>
+        <ArmyResultFields title={oneTitle} catalogue={catalogue}
+          value={one} onChange={onOne} />
+        {underOne}
+      </Stack>
+      <Stack spacing={1.25}>
+        <ArmyResultFields title={twoTitle} catalogue={catalogue}
+          value={two} onChange={onTwo} />
+        {underTwo}
+      </Stack>
     </>
   );
 }

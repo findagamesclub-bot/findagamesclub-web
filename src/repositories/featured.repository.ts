@@ -105,6 +105,40 @@ export const unfeatureClub = (slot: number) =>
   callRpc<boolean>("unfeature_club", { p_slot: slot });
 
 /**
+ * One club's own slots, for its billing page.
+ *
+ * An ordinary select rather than a function: 0113's policy is `using (true)`,
+ * because what is featured is on the front page anyway, and every column here
+ * is in the generated types, so `check:columns` can see this one.
+ *
+ * Nothing is filtered by date. The club asked for past, live and to come, and
+ * that is one list read three ways rather than three round trips for three
+ * groups of the same rows.
+ */
+export type ClubSlotRow = {
+  id: number;
+  starts_on: string;
+  ends_on: string;
+  price_pence: number;
+  currency: string;
+  note: string;
+};
+
+export async function findSlotsForClub(clubId: number): Promise<ClubSlotRow[]> {
+  const rows = await table<ClubSlotRow>("featured_listings");
+  const { data, error } = await rows
+    .select("id, starts_on, ends_on, price_pence, currency, note")
+    .eq("club_id", clubId)
+    .order("starts_on", { ascending: true })
+    // A club holding more than this has a history nobody reads to the end of,
+    // and the panel caps what it draws anyway.
+    .limit(60);
+
+  if (error) throw new Error(`Failed to load this club's slots: ${error.message}`);
+  return data ?? [];
+}
+
+/**
  * Clubs an admin can pick from, for the slot form.
  *
  * Not `listClubs`: the directory returns a `ClubSummary`, which deliberately

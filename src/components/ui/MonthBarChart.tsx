@@ -32,7 +32,7 @@ export type MonthSeries = { name: string; color: string; values: number[] };
  * label on the console.
  */
 export default function MonthBarChart({
-  labels, series, height = 220, unit = "",
+  labels, series, height = 220, unit = "", decimals,
 }: {
   labels: string[];
   series: MonthSeries[];
@@ -44,6 +44,14 @@ export default function MonthBarChart({
    * pass nothing and read as counts.
    */
   unit?: string;
+  /**
+   * Places after the point in the tooltip, for money.
+   *
+   * The axis never takes them: ECharts picks round ticks and £0.00 to £500.00
+   * down the side is four characters of nothing. The tooltip is where an exact
+   * figure is read, and £119.5 is not a price anybody writes.
+   */
+  decimals?: number;
 }) {
   const host = useRef<HTMLDivElement>(null);
 
@@ -56,7 +64,9 @@ export default function MonthBarChart({
       animationDuration: 400,
       grid: { left: 32, right: 8, top: 12, bottom: 24 },
       tooltip: { trigger: "axis", axisPointer: { type: "shadow" },
-                 valueFormatter: (value: unknown) => `${unit}${value}` },
+                 valueFormatter: (value: unknown) =>
+                   `${unit}${typeof decimals === "number" && typeof value === "number"
+                     ? value.toFixed(decimals) : value}` },
       xAxis: {
         type: "category",
         data: labels,
@@ -89,7 +99,7 @@ export default function MonthBarChart({
     return () => { observer.disconnect(); chart.dispose(); };
     // Rebuilt only when the data changes, not on every render: a fresh array
     // literal in the deps would tear the chart down and rebuild it each time.
-  }, [labels, series, unit]);
+  }, [labels, series, unit, decimals]);
 
   return (
     <Stack spacing={1.25}>
