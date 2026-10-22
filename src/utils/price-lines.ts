@@ -91,12 +91,30 @@ export function savedAmount(priced: Priced): number {
  * credited a tier with a saving the member had paid for out of their own
  * points, and made the arithmetic on the card impossible to follow.
  */
+/**
+ * The tier's half of `savedLine`, on its own.
+ *
+ * The coaching card draws the points half live as somebody moves the stepper,
+ * so it needs this one without the other. Exported rather than written out a
+ * second time: the club's booking list, the member's own card and the desk all
+ * say "£5.00 off as Life Member", and a fourth wording is how the same saving
+ * starts reading as two different things.
+ */
+export function tierSavingLine(
+  priced: Pick<Priced, "tierAmount" | "tierLabel" | "currency">,
+): string | null {
+  if (!(priced.tierAmount > 0)) return null;
+  return `${formatPounds(priced.tierAmount, priced.currency ?? "GBP")} off as ${
+    priced.tierLabel || "a member"}`;
+}
+
 export function savedLine(priced: Priced): string | null {
   const money = (amount: number) => formatPounds(amount, priced.currency ?? "GBP");
   const parts: string[] = [];
 
-  if (priced.tierAmount > 0) {
-    parts.push(`${money(priced.tierAmount)} off as ${priced.tierLabel || "a member"}`);
+  const tier = tierSavingLine(priced);
+  if (tier) {
+    parts.push(tier);
   }
   if (priced.pointsAmount > 0) {
     parts.push(`${money(priced.pointsAmount)} off with ${priced.points} ${

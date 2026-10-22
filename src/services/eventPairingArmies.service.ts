@@ -7,6 +7,7 @@ import { listFromSnapshot } from "@/utils/army-snapshot";
 import type { Result } from "./eventEditor.service";
 import { sideFromRow, type GameSide, type ResultArmy as EditedArmy }
   from "@/utils/result-army";
+import { readDetachments } from "@/utils/result-army";
 import type { MatchSetup } from "@/utils/result-meta";
 import type { ResultArmy } from "@/types/event";
 
@@ -63,7 +64,9 @@ export type PairingArmy = GameSide;
  * side reuses `ResultArmy` rather than growing a second army type.
  */
 export function readerArmy(row: {
-  faction_label: string; detachment: string; disposition: string;
+  faction_label: string; detachment: string;
+  detachments?: string[] | null;
+  disposition: string;
   list_id: number | null; list_name: string; snapshot: unknown;
   mvp_units: string[] | null;
   underwhelming_units?: string[] | null;
@@ -82,6 +85,7 @@ export function readerArmy(row: {
   return {
     factionLabel: faction || null,
     detachment: (row.detachment ?? "").trim() || null,
+    detachments: readDetachments(row),
     disposition: (row.disposition ?? "").trim() || null,
     mvpUnits: (row.mvp_units ?? []).filter(Boolean),
     underwhelmingUnits: (row.underwhelming_units ?? []).filter(Boolean),

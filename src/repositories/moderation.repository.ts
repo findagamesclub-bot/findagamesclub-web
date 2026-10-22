@@ -151,6 +151,16 @@ export const findClubFlagCounts = (club: number, type: string, query: string) =>
   callRpc<Record<string, number>>("club_moderation_counts",
     { p_club: club, p_type: type, p_query: query });
 
+/**
+ * How many reports at this club a site admin is holding instead.
+ *
+ * A count and never a row. 0128 hides the content from the club on purpose,
+ * and this must not be the hole in it.
+ */
+export const findClubFlagsElsewhere = (club: number) =>
+  callRpc<{ waiting: number; answered: number }>(
+    "club_moderation_elsewhere", { p_club: club });
+
 export const resolveClubFlag = (flag: number, action: string, reason: string) =>
   callRpc<boolean>("resolve_club_flag",
     { p_flag: flag, p_action: action, p_reason: reason });

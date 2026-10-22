@@ -150,8 +150,12 @@ export function ownerNextStep(
         ? `You stopped at ${detail.resume}. Pick up where you left off.`
         : "Finish it whenever you like. Nothing is sent until you say so.";
     case "payment_pending":
-      return "It is with us and waiting for the first payment. We have emailed you "
-        + "how to pay, and nobody reads it until that lands.";
+      // Nothing reaches this any more: 0215 charges the fee after the
+      // approval, and its backfill put every listing left on the payment desk
+      // back into the queue. Kept because the log still holds the kind, and a
+      // branch that renders an empty string on an old row is worse than one
+      // sentence that is true of it.
+      return "It is with us. We will email you when somebody has looked at it.";
     case "review_pending":
       return "It is with us. We will email you when somebody has looked at it.";
     case "changes_requested":
@@ -172,4 +176,38 @@ export function ownerNextStep(
     default:
       return "";
   }
+}
+
+/**
+ * What the CLUB is doing now, where the request became one.
+ *
+ * A request is approved forever; a listing is live only while it is. 0108
+ * settled that once for `paused` and the owner's own card learned it; a club a
+ * site admin has taken down is the same shape and was missed, so the card read
+ * "Approved and live · It is live. Your club page is in the directory" over a
+ * club that was out of the directory. The client found the identical fault on
+ * the admin queue; this is the owner's side of it.
+ *
+ * Null where the club's own state has nothing to add, which is every listing
+ * that is not approved and every club that is live.
+ */
+export function clubStateLine(
+  status: string, clubStatus: string,
+): { label: string; tone: "warn" | "bad"; next: string } | null {
+  if (status !== "approved") return null;
+  if (clubStatus === "paused") {
+    return {
+      label: "Paused", tone: "warn",
+      next: "It is out of the directory at the moment. Nobody new can find it, "
+        + "and your members still have everything.",
+    };
+  }
+  if (clubStatus === "suspended") {
+    return {
+      label: "Taken down", tone: "bad",
+      next: "A site admin has taken it out of the directory. Open your club to "
+        + "read why, tell them when it is sorted, and they put it back.",
+    };
+  }
+  return null;
 }

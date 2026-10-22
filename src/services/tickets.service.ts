@@ -168,6 +168,11 @@ export async function checkout(params: {
   email: string;
   /** What the member asked to spend. 0050 has the final say. */
   redeemPoints?: number;
+  /**
+   * The team they are playing for. Only asked for at a team event, and 0211
+   * drops it anywhere else rather than trusting the screen to have asked.
+   */
+  teamName?: string;
 }): Promise<{ ok: true; reference: string } | { ok: false; error: string }> {
   const fullName = params.fullName.trim();
   const email = params.email.trim().toLowerCase();
@@ -189,6 +194,7 @@ export async function checkout(params: {
       email,
       reference,
       redeemPoints: Math.max(0, Math.floor(params.redeemPoints ?? 0)),
+      teamName: (params.teamName ?? "").trim().slice(0, 80),
     });
     return { ok: true, reference };
   } catch (error) {

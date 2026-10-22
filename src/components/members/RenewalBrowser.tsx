@@ -78,7 +78,7 @@ export default function RenewalBrowser({
         ]}
         filter={filter}
         onFilter={(value) => startReorder(() => setFilter(value))}
-        second={{
+        pickers={[{
           label: "Billing",
           value: billing,
           onChange: (value) => startReorder(() => setBilling(value as RenewalBilling)),
@@ -89,7 +89,7 @@ export default function RenewalBrowser({
             { value: "one-off", label: "One-off" },
             { value: "free", label: "Free tier" },
           ],
-        }}
+        }]}
         sorts={[
           { value: "soonest" as const, label: "Needs chasing first" },
           { value: "name" as const, label: "Name" },

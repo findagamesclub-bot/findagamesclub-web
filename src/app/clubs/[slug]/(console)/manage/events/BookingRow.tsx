@@ -99,6 +99,14 @@ export default function BookingRow({
               .filter(Boolean).join(" · ")}
           </Typography>
         ) : null}
+        {/* The same line the roster draws, because this is the same row read
+            from the other door, and two screens about one booking should not
+            disagree about what was written on it. */}
+        {row.paymentNote ? (
+          <Typography variant="caption" sx={{ color: tokens.inkMuted }}>
+            {row.paymentNote}
+          </Typography>
+        ) : null}
       </Stack>
 
       {cancelled ? (

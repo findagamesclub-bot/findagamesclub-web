@@ -29,7 +29,7 @@ type Result = { ok: true; id?: number } | { ok: false; error: string };
 const ARMY_REFUSALS: [string, string][] = [
   ["RESULT_BAD_FACTION", "is not a faction in this club's catalogue"],
   ["RESULT_BAD_DETACHMENT", "is not a detachment that faction has"],
-  ["RESULT_BAD_DISPOSITION", "is not a disposition that detachment offers"],
+  ["RESULT_BAD_DISPOSITION", "is not a disposition those detachments offer"],
 ];
 
 /**
@@ -160,6 +160,8 @@ export type StandingForm = {
   points?: number;
   notes?: string;
   faction?: string;
+  /** Several (0217), and the one field the shape before it posted. */
+  detachments?: unknown;
   detachment?: string;
   disposition?: string;
   /** Which of their own lists they brought (0194). Null clears the link. */
@@ -168,6 +170,25 @@ export type StandingForm = {
 
 const text = (value: unknown, cap: number) =>
   (typeof value === "string" ? value : "").trim().slice(0, cap);
+/**
+ * A row's detachments, however the tab that posted them was built.
+ *
+ * Everything here is a claim: a tab left open across a deploy posts the shape
+ * the old bundle knew, which is exactly how `detachment` once arrived
+ * undefined and `.trim()` threw a TypeError the club read as "Could not save
+ * the table. Try again."
+ */
+const rowDetachments = (row: StandingForm): string[] => {
+  const list = Array.isArray(row.detachments) ? row.detachments : [];
+  const kept = list
+    .filter((one): one is string => typeof one === "string")
+    .map((one) => text(one, 120))
+    .filter(Boolean);
+  if (kept.length) return kept;
+  const one = text(row.detachment, 120);
+  return one ? [one] : [];
+};
+
 const count = (value: unknown) =>
   Math.max(0, Math.floor(typeof value === "number" ? value : Number(value) || 0));
 
@@ -186,11 +207,11 @@ export async function saveStandings(
       profileId: typeof row.profileId === "string" ? row.profileId : null,
       notes: text(row.notes, 300),
       faction: text(row.faction, 120),
-      detachment: text(row.detachment, 120),
-      // A disposition belongs to a detachment, so one without the other is a
+      detachments: rowDetachments(row),
+      // A disposition belongs to the detachments, so one without them is a
       // value with nothing to hang off. The trigger in 0136 refuses it; this
       // drops it so the rest of the table still saves.
-      disposition: text(row.detachment, 120) ? text(row.disposition, 120) : "",
+      disposition: rowDetachments(row).length ? text(row.disposition, 120) : "",
       // A list belongs to an account, so a row typed as a free-text name has
       // none to name. The trigger refuses that by name; dropping it here means
       // clearing the player also clears a list that is no longer theirs,
@@ -214,7 +235,7 @@ export async function saveStandings(
       wins: row.wins, draws: row.draws, losses: row.losses, points: row.points,
       notes: row.notes,
       faction: row.faction,
-      detachment: row.detachment,
+      detachments: row.detachments,
       disposition: row.disposition,
       army_list_id: row.listId,
     })));

@@ -95,7 +95,7 @@ begin
     values (v_club, 'x-rtt', 'RTT', public.london_today() - 7, 'published')
     returning id into v_event;
     v_placing := public.save_event_placing(v_event, null, 1, 'Somebody', null,
-      'Death Guard', '', '');
+      'Death Guard', '{}'::text[], '');
     a := pg_temp.army('event_podium', v_placing, 'one');
     assert a.outcome = '', 'a podium invented a result: ' || a.outcome;
     assert a.confirmed, 'a podium has nothing to settle and did not count';

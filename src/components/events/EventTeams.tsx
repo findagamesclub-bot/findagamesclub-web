@@ -5,6 +5,7 @@ import Box from "@mui/material/Box";
 import Collapse from "@mui/material/Collapse";
 import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
+import PlayerName from "@/components/events/PlayerName";
 import Typography from "@mui/material/Typography";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
@@ -128,9 +129,12 @@ export default function EventTeams({ teams, fixtures, faction, viewerName }: {
                                         width: 18, flexShrink: 0 }}>
                         {seat + 1}
                       </Typography>
-                      <Typography sx={{ fontSize: "0.88rem", minWidth: 0 }}>
-                        {player.name}
-                      </Typography>
+                      {/* Linked where the club attached an account, same as
+                          the draw and the placings. `TeamPlayer` has carried
+                          `profileId` since 0168 and this list drew the name
+                          as plain text. */}
+                      <PlayerName name={player.name} profileId={player.profileId}
+                        sx={{ fontSize: "0.88rem" }} />
                     </Stack>
                   ))}
                 </Stack>

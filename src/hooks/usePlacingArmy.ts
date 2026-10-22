@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { NO_ARMY, type ArmyNaming } from "@/components/results/ArmyPicker";
+import { readDetachments } from "@/utils/result-army";
 import type { MemberList } from "@/services/resultArmies.service";
 import type { Linked } from "@/components/results/MemberCodeField";
 import type { EventPlacing } from "@/types/event";
+import { offerable } from "@/utils/placing-list";
 
 /**
  * What one placing says about the army, while the dialog is open.
@@ -63,10 +65,24 @@ export function usePlacingArmy(open: boolean, placing: EventPlacing | null,
     setArmy({
       factionId: placing?.army?.factionLabel ?? "",
       factionLabel: placing?.army?.factionLabel ?? "",
-      detachment: placing?.army?.detachment ?? "",
+      // The list, or the one column that came before it: a placing saved
+      // before 0217 carries `detachment` and no `detachments`.
+      detachments: readDetachments(placing?.army ?? {}),
       disposition: placing?.army?.disposition ?? "",
     });
-    setListId(placing?.army?.list?.id ?? null);
+    // Only an id this dialog could have offered. A placing imported from
+    // legacy carries legacy's OWN list id inside `club_event_results.army`
+    // (`armyListId`, a sixteen-digit number of its own making), and nothing in
+    // this database has ever had an `army_lists` row with that id. Seeding it
+    // blind put it straight back on the hidden field, so saving a placing
+    // nobody had touched came back "Army list not found." on a dialog saying
+    // there was no list to name. The client reported it as "this error was
+    // received when NOT selecting any list", which is exactly right.
+    //
+    // Dropping it means the field posts "" and the save clears the dead link,
+    // so the row repairs itself rather than refusing for ever. A real link to
+    // one of this player's lists is in `offerable` and is kept.
+    setListId(offerable(lists, placing?.profileId ?? null, placing?.army?.list?.id ?? null));
   } else if (open && profileId !== seenProfile) {
     // The player moved, so the named list belonged to whoever is no longer on
     // this row. Without this the dialog kept it: the picker correctly stopped
@@ -97,7 +113,7 @@ export function usePlacingArmy(open: boolean, placing: EventPlacing | null,
     setArmy({
       factionId: list.factionId,
       factionLabel: list.faction,
-      detachment: list.detachment,
+      detachments: list.detachments,
       disposition: list.disposition,
     });
   };

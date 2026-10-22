@@ -247,7 +247,9 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
         <TakenDownNotice kind="club" reason={takenDown.reason} at={takenDown.at}
           byName={takenDown.byName} canAct={viewer?.role === "admin"}
           ask={{ id: club.id, slug: club.slug,
-                 askedAt: takenDown.askedAt, askedNote: takenDown.askedNote }} />
+                 askedAt: takenDown.askedAt, askedNote: takenDown.askedNote }}
+          messageAdmin={takenDown.adminId
+            ? { id: takenDown.adminId, name: takenDown.adminName } : null} />
       ) : null}
 
       {club.status === "paused" ? (

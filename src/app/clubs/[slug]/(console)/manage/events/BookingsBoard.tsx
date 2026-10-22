@@ -97,7 +97,7 @@ export default function BookingsBoard({
           { value: "name", label: "By name" },
           { value: "value", label: "Biggest first" },
         ]}
-        second={view.events.length > 1 ? {
+        pickers={view.events.length > 1 ? [{
           label: "Event",
           param: "event",
           value: String(filters.eventId || 0),
@@ -107,7 +107,7 @@ export default function BookingsBoard({
               value: String(event.id), label: `${event.title} (${event.bookings})`,
             })),
           ],
-        } : undefined}
+        }] : []}
         // Matches what the pager leaves out, so the same view has one address
         // however the reader arrived at it.
         defaults={{ state: "all", sort: "newest", event: "0" }}

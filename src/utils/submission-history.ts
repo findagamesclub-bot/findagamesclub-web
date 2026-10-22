@@ -20,6 +20,14 @@ export const EVENT_LABELS: Record<string, string> = {
   declined: "Declined",
   cancelled: "Taken back",
   restarted: "Started again",
+  // What has happened to the club SINCE it went live (0215). The timeline
+  // used to stop at the approval, so a club a site admin had taken down read
+  // as approved and nothing else, and the back and forth that followed was in
+  // the database with nowhere to see it.
+  suspended: "Taken down by an admin",
+  restored: "Put back",
+  review_asked: "The club says it is settled",
+  review_kept: "Looked at again, staying down",
 };
 
 /** The house tones, so a history dot and a status chip agree about colour. */
@@ -31,6 +39,12 @@ export const EVENT_TONES: Record<string, StatusTone> = {
   declined: "bad",
   cancelled: "neutral",
   restarted: "neutral",
+  suspended: "bad",
+  restored: "good",
+  // The club's turn is over and ours has started, which is the same weight a
+  // listing waiting on us already has.
+  review_asked: "warn",
+  review_kept: "bad",
 };
 
 export function eventLabel(kind: string): string {
@@ -62,6 +76,12 @@ export function historySummary(kinds: string[]): string {
 
   const back = kinds.filter((kind) => kind === "changes_requested").length;
   const sent = kinds.filter((kind) => kind === "submitted").length;
+  // What happened after it went live is its own sentence. Folding it into the
+  // round count would say a listing had been sent back more times than it was.
+  const down = kinds.filter((kind) => kind === "suspended").length;
+  const since = down === 0 ? ""
+    : down === 1 ? " It has been taken down once since."
+      : ` It has been taken down ${down} times since.`;
 
   // A history can now begin with the club waiting to pay, which is a real
   // beginning and not a missing one.
@@ -72,13 +92,14 @@ export function historySummary(kinds: string[]): string {
     + "Anything asked for before it was not recorded.";
 
   if (back === 0) {
-    if (partial) return missing;
-    return sent > 1 ? `Sent in ${sent} times.` : "Nothing has been asked for yet.";
+    if (partial) return `${missing}${since}`;
+    return (sent > 1 ? `Sent in ${sent} times.` : "Nothing has been asked for yet.")
+      + since;
   }
 
   const rounds = back === 1
     ? "Sent back once. Everything asked for is below."
     : `Sent back ${back} times. Everything asked for is below.`;
 
-  return partial ? `${missing} ${rounds}` : rounds;
+  return (partial ? `${missing} ${rounds}` : rounds) + since;
 }

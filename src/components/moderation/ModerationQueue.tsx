@@ -17,6 +17,7 @@ import type { FlagRow } from "@/services/moderation.service";
 import {
   MODERATION_SORTS, MODERATION_TARGETS, targetLabel,
 } from "@/utils/moderation-targets";
+import { countLine, type Elsewhere } from "@/utils/moderation-elsewhere";
 import { statusTag } from "@/utils/moderation-status";
 import { clubIdentity } from "@/utils/club-identity";
 import { shortDate } from "@/utils/dates";
@@ -39,7 +40,7 @@ const TYPES = [
  */
 export default function ModerationQueue({
   rows, tabs, tab, type, query, sort, total, page, perPage, failed,
-  action, basePath, scope = "site", extraFields,
+  action, basePath, scope = "site", extraFields, elsewhere,
 }: {
   rows: FlagRow[];
   tabs: UrlTab[];
@@ -56,6 +57,16 @@ export default function ModerationQueue({
    * more", because the form carried no slug for the action to read.
    */
   extraFields?: Record<string, string>;
+  /**
+   * How many reports at this club a site admin is holding, because they are
+   * about a review or about something the club's own team wrote. A count and
+   * never a row: no content, no reporter, no author.
+   *
+   * The rule below has been on this screen since 0128 and the client still
+   * read a missing report as a bug three times, because a general sentence has
+   * nothing to attach a specific missing thing to. A number does.
+   */
+  elsewhere?: Elsewhere | null;
 }) {
   const [state, act, working] =
     useActionState<ModerationState, FormData>(action, {});
@@ -78,7 +89,7 @@ export default function ModerationQueue({
         tabs={tabs}
         sort={sort}
         sorts={MODERATION_SORTS}
-        second={{ label: "Kind", value: type, options: TYPES, param: "type" }}
+        pickers={[{ label: "Kind", value: type, options: TYPES, param: "type" }]}
         defaults={{ state: "", sort: "waiting", type: "" }}
         onBusy={setSifting}
       />
@@ -92,6 +103,13 @@ export default function ModerationQueue({
                           color: tokens.inkMuted, px: 0.5 }}>
           A review of your club, and anything your own team wrote, goes to a
           site admin instead of here. Nobody rules on themselves.
+          {/* Only when there are some. "0 are there" is the page answering a
+              question nobody asked, and it is the ordinary case. */}
+          {elsewhere && elsewhere.waiting + elsewhere.answered > 0 ? (
+            <Box component="span" sx={{ color: tokens.brass, fontWeight: 700 }}>
+              {` ${countLine(elsewhere)}`}
+            </Box>
+          ) : null}
         </Typography>
       ) : null}
 

@@ -114,6 +114,13 @@ const MAP = {
   join_request: "membership",
   "badge-awarded": "membership",
   "badge-taken-back": "membership",
+  // A club pausing somebody's access, and putting it back. Two kinds for one
+  // membership, because `notify_person` de-duplicates while a notice is
+  // unread and one kind would mean the lifting rewriting the suspension in
+  // place. In "membership" rather than a locked family: it is club news, and
+  // the member reads the reason on their own memberships page either way.
+  "membership-suspended": "membership",
+  "membership-unsuspended": "membership",
   rival: "membership",
   team_invite: "membership",
   team_role: "membership",
@@ -162,6 +169,10 @@ const MAP = {
   // about a listing, so it sits with the suspension it answers.
   "listing-review-asked": "running",
   "event-review-asked": "running",
+  // And the admin's answer to it (0215). "It stays down" is the other half of
+  // the decision, so it goes where the ask and the take-down already are.
+  "listing-review-kept": "running",
+  "event-review-kept": "running",
   "listing-restored": "running",
   "event-taken-down": "running",
   "event-put-back": "running",
@@ -169,6 +180,11 @@ const MAP = {
 
   // Money, which is the one family nobody should miss.
   "club-request-unpaid": "money",
+  // 0215 charges the listing fee after the review rather than before it, so
+  // being approved is now also the moment somebody is asked to pay. Money,
+  // not "Running a club": a club that has turned listing news off still has
+  // to hear that a bill has started.
+  "listing-approved-pay": "money",
   "listing-payment-received": "money",
   // A receipt for money the member actually paid. It shared the generic
   // `membership` kind, so turning "Your clubs" off silenced a £120 receipt,

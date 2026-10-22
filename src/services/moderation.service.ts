@@ -149,7 +149,7 @@ export async function resolve(
  * that the reporter's name never comes back.
  */
 export async function getClubQueue(club: number, filters: ModerationFilters) {
-  const [rows, counts] = await Promise.all([
+  const [rows, counts, elsewhere] = await Promise.all([
     repo.findClubFlags({
       club,
       type: filters.type,
@@ -161,10 +161,18 @@ export async function getClubQueue(club: number, filters: ModerationFilters) {
     }).catch(() => null),
     repo.findClubFlagCounts(club, filters.type, filters.query)
       .catch((): Record<string, number> => ({})),
+    // Null when it could not be read, which is what keeps the line off the
+    // screen rather than saying "0 of yours" about a number nobody asked for.
+    // In the same wave: it needs nothing the other two return.
+    repo.findClubFlagsElsewhere(club).catch(() => null),
   ]);
 
   const safe = counts ?? {};
   return {
+    elsewhere: elsewhere
+      ? { waiting: Number(elsewhere.waiting ?? 0),
+          answered: Number(elsewhere.answered ?? 0) }
+      : null,
     rows: rows ?? [],
     total: rows?.[0]?.total_count ?? 0,
     page: filters.page,

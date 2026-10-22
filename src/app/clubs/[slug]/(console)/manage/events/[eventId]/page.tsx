@@ -72,7 +72,9 @@ export default async function EventEditorPage({
         <TakenDownNotice kind="event" reason={takenDown.reason} at={takenDown.at}
           byName={takenDown.byName} canAct={viewer.role === "admin"}
           ask={{ id: event.id, slug,
-                 askedAt: takenDown.askedAt, askedNote: takenDown.askedNote }} />
+                 askedAt: takenDown.askedAt, askedNote: takenDown.askedNote }}
+          messageAdmin={takenDown.adminId
+            ? { id: takenDown.adminId, name: takenDown.adminName } : null} />
       ) : null}
 
       <SectionNav />

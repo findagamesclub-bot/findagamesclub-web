@@ -49,7 +49,10 @@ export default async function ManageCoachingPage({
 
   const [settings, coaching, membership] = await Promise.all([
     findCoachingSettings(club.id).catch(() => null),
-    getCoaching(club.id, viewer.id, londonToday()),
+    // Null, not today: the club's own list has to carry the sessions that
+    // have already happened, or there is no card to mark paid and the status
+    // tabs read 0 at a club with a year of coaching behind it.
+    getCoaching(club.id, viewer.id, null),
     getMyMembership(club.id, viewer.id),
   ]);
   const { faction } = clubIdentity(club.slug, club.name);
@@ -93,7 +96,7 @@ export default async function ManageCoachingPage({
       ) : settings?.enabled ? (
         <CoachingCalendar slots={coaching.slots} slug={slug} clubId={club.id}
           faction={faction} canManage isMember={membership.status === "approved"}
-          standing={coaching.standing} />
+          today={londonToday()} standing={coaching.standing} />
       ) : (
         <EmptyState
           title="Coaching is switched off"

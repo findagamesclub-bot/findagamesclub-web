@@ -8,7 +8,7 @@ import PageHead from "@/components/ui/PageHead";
 import GameBrowser from "@/components/account/GameBrowser";
 import RivalTable from "@/components/account/RivalTable";
 import { getCurrentProfile } from "@/services/auth.service";
-import { getMyGames, getRecord } from "@/services/games.service";
+import { getMyGames, getRecord, WHOLE_HISTORY } from "@/services/games.service";
 import { getMyRivalIds } from "@/services/clubExtras.service";
 import { getMyLists } from "@/services/armyLists.service";
 import { listsByClubSlug } from "@/utils/member-lists";
@@ -33,14 +33,20 @@ export default async function AccountGamesPage({
   const query = await searchParams;
   const opponent = String(query.q ?? "");
 
-  // The record is one grouped query in the database, not counted from the
-  // games above: the page shows a window of history, the record is all of it.
+  // Their whole history, not the newest twenty-five. A month filter over a
+  // window answers about the window, which is why the client could not use
+  // one: this is a member's own handful, and the house rule is that a list
+  // that size comes back whole and is sifted in the browser.
+  //
+  // The record is still one grouped query in the database rather than counted
+  // from the games: it is every game they have ever played, including the ones
+  // past even this ceiling.
   // Their own lists ride in the same wave: it needs nothing the games read
   // produces, so saying which list you brought costs no extra round trip. A
   // failure costs the picker and not the page, which is the state this screen
   // was in before today.
   const [games, record, rivals, lists] = await Promise.all([
-    getMyGames(viewer.id).catch(() => []),
+    getMyGames(viewer.id, 1, WHOLE_HISTORY).catch(() => []),
     getRecord().catch(() => []),
     getMyRivalIds(viewer.id).catch(() => new Set<string>()),
     getMyLists(viewer.id).catch(() => []),

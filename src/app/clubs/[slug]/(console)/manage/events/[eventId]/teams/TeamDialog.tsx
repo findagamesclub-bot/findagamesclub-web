@@ -40,11 +40,17 @@ type Row = { name: string; profileId: string };
  * typed them into a booking.
  */
 export default function TeamDialog({
-  open, team, roster, nextPosition, saving, onClose, onSave,
+  open, team, roster, nextPosition, saving, onClose, onSave, prefill = null,
 }: {
   open: boolean;
   /** Null for a new team. */
   team: EventTeam | null;
+  /**
+   * A team name people booked under, with everybody who typed it (0211).
+   * Only read for a NEW team: an existing one already has its own players and
+   * seeding over them would lose the club's own edits.
+   */
+  prefill?: { name: string; players: { profileId: string | null; name: string }[] } | null;
   roster: Player[];
   nextPosition: number;
   saving: boolean;
@@ -56,11 +62,14 @@ export default function TeamDialog({
   const [name, setName] = useState("");
   const [rows, setRows] = useState<Row[]>([]);
 
-  useWhenChanged([open, team], () => {
+  useWhenChanged([open, team, prefill], () => {
     if (!open) return;
-    setName(team?.name ?? "");
-    setRows(team?.players.length
-      ? team.players.map((player) => ({
+    // An existing team wins over a prefill: the club has already edited it,
+    // and a booking list is only ever a starting point.
+    const from = team ?? prefill;
+    setName(from?.name ?? "");
+    setRows(from?.players.length
+      ? from.players.map((player) => ({
           name: player.name, profileId: player.profileId ?? "" }))
       : [{ name: "", profileId: "" }]);
   });

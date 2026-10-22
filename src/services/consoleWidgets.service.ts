@@ -222,9 +222,11 @@ export async function getSectionWidgets(
       key: "coaching", group: "Club nights", label: "Coaching", href: at("/coaching"),
       needs: "coaching.manage",
       value: `${taken}`,
+      // One booking reads "1 seat booked", not "1 seats booked". The stage 5
+      // singular slip, on the one tile the client screenshotted.
       note: free
-        ? `seats booked, ${free} still free`
-        : "seats booked, and every one taken",
+        ? `${taken === 1 ? "seat" : "seats"} booked, ${free} still free`
+        : `${taken === 1 ? "seat" : "seats"} booked, and every one taken`,
       chart: { kind: "gauge",
                percent: (taken / Math.max(1, taken + free)) * 100,
                done: taken, left: free,

@@ -47,7 +47,10 @@ export default function PaymentDialog({
     // to do the ordinary thing.
     setStatus(row.paymentStatus === "unpaid" ? "paid_on_the_door" : row.paymentStatus);
     setMethod(row.paymentMethod || "Cash");
-    setNote("");
+    // Seeded from the row, not emptied. It opened blank every time, so a club
+    // reopening a booking to correct the method saved an empty note over what
+    // they had written and the dialog looked like it had never kept one.
+    setNote(row.paymentNote);
   });
 
   return (
@@ -80,7 +83,7 @@ export default function PaymentDialog({
               <TextField label="Note" fullWidth multiline minRows={2}
                 value={note} onChange={(e) => setNote(e.target.value)}
                 slotProps={{ htmlInput: { maxLength: 500 } }}
-                helperText="Only your team sees this. A reference, or who took the money." />
+                helperText="A reference, or who took the money. They see this on their ticket." />
             </>
           ) : (
             <Typography variant="body2" sx={{ color: tokens.inkMuted }}>

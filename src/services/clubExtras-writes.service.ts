@@ -1,5 +1,7 @@
 import "server-only";
 
+import { after } from "next/server";
+
 import * as repo from "@/repositories/clubExtras.repository";
 import * as notify from "./order-notify.service";
 
@@ -174,7 +176,20 @@ function coachingError(raw: string): string {
 export async function bookCoaching(slotId: number, points = 0): Promise<Result> {
   try {
     const booking = await repo.bookSlot(slotId, points);
-    await notify.notifyCoachingBooked(booking.id);
+    // After the response, not before it. The confirmation reads the booking
+    // back, looks the address up through the admin client and posts it to
+    // Resend, and the action was waiting on all three before the page was
+    // allowed to redraw: measured at 8.8s for a booking against 3.9s for a
+    // cancellation, which does the same write and sends nothing. The member
+    // pressed Book, watched the card go on saying 10 OF 10 LEFT, and read
+    // that as a booking that had not happened.
+    //
+    // `after` may use request APIs inside a Server Function, which the Next
+    // docs say plainly (04-functions/after.md, "In Route Handlers and Server
+    // Functions"), so the cookie-reading read inside the notifier is fine
+    // here. That is the opposite of the rule for a page, where 0153 paid for
+    // trying it.
+    after(() => notify.notifyCoachingBooked(booking.id));
     return { ok: true };
   } catch (error) {
     return { ok: false, error: coachingError(error instanceof Error ? error.message : "") };

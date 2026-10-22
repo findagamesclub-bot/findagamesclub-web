@@ -97,18 +97,31 @@ export async function putEventBack(
  * both mean "draw nothing".
  */
 export async function getClubSuspension(clubId: number) {
-  const rows = await repo.findClubSuspension(clubId).catch(() => null);
-  return toSuspension(rows);
+  // One wave of two. Who to write to is part of the answer to "this is down,
+  // what do I do about it", and it is only ever asked on a page that is
+  // already drawing the banner.
+  const [rows, contacts] = await Promise.all([
+    repo.findClubSuspension(clubId).catch(() => null),
+    repo.findSiteContacts().catch(() => null),
+  ]);
+  return toSuspension(rows, contacts);
 }
 
 export async function getEventSuspension(eventId: number) {
-  const rows = await repo.findEventSuspension(eventId).catch(() => null);
-  return toSuspension(rows);
+  const [rows, contacts] = await Promise.all([
+    repo.findEventSuspension(eventId).catch(() => null),
+    repo.findSiteContacts().catch(() => null),
+  ]);
+  return toSuspension(rows, contacts);
 }
 
-function toSuspension(rows: repo.Suspension[] | null) {
+function toSuspension(
+  rows: repo.Suspension[] | null,
+  contacts: { id: string; full_name: string }[] | null = null,
+) {
   const row = rows?.[0];
   if (!row) return null;
+  const admin = contacts?.[0] ?? null;
   return {
     reason: (row.reason ?? "").trim(),
     at: row.suspended_at,
@@ -117,6 +130,17 @@ function toSuspension(rows: repo.Suspension[] | null) {
     // "did that go anywhere" instead of offering the button again.
     askedAt: row.asked_at ?? null,
     askedNote: (row.asked_note ?? "").trim(),
+    /**
+     * Somebody to write to about it (0215).
+     *
+     * The client asked for a message admin button, and 0202 recorded why it
+     * did not build one: a site thread could only ever be opened by an admin
+     * going first. That is still right about the general case and wrong about
+     * this one, so an owner with something down may open it, and this is who
+     * they reach. Null everywhere else, and the button is not drawn.
+     */
+    adminId: admin?.id ?? null,
+    adminName: (admin?.full_name ?? "").trim(),
   };
 }
 
@@ -152,3 +176,41 @@ export async function askSuspensionReview(
 }
 
 export type ListingSuspension = NonNullable<Awaited<ReturnType<typeof getClubSuspension>>>;
+
+/**
+ * "I have looked, and it stays down."
+ *
+ * The other half of the decision. Putting a listing back has existed since
+ * 0188; keeping it down had no answer at all, so an ask sat on the admin's
+ * screen forever and the owner was never told their answer had been read.
+ *
+ * It replaces the reason the listing carries, because the admin has just said
+ * what is still wrong and that sentence is the one the owner should be
+ * reading on their own banner. The listing does not move: it was down and it
+ * stays down, and what changes is whose turn it is.
+ */
+export async function keepSuspension(
+  kind: "club" | "event", id: number, note: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const words = note.trim().slice(0, 1000);
+  if (!words) {
+    return { ok: false, error: "Say what is still wrong. It is what they will read." };
+  }
+  try {
+    await repo.keepSuspension(kind, id, words);
+    return { ok: true };
+  } catch (error) {
+    const raw = error instanceof Error ? error.message : "";
+    if (raw.includes("REVIEW_NEEDS_REASON")) {
+      return { ok: false, error: "Say what is still wrong. It is what they will read." };
+    }
+    if (raw.includes("REVIEW_NOT_DOWN")) {
+      return { ok: false, error: "That is not taken down, so there is nothing to keep." };
+    }
+    if (raw.includes("NOT_PERMITTED")) {
+      return { ok: false, error: "Only a site admin can answer this." };
+    }
+    console.error("keep suspension failed", { kind, id, raw });
+    return { ok: false, error: "That did not save. Try again." };
+  }
+}

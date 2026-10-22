@@ -24,10 +24,18 @@ export const DEFAULT_MILESTONES = {
   gameBooking: 5,
   eventBooking: 10,
   merchandisePurchase: 0,
+  /**
+   * Zero by default, which is what legacy does by not having it at all.
+   * Coaching has been able to SPEND points since 0157 and could never mint
+   * one, because legacy's four milestones stop at merchandise. The client
+   * asked for the fifth; a club that wants it sets a figure, and a club that
+   * does not is exactly where it was.
+   */
+  coachingBooking: 0,
 } as const;
 
 /**
- * The four earning fields, as the club's own editor lists them.
+ * The five earning fields, as the club's own editor lists them.
  *
  * Here rather than beside the form's action, because a "use server" module may
  * only export async functions and a constant among them stops the whole page
@@ -35,7 +43,7 @@ export const DEFAULT_MILESTONES = {
  * compile error rather than a milestone that silently earns nothing.
  *
  * One list, because the club's editor and the members' rate card are naming the
- * same four rules and were using different words for two of them. `category` is
+ * same rules and were using different words for two of them. `category` is
  * what the ledger writes, which is how the rate card ticks the ones somebody has
  * actually collected.
  */
@@ -44,6 +52,7 @@ export const MILESTONE_FIELDS = [
   { key: "gameBooking", label: "Booking a table", category: "game-booking" },
   { key: "eventBooking", label: "Booking event tickets", category: "event-booking" },
   { key: "merchandisePurchase", label: "Ordering merchandise", category: "merchandise-order" },
+  { key: "coachingBooking", label: "Booking a coaching session", category: "coaching-booking" },
 ] as const satisfies readonly {
   key: keyof typeof DEFAULT_MILESTONES; label: string; category: string;
 }[];

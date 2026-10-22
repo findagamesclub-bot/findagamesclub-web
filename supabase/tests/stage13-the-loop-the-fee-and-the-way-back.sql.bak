@@ -1,0 +1,267 @@
+-- 0215 · the review loop, the fee after it, and the way back from a take-down.
+--
+-- The assertion to keep is 1: the club request loop could go round exactly
+-- once, and the second send-back was refused with SUBMISSION_NOT_IN_REVIEW
+-- because resubmitting put the listing back on a payment desk it had already
+-- paid at. Everything else here is a screen reading something that was already
+-- in the database.
+--
+-- The security assertions are 8 and 10: keeping a suspension is an admin's
+-- alone, and the site thread a suspended owner may open reaches an admin and
+-- nobody else.
+-- Run with scripts/pg-harness.sh psql -f this.
+begin;
+
+insert into auth.users (id, email) values
+  ('f0000000-0000-0000-0000-000000000001', 'owner15@example.com'),
+  ('f0000000-0000-0000-0000-000000000002', 'admin15@example.com'),
+  ('f0000000-0000-0000-0000-000000000003', 'other15@example.com');
+update public.profiles set role = 'admin', full_name = 'Site Admin'
+ where id = 'f0000000-0000-0000-0000-000000000002';
+update public.profiles set full_name = 'Owner Fifteen'
+ where id = 'f0000000-0000-0000-0000-000000000001';
+
+create or replace function pg_temp.be(p uuid) returns void
+language plpgsql as $$ begin
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', p, 'role', 'authenticated')::text, true);
+end $$;
+
+-- Read as postgres. A notification is readable only by the person it is for,
+-- so counting somebody else's from an ordinary session reads zero whether one
+-- was written or not. Three suites have paid for that already.
+create or replace function pg_temp.notices(p uuid, p_kind text)
+returns bigint language sql security definer as $f$
+  select count(*) from public.notifications
+   where profile_id = p and kind = p_kind $f$;
+
+create or replace function pg_temp.story(p bigint)
+returns text language sql security definer as $f$
+  select string_agg(kind, ',' order by id)
+    from public.club_submission_events where submission_id = p $f$;
+
+create or replace function pg_temp.st(p bigint) returns text
+language sql security definer as $f$
+  select status from public.club_submissions where id = p $f$;
+
+create or replace function pg_temp.subs(p bigint) returns bigint
+language sql security definer as $f$
+  select count(*) from public.listing_subscriptions where submission_id = p $f$;
+
+-- A draft, made as postgres. `club_submissions` is granted by column and the
+-- app opens one through its own path; what is under test here is everything
+-- that happens to a draft afterwards.
+create or replace function pg_temp.draft(p_owner uuid, p_name text, p_city text)
+returns bigint language plpgsql security definer as $f$
+declare v_id bigint;
+begin
+  insert into public.club_submissions (owner_id, club_name, city, status, payload)
+  values (p_owner, p_name, p_city, 'draft', '{}'::jsonb)
+  returning id into v_id;
+  return v_id;
+end $f$;
+
+-- The switch is admin-only and this suite moves it deliberately.
+create or replace function pg_temp.billing(p boolean) returns void
+language sql security definer as $f$
+  update public.listing_billing_settings set enabled = p where id = 1 $f$;
+
+set local role authenticated;
+
+do $$
+declare
+  v_owner uuid := 'f0000000-0000-0000-0000-000000000001';
+  v_admin uuid := 'f0000000-0000-0000-0000-000000000002';
+  v_other uuid := 'f0000000-0000-0000-0000-000000000003';
+  v_id bigint; v_club bigint; v_sub bigint; n bigint; t text; r record;
+begin
+  -- 1 · The loop goes round as many times as the listing needs.
+  --
+  --     This is the whole of item 4. Before 0215 the second send-back raised
+  --     SUBMISSION_NOT_IN_REVIEW, because resubmitting read the billing switch
+  --     again and put a listing that had already paid back on the payment
+  --     desk, where nothing could move it off.
+  perform pg_temp.be(v_owner);
+  v_id := pg_temp.draft(v_owner, 'Loop Club', 'Oxford');
+  perform pg_temp.billing(true);
+
+  if public.submit_club_submission(v_id) <> 'review_pending' then
+    raise exception 'FAIL 1: the first send landed on %', pg_temp.st(v_id);
+  end if;
+
+  for i in 1..3 loop
+    perform pg_temp.be(v_admin);
+    perform public.request_submission_changes(v_id, 'Round ' || i || ', please fix it.');
+    if pg_temp.st(v_id) <> 'changes_requested' then
+      raise exception 'FAIL 1b: round % did not send it back, status %',
+        i, pg_temp.st(v_id);
+    end if;
+    perform pg_temp.be(v_owner);
+    if public.submit_club_submission(v_id) <> 'review_pending' then
+      raise exception 'FAIL 1c: round % came back as %', i, pg_temp.st(v_id);
+    end if;
+  end loop;
+
+  -- 2 · And nothing was charged on the way round. The fee is a thing that
+  --     happens to a listing somebody has decided to publish.
+  if pg_temp.subs(v_id) <> 0 then
+    raise exception 'FAIL 2: % subscriptions opened before approval', pg_temp.subs(v_id);
+  end if;
+
+  -- 3 · Approving opens the bill, stamps the listing and tells the owner.
+  perform pg_temp.be(v_admin);
+  perform public.approve_club_submission(v_id);
+  if pg_temp.st(v_id) <> 'approved' then
+    raise exception 'FAIL 3: approving left it at %', pg_temp.st(v_id);
+  end if;
+  if pg_temp.subs(v_id) <> 1 then
+    raise exception 'FAIL 3b: % subscriptions after approval, expected one',
+      pg_temp.subs(v_id);
+  end if;
+  select id, status, club_id into r from public.listing_subscriptions
+   where submission_id = v_id;
+  if r.status <> 'payment_pending' then
+    raise exception 'FAIL 3c: the subscription opened at %', r.status;
+  end if;
+  if r.club_id is null then
+    raise exception 'FAIL 3d: the subscription is not on the club it belongs to';
+  end if;
+  if pg_temp.notices(v_owner, 'listing-approved-pay') <> 1 then
+    raise exception 'FAIL 3e: the owner was not asked to pay';
+  end if;
+  v_sub := r.id;
+
+  select club_id into v_club from public.club_submissions where id = v_id;
+
+  -- 4 · The money still lands the way it always did, through Billing.
+  perform public.record_listing_payment(v_sub, 1500, 'bank_transfer', null, 'REF', '');
+  select status into t from public.listing_subscriptions where id = v_sub;
+  if t <> 'active' then
+    raise exception 'FAIL 4: after payment the subscription reads %', t;
+  end if;
+
+  -- 5 · Taken down, and the history says so. Item 5's second half: the one
+  --     timeline both sides read stopped at the approval.
+  perform public.admin_take_down_club(v_club, 'Images and content need a look.');
+  t := pg_temp.story(v_id);
+  if position('suspended' in t) = 0 then
+    raise exception 'FAIL 5: the history reads %, with no suspension in it', t;
+  end if;
+  select body into t from public.club_submission_events
+   where submission_id = v_id and kind = 'suspended' order by id desc limit 1;
+  if t <> 'Images and content need a look.' then
+    raise exception 'FAIL 5b: the suspension was logged with body "%"', t;
+  end if;
+
+  -- 6 · The owner answers, and the ask goes on the same record.
+  perform pg_temp.be(v_owner);
+  perform public.ask_suspension_review('club', v_club, 'Images now fixed, please re-list.');
+  select body into t from public.club_submission_events
+   where submission_id = v_id and kind = 'review_asked' order by id desc limit 1;
+  if t <> 'Images now fixed, please re-list.' then
+    raise exception 'FAIL 6: the ask was logged as "%"', t;
+  end if;
+
+  -- 7 · And the admin's own list carries it, which is the half that was
+  --     missing: 0202 wrote the note and no screen read it.
+  perform pg_temp.be(v_admin);
+  select suspended_reason, review_asked_note, review_asked_at into r
+    from public.admin_clubs('Loop Club');
+  if r.suspended_reason <> 'Images and content need a look.' then
+    raise exception 'FAIL 7: the list gives the reason as "%"', r.suspended_reason;
+  end if;
+  if r.review_asked_note <> 'Images now fixed, please re-list.' then
+    raise exception 'FAIL 7b: the list gives the ask as "%"', r.review_asked_note;
+  end if;
+  if r.review_asked_at is null then
+    raise exception 'FAIL 7c: the list does not say the club answered';
+  end if;
+
+  -- 8 · The admin decides. Keeping it down is an answer, and it needs words.
+  begin
+    perform public.keep_suspension('club', v_club, '   ');
+    raise exception 'FAIL 8: a suspension was kept with no reason';
+  exception when check_violation then null;
+  end;
+  perform pg_temp.be(v_owner);
+  begin
+    perform public.keep_suspension('club', v_club, 'Looks fine to me.');
+    raise exception 'FAIL 8b: the owner kept their own suspension';
+  exception when insufficient_privilege then null;
+  end;
+
+  perform pg_temp.be(v_admin);
+  perform public.keep_suspension('club', v_club, 'The photos are still wrong.');
+  select review_asked_at into r from public.admin_clubs('Loop Club');
+  if r.review_asked_at is not null then
+    raise exception 'FAIL 8c: the ask is still on the admin''s screen';
+  end if;
+  if pg_temp.notices(v_owner, 'listing-review-kept') <> 1 then
+    raise exception 'FAIL 8d: the owner was not told the answer was read';
+  end if;
+  t := pg_temp.story(v_id);
+  if position('review_kept' in t) = 0 then
+    raise exception 'FAIL 8e: keeping it is not on the record, history reads %', t;
+  end if;
+
+  -- 9 · Putting it back is logged too, so the timeline is the whole story.
+  perform public.admin_restore_club(v_club);
+  t := pg_temp.story(v_id);
+  if position('restored' in t) = 0 then
+    raise exception 'FAIL 9: the restore is not in the history, which reads %', t;
+  end if;
+
+  -- 10 · The owner of something that is down may write to an admin, and to
+  --      nobody else this way. Taken back up the moment it is back up.
+  perform pg_temp.be(v_owner);
+  if public.can_message_member(null, v_admin) then
+    raise exception 'FAIL 10: an owner with nothing down can message an admin';
+  end if;
+
+  perform pg_temp.be(v_admin);
+  perform public.admin_take_down_club(v_club, 'Down again for the message test.');
+  perform pg_temp.be(v_owner);
+  if not public.can_message_member(null, v_admin) then
+    raise exception 'FAIL 10b: a suspended owner cannot write to an admin';
+  end if;
+  if public.can_message_member(null, v_other) then
+    raise exception 'FAIL 10c: it reaches somebody who is not an admin';
+  end if;
+  select count(*) into n from public.my_site_contacts();
+  if n <> 1 then
+    raise exception 'FAIL 10d: the contact list offers % admins, expected 1', n;
+  end if;
+
+  -- And somebody with nothing of theirs down gets neither.
+  perform pg_temp.be(v_other);
+  if public.can_message_member(null, v_admin) then
+    raise exception 'FAIL 10e: any member can open a thread with an admin';
+  end if;
+  select count(*) into n from public.my_site_contacts();
+  if n <> 0 then
+    raise exception 'FAIL 10f: a stranger is offered % admins', n;
+  end if;
+
+  perform pg_temp.be(v_admin);
+  perform public.admin_restore_club(v_club);
+  perform pg_temp.be(v_owner);
+  if public.can_message_member(null, v_admin) then
+    raise exception 'FAIL 10g: the thread stayed open after the listing went back up';
+  end if;
+
+  -- 11 · With charging off, which is how the site ships, approving bills
+  --      nobody. Every club in the directory was taken on for free.
+  perform pg_temp.billing(false);
+  perform pg_temp.be(v_owner);
+  v_id := pg_temp.draft(v_owner, 'Free Club', 'Didcot');
+  perform public.submit_club_submission(v_id);
+  perform pg_temp.be(v_admin);
+  perform public.approve_club_submission(v_id);
+  if pg_temp.subs(v_id) <> 0 then
+    raise exception 'FAIL 11: a listing was billed with charging switched off';
+  end if;
+end $$;
+
+reset role;
+rollback;
+\echo '0215 the loop, the fee and the way back: all pass'

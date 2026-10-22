@@ -11,8 +11,10 @@ import { usePagedList } from "@/hooks/usePagedList";
 import FilterBar from "./FilterBar";
 import GameCard from "./GameCard";
 import type { MemberList } from "@/services/resultArmies.service";
+import { monthLabel, pickerOptions } from "@/utils/booking-facets";
 import {
-  countUnrecorded, filterGames, tally, type GameFilter, type GameSort,
+  countUnrecorded, filterGames, gameMonths, tally,
+  type GameFilter, type GameMoney, type GameSort,
 } from "@/utils/game-filter";
 import { mono, tokens } from "@/lib/tokens";
 import type { MyGame } from "@/services/games.service";
@@ -39,21 +41,36 @@ export default function GameBrowser({
   const [query, setQuery] = useState(initialQuery);
   const [filter, setFilter] = useState<GameFilter>("all");
   const [sort, setSort] = useState<GameSort>("recent");
+  const [month, setMonth] = useState("");
+  const [money, setMoney] = useState<GameMoney>("any");
 
   const settled = useDeferredValue(query);
   const [reordering, startReorder] = useTransition();
   const busy = reordering || settled !== query;
 
-  const counts = useMemo(() => ({
-    all: games.length,
-    played: games.filter((g) => g.outcome !== null).length,
-    unrecorded: countUnrecorded(games),
-    won: games.filter((g) => g.outcome === "won").length,
-  }), [games]);
+  const counts = useMemo(() => {
+    const free = games.filter((g) => g.payment.total <= 0).length;
+    const paid = games.filter(
+      (g) => g.payment.total > 0 && g.payment.status !== "unpaid").length;
+    return {
+      all: games.length,
+      played: games.filter((g) => g.outcome !== null).length,
+      unrecorded: countUnrecorded(games),
+      won: games.filter((g) => g.outcome === "won").length,
+      free, paid,
+      topay: games.length - free - paid,
+      // A club that has never charged this member for a table has nothing for
+      // a money picker to narrow, and three groups all reading the same
+      // figure is a control that looks broken.
+      priced: games.length - free > 0,
+    };
+  }, [games]);
+
+  const months = useMemo(() => gameMonths(games), [games]);
 
   const results = useMemo(
-    () => filterGames(games, { query: settled, filter, sort }),
-    [games, settled, filter, sort],
+    () => filterGames(games, { query: settled, filter, sort, month, money }),
+    [games, settled, filter, sort, month, money],
   );
   const top = useRef<HTMLDivElement>(null);
   const paged = usePagedList(results, PAGE, top);
@@ -80,6 +97,32 @@ export default function GameBrowser({
         ]}
         sort={sort}
         onSort={(value) => startReorder(() => setSort(value))}
+        // The month only where there is more than one to tell apart, and the
+        // money only where a club has ever charged this member for a table:
+        // a picker that cannot narrow anything is a control offering to do
+        // something it cannot.
+        pickers={[
+          ...(months.length > 1 ? [{
+            label: "Month",
+            value: month,
+            onChange: (value: string) => startReorder(() => setMonth(value)),
+            options: pickerOptions({
+              any: "Every month", options: months, picked: month, label: monthLabel,
+            }),
+          }] : []),
+          ...(counts.priced ? [{
+            label: "Money",
+            value: money,
+            onChange: (value: string) =>
+              startReorder(() => setMoney(value as GameMoney)),
+            options: [
+              { value: "any", label: "Any" },
+              { value: "topay", label: `Still to pay (${counts.topay})` },
+              { value: "paid", label: `Paid (${counts.paid})` },
+              { value: "free", label: `Nothing to pay (${counts.free})` },
+            ],
+          }] : []),
+        ]}
       />
 
       {counts.unrecorded && filter !== "unrecorded" ? (
@@ -126,7 +169,11 @@ export default function GameBrowser({
         </BusyOverlay>
       ) : (
         <Typography variant="body2" sx={{ color: tokens.inkMuted, py: 3 }}>
-          {query ? `No game matching "${query}".` : "Nothing in this group."}
+          {query
+            ? `No game matching "${query}".`
+            : month
+              ? `Nothing in this group in ${monthLabel(month)}.`
+              : "Nothing in this group."}
         </Typography>
       )}
     </Stack>

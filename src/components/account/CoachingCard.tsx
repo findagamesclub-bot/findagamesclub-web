@@ -5,6 +5,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import ClubLogo from "@/components/clubs/ClubLogo";
+import StatusChip from "@/components/ui/StatusChip";
 import PriceBreakdown from "@/components/ui/PriceBreakdown";
 import { formatPounds } from "@/utils/format";
 import { nightLabel } from "@/utils/dates";
@@ -43,8 +44,17 @@ export default function CoachingCard({ session }: { session: MyCoaching }) {
   const owed = session.priced.total;
   const hasFigure = session.priced.subtotal > 0 || owed > 0;
 
+  // A called-off place is a STATE, not a payment, and it used to be printed in
+  // the slot headed PAYMENT: the member read "Cancelled" where the amount goes
+  // and could not tell whether they still owed anything. The state is a chip
+  // below, in the word the club's own list uses, and this slot says only what
+  // it knows about money: what they paid if they paid, and nothing owed if
+  // they did not.
   const money = session.cancelled
-    ? { value: "Cancelled", tone: tokens.inkMuted }
+    ? session.paid
+      ? { value: hasFigure ? `${formatPounds(owed, session.priced.currency)} paid` : "Paid",
+          tone: tokens.inkMuted }
+      : { value: "Nothing to pay", tone: tokens.inkMuted }
     : session.paid
       ? { value: hasFigure ? `${formatPounds(owed, session.priced.currency)} paid` : "Paid",
           tone: "#1B5E20" }
@@ -75,6 +85,12 @@ export default function CoachingCard({ session }: { session: MyCoaching }) {
             {session.club.name.toUpperCase()}
           </Typography>
         </Box>
+
+        {session.cancelled ? (
+          <Box sx={{ flexShrink: 0, mr: 0.75 }}>
+            <StatusChip label="Called off" tone="down" />
+          </Box>
+        ) : null}
 
         <Chip size="small" label={session.kind}
           sx={{ height: 22, fontFamily: mono, fontSize: "0.66rem", flexShrink: 0,

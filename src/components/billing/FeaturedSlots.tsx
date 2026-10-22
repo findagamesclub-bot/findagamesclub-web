@@ -85,6 +85,20 @@ export default function FeaturedSlots({
                       {pricePence(slot.pricePence, slot.currency)}
                     </Typography>
                   ) : null}
+
+                  {/* And whether we have it. The client read three slots at
+                      £20 apiece with no way to tell which they had settled.
+                      Only where there is a price: a slot given away has
+                      nothing to settle, so "unpaid" would be a bill. */}
+                  {slot.pricePence > 0 && slot.paymentKnown ? (
+                    <Typography sx={{ fontFamily: mono, fontSize: "0.68rem",
+                                      letterSpacing: "0.08em", fontWeight: 700,
+                                      color: slot.paidAt ? tokens.positive : tokens.brass }}>
+                      {slot.paidAt
+                        ? `PAID${slot.paymentMethod ? ` · ${slot.paymentMethod.toUpperCase()}` : ""}`
+                        : "NOT PAID YET"}
+                    </Typography>
+                  ) : null}
                 </Stack>
               ))}
             </Stack>

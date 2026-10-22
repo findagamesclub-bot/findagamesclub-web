@@ -49,6 +49,24 @@ export const findEventSuspension = (eventId: number) =>
  * One function for a club and an event, because the two screens ask the same
  * question. The stamp is not grantable, so this is the only way to set it.
  */
+/**
+ * The admins this reader may write to from the site, which is normally none.
+ *
+ * `my_site_contacts()` (0215) asks `can_message_member` itself rather than
+ * restating who may write to whom, so the button and the insert policy cannot
+ * come apart. It answers an empty list for everybody who has nothing of theirs
+ * taken down, which is almost everybody.
+ */
+export const findSiteContacts = () =>
+  callRpc<{ id: string; full_name: string }[] | null>("my_site_contacts", {});
+
+/** The admin's answer to an ask: it stays down, and here is why (0215). */
+export const keepSuspension = (
+  kind: "club" | "event", id: number, note: string,
+) =>
+  callRpc<void>("keep_suspension",
+    { p_kind: kind, p_id: id, p_note: note });
+
 export const askSuspensionReview = (
   kind: "club" | "event", id: number, note: string,
 ) =>

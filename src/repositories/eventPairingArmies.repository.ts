@@ -22,7 +22,9 @@ export type PairingArmyRow = {
   side: string;
   faction_id: string;
   faction_label: string;
+  /** The lead one, and all of them (0217). */
   detachment: string;
+  detachments: string[] | null;
   disposition: string;
   list_id: number | null;
   list_name: string;

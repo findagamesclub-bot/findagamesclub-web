@@ -64,4 +64,37 @@ import {
   assert.doesNotMatch(historySummary(["restarted", "submitted"]), /Only the last thing/);
 }
 
+// --- What happened after it went live (0215) --------------------------------
+
+// The timeline used to stop at the approval, so a club a site admin had taken
+// down read as approved and nothing else. Four more kinds, each with its own
+// words and its own tone.
+assert.equal(eventLabel("suspended"), "Taken down by an admin");
+assert.equal(eventLabel("restored"), "Put back");
+assert.equal(eventLabel("review_asked"), "The club says it is settled");
+assert.equal(eventLabel("review_kept"), "Looked at again, staying down");
+assert.equal(eventTone("suspended"), "bad");
+assert.equal(eventTone("restored"), "good");
+// The club's turn is over and ours has started, which is the weight a listing
+// waiting on us already carries.
+assert.equal(eventTone("review_asked"), "warn");
+
+// A suspension is not a round of review. Folding it into the count would tell
+// a reviewer the listing had been sent back more times than it was.
+assert.equal(
+  historySummary(["submitted", "approved", "suspended"]),
+  "Nothing has been asked for yet. It has been taken down once since.",
+);
+assert.equal(
+  historySummary(["submitted", "changes_requested", "submitted", "approved",
+                  "suspended", "restored", "suspended"]),
+  "Sent back once. Everything asked for is below. It has been taken down 2 times since.",
+);
+// And a listing nobody has taken down says nothing about it at all.
+assert.equal(
+  historySummary(["submitted", "approved"]),
+  "Nothing has been asked for yet.",
+);
+
+
 console.log("submission-history: all assertions passed");

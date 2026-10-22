@@ -5,31 +5,40 @@ import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import {
-  detachmentsFor, dispositionsFor, factionsIn, findFaction, type Catalogue,
+  detachmentsFor, dispositionsForAll, factionsIn, findFaction, type Catalogue,
 } from "@/utils/army-catalogue";
+import { heldDisposition } from "@/utils/army-disposition";
 
 /** What every screen that names an army has to say. */
 export type ArmyNaming = {
   factionId: string;
   factionLabel: string;
-  detachment: string;
+  /** Several, and one disposition for all of them. See `ResultArmy`. */
+  detachments: string[];
   disposition: string;
 };
 
 /** Nothing said, which is what every one of these fields may be. */
 export const NO_ARMY: ArmyNaming = {
-  factionId: "", factionLabel: "", detachment: "", disposition: "",
+  factionId: "", factionLabel: "", detachments: [], disposition: "",
 };
 
 /**
- * Faction, then that faction's detachments, then that detachment's
- * dispositions.
+ * Faction, then that faction's detachments, then what those detachments offer
+ * between them.
  *
  * The cascade is the whole design and it is one component because four screens
  * need it: a member's result, the club's, a league table and an event podium.
  * The legacy manifest is explicit that a disposition belongs to a detachment,
- * so one from another detachment is not offerable rather than merely refused.
- * `resolve_result_army` refuses it as well, because the anon key is public.
+ * so one from a detachment nobody brought is not offerable rather than merely
+ * refused. `resolve_result_armies` refuses it as well, because the anon key is
+ * public.
+ *
+ * Several detachments and ONE disposition, which is the army list builder's
+ * own rule arriving one layer out. The client asked for exactly that, in those
+ * words, and the union rather than the intersection for the reason
+ * `dispositionsForAll` gives: a disposition one of them can play is a
+ * disposition the army can play.
  */
 export default function ArmyPicker({
   catalogue, value, onChange, size = "medium", direction = "column",
@@ -43,7 +52,7 @@ export default function ArmyPicker({
 }) {
   const factions = factionsIn(catalogue);
   const detachments = detachmentsFor(catalogue, value.factionId);
-  const dispositions = dispositionsFor(catalogue, value.factionId, value.detachment);
+  const offered = dispositionsForAll(catalogue, value.factionId, value.detachments);
 
   // By id or by label, because a league table has held a typed name since 0024
   // and a picker holds the id. Matching on the id alone drew an empty box
@@ -57,9 +66,33 @@ export default function ArmyPicker({
   // until somebody picks something.
   const unknown = Boolean(value.factionId.trim()) && !chosen;
 
+  // What is stored, whether or not this catalogue still offers it. A
+  // detachment the catalogue has never heard of stays on screen as a chip the
+  // club can read and take off, for the reason the faction branch above gives:
+  // an empty box reads as data that has been lost. Only an unknown FACTION
+  // empties this, because then there are no detachments to be right about.
+  const held = unknown ? [] : value.detachments;
+
+  // Stored and not offered. Named rather than blanked, which is the same rule
+  // and the same mistake: a league game recorded against an older catalogue
+  // showed an empty Disposition box, posted the value anyway, and came back
+  // "is not a disposition those detachments offer" about a box that looked
+  // empty. The club could see nothing to change.
+  const strayDisposition = Boolean(value.disposition.trim())
+    && !unknown
+    && heldDisposition(value.disposition, offered) === "";
+
   return (
+    // The row wraps rather than squeezing. Three fields in the 526px a side of
+    // the game dialog gets is 170px each, which cut "Armoured Warhost" to
+    // "Armo..." and "Reconnaissance" to "Reconnaiss...": a picker that cannot
+    // say what is in it is the thing this item exists to fix. Each field
+    // carries a basis it is readable at and the row flows at whatever width it
+    // is given. `useFlexGap`, because a Stack spaces with margins and those
+    // double on a wrapped line.
     <Stack direction={direction === "row" ? { xs: "column", md: "row" } : "column"}
-      spacing={direction === "row" ? 1 : 2}>
+      spacing={direction === "row" ? 1 : 2}
+      useFlexGap sx={{ flexWrap: "wrap" }}>
       <Autocomplete
         size={size}
         options={factions}
@@ -69,10 +102,10 @@ export default function ArmyPicker({
           factionId: next?.id ?? "",
           factionLabel: next?.label ?? "",
           // A faction change clears what belonged to the old one rather than
-          // leaving a detachment this faction has never had.
-          detachment: "", disposition: "",
+          // leaving detachments this faction has never had.
+          detachments: [], disposition: "",
         })}
-        sx={{ flex: 1, minWidth: 0 }}
+        sx={{ flex: "1 1 180px", minWidth: 0 }}
         renderInput={(params) => (
           <TextField {...params} label="Faction"
             helperText={unknown
@@ -81,43 +114,66 @@ export default function ArmyPicker({
         )}
       />
 
-      <TextField select size={size} label="Detachment"
-        // An unmatched faction has no detachments to offer, so the value would
-        // fall outside the options and MUI would warn and render blank.
-        value={unknown ? "" : value.detachment}
+      {/* Several, which is the item. An Autocomplete rather than a multiple
+          Select, because this dialog already picks its MVP units that way and
+          a chip per detachment is how somebody sees at a glance that an army
+          brought two. */}
+      <Autocomplete
+        multiple size={size}
+        options={detachments.map((one) => one.label)}
+        value={held}
+        // A stored detachment this catalogue does not list is still a value,
+        // so MUI is told how to compare rather than left to warn about it.
+        isOptionEqualToValue={(option, chosen) => option === chosen}
         disabled={!value.factionId || unknown}
-        onChange={(event) => onChange({
-          ...value, detachment: event.target.value, disposition: "",
+        onChange={(_event, next) => onChange({
+          ...value,
+          detachments: next,
+          // What is left offered after the change. Taking a detachment out can
+          // take the army's disposition with it, and keeping one these
+          // detachments do not offer is the single thing the cascade exists to
+          // stop; the database refuses it too.
+          disposition: heldDisposition(
+            value.disposition,
+            dispositionsForAll(catalogue, value.factionId, next)),
         })}
-        sx={{ flex: 1, minWidth: 0 }}
-        helperText={unknown
-          ? "Pick a faction this catalogue knows to change it."
-          : value.factionId ? "" : "Pick a faction first."}>
-        <MenuItem value="">Not said</MenuItem>
-        {detachments.map((one) => (
-          <MenuItem key={one.id} value={one.label}>{one.label}</MenuItem>
-        ))}
-      </TextField>
+        // The widest basis of the three, because it is the one field holding
+        // several values and a chip has a delete button inside it.
+        sx={{ flex: "1.4 1 260px", minWidth: 0 }}
+        renderInput={(params) => (
+          <TextField {...params} label="Detachments"
+            helperText={unknown
+              ? "Pick a faction this catalogue knows to change it."
+              : value.factionId ? "One or more." : "Pick a faction first."} />
+        )}
+      />
 
       <TextField select size={size} label="Disposition"
-        value={unknown ? "" : value.disposition}
-        disabled={!value.detachment || unknown}
+        value={unknown ? "" : strayDisposition
+          ? value.disposition
+          : heldDisposition(value.disposition, offered)}
+        disabled={held.length === 0 || unknown}
         onChange={(event) => onChange({ ...value, disposition: event.target.value })}
-        sx={{ flex: 1, minWidth: 0 }}
+        sx={{ flex: "1 1 180px", minWidth: 0 }}
         // The count, not just the rule. The client reported this box as broken
         // because it offered one option; it was offering every disposition the
         // detachment holds, and every detachment in the imported catalogue
-        // holds exactly one. A picker that says how many it has is a picker
+        // held exactly one. A picker that says how many it has is a picker
         // nobody has to report.
-        helperText={!value.detachment
+        helperText={strayDisposition
+          ? `Recorded as "${value.disposition}", which these detachments do not offer. Pick one of theirs.`
+          : held.length === 0
           ? "Pick a detachment first."
-          : dispositions.length === 0
-            ? "This detachment has none recorded."
-            : dispositions.length === 1
-              ? "This detachment offers one."
-              : `Only the ${dispositions.length} this detachment offers.`}>
+          : offered.length === 0
+            ? "These have none recorded."
+            : held.length === 1
+              ? `The ${offered.length} this detachment offers.`
+              : `What these ${held.length} detachments offer between them.`}>
         <MenuItem value="">Not said</MenuItem>
-        {dispositions.map((one) => (
+        {strayDisposition ? (
+          <MenuItem value={value.disposition}>{value.disposition}</MenuItem>
+        ) : null}
+        {offered.map((one) => (
           <MenuItem key={one} value={one}>{one}</MenuItem>
         ))}
       </TextField>

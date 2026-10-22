@@ -14,6 +14,7 @@ import { competitionAction, type CompetitionState }
   from "@/app/clubs/[slug]/(console)/competitions/actions";
 import StandingRowFields from "./StandingRowFields";
 import { useCatalogue } from "@/hooks/useCatalogue";
+import { detachmentLine } from "@/utils/result-army";
 import type { Builder, MemberList } from "@/services/resultArmies.service";
 import { mono, tokens, type Faction } from "@/lib/tokens";
 import type { CompetitionStanding } from "@/types/competition";
@@ -24,7 +25,8 @@ export type StandingRow = {
   profileId: string | null;
   wins: number; draws: number; losses: number; points: number;
   faction: string;
-  detachment: string;
+  /** Several, and one disposition for all of them (0217). */
+  detachments: string[];
   disposition: string;
   /** Which of their own lists they brought (0194). Null is none named. */
   listId: number | null;
@@ -73,7 +75,7 @@ export default function StandingsEditor({
     profileId: s.profileId,
     wins: s.wins, draws: s.draws, losses: s.losses, points: s.points,
     faction: s.faction,
-    detachment: s.detachment,
+    detachments: s.detachments,
     disposition: s.disposition,
     listId: s.listId,
     notes: s.notes,
@@ -110,7 +112,7 @@ export default function StandingsEditor({
       // list is how they were silently dropped: the row held them, the summary
       // line showed them, the toast said Saved, and the payload never carried
       // them.
-      detachment: r.detachment, disposition: r.disposition,
+      detachments: r.detachments, disposition: r.disposition,
       // Same lesson, one field later. The list is only ever named on a row
       // that holds an account, which is what the service re-checks before it
       // reaches the trigger.
@@ -142,7 +144,7 @@ export default function StandingsEditor({
                   </Typography>
                   <Typography noWrap sx={{ fontFamily: mono, fontSize: "0.68rem",
                                            color: tokens.inkMuted, ml: "auto" }}>
-                    {[row.faction, row.detachment,
+                    {[row.faction, detachmentLine(row),
                       `${row.wins}-${row.draws}-${row.losses}`,
                       `${row.points} PTS`].filter(Boolean).join(" · ").toUpperCase()}
                   </Typography>
@@ -175,7 +177,7 @@ export default function StandingsEditor({
             setRows((prev) => [...prev, {
               key, memberName: "", profileId: null,
               wins: 0, draws: 0, losses: 0, points: 0,
-              faction: "", detachment: "", disposition: "", listId: null,
+              faction: "", detachments: [], disposition: "", listId: null,
               notes: "",
             }]);
             setOpenRow(key);

@@ -66,6 +66,7 @@ export default async function ClubModerationPage({
         action={clubModerationAction}
         basePath={`/clubs/${slug}/manage/moderation`}
         scope="club"
+        elsewhere={queue.elsewhere}
         extraFields={{ slug }}
       />
     </Container>

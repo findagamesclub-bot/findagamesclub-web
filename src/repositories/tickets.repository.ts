@@ -135,6 +135,8 @@ export async function checkout(params: {
   reference: string;
   /** A request, not an instruction. 0050 checks it against the tier and the balance. */
   redeemPoints: number;
+  /** What they said their team is called. 0211 keeps it only at a team event. */
+  teamName?: string;
 }) {
   const supabase = await createClient();
   // 0050 replaced the old signature, which took the tier discount and labels
@@ -149,6 +151,7 @@ export async function checkout(params: {
       buyer_email: params.email,
       booking_reference: params.reference,
       redeem: params.redeemPoints,
+      buyer_team: params.teamName ?? "",
     });
 
   if (error) throw Object.assign(new Error(error.message), { code: error.code });

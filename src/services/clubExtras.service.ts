@@ -280,11 +280,14 @@ export async function getCoachingStanding(
       ? Number(settings.point_value) : null,
     capPercent: clamp(benefits.loyaltyRedemptionCapPercent),
     discountPercent: clamp(benefits.coachingDiscountPercent),
+    tierLabel: (tier as { tier_label?: string } | null)?.tier_label || null,
     currency: "GBP",
   };
 }
 
-export async function getCoaching(clubId: number, viewerId: string | null, from: string) {
+export async function getCoaching(
+  clubId: number, viewerId: string | null, from: string | null,
+) {
   // Sequential on purpose. Slots are members-only and anon has no grant on the
   // table at all, so fetching them alongside the settings threw for every
   // signed-out visitor to a club that has coaching switched off.

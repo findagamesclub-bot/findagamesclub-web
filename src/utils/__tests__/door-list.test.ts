@@ -6,6 +6,7 @@ const row = (over: Partial<DoorRow> = {}): DoorRow => ({
   bookingId: 1, profileId: null, fullName: "Ann Lee", email: "ann@example.com",
   reference: "FAGC-1001", status: "reserved", paymentStatus: "unpaid", paymentMethod: "",
   checkedInAt: null, refundStatus: "not_due", cancelReason: "", notes: "",
+  paymentNote: "", teamName: "",
   tickets: 1, total: 20, createdAt: "2026-09-01T10:00:00Z", ...over,
 });
 

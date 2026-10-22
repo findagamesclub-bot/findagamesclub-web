@@ -142,7 +142,7 @@ begin
   -- ------------------------------------------- 10a · a list against a podium
   perform pg_temp.be(w.owner);
   v_placing := public.save_event_placing(v_event, null, 1, 'Member Eight',
-    w.member, 'Adeptus Custodes', 'Shield Host', 'Auric Champions');
+    w.member, 'Adeptus Custodes', array['Shield Host'], 'Auric Champions');
 
   perform public.club_set_result_list('event_podium', v_placing, 'one', v_list);
 
@@ -242,7 +242,7 @@ begin
 
   -- And a placing that never had one is not an error.
   v_placing := public.save_event_placing(v_event, null, 9, 'Nobody In Particular',
-    null, '', '', '');
+    null, '', '{}'::text[], '');
   perform public.delete_event_placing(v_event, v_placing);
 
   raise notice 'sections 1 to 7 pass';
@@ -375,7 +375,8 @@ begin
   if v_n <> 1 then
     raise exception 'FAIL 31: the picker offered % lists for one member, not 1', v_n;
   end if;
-  select detachment into v_label
+  -- Every detachment the list was built on (0217), not only its first.
+  select array_to_string(detachments, ', ') into v_label
     from public.club_member_lists(v_club, array[w.member]::uuid[]) limit 1;
   if v_label <> 'Shield Host' then
     raise exception 'FAIL 32: the picker cannot fill the form in, got %', v_label;

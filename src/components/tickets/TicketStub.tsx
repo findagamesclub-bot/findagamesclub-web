@@ -160,6 +160,15 @@ export default function TicketStub({
                 {PAYMENT_LABELS[booking.paymentStatus].toUpperCase()}
               </Typography>
             ) : null}
+
+            {/* And what the club wrote beside it. "Short a fiver, settling
+                next week" is the half of a payment record that explains the
+                other half, and the member is the person it is about. */}
+            {!cancelled && booking.paymentNote ? (
+              <Typography variant="body2" sx={{ color: tokens.inkMuted, mt: 0.75 }}>
+                {booking.paymentNote}
+              </Typography>
+            ) : null}
           </Box>
         </Stack>
       </Stack>

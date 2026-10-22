@@ -11,6 +11,7 @@ import { usePagedList } from "@/hooks/usePagedList";
 import { mono, tokens, type Faction } from "@/lib/tokens";
 import type { CompetitionStanding } from "@/types/competition";
 import { PER_PAGE } from "@/utils/paging";
+import { detachmentLine } from "@/utils/result-army";
 
 const HEAD = ["", "Player", "Faction", "Record", "Pts"];
 
@@ -102,12 +103,14 @@ export default function CompetitionStandings({
                   {entry.faction ? (
                     <>
                       <Typography variant="body2">{entry.faction}</Typography>
-                      {/* The disposition rides with the detachment it belongs
-                          to, on one line: two lines of grey under a name is a
-                          column doing more than the eye is reading. */}
-                      {entry.detachment ? (
+                      {/* The disposition rides with the detachments it was
+                          chosen from, on one line: two lines of grey under a
+                          name is a column doing more than the eye is reading.
+                          Several detachments read as "A, B", which is the one
+                          rule `detachmentLine` holds for every screen. */}
+                      {detachmentLine(entry) ? (
                         <Typography sx={{ fontSize: "0.76rem", color: tokens.inkMuted }}>
-                          {[entry.detachment, entry.disposition]
+                          {[detachmentLine(entry), entry.disposition]
                             .filter(Boolean).join(" · ")}
                         </Typography>
                       ) : null}
@@ -163,6 +166,7 @@ export default function CompetitionStandings({
       army={open ? {
         factionLabel: open.faction,
         detachment: open.detachment,
+        detachments: open.detachments,
         disposition: open.disposition,
         mvpUnits: [],
         list: listFromSnapshot(open.listSnapshot, {

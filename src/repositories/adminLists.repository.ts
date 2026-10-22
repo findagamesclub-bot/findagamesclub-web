@@ -20,6 +20,16 @@ export type AdminClubRow = {
   members: number;
   /** When the club started: its legacy date where it has one, else the row's. */
   started: string | null;
+  /**
+   * Why we took it down, and whether the club has answered (0215).
+   *
+   * All three were written by 0188 and 0202 and read by nothing, so an admin
+   * could take a listing down, be told the club had put it right, and have
+   * nowhere to see what they said.
+   */
+  suspended_reason: string;
+  review_asked_at: string | null;
+  review_asked_note: string;
   total_count: number;
 };
 
@@ -29,6 +39,9 @@ export type AdminEventRow = {
   places: number; sold: number;
   /** When the club put it up, which is what "newest first" orders on. */
   added: string | null;
+  suspended_reason: string;
+  review_asked_at: string | null;
+  review_asked_note: string;
   total_count: number;
 };
 

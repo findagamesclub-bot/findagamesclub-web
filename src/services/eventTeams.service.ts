@@ -246,3 +246,33 @@ export async function removeFixture(eventId: number, id: number): Promise<Result
     return { ok: false, error: refusalOf(error, "That did not delete. Try again.") };
   }
 }
+
+/**
+ * What people said their team is called when they booked.
+ *
+ * The client's sentence is the design: *"this team name is what should be
+ * shown in the club owner event view under teams, where the club owner can
+ * then add player names to that team"*. So the console offers each one with
+ * everybody who typed it, and building the team is one press rather than
+ * retyping four names off a booking list.
+ */
+export type BookedTeam = {
+  name: string;
+  people: number;
+  players: { profileId: string | null; name: string }[];
+  /** Already a real team at this event, so there is nothing left to press. */
+  made: boolean;
+};
+
+export async function getBookedTeams(eventId: number): Promise<BookedTeam[]> {
+  const rows = await repo.findBookedTeams(eventId).catch((error) => {
+    console.error("[teams] the booked team names did not load", error);
+    return [];
+  });
+  return (rows ?? []).map((row) => ({
+    name: row.team_name,
+    people: Number(row.people),
+    players: row.players ?? [],
+    made: row.made,
+  }));
+}

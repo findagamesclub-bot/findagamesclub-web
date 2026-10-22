@@ -129,12 +129,12 @@ export default function CoachingBookings({
         ]}
         sort={sort}
         onSort={(value) => startSift(() => setSort(value))}
-        second={sessions.length > 1 ? {
+        pickers={sessions.length > 1 ? [{
           label: "Session",
           value: session,
           options: [{ value: "", label: "All sessions" }, ...sessions],
           onChange: (value) => startSift(() => setSession(value)),
-        } : undefined}
+        }] : []}
       />
 
       <BusyOverlay busy={busy || sifting} variant="dim" label="Saving">

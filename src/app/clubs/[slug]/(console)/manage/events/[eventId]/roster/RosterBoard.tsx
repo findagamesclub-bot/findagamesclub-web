@@ -38,6 +38,7 @@ import { mono, tokens, type Faction } from "@/lib/tokens";
  */
 export default function RosterBoard({
   slug, eventId, rows, faction, tickets, members, accountNames, canAdd,
+  teamEvent = false,
 }: {
   slug: string;
   eventId: number;
@@ -47,6 +48,8 @@ export default function RosterBoard({
   tickets: EditableTicketType[];
   /** Approved members, for the optional link to an account. */
   members: Person[];
+  /** A team event asks who each place is playing for (0211). */
+  teamEvent?: boolean;
   /**
    * Every linked account's own name, by id, including people the roster has
    * never heard of because they were linked by their member code.
@@ -131,6 +134,7 @@ export default function RosterBoard({
       members={members}
       faction={faction}
       busy={busy}
+      teamEvent={teamEvent}
       onSave={add}
     />
   ) : null;

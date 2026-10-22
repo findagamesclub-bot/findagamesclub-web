@@ -8,8 +8,9 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import IconButton from "@mui/material/IconButton";
-import { detachmentsFor, dispositionsFor, type CatalogueFaction }
+import { detachmentsFor, dispositionsFor, dispositionsForAll, type CatalogueFaction }
   from "@/utils/army-catalogue";
+import { mixedDispositions } from "@/utils/army-disposition";
 import type { Catalogue } from "@/utils/army-catalogue";
 import { mono, tokens } from "@/lib/tokens";
 
@@ -83,9 +84,12 @@ export function StepFaction({
 /**
  * Step 3. A disposition sits inside its detachment's row, never beside it.
  *
- * The rule the whole army feature is shaped around: a disposition belongs to a
- * detachment, not to a faction. Pairing one with the wrong detachment is not
- * offerable here rather than merely refused on save.
+ * Detachments only. The disposition moved to a step of its own, because the
+ * game allows one for the whole army and a picker per row allowed as many as
+ * you had detachments. The rule the feature is shaped around is unchanged and
+ * is now enforced one level up: a disposition belongs to a detachment, so
+ * step four offers what THESE detachments offer between them and nothing
+ * else.
  */
 export function StepDetachments({
   catalogue, factionId, chosen, onChange, collection,
@@ -111,7 +115,7 @@ export function StepDetachments({
 
   return (
     <Stack spacing={2.5} sx={{ maxWidth: 820 }}>
-      {chosen.map((row, index) => {
+      {chosen.map((row) => {
         const dispositions = dispositionsFor(catalogue, factionId, row.detachment);
         return (
           <Stack key={row.detachment} direction={{ xs: "column", sm: "row" }} spacing={1.5}
@@ -129,19 +133,9 @@ export function StepDetachments({
               </Typography>
             </Stack>
 
-            <TextField select label="Disposition" value={row.disposition}
-              sx={{ minWidth: { sm: 300 } }}
-              slotProps={{ inputLabel: { shrink: true }, select: { displayEmpty: true } }}
-              onChange={(event) => onChange(chosen.map((one, i) =>
-                i === index ? { ...one, disposition: event.target.value } : one))}>
-              <MenuItem value="">Not chosen</MenuItem>
-              {dispositions.map((one) => (
-                <MenuItem key={one} value={one}>{one}</MenuItem>
-              ))}
-            </TextField>
-
             <IconButton size="small" aria-label={`Take ${row.detachment} out`}
-              onClick={() => onChange(chosen.filter((_, i) => i !== index))}>
+              onClick={() => onChange(
+                chosen.filter((one) => one.detachment !== row.detachment))}>
               <DeleteOutlinedIcon fontSize="small" />
             </IconButton>
           </Stack>
@@ -168,6 +162,93 @@ export function StepDetachments({
           An army list needs at least one detachment.
         </Typography>
       ) : null}
+    </Stack>
+  );
+}
+
+/**
+ * Step 4. One disposition for the whole army.
+ *
+ * The client's words: *"Only one disposition should be selected overall, but
+ * multiple detachments can be selected ... the Disposition is its own next
+ * step, and the options are based on what dispositions are associated to the
+ * selected detachments."*
+ *
+ * What it writes is not a new shape. The one choice goes onto every
+ * detachment row, which is what `army_lists.payload` has held since 0143 and
+ * what the Meta Tracker reads; `utils/army-disposition.ts` carries the whole
+ * of that reasoning.
+ */
+export function StepDisposition({
+  catalogue, factionId, chosen, disposition, onPick, collection,
+}: {
+  catalogue: Catalogue | null;
+  factionId: string;
+  chosen: Detachment[];
+  disposition: string;
+  onPick: (next: string) => void;
+  collection: boolean;
+}) {
+  const offered = dispositionsForAll(
+    catalogue, factionId, chosen.map((one) => one.detachment));
+
+  if (collection) {
+    return (
+      <Typography variant="body2"
+        sx={{ color: tokens.inkMuted, maxWidth: 680, fontSize: "1rem" }}>
+        A collection is not played as one army, so it carries no disposition.
+        Carry on to the units.
+      </Typography>
+    );
+  }
+
+  if (chosen.length === 0) {
+    return (
+      <Typography sx={{ color: tokens.inkMuted, fontSize: "1rem" }}>
+        Pick a detachment first. What you can play is decided by what you are
+        bringing.
+      </Typography>
+    );
+  }
+
+  return (
+    <Stack spacing={2} sx={{ maxWidth: 680 }}>
+      <Typography variant="body2" sx={{ color: tokens.inkMuted, fontSize: "1rem" }}>
+        {chosen.length === 1
+          ? `What ${chosen[0]!.detachment} is playing.`
+          : `What the army is playing. One for all ${chosen.length} detachments.`}
+      </Typography>
+
+      {/* A list saved before the disposition moved here can carry one per
+          detachment. Saying so beats silently keeping the first, which is
+          what the picker below would otherwise look like it had done. */}
+      {mixedDispositions(chosen) ? (
+        <Typography variant="body2" sx={{ color: tokens.brass }}>
+          This list was saved with a disposition on each detachment. Pick the
+          one the army is playing and it replaces them.
+        </Typography>
+      ) : null}
+
+      {offered.length ? (
+        <TextField select label="Disposition" value={disposition}
+          sx={{ minWidth: { sm: 360 } }}
+          slotProps={{ inputLabel: { shrink: true }, select: { displayEmpty: true } }}
+          onChange={(event) => onPick(event.target.value)}
+          helperText={chosen.length === 1
+            ? `The ${offered.length} this detachment offers.`
+            : `What these ${chosen.length} detachments offer between them.`}>
+          <MenuItem value="">Not chosen</MenuItem>
+          {offered.map((one) => (
+            <MenuItem key={one} value={one}>{one}</MenuItem>
+          ))}
+        </TextField>
+      ) : (
+        <Typography sx={{ color: tokens.inkMuted, fontSize: "1rem" }}>
+          This catalogue records no disposition for
+          {chosen.length === 1 ? " that detachment" : " any of these detachments"},
+          so there is nothing to pick. Carry on to the units.
+        </Typography>
+      )}
     </Stack>
   );
 }

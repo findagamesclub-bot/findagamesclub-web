@@ -112,8 +112,8 @@ export default function StandingRowFields({
 
       {/* A club that does not record armies keeps the one box it has
           always had. One that does gets the same cascade as every
-          other screen: faction, its detachments, that detachment's
-          dispositions. */}
+          other screen: faction, its detachments, and what those
+          detachments offer between them. */}
       {!builder || failed ? (
         <TextField size="small" label="Army" fullWidth value={row.faction}
           onChange={(e) => patch(row.key, { faction: e.target.value })}
@@ -129,12 +129,12 @@ export default function StandingRowFields({
       ) : (
         <ArmyPicker size="small" direction="row" catalogue={catalogue}
           value={{ factionId: row.faction, factionLabel: row.faction,
-                   detachment: row.detachment, disposition: row.disposition }}
+                   detachments: row.detachments, disposition: row.disposition }}
           onChange={(named) => patch(row.key, {
             // The label, not the id: this column has held a typed name
             // since 0024 and the standings table prints it.
             faction: named.factionLabel,
-            detachment: named.detachment,
+            detachments: named.detachments,
             disposition: named.disposition,
           })} />
       )}
@@ -157,8 +157,10 @@ export default function StandingRowFields({
                 // chances to disagree with it. Only where the club has not
                 // said: 0194's trigger draws the same line.
                 faction: row.faction || list.faction,
-                detachment: row.detachment || list.detachment,
-                disposition: row.detachment ? row.disposition : list.disposition,
+                detachments: row.detachments.length
+                  ? row.detachments : list.detachments,
+                disposition: row.detachments.length
+                  ? row.disposition : list.disposition,
               }
             : { listId: null })} />
       ) : null}

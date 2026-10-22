@@ -31,6 +31,7 @@ import type { BuyableTicket, EventCart } from "@/types/ticket";
 export default function TicketDrawer({
   open, onClose, cart, tickets, standing, faction,
   slug, eventKey, eventId, fullName, email, onQuantity, onRemove,
+  teamEvent = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -44,6 +45,8 @@ export default function TicketDrawer({
   /** What they may pay with. Null while it is still being worked out. */
   standing: TicketStanding | null;
   faction: Faction;
+  /** Asked for only at a team event (0211). */
+  teamEvent?: boolean;
   slug: string;
   eventKey: string;
   eventId: number;
@@ -184,6 +187,7 @@ export default function TicketDrawer({
               fullName={fullName} email={email} currency={cart.currency}
               faction={faction} standing={priced} price={price}
               points={points} onPoints={setPoints} showPaymentNote={false}
+              teamEvent={teamEvent}
             />
           </Box>
         ) : null}

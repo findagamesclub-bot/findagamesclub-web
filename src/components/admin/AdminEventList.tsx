@@ -55,7 +55,7 @@ export default function AdminEventList({
         tabs={tabs}
         sort={sort}
         sorts={EVENT_SORTS}
-        second={{ label: "Status", value: status, options: STATUSES, param: "status" }}
+        pickers={[{ label: "Status", value: status, options: STATUSES, param: "status" }]}
         defaults={{ state: "upcoming", sort: "date", status: "" }}
         onBusy={setSifting}
       />
@@ -177,7 +177,10 @@ export default function AdminEventList({
                         ) : null}
                       </Stack>
                       <TakeDownControls kind="event" id={event.id} name={event.title}
-                        slug={event.club_slug} down={event.status === "suspended"} />
+                        slug={event.club_slug} down={event.status === "suspended"}
+                        reason={event.suspended_reason}
+                        askedAt={event.review_asked_at}
+                        askedNote={event.review_asked_note} />
                     </Stack>
                   </Stack>
                 );

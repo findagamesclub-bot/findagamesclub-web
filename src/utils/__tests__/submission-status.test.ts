@@ -4,6 +4,7 @@ import {
   LISTING_STEPS, isStep, nextStep, previousStep, resumeLabel, stepLabel, stepNumber,
 } from "../listing-steps";
 import {
+  clubStateLine,
   QUEUE_TABS, STATUS_LABELS, STATUS_TONES, SUBMISSION_STATUSES, adminCanReview,
   isFinished, isSubmissionStatus, ownerCanCancel, ownerCanEdit, ownerCanRestart,
   ownerCanSubmit, ownerNextStep,
@@ -137,7 +138,12 @@ console.log("submission-status: all assertions passed");
 assert.equal(isSubmissionStatus("payment_pending"), true);
 assert.equal(STATUS_LABELS.payment_pending, "Waiting to be paid for");
 assert.equal(STATUS_TONES.payment_pending, "warn");
-assert.match(ownerNextStep("payment_pending"), /how to pay/);
+// Not "how to pay" any more. 0215 charges the fee after the approval, so
+// nothing reaches this status and its backfill emptied it; the sentence is
+// kept and made true, because a branch rendering an empty string on an old
+// row is worse than one that reads sensibly.
+assert.match(ownerNextStep("payment_pending"), /It is with us/);
+assert.doesNotMatch(ownerNextStep("payment_pending"), /how to pay/);
 
 // The database lets them fix it, send it again and stop. So do we.
 assert.equal(ownerCanEdit("payment_pending"), true);
@@ -157,3 +163,28 @@ for (const status of SUBMISSION_STATUSES) {
 }
 
 console.log("submission-status payment_pending: all assertions passed");
+
+// --------------------------------------- what the CLUB is doing now (0215)
+
+// A request is approved forever; a listing is live only while it is. 0108
+// settled that for `paused` and the owner's card learned it; `suspended` is
+// the same shape and was missed, so the card read "Approved and live · It is
+// live. Your club page is in the directory" over a club an admin had taken
+// out of the directory. The client found the identical fault on the admin
+// queue, which is how this one was noticed.
+assert.equal(clubStateLine("approved", "active"), null);
+assert.equal(clubStateLine("approved", ""), null);
+assert.equal(clubStateLine("approved", "paused")!.label, "Paused");
+assert.equal(clubStateLine("approved", "paused")!.tone, "warn");
+assert.equal(clubStateLine("approved", "suspended")!.label, "Taken down");
+assert.equal(clubStateLine("approved", "suspended")!.tone, "bad");
+assert.match(clubStateLine("approved", "suspended")!.next, /A site admin/);
+
+// Only where the request became a club. A listing still in the queue has no
+// club to be doing anything, and a status line about one would be inventing
+// a state the row is not in.
+assert.equal(clubStateLine("review_pending", "suspended"), null);
+assert.equal(clubStateLine("declined", "suspended"), null);
+assert.equal(clubStateLine("changes_requested", "paused"), null);
+
+console.log("submission-status club state: all assertions passed");

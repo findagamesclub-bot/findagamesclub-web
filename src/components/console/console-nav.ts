@@ -4,6 +4,8 @@ import MilitaryTechIcon from "@mui/icons-material/MilitaryTech";
 import BadgeIcon from "@mui/icons-material/AssignmentInd";
 import StarIcon from "@mui/icons-material/StarBorder";
 import EditIcon from "@mui/icons-material/EditNote";
+import PaymentsIcon from "@mui/icons-material/Payments";
+import PriceCheckIcon from "@mui/icons-material/PriceCheck";
 import EventSeatIcon from "@mui/icons-material/EventSeat";
 import ScoreboardIcon from "@mui/icons-material/Scoreboard";
 import LinkIcon from "@mui/icons-material/AddLink";
@@ -16,7 +18,6 @@ import FlagIcon from "@mui/icons-material/OutlinedFlag";
 import StorefrontIcon from "@mui/icons-material/Storefront";
 import LoyaltyIcon from "@mui/icons-material/Loyalty";
 import ShieldIcon from "@mui/icons-material/Shield";
-import PaymentsIcon from "@mui/icons-material/Payments";
 import type { NavGroup, NavItem } from "@/components/ui/side-nav";
 import InsightsIcon from "@mui/icons-material/Insights";
 import type { Capability, ClubAccess } from "@/utils/club-access";
@@ -104,6 +105,16 @@ export function consoleGroups(
       title: "Club nights",
       items: [
         { label: "Table bookings", href: at("/bookings"), icon: EventSeatIcon,
+          needs: "bookings.manage" },
+        // Named for money rather than for nights, so it cannot read as the
+        // entry above wearing a second label. Two entries a row apart both
+        // starting with the same word is the trap "Army settings" and "Army
+        // lists" already paid for.
+        //
+        // Its own entry rather than a tab on the calendar: the calendar is a
+        // night at a time and is shared with members, and "who still owes me,
+        // on any night" is not a question four pages of a calendar can answer.
+        { label: "Table payments", href: at("/manage/bookings"), icon: PriceCheckIcon,
           needs: "bookings.manage" },
         // Its own page, not an anchor inside the bookings one. Two entries
         // sharing a path cannot both light up, because the matcher reads the

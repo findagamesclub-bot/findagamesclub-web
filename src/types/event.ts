@@ -4,8 +4,11 @@ import type { EventTeam, TeamFixture } from "./eventTeams";
 /** One army as it was fielded, from the result row's jsonb. */
 export type ResultArmy = {
   factionLabel: string | null;
+  /** The lead one, kept because an imported result has only this. */
   detachment: string | null;
-  /** Belongs to the detachment, never to the faction. */
+  /** All of them (0217). `armySummary` prints these, not the one above. */
+  detachments: string[];
+  /** Belongs to the detachments it was chosen from, never to the faction. */
   disposition: string | null;
   mvpUnits: string[];
   /** What the club recorded against this side. Absent on an imported result. */

@@ -15,6 +15,8 @@
  * Pure. No I/O, no React.
  */
 
+import { detachmentLine } from "./result-army";
+
 export type ArmyUnit = { name: string; quantity: number; points: number };
 
 export type ArmyList = {
@@ -74,18 +76,25 @@ export function listFromSnapshot(
 /**
  * What an army reads as on one line.
  *
- * Three facts in the order a player says them: the army, the detachment it was
- * built around, and the disposition that detachment was given. The placing
+ * Three facts in the order a player says them: the army, the detachments it
+ * was built around, and the one disposition they are playing. The placing
  * card, the placing row and a table of the draw all print this, and all three
  * had their own copy of the join before it was one function.
+ *
+ * Several detachments read as "A, B" inside the middle dots rather than as two
+ * more dotted parts, because the dots are what divide the three KINDS of fact
+ * and a reader cannot tell a second detachment from a disposition otherwise.
+ * `detachmentLine` is the one place that decides, shared with `armyLabel` and
+ * with `result_army_label` in SQL.
  */
 export function armySummary(army: {
   factionLabel?: string | null;
   detachment?: string | null;
+  detachments?: string[] | null;
   disposition?: string | null;
 } | null | undefined): string {
   if (!army) return "";
-  return [army.factionLabel, army.detachment, army.disposition]
+  return [army.factionLabel, detachmentLine(army), army.disposition]
     .map((part) => (part ?? "").trim())
     .filter(Boolean)
     .join(" · ");

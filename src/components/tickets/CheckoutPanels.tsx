@@ -18,6 +18,7 @@ import type { Faction } from "@/lib/tokens";
  */
 export default function CheckoutPanels({
   cart, standing, slug, eventKey, eventId, fullName, email, faction,
+  teamEvent = false,
 }: {
   cart: EventCart;
   standing: TicketStanding;
@@ -27,6 +28,8 @@ export default function CheckoutPanels({
   fullName: string;
   email: string;
   faction: Faction;
+  /** Asked for only at a team event (0211). */
+  teamEvent?: boolean;
 }) {
   const [points, setPoints] = useState(0);
   const price = priceTickets(standing, points);
@@ -49,6 +52,7 @@ export default function CheckoutPanels({
           standing={standing}
           price={price}
           points={points}
+          teamEvent={teamEvent}
           onPoints={setPoints}
         />
       </Box>

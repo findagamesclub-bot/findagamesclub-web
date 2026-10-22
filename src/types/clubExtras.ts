@@ -82,13 +82,13 @@ export type MerchOrder = {
  * from this with `priceCoaching`, which is the same quote the trigger
  * recomputes at booking time.
  */
-export type CoachingStanding = {
-  points: number;
-  pointValue: number | null;
-  capPercent: number;
-  discountPercent: number;
-  currency: string;
-};
+/**
+ * Re-exported rather than declared twice. There were two of these, identical
+ * on the day they were written, and the card types against one while the
+ * service returns the other: adding a field to one and not the other is a
+ * mismatch nothing would have caught until a screen read undefined.
+ */
+export type { CoachingStanding } from "@/utils/coaching-pricing";
 
 export type CoachingSlot = {
   id: number;

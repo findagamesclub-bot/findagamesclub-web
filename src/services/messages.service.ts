@@ -213,3 +213,27 @@ export async function getAdminContacts(query: string): Promise<Contact[]> {
     clubName: row.email,
   }));
 }
+
+/**
+ * The admins this reader may open a site thread with, which is normally none.
+ *
+ * Deliberately NOT folded into `getContacts`. That list is the compose
+ * picker: everything in it is offered to everybody on the messages page, and
+ * an admin appearing there for a club owner whose listing is down would read
+ * as a general invitation to write to us. This is the narrow answer to one
+ * question, asked by the one page that needs it, and the way in is the button
+ * on the banner rather than a name in a list.
+ *
+ * `my_site_contacts()` (0215) asks `can_message_member` itself, so what the
+ * page offers and what the insert policy allows cannot come apart.
+ */
+export async function getSiteContacts(): Promise<Contact[]> {
+  const rows = await repo.findSiteContacts().catch(() => null);
+  return (rows ?? []).map((row) => ({
+    personId: row.id,
+    personName: row.full_name || SITE_NAME,
+    clubId: SITE_CLUB,
+    clubSlug: "",
+    clubName: SITE_NAME,
+  }));
+}

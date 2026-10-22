@@ -70,6 +70,7 @@ export async function rosterAction(
           email: String(data.get("email") ?? ""),
           ticketTypeId: Number(data.get("ticketTypeId")),
           quantity: Number(data.get("quantity") ?? 1),
+          teamName: String(data.get("teamName") ?? ""),
         });
 
       case "payment": {

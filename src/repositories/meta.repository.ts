@@ -73,3 +73,43 @@ export const findMemberArmies = (profile: string) =>
 /** One event's armies. Its own scope, because an event is not a club. */
 export const findEventArmies = (event: number) =>
   callRpc<DepthRollup[]>("meta_event", { p_event: event });
+
+/**
+ * One event, broken out the way the tracker breaks out a club.
+ *
+ * `meta_event` groups by the whole `(faction, detachment, disposition)`
+ * triple, which answers "what exact army did each person bring" and cannot
+ * answer "how did Sororitas do here". These three are that question, in the
+ * shape 0142 already uses, so an event panel and the Meta Tracker read as one
+ * vocabulary.
+ */
+export type EventBreakdownRow = {
+  kind: "faction" | "detachment" | "disposition";
+  label: string;
+  parent: string;
+  players: number | string;
+  appearances: number | string;
+  games: number | string;
+  wins: number | string;
+  win_rate: number | string | null;
+  early_signal: boolean;
+};
+
+export const findEventBreakdown = (event: number) =>
+  callRpc<EventBreakdownRow[]>("meta_event_breakdown", { p_event: event });
+
+export const findEventMatchups = (event: number) =>
+  callRpc<MatchupRollup[]>("meta_event_matchups", { p_event: event });
+
+export type EventPlayerRow = {
+  profile_id: string | null;
+  player: string;
+  faction_label: string | null;
+  games: number | string;
+  wins: number | string;
+  draws: number | string;
+  losses: number | string;
+};
+
+export const findEventPlayers = (event: number) =>
+  callRpc<EventPlayerRow[]>("meta_event_players", { p_event: event });

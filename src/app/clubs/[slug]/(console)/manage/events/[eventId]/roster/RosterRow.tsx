@@ -112,6 +112,23 @@ export default function RosterRow({
               .filter(Boolean).join(" · ")}
           </Typography>
         ) : null}
+        {/* And who they are playing for, at a team event. The club sees it
+            at the desk, which is where "who is with whom" is actually
+            asked. */}
+        {row.teamName ? (
+          <Typography sx={{ fontFamily: mono, fontSize: "0.62rem", fontWeight: 700,
+                            letterSpacing: "0.08em", color: tokens.brass }}>
+            {row.teamName.toUpperCase()}
+          </Typography>
+        ) : null}
+
+        {/* What was written beside the money. Drawn only where there is one,
+            because an empty line under every row is noise on a door list. */}
+        {row.paymentNote ? (
+          <Typography variant="caption" sx={{ color: tokens.inkMuted }}>
+            {row.paymentNote}
+          </Typography>
+        ) : null}
       </Stack>
 
       {cancelled ? (

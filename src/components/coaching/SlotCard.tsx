@@ -13,6 +13,7 @@ import Counter from "@/components/ui/Counter";
 import { nightLabel } from "@/utils/dates";
 import { formatMoney } from "@/utils/format";
 import { priceCoaching } from "@/utils/coaching-pricing";
+import { tierSavingLine } from "@/utils/price-lines";
 import { mono, tokens, type Faction } from "@/lib/tokens";
 import type { CoachingSlot, CoachingStanding } from "@/types/clubExtras";
 
@@ -236,6 +237,25 @@ export default function SlotCard({
                 currency={standing!.currency}
                 onChange={setPoints}
               />
+            ) : null}
+
+            {/* Where the tier discount went, in the words the club's own
+                booking list and the member's dashboard already use. The card
+                applied it and never named it, so a Life Member saw £25 become
+                £20 with nothing on screen saying why, and the points line
+                underneath was the only saving with a label. */}
+            {canBook && quote && tierSavingLine({
+              tierAmount: quote.tierDiscount,
+              tierLabel: standing!.tierLabel,
+              currency: standing!.currency,
+            }) ? (
+              <Typography variant="body2" sx={{ color: tokens.positive }}>
+                {tierSavingLine({
+                  tierAmount: quote.tierDiscount,
+                  tierLabel: standing!.tierLabel,
+                  currency: standing!.currency,
+                })}
+              </Typography>
             ) : null}
 
             {/* One line, not a breakdown. What they will actually hand over,

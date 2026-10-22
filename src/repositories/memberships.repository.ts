@@ -355,3 +355,34 @@ export const setJoinedAt = (membershipId: number, joined: string) =>
   callRpc<string>("set_membership_joined_at", {
     p_membership: membershipId, p_joined: joined,
   });
+
+/**
+ * A club pausing somebody's access to itself, and putting it back.
+ *
+ * Through a function because `status` is already grantable to the member for
+ * leaving (0012 pins their own update to `cancelled`), so widening the allowed
+ * values would let somebody suspend themselves or, worse, lift it. 0205 made
+ * the same call about a table payment.
+ */
+export const setMembershipSuspended = (
+  membershipId: number, on: boolean, reason: string,
+) => callRpc<{ membership_id: number; status: string }[]>(
+  "set_membership_suspended",
+  { p_membership: membershipId, p_on: on, p_reason: reason });
+
+
+
+/**
+ * What the console needs about a roster that a typed select cannot carry: the
+ * address (in `auth.users`) and why somebody was paused (a column newer than
+ * the generated types). One round trip for both.
+ */
+export type MemberAdminFacts = {
+  membership_id: number;
+  profile_id: string;
+  email: string | null;
+  suspended_reason: string | null;
+};
+
+export const findMemberAdminFacts = (clubId: number) =>
+  callRpc<MemberAdminFacts[]>("club_member_admin_facts", { p_club: clubId });

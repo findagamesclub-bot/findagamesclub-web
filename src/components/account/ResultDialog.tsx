@@ -140,8 +140,9 @@ export default function ResultDialog({
   /**
    * Naming a list fills the cascade in.
    *
-   * A list already says its faction, detachment and disposition, and typing
-   * them again is two chances to disagree with it. It also matters on save:
+   * A list already says its faction, its detachments and the disposition
+   * they are playing, and typing them again is two chances to disagree with
+   * it. It also matters on save:
    * an empty army writes no row, and a list hangs off that row, so a list
    * named against nothing would have nowhere to go.
    */
@@ -149,7 +150,7 @@ export default function ResultDialog({
     if (!list) { setMine({ ...mine, listId: null, listName: "" }); return; }
     setMine({ ...mine, listId: list.id, listName: list.name,
               factionId: list.factionId, factionLabel: list.faction,
-              detachment: list.detachment, disposition: list.disposition });
+              detachments: list.detachments, disposition: list.disposition });
   };
 
   return (

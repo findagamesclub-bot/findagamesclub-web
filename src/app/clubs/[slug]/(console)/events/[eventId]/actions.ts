@@ -56,6 +56,9 @@ export async function ticketAction(
       // A request. checkout_event_cart checks it against the tier and the
       // balance and writes what it allows.
       redeemPoints: Number(data.get("redeemPoints") ?? 0),
+      // Asked for only at a team event, and dropped by 0211 anywhere else, so
+      // a field posted by a stale tab cannot land on a singles booking.
+      teamName: String(data.get("teamName") ?? ""),
     });
 
     refresh();

@@ -87,6 +87,7 @@ export default async function CheckoutPage({
         fullName={viewer.full_name ?? ""}
         email={viewer.email ?? ""}
         faction={faction}
+        teamEvent={event.teamEvent}
       />
     </Container>
   );

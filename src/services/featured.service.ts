@@ -46,6 +46,25 @@ export type ClubFeaturedSlot = {
   pricePence: number;
   currency: string;
   note: string;
+  /**
+   * When we recorded the money for it, or null because nobody has said. The
+   * client's words: *"it is not clear what is paid and what is not"*, over
+   * three slots at £20 apiece.
+   */
+  paidAt: string | null;
+  paymentMethod: string;
+  /**
+   * What we wrote down when we recorded the money. The admin's own dialog
+   * says "The club sees this" about it, and until 15c nothing on the club's
+   * side drew it: a promise the screen did not keep.
+   */
+  paymentNote: string;
+  /**
+   * False when the read failed, so the panel says nothing rather than
+   * "not paid yet" about a slot nobody asked about. An unreadable table that
+   * degrades into a plausible sentence is the trap 0116 paid for.
+   */
+  paymentKnown: boolean;
 };
 
 export async function getClubSlots(clubId: number): Promise<ClubFeaturedSlot[]> {
@@ -57,6 +76,17 @@ export async function getClubSlots(clubId: number): Promise<ClubFeaturedSlot[]> 
     return [];
   });
 
+  // Its own read, for the reason the repository gives. Caught rather than
+  // thrown: a club that cannot see which slots it has settled still has a
+  // useful list of them, and a billing page that will not load does not.
+  let known = true;
+  const paid = await repo.findFeaturedPayments(rows.map((row) => row.id))
+    .catch((error) => {
+      console.error("[featured] the payment standing did not load", error);
+      known = false;
+      return new Map<number, repo.FeaturedPayment>();
+    });
+
   return rows.map((row) => ({
     id: row.id,
     startsOn: row.starts_on,
@@ -64,7 +94,60 @@ export async function getClubSlots(clubId: number): Promise<ClubFeaturedSlot[]> 
     pricePence: row.price_pence,
     currency: row.currency ?? "GBP",
     note: row.note ?? "",
+    paidAt: paid.get(row.id)?.paid_at ?? null,
+    paymentMethod: paid.get(row.id)?.payment_method ?? "",
+    paymentNote: paid.get(row.id)?.payment_note ?? "",
+    paymentKnown: known,
   }));
+}
+
+/**
+ * The same fact for the admin's own board, keyed by slot.
+ *
+ * Handed back as a map rather than written onto the rows, because that list is
+ * `FeaturedSlotRow` straight from the table and widening it would mean every
+ * reader of it learning about money.
+ */
+export type SlotPayments = {
+  /** False when the read failed, so the board says nothing rather than "not
+   *  paid yet" about every slot on the page. */
+  known: boolean;
+  rows: Record<number, { paidAt: string | null; method: string; note: string }>;
+};
+
+export async function getSlotPayments(ids: number[]): Promise<SlotPayments> {
+  let known = true;
+  const rows = await repo.findFeaturedPayments(ids).catch((error) => {
+    console.error("[featured] the payment standing did not load", error);
+    known = false;
+    return new Map<number, repo.FeaturedPayment>();
+  });
+  return {
+    known,
+    rows: Object.fromEntries([...rows].map(([id, row]) => [id, {
+      paidAt: row.paid_at,
+      method: row.payment_method ?? "",
+      note: row.payment_note ?? "",
+    }])),
+  };
+}
+
+/**
+ * Recording what arrived for a slot, which only an admin may do.
+ *
+ * 0161 settled that featuring is a placement we sell and settle offline, so
+ * whether the money came in is our word. The club reads the answer on its own
+ * billing page and cannot write it.
+ */
+export async function recordFeaturedPayment(params: {
+  slot: number; paid: boolean; method: string; note: string;
+}): Promise<FeaturedResult> {
+  try {
+    await repo.recordFeaturedPayment(params);
+  } catch (error) {
+    return { ok: false, error: billingRefusal(error) };
+  }
+  return { ok: true };
 }
 
 export async function getClubsForPicker() {

@@ -29,10 +29,16 @@ import { tokens } from "@/lib/tokens";
 /**
  * Two armies with everything filled in, so the preview shows the longest line
  * a table of the draw can produce rather than the tidiest.
+ *
+ * The first brings TWO detachments, which is the case 0217 added and the one
+ * a fixture has to carry: a component with a threshold needs a fixture past
+ * the threshold, or the long line ships unmeasured. The second brings one, so
+ * both halves of `detachmentLine` are on the same screen.
  */
 const PREVIEW_ARMY_ONE = {
   factionLabel: "Chaos Knights",
   detachment: "Traitoris Lance",
+  detachments: ["Traitoris Lance", "Noctis Shroud"],
   disposition: "Purge the Foe",
   mvpUnits: ["Knight Desecrator"],
   list: {
@@ -48,6 +54,7 @@ const PREVIEW_ARMY_ONE = {
 const PREVIEW_ARMY_TWO = {
   factionLabel: "Adeptus Custodes",
   detachment: "Shield Host",
+  detachments: ["Shield Host"],
   disposition: "Priority Assets",
   mvpUnits: [],
   list: null,
@@ -128,21 +135,25 @@ export default async function EventsPreviewPage({
       reference: "FAGC-K7M2QP", status: "reserved", paymentStatus: "paid_in_advance",
       paymentMethod: "Bank transfer", checkedInAt: "2026-09-26T09:02:00Z",
       refundStatus: "not_due", cancelReason: "", notes: "Vegetarian lunch",
+      paymentNote: "Paid for both places in one transfer, ref MARCHETTI.",
+      teamName: "Red Dice",
       tickets: 2, total: 57, createdAt: "2026-08-22T10:00:00Z" },
     { bookingId: 2, profileId: null, fullName: "Joe Matthews", email: "joe@example.com",
       reference: "FAGC-P2LM99", status: "reserved", paymentStatus: "unpaid",
       paymentMethod: "", checkedInAt: null, refundStatus: "not_due", cancelReason: "",
-      notes: "", tickets: 1, total: 30, createdAt: "2026-08-29T18:40:00Z" },
+      notes: "", paymentNote: "", teamName: "Red Dice", tickets: 1, total: 30,
+      createdAt: "2026-08-29T18:40:00Z" },
     // Walked in, played, still has not paid. Both things are true at once.
     { bookingId: 3, profileId: null, fullName: "Ben Shah", email: "ben@example.com",
       reference: "FAGC-3QX41A", status: "reserved", paymentStatus: "unpaid",
       paymentMethod: "", checkedInAt: "2026-09-26T09:20:00Z", refundStatus: "not_due",
-      cancelReason: "", notes: "", tickets: 1, total: 30,
-      createdAt: "2026-09-01T12:00:00Z" },
+      cancelReason: "", notes: "", paymentNote: "", teamName: "Blue Dice",
+      tickets: 1, total: 30, createdAt: "2026-09-01T12:00:00Z" },
     { bookingId: 4, profileId: null, fullName: "Cat Moss", email: "cat@example.com",
       reference: "FAGC-88DDZ1", status: "cancelled", paymentStatus: "paid_in_advance",
       paymentMethod: "Card", checkedInAt: null, refundStatus: "due",
       cancelReason: "Rang to say she cannot make it", notes: "",
+      paymentNote: "Card taken at the desk, receipt 4471.", teamName: "",
       tickets: 1, total: 30, createdAt: "2026-08-15T09:00:00Z" },
   ];
 

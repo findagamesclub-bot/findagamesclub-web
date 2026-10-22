@@ -5,6 +5,12 @@ import * as repo from "@/repositories/eventBoard.repository";
 export type RosterEntry = {
   profileId: string | null;
   name: string;
+  /**
+   * The team they booked under, at a team event. The client asked for it
+   * here in those words: "this team name along with the names of each person
+   * should be what is shown on the who is coming section also".
+   */
+  teamName: string;
   isMember: boolean;
   /**
    * Null for a reader outside the club and the ticket holders. On a finished
@@ -33,6 +39,7 @@ export async function getEventRoster(eventId: number): Promise<RosterEntry[]> {
   return rows.map((r) => ({
     profileId: r.profile_id,
     name: r.full_name,
+    teamName: r.team_name ?? "",
     isMember: r.is_member,
     tickets: r.tickets,
     bookings: r.bookings,

@@ -15,6 +15,7 @@ import { suggestOpponents, winRate, type Suggestion } from "@/utils/opponent-fin
 import { intensityOf, type Intensity } from "@/utils/rivalry-intensity";
 import { canonicalGame } from "@/utils/game-label";
 import { playsFortyK } from "@/utils/event-meta";
+import type { TablePaymentStatus } from "@/utils/table-bookings";
 
 /**
  * What a game says when nobody is on the other side of it yet.
@@ -77,6 +78,12 @@ export type MyGame = {
    * API route when somebody opens it.
    */
   builder: Builder | null;
+  /**
+   * The club's own record of the money on this table, so a member can ask
+   * which of their games they still owe for. Read through the same rules the
+   * club's Table payments screen uses rather than a second reading of them.
+   */
+  payment: { status: TablePaymentStatus; total: number; currency: string };
 };
 
 export type Record = {
@@ -93,6 +100,17 @@ export type Record = {
 export const PAGE = 25;
 
 /**
+ * What the member's own games page asks for.
+ *
+ * A member holds a handful of games where a club holds thousands, which is the
+ * line this codebase already draws between a list sifted in the browser and
+ * one filtered in SQL. Their own history is the first kind, so it comes back
+ * whole and the filters on top of it mean something: a month filter over the
+ * newest twenty-five answers about the twenty-five.
+ */
+export const WHOLE_HISTORY = 400;
+
+/**
  * The member's own games, newest first, told from their side.
  *
  * The row stores scores in the booking's order — whoever booked, then their
@@ -100,24 +118,36 @@ export const PAGE = 25;
  * per reader happens here, once, rather than in every component that shows a
  * scoreline.
  */
-export async function getMyGames(profileId: string, page = 1): Promise<MyGame[]> {
-  const from = (Math.max(1, page) - 1) * PAGE;
+export async function getMyGames(
+  profileId: string, page = 1, per = PAGE,
+): Promise<MyGame[]> {
+  const from = (Math.max(1, page) - 1) * per;
   // Which clubs this person runs, asked once rather than per row. Somebody can
   // play at four clubs and own one of them, and only that one's results are
   // theirs to settle.
   const [rows, ownedClubs] = await Promise.all([
-    repo.findMyGames(profileId, from, from + PAGE - 1),
+    repo.findMyGames(profileId, from, from + per - 1),
     findOwnedClubs(profileId).catch(() => []),
   ]);
   const owned = new Set(ownedClubs.map((club) => club.id));
   const today = londonToday();
 
-  // One more wave, not one more query per game: both reads need ids from the
-  // page above, so they cannot join the first wave, but they share this one.
-  const army = await getArmyContext("booking",
-    rows.filter(({ club_bookings: row }) => row.booked_by_score !== null)
-        .map(({ club_bookings: row }) => row.id),
-    rows.map(({ club_bookings: row }) => row.club_id));
+  // One more wave, not one more query per game: all three reads need ids from
+  // the page above, so they cannot join the first wave, but they share this
+  // one. A failed payment read costs the money line and never the history,
+  // which is the state this page was in before it had one.
+  const [army, paid] = await Promise.all([
+    getArmyContext("booking",
+      rows.filter(({ club_bookings: row }) => row.booked_by_score !== null)
+          .map(({ club_bookings: row }) => row.id),
+      rows.map(({ club_bookings: row }) => row.club_id)),
+    repo.findMyBookingPayments(rows.map(({ club_bookings: row }) => row.id))
+      .catch((error) => {
+        console.error("[games] what you owe did not load", error);
+        return [];
+      }),
+  ]);
+  const payments = new Map(paid.map((row) => [row.booking_id, row.payment_status]));
 
   return rows.map(({ club_bookings: row }) => {
     const iBooked = row.booked_by === profileId;
@@ -166,9 +196,20 @@ export async function getMyGames(profileId: string, page = 1): Promise<MyGame[]>
         theirs: iBooked ? army.sides(row.id).two : army.sides(row.id).one,
       },
       builder: army.builder(row.club_id),
+      payment: {
+        // Unpaid is what the column defaults to, so a booking the read could
+        // not reach reads as owing rather than as settled. Saying somebody
+        // has paid when nobody knows is the worse of the two wrong answers.
+        status: paymentOf(payments.get(row.id)),
+        total: Number(row.total_price ?? 0),
+        currency: row.price_currency || "GBP",
+      },
     };
   });
 }
+
+const paymentOf = (value: string | undefined): TablePaymentStatus =>
+  value === "paid_on_the_door" || value === "paid_in_advance" ? value : "unpaid";
 
 /** Wins, draws and losses per opponent. One grouped query, counted in SQL. */
 export async function getRecord(): Promise<Record[]> {

@@ -8,6 +8,7 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import BusyOverlay from "@/components/ui/BusyOverlay";
+import PlayerName from "@/components/events/PlayerName";
 import ArmyListDialog from "./ArmyListDialog";
 import MatchDetailDialog, { SetupNote, type MatchDetail } from "./MatchDetailDialog";
 import { fold } from "@/utils/text";
@@ -137,16 +138,47 @@ export default function EventTeamDraw({ fixtures, faction, viewerName }: {
                                               color: tokens.inkMuted, minWidth: 26 }}>
                               {table.tableLabel}
                             </Typography>
-                            <Typography sx={{ fontSize: "0.88rem", flex: 1, minWidth: 0 }}
-                              noWrap>
-                              {table.playerOne || "—"}
-                              {table.playerTwo ? ` v ${table.playerTwo}` : ""}
+                            {/* Linked where the row carries an account, which
+                                the draw has known since 0168 and nothing here
+                                read. "This is already linked on the who is
+                                coming", said the client, and they are right:
+                                it was the one list that had it. */}
+                            <Typography component="span"
+                              sx={{ fontSize: "0.88rem", flex: 1, minWidth: 0,
+                                    overflow: "hidden", textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap" }}>
+                              <PlayerName name={table.playerOne || "—"}
+                                profileId={table.playerOneId} />
+                              {table.playerTwo ? (
+                                <>
+                                  {" v "}
+                                  <PlayerName name={table.playerTwo}
+                                    profileId={table.playerTwoId} />
+                                </>
+                              ) : null}
                             </Typography>
-                            <Typography sx={{ fontFamily: mono, fontSize: "0.8rem",
-                                              fontWeight: 700, whiteSpace: "nowrap",
-                                              color: table_scored ? tokens.ink : tokens.inkMuted }}>
-                              {table_scored ? `${table.scoreOne} - ${table.scoreTwo}` : "to play"}
-                            </Typography>
+                            <Stack spacing={0}
+                              sx={{ alignItems: "flex-end", flexShrink: 0 }}>
+                              <Typography sx={{ fontFamily: mono, fontSize: "0.8rem",
+                                                fontWeight: 700, whiteSpace: "nowrap",
+                                                color: table_scored ? tokens.ink : tokens.inkMuted }}>
+                                {table_scored ? `${table.scoreOne} - ${table.scoreTwo}` : "to play"}
+                              </Typography>
+                              {/* What the format scored this table at, where
+                                  that is not the victory points: 3 against 1
+                                  on a table that went 80 to 60. The console
+                                  has shown it since 0183 and the public draw
+                                  did not, which is what the client reported.
+                                  Only where the club has said, because null
+                                  is not nil. */}
+                              {table.pointsOne !== null && table.pointsTwo !== null ? (
+                                <Typography sx={{ fontFamily: mono, fontSize: "0.62rem",
+                                                  letterSpacing: "0.08em", fontWeight: 700,
+                                                  whiteSpace: "nowrap", color: tokens.brass }}>
+                                  {`SCORED ${table.pointsOne}-${table.pointsTwo}`}
+                                </Typography>
+                              ) : null}
+                            </Stack>
                             {/* Only where the club recorded something. A row
                                 of controls that all say "nothing here" is
                                 worse than no control. */}

@@ -128,8 +128,11 @@ export default function SubmissionQueue({
                           // "Approved and live" beside "Paused by the club" is
                           // the card arguing with itself. The request is
                           // approved either way; only the second chip speaks
-                          // for the club.
-                          label={row.clubStatus === "paused" && row.status === "approved"
+                          // for the club. A club a site admin has taken down
+                          // is the same shape and was missed: the client found
+                          // one reading "Approved and live" while suspended.
+                          label={row.status === "approved"
+                            && (row.clubStatus === "paused" || row.clubStatus === "suspended")
                             ? "Approved" : row.statusLabel}
                           sx={{ fontSize: "0.68rem", fontWeight: 700,
                                 bgcolor: row.tone === "good" ? tokens.positive
@@ -149,6 +152,12 @@ export default function SubmissionQueue({
                           <Chip size="small" label="Paused by the club"
                             sx={{ fontSize: "0.68rem", fontWeight: 700,
                                   bgcolor: tokens.brass, color: "#fff" }} />
+                        ) : null}
+                        {/* Ours rather than theirs, so it says who did it. */}
+                        {row.clubStatus === "suspended" ? (
+                          <Chip size="small" label="Taken down by an admin"
+                            sx={{ fontSize: "0.68rem", fontWeight: 700,
+                                  bgcolor: tokens.danger, color: "#fff" }} />
                         ) : null}
                         {row.supersededBy ? (
                           <Chip size="small" variant="outlined"

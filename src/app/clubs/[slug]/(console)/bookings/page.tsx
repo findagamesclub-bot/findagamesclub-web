@@ -141,6 +141,46 @@ export default async function BookingsPage({ params, searchParams }: PageProps<"
         </Typography>
       ) : null}
 
+      {/* Looking back, for anybody who may see the nights at all. This page is
+          a night at a time and only shows ones to come, so "what did we play
+          in September" is a question it cannot answer and the client asked
+          for. A line rather than a second mode on this screen: a thousand
+          past tables underneath the desk would push the thing people came for
+          off the bottom. */}
+      {isMember && takesBookings ? (
+        <Box sx={{ mb: canManage ? 1 : 3 }}>
+          <NextLink href={`/clubs/${club.slug}/bookings/past`}
+            style={{ textDecoration: "none" }}>
+            <Typography variant="body2"
+              sx={{ color: tokens.brand, fontWeight: 600 }}>
+              Nights played · what has already happened here
+            </Typography>
+          </NextLink>
+        </Box>
+      ) : null}
+
+      {/* Where the money for these tables is chased. Only for the club, and
+          only a line: this page is a night at a time and shared with members,
+          and "who still owes me, on any night" is a different screen. */}
+      {canManage && takesBookings ? (
+        <Box sx={{ mb: 3 }}>
+          {/* A plain link, not `FilterLink`: this goes somewhere else, and
+              that component exists to stop the scroll jumping when a page
+              re-filters itself. A Server Component cannot pass MUI a link
+              component as a prop, so this is a next/link with styles on it,
+              which is the pattern `ClubCard` already uses.
+              (`check:links` scans text, not syntax, so writing that prop out
+              in a comment here sets it off. It was right to.) */}
+          <NextLink href={`/clubs/${club.slug}/manage/bookings`}
+            style={{ textDecoration: "none" }}>
+            <Typography variant="body2"
+              sx={{ color: tokens.brand, fontWeight: 600 }}>
+              Table payments · who still owes you
+            </Typography>
+          </NextLink>
+        </Box>
+      ) : null}
+
       {!takesBookings ? (
         <Stack spacing={1} sx={{ border: `1px dashed ${tokens.rule}`, borderRadius: 2,
                                  p: { xs: 3, md: 5 }, textAlign: "center", bgcolor: tokens.paper }}>

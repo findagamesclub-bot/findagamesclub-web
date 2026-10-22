@@ -12,16 +12,27 @@ import type { CoachingSlot } from "@/types/clubExtras";
  * they are about the person reading: which of these have I taken a place on,
  * and which have I not paid for. They only make sense to somebody holding one,
  * so the calendar shows them only when there is something in them.
+ *
+ * `past` cuts across them too, and for a different reason: a session that has
+ * happened is not "closed" and not "called off". Those two are things the club
+ * DID to a session; a date going by is not one of them. The client read a year
+ * of finished sessions all sitting under Open and reported it as a status
+ * going wrong, which it was not. Time is its own axis, the way the events
+ * console has always split Coming up from Past.
  */
 
-export type SlotFilter = "all" | "open" | "closed" | "cancelled" | "mine" | "topay";
+export type SlotFilter =
+  | "all" | "open" | "closed" | "cancelled" | "mine" | "topay" | "past";
 export type SlotSort = "soonest" | "latest";
 
 const fold = (value: string) => value.trim().toLowerCase();
 
-export function countCoachingSlots(slots: CoachingSlot[]) {
+export function countCoachingSlots(slots: CoachingSlot[], today = "") {
   return {
     all: slots.length,
+    // A London day in, never `new Date()`: a club night is a London day on
+    // both sides of this app.
+    past: today ? slots.filter((slot) => slot.date < today).length : 0,
     open: slots.filter((slot) => slot.status === "open").length,
     closed: slots.filter((slot) => slot.status === "closed").length,
     cancelled: slots.filter((slot) => slot.status === "cancelled").length,
@@ -34,8 +45,8 @@ export function countCoachingSlots(slots: CoachingSlot[]) {
 
 export function filterCoachingSlots(
   slots: CoachingSlot[],
-  { query = "", filter = "all", sort = "soonest" }: {
-    query?: string; filter?: SlotFilter; sort?: SlotSort;
+  { query = "", filter = "all", sort = "soonest", today = "" }: {
+    query?: string; filter?: SlotFilter; sort?: SlotSort; today?: string;
   },
 ): CoachingSlot[] {
   const needle = fold(query);
@@ -44,6 +55,7 @@ export function filterCoachingSlots(
     if (filter === "all") return true;
     if (filter === "mine") return Boolean(slot.mine);
     if (filter === "topay") return Boolean(slot.mine && !slot.mine.paid);
+    if (filter === "past") return Boolean(today) && slot.date < today;
     return slot.status === filter;
   };
 

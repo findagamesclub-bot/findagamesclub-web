@@ -4,7 +4,7 @@ import Chip from "@mui/material/Chip";
 import NextLink from "next/link";
 import LongText from "@/components/ui/LongText";
 import Button from "@mui/material/Button";
-import { ownerCanEdit } from "@/utils/submission-status";
+import { clubStateLine, ownerCanEdit } from "@/utils/submission-status";
 import type { ListingCard } from "@/services/submissions.service";
 import { mono, tokens } from "@/lib/tokens";
 
@@ -25,6 +25,8 @@ export default function ListingResumeCard({ card }: { card: ListingCard }) {
       : card.tone === "warn" ? tokens.brass : tokens.inkMuted;
 
   const editable = ownerCanEdit(card.status);
+  // A request is approved forever; a listing is live only while it is.
+  const state = clubStateLine(card.status, card.clubStatus);
 
   return (
     <Stack spacing={1.25}
@@ -35,15 +37,21 @@ export default function ListingResumeCard({ card }: { card: ListingCard }) {
                           letterSpacing: "0.1em", color: tokens.inkMuted }}>
           YOUR LISTING
         </Typography>
-        <Chip size="small" label={card.statusLabel}
-          sx={{ bgcolor: tone, color: "#fff", fontWeight: 700, fontSize: "0.68rem" }} />
+        <Chip size="small" label={state ? state.label : card.statusLabel}
+          sx={{ bgcolor: state
+                  ? (state.tone === "bad" ? tokens.danger : tokens.brass) : tone,
+                color: "#fff", fontWeight: 700, fontSize: "0.68rem" }} />
       </Stack>
 
       <Typography variant="h4" sx={{ fontSize: "1.1rem" }}>
         {card.clubName}{card.city ? `, ${card.city}` : ""}
       </Typography>
 
-      <Typography variant="body2" sx={{ color: tokens.inkMuted }}>{card.next}</Typography>
+      {/* What the CLUB is doing now wins over what the request says, the same
+          rule the full list follows. */}
+      <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
+        {state ? state.next : card.next}
+      </Typography>
 
       {/* The admin's own words, apart from our sentence and bounded like every
           other piece of free text. A 600-character reason folded into the line

@@ -60,7 +60,7 @@ export default function AwardedList({
         tabs={page.tabs}
         sort={filters.sort || "recent"}
         sorts={AWARD_SORTS}
-        second={{
+        pickers={[{
           label: "Badge", param: "badge", value: String(filters.badge ?? ""),
           options: [
             { value: "", label: "Every badge" },
@@ -69,7 +69,7 @@ export default function AwardedList({
               label: badge.active ? badge.label : `${badge.label} (retired)`,
             })),
           ],
-        }}
+        }]}
         defaults={{ state: "", sort: "recent", badge: "" }}
         onBusy={setSifting}
       />

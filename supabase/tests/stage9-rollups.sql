@@ -107,7 +107,7 @@ begin
     values (v_club, 'x-rtt', 'RTT', public.london_today() - 7, 'published')
     returning id into v_event;
     v_placing := public.save_event_placing(v_event, null, 1, 'Somebody', null,
-      'Death Guard', '', '');
+      'Death Guard', '{}'::text[], '');
 
     select * into f from public.meta_factions(v_club) where faction_id = 'death-guard';
     assert f.win_rate = v_before, 'a podium moved a win rate: ' || f.win_rate;

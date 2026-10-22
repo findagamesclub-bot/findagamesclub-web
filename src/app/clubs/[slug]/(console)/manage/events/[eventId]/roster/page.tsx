@@ -5,6 +5,7 @@ import BackLink from "@/components/ui/BackLink";
 import RosterBoard from "./RosterBoard";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
+import { isTeamEvent } from "@/services/eventTeams.service";
 import { getClubDetail } from "@/services/clubDetail.service";
 import { getEvent } from "@/services/eventEditor.service";
 import { getDoorList } from "@/services/eventRoster.service";
@@ -61,8 +62,12 @@ export default async function RosterPage({
   // say who it was booked under and the dialog could only say "Attached to an
   // account". Same fault 0177 already fixed on the matching screen, one page
   // over. Usually fetches nothing, because usually everybody is a member.
-  const linkedNames = await namesFor(
-    rows.map((row) => row.profileId).filter((id): id is string => Boolean(id)));
+  const [linkedNames, teamEvent] = await Promise.all([
+    namesFor(rows.map((row) => row.profileId).filter((id): id is string => Boolean(id))),
+    // Whether the door should ask who each place is playing for (0211). In
+    // the same wave: it needs nothing the names read returns.
+    isTeamEvent(event.id).catch(() => false),
+  ]);
   // Its last day, by the same London wall-clock rule the rest of the app uses.
   const lastDay = event.endDate || event.startDate;
   const over = Boolean(lastDay) && lastDay < londonToday();
@@ -87,6 +92,7 @@ export default async function RosterPage({
           makes a place theirs rather than a name on a list. Approved only,
           which is the same population the ticket eligibility guard judges. */}
       <RosterBoard slug={slug} eventId={event.id} rows={rows} faction={faction}
+        teamEvent={teamEvent}
         tickets={event.ticketTypes}
         members={members
           .filter((m) => m.status === "approved")

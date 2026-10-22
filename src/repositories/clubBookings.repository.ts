@@ -27,8 +27,10 @@ type Row = {
   email: string | null;
   reference: string | null;
   status: string;
+  team_name: string | null;
   payment_status: PaymentStatus;
   payment_method: string | null;
+  payment_note: string | null;
   checked_in_at: string | null;
   refund_status: RefundStatus;
   cancel_reason: string | null;
@@ -40,7 +42,8 @@ type Row = {
 };
 
 const COLUMNS = `id, event_id, profile_id, full_name, email, reference, status,
-  payment_status, payment_method, checked_in_at, refund_status, cancel_reason, notes,
+  team_name, payment_status, payment_method, payment_note, checked_in_at,
+  refund_status, cancel_reason, notes,
   total, created_at,
   club_events!inner(id, title, legacy_id, start_date),
   club_event_booking_items(quantity)`;
@@ -92,8 +95,10 @@ function toRow(row: Row): ClubBookingRow {
     email: text(row.email),
     reference: text(row.reference),
     status: row.status,
+    teamName: text(row.team_name),
     paymentStatus: row.payment_status,
     paymentMethod: text(row.payment_method),
+    paymentNote: text(row.payment_note),
     checkedInAt: row.checked_in_at,
     refundStatus: row.refund_status,
     cancelReason: text(row.cancel_reason),

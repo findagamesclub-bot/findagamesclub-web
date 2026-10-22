@@ -22,6 +22,7 @@ import {
 } from "@/services/submissionReview.service";
 import { draftReadiness } from "@/services/submissions.service";
 import { adminCanEdit, adminCanReview, STATUS_LABELS, STATUS_TONES } from "@/utils/submission-status";
+import { getClubSuspension } from "@/services/adminListings.service";
 import { draftValues } from "@/utils/draft-values";
 import { shortDate } from "@/utils/dates";
 import { mono, tokens } from "@/lib/tokens";
@@ -67,10 +68,17 @@ export default async function ReviewSubmissionPage({
   // One wave. The history is always drawn and the earlier attempt almost never
   // exists, so asking for both together costs a listing that has been here
   // before nothing extra and costs every other one nothing at all.
-  const [history, earlier, submitter] = await Promise.all([
+  const [history, earlier, submitter, down] = await Promise.all([
     getReviewHistory(Number(id), { names: true }),
     getEarlierAttempt(submission.restarted_from),
     getSubmitter(submission.owner_id),
+    // Whether the club this became is in the directory now. The request is
+    // approved and stays approved; whether the club is live is a different
+    // question, and this page answered only the first. The client found one
+    // reading "Approved and live" about a club an admin had taken down.
+    submission.club_id
+      ? getClubSuspension(submission.club_id).catch(() => null)
+      : Promise.resolve(null),
   ]);
 
   const payload = submission.payload ?? {};
@@ -109,11 +117,17 @@ export default async function ReviewSubmissionPage({
       />
 
       <Stack direction="row" spacing={1} sx={{ mb: 2.5, alignItems: "center", flexWrap: "wrap" }}>
-        <Chip size="small" label={STATUS_LABELS[status] ?? submission.status}
+        <Chip size="small"
+          label={down && status === "approved"
+            ? "Approved" : STATUS_LABELS[status] ?? submission.status}
           sx={{ fontWeight: 700, color: "#fff",
                 bgcolor: tone === "good" ? tokens.positive
                   : tone === "bad" ? tokens.danger
                     : tone === "warn" ? tokens.brass : tokens.inkMuted }} />
+        {down ? (
+          <Chip size="small" label="Taken down by an admin"
+            sx={{ fontWeight: 700, color: "#fff", bgcolor: tokens.danger }} />
+        ) : null}
         {sentBack > 0 ? (
           <Chip size="small"
             label={sentBack === 1 ? "Sent back once" : `Sent back ${sentBack} times`}

@@ -25,7 +25,7 @@ export default async function NewArmyListPage(
           { label: "New list" },
         ]} />
         <PageHead title="New army list"
-          lede={`Four steps: what it is, the faction, its detachments, then the units. Priced against ${gate.club.name}'s catalogue as you go.`} />
+          lede={`Five steps: what it is, the faction, its detachments, the disposition it is playing, then the units. Priced against ${gate.club.name}'s catalogue as you go.`} />
 
         {gate.reason ? (
           <ArmyGateNote reason={gate.reason} />

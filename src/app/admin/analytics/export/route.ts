@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getRevenueLines } from "@/services/siteGrowth.service";
 import { toCsv, csvFilename } from "@/utils/csv";
+import { methodLabel } from "@/utils/listing-billing";
 import { londonNow } from "@/utils/dates";
 import { periodLabel, readPeriod } from "@/utils/analytics-period";
 
@@ -61,7 +62,12 @@ export async function GET(request: Request) {
     line.period_end,
     (line.amount_pence / 100).toFixed(2),
     line.currency,
-    line.method,
+    // One spelling per column. The two sources store it differently, so the
+    // file read "bank_transfer" on a listing fee and "Bank transfer" on a
+    // featured slot, which is two methods to anybody sorting the column.
+    // `methodLabel` hands back anything it does not know unchanged, so it
+    // normalises the one and leaves the other alone.
+    methodLabel(line.method),
     line.reference,
     line.note,
   ]);
@@ -69,15 +75,33 @@ export async function GET(request: Request) {
   // The totals the page shows, so a reader can check the file against it
   // without adding a column up by hand. Kept apart for the same reason the
   // rows are.
-  const sum = (kind: string) => lines
-    .filter((line) => line.kind === kind)
-    .reduce((total, line) => total + line.amount_pence, 0);
+  //
+  // Its own little table with its own header row, rather than four labels
+  // hanging under the columns above. The client read "Listing fees received
+  // 45" as forty-five fees and the file's six rows as a contradiction, and
+  // they were right to: a bare number under a label that names a thing reads
+  // as a count of that thing, whichever column it is sitting in. Saying how
+  // many AND how much, under headings of their own, is the only shape where
+  // neither can be mistaken for the other.
+  const of = (kind: string) => {
+    const kept = lines.filter((line) => line.kind === kind);
+    return {
+      lines: kept.length,
+      pounds: (kept.reduce((total, line) => total + line.amount_pence, 0) / 100)
+        .toFixed(2),
+      // Whatever the rows are actually in. Mixing currencies in one total is
+      // a different problem and not one this site has yet.
+      currency: kept[0]?.currency ?? "GBP",
+    };
+  };
+  const listing = of("listing");
+  const featured = of("featured");
 
   rows.push([],
-    ["Window", "", periodLabel(period)],
-    ["Listing fees received", "", "", "", "", "", "", (sum("listing") / 100).toFixed(2)],
-    ["Featured slots booked", "", "", "", "", "", "", (sum("featured") / 100).toFixed(2)],
-    ["Lines", "", "", "", "", "", "", String(lines.length)]);
+    ["Totals", periodLabel(period)],
+    ["Kind", "Lines", "Amount", "Currency"],
+    ["Listing fee", String(listing.lines), listing.pounds, listing.currency],
+    ["Featured slot", String(featured.lines), featured.pounds, featured.currency]);
 
   const today = londonNow().date;
   return new NextResponse(toCsv(headers, rows), {

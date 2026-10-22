@@ -21,6 +21,12 @@ export type CoachingStanding = {
   capPercent: number;
   /** What the tier takes off coaching, before points. */
   discountPercent: number;
+  /**
+   * The tier's own name, for the line that says where the discount came from.
+   * `member_tier` has always returned it and the standing threw it away, so
+   * the card applied a tier discount and never named it.
+   */
+  tierLabel: string | null;
   currency: string;
 };
 

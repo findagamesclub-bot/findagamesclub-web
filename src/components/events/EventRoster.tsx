@@ -111,6 +111,19 @@ export default function EventRoster({
                         GUEST
                       </Typography>
                     ) : null}
+                    {/* Who they are playing for, where they said. The client
+                        asked for it here in those words, and it is also how
+                        somebody reading this list finds their own team mates
+                        before the club has built the teams. */}
+                    {r.teamName ? (
+                      <Typography sx={{ fontFamily: mono, fontSize: "0.6rem",
+                                        letterSpacing: "0.08em", fontWeight: 700,
+                                        color: faction.deep, flexShrink: 0,
+                                        overflow: "hidden", textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap" }}>
+                        {r.teamName.toUpperCase()}
+                      </Typography>
+                    ) : null}
                   </Stack>
 
                   {r.tickets === null ? null : (

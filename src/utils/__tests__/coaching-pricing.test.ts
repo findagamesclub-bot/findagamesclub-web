@@ -17,7 +17,7 @@ import { priceCoaching, slotPrice, type CoachingStanding } from "../coaching-pri
 
 const basic: CoachingStanding = {
   points: 400, pointValue: 0.05, capPercent: 50,
-  discountPercent: 10, currency: "GBP",
+  discountPercent: 10, tierLabel: "Premium Membership", currency: "GBP",
 };
 
 // ------------------------- the tier discount, which nothing applied before

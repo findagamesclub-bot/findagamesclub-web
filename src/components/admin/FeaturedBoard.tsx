@@ -10,6 +10,9 @@ import Typography from "@mui/material/Typography";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import EmptyState from "@/components/ui/EmptyState";
 import FeaturedBookForm from "@/components/admin/FeaturedBookForm";
+import FeaturedPaymentDialog, { type PayableSlot }
+  from "@/components/admin/FeaturedPaymentDialog";
+import type { SlotPayments } from "@/services/featured.service";
 import { useActionToast } from "@/components/ui/Toaster";
 import { useActionSuccess } from "@/hooks/useActionSuccess";
 import { featuredAction, type FeaturedState } from "@/app/admin/featured/actions";
@@ -28,10 +31,16 @@ import type { FeaturedSlotRow } from "@/repositories/featured.repository";
  * so the front page is never empty before anybody has bought anything.
  */
 export default function FeaturedBoard({
-  slots, clubs, today, defaultPricePence, defaultDays, showing,
+  slots, payments, clubs, today, defaultPricePence, defaultDays, showing,
   prefillClubId = null, requestId = null,
 }: {
   slots: FeaturedSlotRow[];
+  /**
+   * Whether each slot has been settled, keyed by id. Its own read rather than
+   * columns on the slot rows: `database.ts` has not been regenerated since
+   * 0151 and `check:columns` is right to refuse a select naming them.
+   */
+  payments: SlotPayments;
   clubs: { id: number; name: string; city: string }[];
   today: string;
   defaultPricePence: number;
@@ -58,6 +67,11 @@ export default function FeaturedBoard({
 
   const [, start] = useTransition();
   const [ending, setEnding] = useState<FeaturedSlotRow | null>(null);
+  const [paying, setPaying] = useState<PayableSlot | null>(null);
+
+  // Closed on the answer landing, not on the click: closing on the click takes
+  // a refusal off the screen along with whatever was typed into it.
+  useActionSuccess(state, () => setPaying(null));
 
   const live = (slot: FeaturedSlotRow) =>
     slot.starts_on <= today && slot.ends_on >= today;
@@ -140,6 +154,17 @@ export default function FeaturedBoard({
                       label={formatPence(slot.price_pence, slot.currency)}
                       sx={{ fontSize: "0.68rem", fontWeight: 700,
                             color: tokens.inkMuted, borderColor: tokens.rule }} />
+                    {/* Only where there is a price. A slot given away has
+                        nothing to settle, so "not paid" would be a bill. */}
+                    {slot.price_pence > 0 && payments.known ? (
+                      <Chip size="small"
+                        variant={payments.rows[slot.id]?.paidAt ? "filled" : "outlined"}
+                        label={payments.rows[slot.id]?.paidAt ? "Paid" : "Not paid yet"}
+                        sx={{ fontSize: "0.68rem", fontWeight: 700,
+                              ...(payments.rows[slot.id]?.paidAt
+                                ? { bgcolor: tokens.positive, color: "#fff" }
+                                : { color: tokens.brass, borderColor: tokens.brass }) }} />
+                    ) : null}
                   </Stack>
 
                   {slot.note ? (
@@ -151,12 +176,35 @@ export default function FeaturedBoard({
                   {/* Pushed down so Remove sits on the same line on every card
                       in a row, however long the note above it ran. */}
                   <Box sx={{ flex: 1 }} />
-                  <Box sx={{ pt: 1.25, borderTop: `1px solid ${tokens.rule}` }}>
+                  <Stack direction="row" spacing={1}
+                    sx={{ pt: 1.25, borderTop: `1px solid ${tokens.rule}`,
+                          alignItems: "center", justifyContent: "space-between" }}>
+                    {/* Do-this-first, then the one that ends something, which
+                        is the button order every card in this console uses. */}
+                    {/* Gated on the standing being readable as well as on
+                        there being a price: opening the dialog with "not paid"
+                        preselected, because the read failed rather than
+                        because nobody has paid, is how a slot gets cleared by
+                        accident. */}
+                    {slot.price_pence > 0 && payments.known ? (
+                      <Button variant="outlined" size="small"
+                        onClick={() => setPaying({
+                          id: slot.id, clubName: name,
+                          startsOn: slot.starts_on, endsOn: slot.ends_on,
+                          pricePence: slot.price_pence, currency: slot.currency,
+                          paidAt: payments.rows[slot.id]?.paidAt ?? null,
+                          method: payments.rows[slot.id]?.method ?? "",
+                          note: payments.rows[slot.id]?.note ?? "",
+                        })}
+                        sx={{ borderColor: tokens.rule, color: tokens.ink }}>
+                        {payments.rows[slot.id]?.paidAt ? "Payment" : "Record payment"}
+                      </Button>
+                    ) : <span />}
                     <Button variant="text" size="small" onClick={() => setEnding(slot)}
-                      sx={{ color: tokens.danger, ml: -1 }}>
+                      sx={{ color: tokens.danger }}>
                       Remove
                     </Button>
-                  </Box>
+                  </Stack>
                 </Stack>
               );
             })}
@@ -164,6 +212,21 @@ export default function FeaturedBoard({
         )}
       </>
       ) : null}
+
+      <FeaturedPaymentDialog
+        slot={paying}
+        saving={working}
+        onClose={() => setPaying(null)}
+        onSave={(fields) => {
+          const data = new FormData();
+          data.set("intent", "payment");
+          data.set("slot", String(paying?.id ?? 0));
+          data.set("paid", fields.paid);
+          data.set("method", fields.method);
+          data.set("note", fields.note);
+          start(() => act(data));
+        }}
+      />
 
       <ConfirmDialog
         open={ending !== null}

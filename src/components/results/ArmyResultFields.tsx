@@ -27,10 +27,12 @@ import { mono, tokens } from "@/lib/tokens";
  * army is the thing somebody fills in when they care. Opening it is deliberate.
  *
  * The pickers cascade, which is the whole design: faction, then that faction's
- * detachments, then **that detachment's** dispositions. The legacy manifest is
- * explicit that a disposition belongs to a detachment, so a disposition from
- * another one is not offerable rather than merely refused. The database refuses
- * it too, because the anon key is public.
+ * detachments, then what **those detachments** offer between them. Several
+ * detachments and one disposition, which is the army list builder's own rule
+ * and what the client asked for in those words. The legacy manifest is
+ * explicit that a disposition belongs to a detachment, so one from a
+ * detachment nobody brought is not offerable rather than merely refused. The
+ * database refuses it too, because the anon key is public.
  */
 export default function ArmyResultFields({
   title, catalogue, value, onChange,

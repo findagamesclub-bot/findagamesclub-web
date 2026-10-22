@@ -165,6 +165,27 @@ export async function leaveClub(membershipId: number) {
   }
 }
 
+export type MemberFacts = { email: string; suspendedReason: string };
+
+/**
+ * The address and the pause reason for one club's roster, by membership.
+ *
+ * Caught, because both are one line in a dialog: a failed read should cost
+ * those lines and not the members page.
+ */
+export async function getMemberFacts(
+  clubId: number,
+): Promise<Record<number, MemberFacts>> {
+  const rows = await repo.findMemberAdminFacts(clubId).catch((error) => {
+    console.error("[memberships] the roster's admin facts did not load", error);
+    return [];
+  });
+  return Object.fromEntries((rows ?? []).map((row) => [row.membership_id, {
+    email: row.email ?? "",
+    suspendedReason: row.suspended_reason ?? "",
+  }]));
+}
+
 function toMember(row: Row): ClubMember {
   const profile = (row as unknown as { profiles: { id: string; full_name: string; games_interested: string[]; factions_armies: string[];
     play_style_tags: string[] } | null }).profiles;
@@ -172,7 +193,7 @@ function toMember(row: Row): ClubMember {
     membershipId: row.id,
     profileId: profile?.id ?? "",
     fullName: profile?.full_name || "Member",
-    status: row.status as "pending" | "approved",
+    status: row.status as ClubMember["status"],
     tierKey: row.tier_key,
     tierAssignedAt: row.tier_assigned_at,
     joinedAt: row.joined_at,
@@ -184,10 +205,20 @@ function toMember(row: Row): ClubMember {
   };
 }
 
-/** The roster. Only approved people, in join order. */
-export async function getRoster(clubId: number): Promise<ClubMember[]> {
+/**
+ * The roster, in join order.
+ *
+ * Approved people only by default, which is what a member browsing the club
+ * should see. The console asks for the paused ones as well: without them a
+ * suspended member drops off the roster entirely and the club has no screen
+ * left to put their access back from.
+ */
+export async function getRoster(
+  clubId: number, opts: { includeSuspended?: boolean } = {},
+): Promise<ClubMember[]> {
   const [rows, requests] = await Promise.all([
-    repo.findClubMemberships(clubId, ["approved"]),
+    repo.findClubMemberships(clubId,
+      opts.includeSuspended ? ["approved", "suspended"] : ["approved"]),
     // A club with no outstanding requests should still get its roster.
     repo.findTierRequests(clubId).catch(() => []),
   ]);
@@ -314,3 +345,41 @@ export async function setJoinDate(membershipId: number, joined: string) {
     return { ok: false as const, error: "That did not save. Try again." };
   }
 }
+
+const SUSPEND_REFUSALS: Record<string, string> = {
+  NOT_PERMITTED: "You cannot change that member's access.",
+  MEMBERSHIP_NOT_FOUND: "That membership is not here any more.",
+  MEMBER_ON_THE_TEAM:
+    "They are on your own team, so this is not the way to take them off. "
+    + "Change their role on the Team page instead.",
+  MEMBER_NOT_APPROVED: "Only an approved member can be paused.",
+  MEMBER_NOT_SUSPENDED: "They are not paused, so there is nothing to put back.",
+};
+
+/**
+ * Pause somebody's access to one club, or put it back.
+ *
+ * The client's line, and it is the whole design: *"This would not suspend the
+ * members account overall and membership to other clubs, but would suspend the
+ * member from being able to access the club in question."* It is a membership
+ * status, so `is_club_member` answers false and every club-only read follows
+ * without knowing this feature exists.
+ */
+export async function setMemberSuspended(
+  membershipId: number, on: boolean, reason: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await repo.setMembershipSuspended(membershipId, on, reason.trim().slice(0, 500));
+    return { ok: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    const code = Object.keys(SUSPEND_REFUSALS).find((key) => message.includes(key));
+    if (!code) console.error("[memberships] an unmapped suspension refusal", error);
+    return {
+      ok: false,
+      error: code ? SUSPEND_REFUSALS[code]! : "That did not save. Try again.",
+    };
+  }
+}
+
+

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { callRpc, table } from "@/lib/supabase/table";
+import { callRpc } from "@/lib/supabase/table";
 
 /**
  * The armies behind a result, and which clubs record them.
@@ -25,7 +25,9 @@ export type ResultArmyRow = {
   list_name: string;
   faction_id: string;
   faction_label: string;
+  /** The lead one, and all of them (0217). */
   detachment: string;
+  detachments: string[] | null;
   disposition: string;
   mvp_units: string[] | null;
   underwhelming_units: string[] | null;
@@ -38,16 +40,8 @@ export type ResultArmyRow = {
 
 export async function findResultArmies(source: string, ids: number[]) {
   if (!ids.length) return [];
-  const rows = await table<ResultArmyRow>("game_result_armies");
-  const { data, error } = await rows
-    .select(`source_id, side, faction_id, faction_label, detachment, disposition,
-             mvp_units, underwhelming_units, primary_score, secondary_score,
-             painted, first_turn, battle_role, list_id, list_name`)
-    .eq("source_type", source)
-    .in("source_id", ids);
-
-  if (error) throw new Error(`Failed to load the armies: ${error.message}`);
-  return data ?? [];
+  return callRpc<ResultArmyRow[]>("result_armies_for",
+    { p_source: source, p_ids: [...new Set(ids)] });
 }
 
 /**
@@ -79,18 +73,8 @@ export type GameArmyRow = ResultArmyRow & {
 
 export async function findGameArmies(sources: string[], ids: number[]) {
   if (!sources.length || !ids.length) return [];
-  const rows = await table<GameArmyRow>("game_result_armies");
-  const { data, error } = await rows
-    .select(`source_type, source_id, side, faction_id, faction_label, detachment,
-             disposition, mvp_units, underwhelming_units, primary_score,
-             secondary_score, painted, first_turn, battle_role,
-             mission, deployment, terrain, profile_id, player_name,
-             list_id, list_name, list_version_number, snapshot`)
-    .in("source_type", [...new Set(sources)])
-    .in("source_id", [...new Set(ids)]);
-
-  if (error) throw new Error(`Failed to load the games: ${error.message}`);
-  return data ?? [];
+  return callRpc<GameArmyRow[]>("game_armies_for",
+    { p_sources: [...new Set(sources)], p_ids: [...new Set(ids)] });
 }
 
 /** Which of these clubs run the army builder, and what against. */
@@ -121,7 +105,7 @@ export type MemberListRow = {
   list_type: string;
   faction_id: string;
   faction_label: string;
-  detachment: string;
+  detachments: string[] | null;
   disposition: string;
   total_points: number | null;
   points_limit: string | null;

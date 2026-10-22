@@ -39,8 +39,8 @@ export async function competitionAction(
 
   if (intent === "create") {
     const result = await comps.createCompetition(Number(data.get("clubId")), form());
-    refresh();
     if (!result.ok) return { error: result.error };
+    refresh();
     // Straight into the table: a competition with no players in it is not
     // finished, and the next thing anybody wants is to add them.
     redirect(`/clubs/${slug}/competitions/manage/${result.id}`);
@@ -50,14 +50,15 @@ export async function competitionAction(
 
   if (intent === "edit") {
     const result = await comps.editCompetition(competitionId, form());
+    if (!result.ok) return { error: result.error };
     refresh(competitionId);
-    return result.ok ? { notice: "Competition saved." } : { error: result.error };
+    return { notice: "Competition saved." };
   }
 
   if (intent === "delete") {
     const result = await comps.removeCompetition(competitionId);
-    refresh();
     if (!result.ok) return { error: result.error };
+    refresh();
     redirect(`/clubs/${slug}/competitions/manage`);
   }
 
@@ -71,8 +72,9 @@ export async function competitionAction(
     }
 
     const result = await comps.saveStandings(competitionId, rows);
+    if (!result.ok) return { error: result.error };
     refresh(competitionId);
-    return result.ok ? { notice: "Table saved." } : { error: result.error };
+    return { notice: "Table saved." };
   }
 
   // What was played in one game of a round. Its own intent rather than part
@@ -103,8 +105,9 @@ export async function competitionAction(
         terrain: String(data.get("terrain") ?? ""),
       },
     });
+    if (!result.ok) return { error: result.error };
     refresh(competitionId);
-    return result.ok ? { notice: "What was played is saved." } : { error: result.error };
+    return { notice: "What was played is saved." };
   }
 
   if (intent === "round") {
@@ -128,14 +131,16 @@ export async function competitionAction(
         matches,
       },
     });
+    if (!result.ok) return { error: result.error };
     refresh(competitionId);
-    return result.ok ? { notice: "Round saved." } : { error: result.error };
+    return { notice: "Round saved." };
   }
 
   if (intent === "delete-round") {
     const result = await comps.removeRound(Number(data.get("roundId")));
+    if (!result.ok) return { error: result.error };
     refresh(competitionId);
-    return result.ok ? { notice: "Round removed." } : { error: result.error };
+    return { notice: "Round removed." };
   }
 
   return { error: "Something went wrong. Reload and try again." };

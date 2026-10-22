@@ -22,6 +22,7 @@ import { tokens, type Faction } from "@/lib/tokens";
 import type { EventPlacing, ResultArmy } from "@/types/event";
 import type { Builder, MemberList } from "@/services/resultArmies.service";
 import { PER_PAGE } from "@/utils/paging";
+import { detachmentLine } from "@/utils/result-army";
 
 /** Below this the whole field fits as podium cards and nothing is gained by paging. */
 const PODIUM_ONLY = 6;
@@ -87,7 +88,10 @@ export default function EventPlacings({
     return placings.filter((p) =>
       fold(p.name).includes(needle)
       || fold(p.army?.factionLabel ?? "").includes(needle)
-      || fold(p.army?.detachment ?? "").includes(needle));
+      // Every detachment, not the lead one: a club searching for the second
+      // army in a two-detachment list would otherwise be told there is no
+      // such row, on a page plainly showing it.
+      || fold(detachmentLine(p.army ?? {})).includes(needle));
   }, [placings, needle]);
 
   // Memoised, both of them. usePagedList resets the page whenever the list

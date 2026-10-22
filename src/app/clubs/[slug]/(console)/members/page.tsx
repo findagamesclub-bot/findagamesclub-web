@@ -21,7 +21,10 @@ import TierRequestQueue from "@/components/members/TierRequestQueue";
 import { getClubDetail } from "@/services/clubDetail.service";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
-import { getJoinedCount, getMyMembership, getPendingRequests, getRoster } from "@/services/memberships.service";
+import { getJoinedCount, getMemberFacts, getMyMembership, getPendingRequests, getRoster }
+  from "@/services/memberships.service";
+import type { MemberFacts } from "@/services/memberships.service";
+import { getClubTeam } from "@/services/clubTeam.service";
 import { getClubPayments, standing } from "@/services/payments.service";
 import { getRivals } from "@/services/clubExtras.service";
 import { getOpponentFinder } from "@/services/games.service";
@@ -64,13 +67,31 @@ export default async function ClubMembersPage({
   // Both queries are policy-protected and would return empty rather than error,
   // but an empty roster and a hidden roster have to read differently.
   const canSeeRoster = canManage || membership.status === "approved";
-  const [roster, pendingRequests, payments] = await Promise.all([
-    canSeeRoster ? getRoster(club.id) : Promise.resolve([]),
+  const [roster, pendingRequests, payments, memberFacts, team] = await Promise.all([
+    // The club's own view includes anybody it has paused: without them a
+    // suspended member drops off the roster and there is no screen left to
+    // put their access back from (0212).
+    canSeeRoster ? getRoster(club.id, { includeSuspended: canManage })
+      : Promise.resolve([]),
     canManage ? getPendingRequests(club.id) : Promise.resolve([]),
     // Payments are policy-scoped to the member or the club's manager, so this
     // is fetched once for the whole roster rather than per card.
     canSeeRoster ? getClubPayments(club.id) : Promise.resolve(new Map()),
+    // The address and the pause reason, neither of which a typed select can
+    // carry. One round trip for the whole roster, and only for the club.
+    canManage ? getMemberFacts(club.id)
+      : Promise.resolve({} as Record<number, MemberFacts>),
+    // Who is on the team. SQL refuses to pause them (a club falling out
+    // through the software is what that guard stops), so the control is not
+    // offered rather than offered and then refused.
+    canManage ? getClubTeam(club.id).catch(() => null) : Promise.resolve(null),
   ]);
+
+  const teamIds = new Set(
+    team
+      ? [team.owner?.profileId, ...team.managers.map((m) => m.profileId),
+         ...team.helpers.map((m) => m.profileId)].filter((id): id is string => Boolean(id))
+      : []);
 
   // Rivalries hang off the roster, so they are loaded with it rather than on a
   // page of their own — you name a rival while looking at the list of people.
@@ -339,6 +360,10 @@ export default async function ClubMembersPage({
                     standing={standing(payments.get(m.membershipId) ?? [], m.tierKey, m.tierAssignedAt)}
                     payments={payments.get(m.membershipId) ?? []}
                     faction={faction}
+                    email={memberFacts[m.membershipId]?.email ?? ""}
+                    suspended={m.status === "suspended"}
+                    suspendedReason={memberFacts[m.membershipId]?.suspendedReason ?? ""}
+                    onTeam={teamIds.has(m.profileId)}
                   />
                 ) : m.profileId !== viewer?.id && viewer ? (
                   // Wrapped, not `component={NextLink}`: this is a Server

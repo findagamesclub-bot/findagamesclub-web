@@ -21,6 +21,9 @@ export type GameRow = {
   result_deployment: string | null;
   result_terrain: string | null;
   result_confirmation: string | null;
+  /** Frozen at the moment the table was booked (0014). Numeric over the wire. */
+  total_price: number | string | null;
+  price_currency: string | null;
   clubs: { slug: string; name: string; logo_url: string | null; logo_path: string | null };
   booker: { full_name: string | null } | null;
   opponent: { full_name: string | null } | null;
@@ -54,6 +57,7 @@ const COLUMNS = `
   booked_by, opponent_profile_id, opponent_name,
   booked_by_score, opponent_score, booked_by_army, opponent_army, result_at,
   result_mission, result_deployment, result_terrain, result_confirmation,
+  total_price, price_currency,
   clubs!inner(slug, name, logo_url, logo_path),
   booker:profiles!club_bookings_booked_by_fkey(full_name),
   opponent:profiles!club_bookings_opponent_profile_id_fkey(full_name)`;
@@ -77,6 +81,35 @@ export async function findMyGames(profileId: string, from: number, to: number) {
 
   if (error) throw new Error(`Failed to load your games: ${error.message}`);
   return (data ?? []) as unknown as { club_bookings: GameRow }[];
+}
+
+export type BookingPaymentRow = {
+  booking_id: number;
+  payment_status: string;
+  paid_at: string | null;
+};
+
+/**
+ * What the club has recorded against this reader's own tables.
+ *
+ * An RPC rather than three more columns on the select above:
+ * `club_bookings.payment_status` arrived in 0205 and
+ * `src/types/database.ts` has not been regenerated since 0151, so
+ * `check:columns` is right to refuse a select naming it. 0213's function is
+ * `security invoker`, so row security decides what comes back and nothing
+ * about who may read a booking is written out a second time.
+ */
+export async function findMyBookingPayments(bookingIds: number[]) {
+  if (!bookingIds.length) return [];
+  const supabase = await createClient();
+  const { data, error } = await (supabase as unknown as {
+    rpc(name: string, args: Record<string, unknown>): Promise<{
+      data: BookingPaymentRow[] | null; error: { message: string } | null;
+    }>;
+  }).rpc("my_booking_payments", { p_bookings: bookingIds });
+
+  if (error) throw new Error(`Failed to load what you owe: ${error.message}`);
+  return data ?? [];
 }
 
 /** Wins, draws and losses per opponent, counted in the database. */

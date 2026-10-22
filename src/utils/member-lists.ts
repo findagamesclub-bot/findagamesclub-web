@@ -31,7 +31,11 @@ export function listsByClubSlug(lists: ArmyList[]): Record<string, MemberList[]>
       name: list.name,
       factionId: current.factionId,
       faction: current.factionLabel || current.factionId,
-      detachment: current.detachments[0]?.detachment ?? "",
+      // All of them. A list built on two detachments names two, which is
+      // the whole of the item: taking the first alone is what the result
+      // screens were doing.
+      detachments: current.detachments
+        .map((one) => one.detachment.trim()).filter(Boolean),
       disposition: current.detachments[0]?.disposition ?? "",
       points: current.totalPoints,
       version: current.versionNumber,

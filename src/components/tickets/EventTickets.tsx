@@ -34,6 +34,7 @@ import type { BuyableTicket, EventCart } from "@/types/ticket";
 export default function EventTickets({
   tickets, cart, standing, faction, slug, eventKey, eventId, signedIn, hasEnded,
   cancelled, takenDown = false, fullName, email, myBookingReference, myBookingCount = 0,
+  teamEvent = false,
 }: {
   tickets: BuyableTicket[];
   cart: EventCart | null;
@@ -54,6 +55,11 @@ export default function EventTickets({
    * something the club did not do.
    */
   takenDown?: boolean;
+  /**
+   * A team event asks the booker who they are playing for (0211), so the club
+   * can build the teams from what people typed rather than inventing them.
+   */
+  teamEvent?: boolean;
   fullName: string;
   email: string;
   myBookingReference: string | null;
@@ -251,6 +257,7 @@ export default function EventTickets({
           faction={faction}
           slug={slug}
           eventKey={eventKey}
+          teamEvent={teamEvent}
           eventId={eventId}
           fullName={fullName}
           email={email}

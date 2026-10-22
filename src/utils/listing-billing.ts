@@ -204,8 +204,11 @@ export function listingCostLine(settings: ListingCostSettings): string | null {
  * the wrong thing to promise somebody who has to pay first.
  */
 export function listingSubmitNote(settings: ListingCostSettings): string {
+  // 0215 moved the fee to after the approval, so this sentence had to move
+  // with it: it promised a queue that opens on payment, which is the order
+  // the client asked us to reverse.
   return settings.enabled
-    ? "We will email you how to pay. Your listing goes to us as soon as the "
-      + "payment is in, and into the directory once we have read it."
+    ? "We will read it and email you either way, usually within a few days. "
+      + "There is nothing to pay unless it is approved."
     : "We will email you either way, usually within a few days.";
 }

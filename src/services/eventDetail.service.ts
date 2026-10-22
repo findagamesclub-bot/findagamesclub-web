@@ -16,6 +16,7 @@ import { listFromSnapshot } from "@/utils/army-snapshot";
 import { toMembershipTiers } from "@/utils/membership-tiers";
 import { formatPrice } from "@/utils/format";
 import { eventArt } from "@/utils/event-art";
+import { readDetachments } from "@/utils/result-army";
 import { geocodeUk } from "./geocode.service";
 import { getClubAccess } from "./clubAccess.service";
 import type {
@@ -55,6 +56,14 @@ function toArmy(raw: unknown): ResultArmy | null {
   return {
     factionLabel: (a.factionLabel as string) || null,
     detachment: (a.detachment as string) || null,
+    // The list where 0217 wrote one, the single column where the placing
+    // predates it. A legacy row carries only the second.
+    detachments: readDetachments({
+      detachments: Array.isArray(a.detachments)
+        ? (a.detachments as string[]).filter((one) => typeof one === "string")
+        : null,
+      detachment: (a.detachment as string) ?? "",
+    }),
     disposition: (a.disposition as string) || null,
     mvpUnits: Array.isArray(a.mvpUnits) ? (a.mvpUnits as string[]).filter(Boolean) : [],
     list: listFromSnapshot(a.armyListVersionSnapshot, {

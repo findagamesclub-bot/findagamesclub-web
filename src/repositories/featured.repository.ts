@@ -139,6 +139,40 @@ export async function findSlotsForClub(clubId: number): Promise<ClubSlotRow[]> {
 }
 
 /**
+ * Whether a slot has been settled, for the two screens that say so.
+ *
+ * A second small read rather than four more columns on the selects above,
+ * because `src/types/database.ts` has not been regenerated since 0151 and
+ * `check:columns` is right to refuse a select naming a column its schema has
+ * never heard of. Same shape, and the same reason, as `findPaymentStanding`
+ * on an event booking. Merge it in and delete this after the regeneration.
+ */
+export type FeaturedPayment = {
+  slot_id: number;
+  paid_at: string | null;
+  payment_method: string | null;
+  payment_note: string | null;
+};
+
+export async function findFeaturedPayments(
+  ids: number[],
+): Promise<Map<number, FeaturedPayment>> {
+  if (!ids.length) return new Map();
+  const rows = await callRpc<FeaturedPayment[] | null>(
+    "featured_payment_standing", { p_slots: ids });
+  return new Map((rows ?? []).map((row) => [row.slot_id, row]));
+}
+
+export const recordFeaturedPayment = (params: {
+  slot: number; paid: boolean; method: string; note: string;
+}) => callRpc<FeaturedPayment[]>("record_featured_payment", {
+  p_slot: params.slot,
+  p_paid: params.paid,
+  p_method: params.method,
+  p_note: params.note,
+});
+
+/**
  * Clubs an admin can pick from, for the slot form.
  *
  * Not `listClubs`: the directory returns a `ClubSummary`, which deliberately

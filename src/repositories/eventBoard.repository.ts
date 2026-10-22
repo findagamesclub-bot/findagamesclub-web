@@ -9,6 +9,7 @@ import { table } from "@/lib/supabase/table";
 export type RosterRow = {
   profile_id: string | null;
   full_name: string;
+  team_name: string | null;
   is_member: boolean;
   tickets: number;
   bookings: number;

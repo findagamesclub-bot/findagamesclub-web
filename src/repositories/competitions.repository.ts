@@ -8,6 +8,12 @@ export type StandingRow = {
   rank: number; member_name: string; profile_id: string | null;
   played: number; wins: number; draws: number; losses: number; points: number;
   record_label: string; notes: string; faction: string; detachment: string;
+  /**
+   * Several (0217). Not selected: the column is newer than the generated
+   * types. The editor posts them and `withStandingLists` reads them back off
+   * the mirror, which is the shape 0194's list columns already use.
+   */
+  detachments?: string[];
   disposition: string;
   /** Which of the member's own lists this row was played with (0194). */
   army_list_id: number | null;
@@ -249,9 +255,19 @@ export async function deleteCompetition(id: number) {
  * together, and ranks are positions in a list rather than values anybody types.
  * Replacing it is one round trip and cannot leave two rows claiming third.
  */
+/**
+ * A row on its way in.
+ *
+ * `detachment` is not on it: the column is derived from the list below, so a
+ * caller that could set both is a caller that can make them disagree.
+ */
+export type StandingWrite =
+  Omit<StandingRow, "record_label" | "id" | "detachment" | "detachments">
+  & { detachments: string[] };
+
 export async function replaceStandings(
   competitionId: number,
-  rows: Omit<StandingRow, "record_label" | "id">[],
+  rows: StandingWrite[],
 ) {
   const standings = await writable("club_competition_standings");
 
@@ -274,7 +290,12 @@ export async function replaceStandings(
       // Kept in step with the numbers rather than typed: legacy shows "3-1-1"
       // beside the row and a hand-typed one drifts the moment a game is added.
       record_label: `${row.wins}-${row.draws}-${row.losses}`,
-      notes: row.notes, faction: row.faction, detachment: row.detachment,
+      notes: row.notes, faction: row.faction,
+      // The lead one, and the list beside it. The column has been printed by
+      // the standings table since 0024 and the Meta Tracker groups on its
+      // mirror, so it goes on holding the first of them (0217).
+      detachment: row.detachments?.[0] ?? "",
+      detachments: row.detachments ?? [],
       disposition: row.disposition,
       // 0194. An insert is not a select, so `check:columns` has nothing to
       // say about a column the stale `database.ts` has not caught up with.
@@ -387,7 +408,7 @@ export const findCompetitionGames = (competitionId: number) =>
 export type GameArmyRow = {
   source_id: number; side: string;
   faction_id: string; faction_label: string;
-  detachment: string; disposition: string;
+  detachment: string; detachments: string[] | null; disposition: string;
   list_id: number | null; list_name: string;
   list_version_number: number | null; snapshot: unknown;
   mvp_units: string[] | null; underwhelming_units: string[] | null;
@@ -402,6 +423,8 @@ export const findCompetitionGameArmies = (competitionId: number) =>
 export type StandingListRow = {
   competition_id: number;
   standing_id: number;
+  /** Every detachment the row was played with (0217). */
+  detachments: string[] | null;
   list_id: number;
   list_name: string;
   list_version_number: number | null;

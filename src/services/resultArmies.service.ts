@@ -81,7 +81,8 @@ export type MemberList = {
   name: string;
   factionId: string;
   faction: string;
-  detachment: string;
+  /** Every detachment the list was built on, not only its first. */
+  detachments: string[];
   disposition: string;
   points: number | null;
   version: number | null;
@@ -106,7 +107,7 @@ export async function getMemberLists(clubId: number): Promise<MemberList[]> {
     name: row.name,
     factionId: row.faction_id,
     faction: row.faction_label || row.faction_id,
-    detachment: row.detachment,
+    detachments: row.detachments ?? [],
     disposition: row.disposition,
     points: row.total_points,
     version: row.version_number,

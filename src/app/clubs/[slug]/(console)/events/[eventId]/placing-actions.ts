@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import * as placings from "@/services/eventPlacings.service";
+import { readFieldDetachments } from "@/utils/result-form";
 
 export type PlacingState = { error?: string; notice?: string };
 
@@ -48,7 +49,10 @@ export async function placingAction(
     // rather than trusting that the browser resolved the code into an id.
     memberCode: String(data.get("memberCode") ?? "") || null,
     faction: String(data.get("faction") ?? ""),
-    detachment: String(data.get("detachment") ?? ""),
+    // The cascade posts a list as JSON and the plain box a club with no
+    // catalogue still gets posts one string. `readFieldDetachments` is the one
+    // place that reads either, so neither form of the dialog is a second rule.
+    detachments: readFieldDetachments(data),
     disposition: String(data.get("disposition") ?? ""),
     listId,
   });

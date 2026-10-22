@@ -70,6 +70,8 @@ export type EventBooking = {
    */
   paymentStatus: PaymentStatus;
   paymentMethod: string;
+  /** What the club wrote beside it. Theirs to write, the member's to read. */
+  paymentNote: string;
   refundStatus: RefundStatus;
   /** Why the club took the place back, when it was not the member's doing. */
   cancelReason: string;

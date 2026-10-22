@@ -20,8 +20,10 @@ type DoorListRow = {
   email: string | null;
   reference: string | null;
   status: string;
+  team_name: string | null;
   payment_status: PaymentStatus;
   payment_method: string | null;
+  payment_note: string | null;
   checked_in_at: string | null;
   refund_status: RefundStatus;
   cancel_reason: string | null;
@@ -42,8 +44,10 @@ export async function findDoorList(eventId: number): Promise<DoorRow[]> {
     email: text(row.email),
     reference: text(row.reference),
     status: row.status,
+    teamName: text(row.team_name),
     paymentStatus: row.payment_status,
     paymentMethod: text(row.payment_method),
+    paymentNote: text(row.payment_note),
     checkedInAt: row.checked_in_at,
     refundStatus: row.refund_status,
     cancelReason: text(row.cancel_reason),
@@ -59,6 +63,7 @@ export async function findDoorList(eventId: number): Promise<DoorRow[]> {
 export type PaymentStanding = {
   payment_status: PaymentStatus;
   payment_method: string | null;
+  payment_note: string | null;
   refund_status: RefundStatus;
   cancel_reason: string | null;
 };
@@ -78,7 +83,7 @@ export async function findPaymentStanding(
 
   const bookings = await table<PaymentStanding & { id: number }>("club_event_bookings");
   const { data, error } = await bookings
-    .select("id, payment_status, payment_method, refund_status, cancel_reason")
+    .select("id, payment_status, payment_method, payment_note, refund_status, cancel_reason")
     .in("id", bookingIds);
   if (error) throw new Error(error.message);
 
@@ -218,6 +223,8 @@ export const addEventBooking = (params: {
   reference: string;
   ticketTypeId: number;
   quantity: number;
+  /** Who they are playing for. 0211 keeps it only at a team event. */
+  teamName?: string;
 }) => callRpc<number>("club_add_event_booking", {
   p_event: params.eventId,
   p_profile: params.profileId,
@@ -225,5 +232,6 @@ export const addEventBooking = (params: {
   p_email: params.email,
   p_reference: params.reference,
   p_ticket_type: params.ticketTypeId,
+  p_team: params.teamName ?? "",
   p_quantity: params.quantity,
 });

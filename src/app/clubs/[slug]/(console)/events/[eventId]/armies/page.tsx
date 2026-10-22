@@ -5,12 +5,12 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import EventArmyMeta from "@/components/events/EventArmyMeta";
+import EventMetaBreakdown from "@/components/events/EventMetaBreakdown";
 import { getEventDetail } from "@/services/eventDetail.service";
-import { getEventMeta } from "@/services/meta.service";
+import { getEventBreakdown, getEventMeta } from "@/services/meta.service";
 import { getCurrentProfile } from "@/services/auth.service";
 import { eventRecordsArmies } from "@/utils/event-meta";
-import { londonToday } from "@/services/bookingCalendar.service";
-import { tokens } from "@/lib/tokens";
+import { mono, tokens } from "@/lib/tokens";
 
 export async function generateMetadata(
   { params }: PageProps<"/clubs/[slug]/events/[eventId]/armies">,
@@ -41,7 +41,15 @@ export default async function EventArmiesPage(
   if (!event) notFound();
 
   const open = eventRecordsArmies(event.featuredGames);
-  const rows = open ? await getEventMeta(event.id).catch(() => []) : [];
+  // One wave. The grouped reading and the per-army list answer two different
+  // questions and neither needs the other's answer.
+  const [rows, breakdown] = open
+    ? await Promise.all([
+        getEventMeta(event.id).catch(() => []),
+        getEventBreakdown(event.id),
+      ])
+    : [[], { factions: [], detachments: [], dispositions: [],
+             matchups: [], players: [], loaded: true }];
   if (!rows.length) notFound();
 
   return (
@@ -70,7 +78,15 @@ export default async function EventArmiesPage(
           </Typography>
         </Stack>
 
-        <EventArmyMeta rows={rows} />
+        <EventMetaBreakdown breakdown={breakdown} />
+
+        <Stack spacing={1.25}>
+          <Typography sx={{ fontFamily: mono, fontSize: "0.68rem", fontWeight: 700,
+                            letterSpacing: "0.1em", color: tokens.inkMuted }}>
+            WHAT EACH PERSON BROUGHT
+          </Typography>
+          <EventArmyMeta rows={rows} />
+        </Stack>
       </Stack>
     </Container>
   );

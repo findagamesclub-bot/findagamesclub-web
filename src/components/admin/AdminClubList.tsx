@@ -140,7 +140,10 @@ export default function AdminClubList({
                         ].filter(Boolean).join(" · ")}
                       </Typography>
                       <TakeDownControls kind="club" id={club.id} name={club.name}
-                        slug={club.slug} down={club.status === "suspended"} />
+                        slug={club.slug} down={club.status === "suspended"}
+                        reason={club.suspended_reason}
+                        askedAt={club.review_asked_at}
+                        askedNote={club.review_asked_note} />
                     </Stack>
                   </Stack>
                 );

@@ -70,7 +70,12 @@ export default function PlacingArmyFields({
         <>
           {/* Controlled, so the values reach the action as fields. */}
           <input type="hidden" name="faction" value={army.factionLabel} />
-          <input type="hidden" name="detachment" value={army.detachment} />
+          {/* A form field is a string and this is a list, so it goes as
+              JSON: the same answer `GameResultDialog` gives for two armies.
+              The action reads it with `readDetachments` and falls back to the
+              single `detachment` box a club with no catalogue still types. */}
+          <input type="hidden" name="detachments"
+            value={JSON.stringify(army.detachments)} />
           <input type="hidden" name="disposition" value={army.disposition} />
           <input type="hidden" name="listId" value={listId === null ? "" : listId} />
 

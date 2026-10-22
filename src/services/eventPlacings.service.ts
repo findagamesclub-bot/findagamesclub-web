@@ -41,7 +41,8 @@ export async function savePlacing(params: {
   /** The code the club was given, when the player is not one of their own. */
   memberCode?: string | null;
   faction: string;
-  detachment: string;
+  /** Several, and one disposition for all of them (0217). */
+  detachments: string[];
   disposition: string;
   /** Undefined leaves whatever list is already named alone. */
   listId?: number | null;
@@ -59,10 +60,12 @@ export async function savePlacing(params: {
       rank: Math.floor(params.rank),
       name: params.name.trim(),
       faction: params.faction.trim(),
-      detachment: params.detachment.trim(),
-      // A disposition hangs off a detachment. Without one it has nothing to
-      // belong to, and `resolve_result_army` would refuse the whole placing.
-      disposition: params.detachment.trim() ? params.disposition.trim() : "",
+      detachments: params.detachments
+        .map((one) => one.trim()).filter(Boolean),
+      // A disposition hangs off the detachments. With none it has nothing to
+      // belong to, and `resolve_result_armies` would refuse the whole placing.
+      disposition: params.detachments.some((one) => one.trim())
+        ? params.disposition.trim() : "",
     });
 
     // Second, and only once the placing exists: a list hangs off the army row

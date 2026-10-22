@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { hasBreakdown, priceRows, savedAmount, savedLine, type Priced } from "../price-lines";
+import { hasBreakdown, priceRows, savedAmount, savedLine, tierSavingLine,
+  type Priced } from "../price-lines";
 
 // The client's own merchandise example, which is where the mislabelling was
 // found: two shirts at £15, Premium taking 10%, then 54 points at 5p.
@@ -95,5 +96,28 @@ assert.ok(!savedLine(order)!.includes("£5.70"),
 
 // Another currency is formatted, not assumed away.
 assert.equal(priceRows({ ...order, currency: "EUR" })[0]!.value, "EUR 30.00");
+
+// The coaching card quotes a tier discount BEFORE anything is booked, so it
+// has no `Priced` to hand over: it builds the three figures it holds. The
+// point of the shared function is that both routes say the same sentence, so
+// the test compares them rather than pinning each one's wording separately.
+{
+  const quoted = { tierAmount: 5, tierLabel: "Life Member", currency: "GBP" };
+  assert.equal(tierSavingLine(quoted), "£5.00 off as Life Member");
+
+  const booked: Priced = {
+    subtotal: 25, tierLabel: "Life Member", tierPercent: 20, tierAmount: 5,
+    points: 0, pointsAmount: 0, total: 20,
+  };
+  assert.equal(tierSavingLine(quoted), savedLine(booked));
+}
+
+// A club that has not named its tier still gets a sentence, and a session with
+// nothing off gets none: a line reading "£0.00 off" is a saving that did not
+// happen.
+assert.equal(
+  tierSavingLine({ tierAmount: 2.5, tierLabel: null, currency: "GBP" }),
+  "£2.50 off as a member");
+assert.equal(tierSavingLine({ tierAmount: 0, tierLabel: "Life Member", currency: "GBP" }), null);
 
 console.log("price-lines: all pass");

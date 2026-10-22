@@ -207,7 +207,17 @@ export async function findCoachingSettings(clubId: number) {
   return data;
 }
 
-export async function findSlots(clubId: number, from: string) {
+/**
+ * `from` null means every session this club has ever run.
+ *
+ * The member's page asks from today, because a session last March is not
+ * something to book. The club's console has to see the past ones: 0159 exists
+ * so a club can mark a session paid AFTER it happened, and with the list
+ * filtered to the future there was no card to press. The club's own Closed and
+ * Called off tabs read 0 at a club with seventy bookings behind it, which is
+ * what the client reported.
+ */
+export async function findSlots(clubId: number, from: string | null) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("club_coaching_slots")
@@ -218,9 +228,12 @@ export async function findSlots(clubId: number, from: string) {
                               profiles!club_coaching_bookings_profile_id_fkey(id, full_name))`,
     )
     .eq("club_id", clubId)
-    .gte("slot_date", from)
-    .order("slot_date")
-    .order("start_time");
+    // Bounded either way: a club a few seasons in has hundreds of these and
+    // the list is sifted in the browser, which is the scale rule's line.
+    .gte("slot_date", from ?? "1970-01-01")
+    .order("slot_date", { ascending: false })
+    .order("start_time")
+    .limit(300);
 
   if (error) throw new Error(`Failed to load coaching slots: ${error.message}`);
   return data ?? [];

@@ -299,7 +299,7 @@ begin
   set local role authenticated;
   begin
     perform public.save_event_placing(v_event, null, 4, 'Olive Outsider',
-      'e0000000-0000-0000-0000-000000000010'::uuid, '', '');
+      'e0000000-0000-0000-0000-000000000010'::uuid, '', '{}'::text[]);
     reset role;
     raise exception 'FAIL 24: a placing linked a stranger with no code';
   exception when raise_exception then
@@ -319,7 +319,7 @@ begin
     json_build_object('sub', w.owner, 'role', 'authenticated')::text, true);
   set local role authenticated;
   v_result := public.save_event_placing(v_event, null, 4, 'Olive Outsider',
-    'e0000000-0000-0000-0000-000000000010'::uuid, '', '', '', v_code);
+    'e0000000-0000-0000-0000-000000000010'::uuid, '', '{}'::text[], '', v_code);
   reset role;
   perform set_config('request.jwt.claims', null, true);
 
@@ -334,7 +334,7 @@ begin
     json_build_object('sub', w.owner, 'role', 'authenticated')::text, true);
   set local role authenticated;
   v_result := public.save_event_placing(v_event, null, 5, 'Nobody At All',
-    null, '', '');
+    null, '', '{}'::text[]);
   reset role;
   perform set_config('request.jwt.claims', null, true);
   if pg_temp.result_owner(v_result) is not null then

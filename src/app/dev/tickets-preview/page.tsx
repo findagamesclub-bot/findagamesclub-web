@@ -60,6 +60,7 @@ export default function TicketsPreviewPage() {
       points: 45, pointsAmount: 2.25, total: 54.75,
     },
     paymentStatus: "paid_in_advance", paymentMethod: "Bank transfer",
+    paymentNote: "Paid for both places in one transfer, ref MARCHETTI.",
     refundStatus: "not_due", cancelReason: "",
     lines: cart.lines,
   };

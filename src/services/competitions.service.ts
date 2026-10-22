@@ -50,6 +50,10 @@ function toCompetition(row: CompetitionRow): Competition {
         notes: entry.notes,
         faction: entry.faction,
         detachment: entry.detachment,
+        // The one column, as a list of one, until `withStandingLists` fills
+        // in what the mirror holds. A table drawn without that step still
+        // reads right rather than reading as an army that brought none.
+        detachments: entry.detachment ? [entry.detachment] : [],
         disposition: entry.disposition ?? "",
         // Filled in by `withStandingLists` where a page wants them. The row
         // itself only carries the id, so what the league table shows is what
@@ -289,6 +293,8 @@ export async function withStandingLists<T extends Competition>(
       return found
         ? {
             ...entry,
+            detachments: found.detachments?.length
+              ? found.detachments : entry.detachments,
             listId: found.list_id,
             listName: found.list_name,
             listVersion: found.list_version_number,

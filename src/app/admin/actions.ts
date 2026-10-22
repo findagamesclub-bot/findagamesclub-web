@@ -6,7 +6,7 @@ import {
   changeAccountRole, resetAccountPassword, restoreAccount, suspendAccount,
 } from "@/services/adminAccounts.service";
 import {
-  putClubBack, putEventBack, takeClubDown, takeEventDown,
+  keepSuspension, putClubBack, putEventBack, takeClubDown, takeEventDown,
 } from "@/services/adminListings.service";
 
 export type AdminState = { error?: string; notice?: string };
@@ -81,13 +81,18 @@ export async function listingAction(
     return { error: "That listing could not be found." };
   }
 
-  const result = kind === "club"
-    ? (intent === "down"
-      ? await takeClubDown(id, reason, viewer.id)
-      : await putClubBack(id, viewer.id))
-    : (intent === "down"
-      ? await takeEventDown(id, reason, viewer.id)
-      : await putEventBack(id, viewer.id));
+  // "It stays down" is a third answer, not a second kind of taking down: the
+  // listing does not move, the club's ask is cleared, and the reason the owner
+  // reads becomes whatever the admin has just written.
+  const result = intent === "keep"
+    ? await keep(kind, id, reason)
+    : kind === "club"
+      ? (intent === "down"
+        ? await takeClubDown(id, reason, viewer.id)
+        : await putClubBack(id, viewer.id))
+      : (intent === "down"
+        ? await takeEventDown(id, reason, viewer.id)
+        : await putEventBack(id, viewer.id));
 
   if (!result.ok) return { error: result.error };
 
@@ -102,4 +107,12 @@ export async function listingAction(
     revalidatePath(`/clubs/${slug}/events`, "page");
   }
   return { notice: result.notice };
+}
+
+/** Keeping it down, with the one sentence the owner will read. */
+async function keep(kind: "club" | "event", id: number, reason: string) {
+  const done = await keepSuspension(kind, id, reason);
+  return done.ok
+    ? { ok: true as const, notice: "They have been told it stays down." }
+    : { ok: false as const, error: done.error ?? "That did not save. Try again." };
 }

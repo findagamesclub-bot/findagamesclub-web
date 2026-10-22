@@ -8,7 +8,8 @@ import { getClubAccess } from "@/services/clubAccess.service";
 import { getClubDetail } from "@/services/clubDetail.service";
 import { getEvent } from "@/services/eventEditor.service";
 import { getRoster } from "@/services/eventPairings.service";
-import { getTeamDraw, getTeams, isTeamEvent } from "@/services/eventTeams.service";
+import { getBookedTeams, getTeamDraw, getTeams, isTeamEvent }
+  from "@/services/eventTeams.service";
 import { consoleBackTarget } from "@/utils/back-link";
 
 export const metadata = { title: "Teams" };
@@ -35,11 +36,14 @@ export default async function TeamsPage({
   // One wave. The switch, the teams and every fixture on the event: the
   // running table reads all of them, and five rounds is one query rather than
   // five, which is the call `getRoundArmies` already made.
-  const [teamEvent, teams, fixtures, roster] = await Promise.all([
+  const [teamEvent, teams, fixtures, roster, booked] = await Promise.all([
     isTeamEvent(event.id),
     getTeams(event.id).catch(() => []),
     getTeamDraw(event.id).catch(() => []),
     getRoster(event.id).catch(() => []),
+    // What people said they were playing for when they booked (0211). In the
+    // same wave: it needs nothing the others return.
+    getBookedTeams(event.id),
   ]);
 
   const back = consoleBackTarget(from, { slug, id: event.id, title: event.title });
@@ -54,7 +58,7 @@ export default async function TeamsPage({
       />
 
       <TeamBoard slug={slug} eventId={event.id} teamEvent={teamEvent}
-        teams={teams} fixtures={fixtures} roster={roster} />
+        teams={teams} fixtures={fixtures} roster={roster} booked={booked} />
     </Container>
   );
 }

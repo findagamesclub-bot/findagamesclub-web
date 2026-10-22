@@ -156,6 +156,8 @@ export async function addPlace(
   fields: {
     profileId: string | null; fullName: string; email: string;
     ticketTypeId: number; quantity: number;
+    /** Only asked for at a team event, and dropped elsewhere by 0211. */
+    teamName?: string;
   },
 ): Promise<Result> {
   const fullName = fields.fullName.trim();
@@ -176,6 +178,7 @@ export async function addPlace(
     await repo.addEventBooking({
       eventId: event.id, profileId: fields.profileId,
       fullName, email, reference, ticketTypeId: fields.ticketTypeId, quantity,
+      teamName: (fields.teamName ?? "").trim().slice(0, 80),
     });
   } catch (error) {
     return { ok: false, error: refusalOf(error, "That did not save. Try again.") };

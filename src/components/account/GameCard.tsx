@@ -7,7 +7,10 @@ import ClubLogo from "@/components/clubs/ClubLogo";
 import LockIcon from "@mui/icons-material/Lock";
 import ResultDialog from "./ResultDialog";
 import type { MemberList } from "@/services/resultArmies.service";
+import StatusChip from "@/components/ui/StatusChip";
 import { confirmationLabel, deploymentLabel } from "@/utils/result-meta";
+import { tableBookingTag } from "@/utils/table-bookings";
+import { formatMoney } from "@/utils/format";
 import { nightLabel } from "@/utils/dates";
 import { display, mono, tokens } from "@/lib/tokens";
 import type { MyGame } from "@/services/games.service";
@@ -32,6 +35,20 @@ export default function GameCard({ game, myLists = [] }: {
 }) {
   const state = game.outcome ? OUTCOME[game.outcome] : null;
   const waiting = game.played && !game.outcome;
+
+  // What the club has recorded about the money, in the club's own words: the
+  // same tag their Table payments screen draws, so the two cannot say
+  // different things about the same fiver. Nothing at all where there was
+  // never anything to pay, because "Nothing to pay" on every card at a club
+  // that charges nothing is a chip saying nothing.
+  const owed = game.payment.total > 0 || game.payment.status !== "unpaid";
+  const money = owed
+    ? tableBookingTag({
+        status: "booked",
+        total: game.payment.total,
+        paymentStatus: game.payment.status,
+      })
+    : null;
 
   const context = [
     game.mission,
@@ -64,6 +81,23 @@ export default function GameCard({ game, myLists = [] }: {
         ) : null}
       </Stack>
 
+      {/* The money, said once, under the name rather than beside the outcome:
+          at three columns a card is about 290px and two chips on one line
+          wrap mid-phrase. The figure rides with the tag only while it is
+          still owed, which is the one case somebody is scrolling to find. */}
+      {money ? (
+        <Stack direction="row" spacing={1}
+          sx={{ px: 2.25, pt: 1.5, alignItems: "center", flexWrap: "wrap" }} useFlexGap>
+          <StatusChip label={money.label} tone={money.tone} />
+          {money.tone === "waiting" ? (
+            <Typography sx={{ fontFamily: mono, fontSize: "0.78rem", fontWeight: 700,
+                              color: tokens.brass }}>
+              {formatMoney(game.payment.total, game.payment.currency)}
+            </Typography>
+          ) : null}
+        </Stack>
+      ) : null}
+
       <Stack direction="row" spacing={1.5}
         sx={{ px: 2.25, py: 2, alignItems: "center" }}>
         <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -71,7 +105,14 @@ export default function GameCard({ game, myLists = [] }: {
                             letterSpacing: "0.1em", color: tokens.inkMuted }}>
             YOU
           </Typography>
-          <Typography noWrap sx={{ color: tokens.inkMuted, fontSize: "0.84rem" }}>
+          {/* Two lines rather than one truncated one. The column is about
+              110px in a card three across, so `noWrap` cut "Adepta Sororitas"
+              itself in half before this item made the lines any longer: an
+              army line that does not get as far as naming the army is a line
+              doing nothing. The whole of it is a press away on Edit result. */}
+          <Typography sx={{ color: tokens.inkMuted, fontSize: "0.84rem",
+                            display: "-webkit-box", WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical", overflow: "hidden" }}>
             {game.myArmy || "—"}
           </Typography>
         </Box>
@@ -93,7 +134,9 @@ export default function GameCard({ game, myLists = [] }: {
                             letterSpacing: "0.1em", color: tokens.inkMuted }} noWrap>
             {game.opponentName.toUpperCase()}
           </Typography>
-          <Typography noWrap sx={{ color: tokens.inkMuted, fontSize: "0.84rem" }}>
+          <Typography sx={{ color: tokens.inkMuted, fontSize: "0.84rem",
+                            display: "-webkit-box", WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical", overflow: "hidden" }}>
             {game.theirArmy || "—"}
           </Typography>
         </Box>

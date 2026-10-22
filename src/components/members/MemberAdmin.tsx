@@ -14,9 +14,10 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import CloseIcon from "@mui/icons-material/Close";
 import TuneIcon from "@mui/icons-material/Tune";
 import { changeTierAction, dismissTierRequestAction, editPaymentAction,
-  recordPaymentAction, setJoinDateAction }
+  recordPaymentAction, setJoinDateAction, setMemberSuspendedAction }
   from "@/app/clubs/[slug]/membership-actions";
 import MemberJoinDate from "./MemberJoinDate";
+import MemberAccess from "./MemberAccess";
 import MemberTierPicker from "./MemberTierPicker";
 import PaymentHistory from "./PaymentHistory";
 import EditPaymentDialog from "./EditPaymentDialog";
@@ -56,6 +57,22 @@ type Props = {
    * twice one line apart reads as a bug.
    */
   showStatus?: boolean;
+  /**
+   * The member's own address, read through `club_member_email` (0212).
+   * `profiles` carries none: it lives in `auth.users`, which only a definer
+   * function can reach, which is why nobody running a club could see it.
+   */
+  email?: string;
+  /** Their access to THIS club is paused. Not their account (0212). */
+  suspended?: boolean;
+  /** The club's own words, which the member reads too. */
+  suspendedReason?: string;
+  /**
+   * They are on the club's own team. Suspending them is refused in SQL, so
+   * the control is not offered: a club falling out through the software is
+   * the thing that guard exists to stop.
+   */
+  onTeam?: boolean;
 };
 
 function initials(name: string): string {
@@ -74,7 +91,8 @@ export default function MemberAdmin({
   membershipId, slug, memberName, tierKey, requestedTierKey = null,
   requestedBillingLabel = "",
   tierRequestedAt = null, tiers, standing, payments, faction,
-  joinedAt = null, today, showStatus = true,
+  joinedAt = null, today, showStatus = true, email = "", suspended = false,
+  suspendedReason = "", onTeam = false,
 }: Props) {
   const [open, setOpen] = useState(false);
   const fullScreen = useMediaQuery("(max-width:600px)");
@@ -84,6 +102,8 @@ export default function MemberAdmin({
   const [payState, recordPayment, paying] = useActionState(recordPaymentAction, {});
   const [joinState, setJoinDate, savingJoin] = useActionState(setJoinDateAction, {});
   const [editState, editPayment, editing] = useActionState(editPaymentAction, {});
+  const [accessState, setAccess, changingAccess] =
+    useActionState(setMemberSuspendedAction, {});
 
   // Which payment is open for correction. Held here rather than in the row so
   // the dialog seeds from one record and keeps it through its exit transition.
@@ -95,6 +115,7 @@ export default function MemberAdmin({
   useActionToast(tierState);
   useActionToast(payState);
   useActionToast(dismissState);
+  useActionToast(accessState);
   useActionToast(joinState);
   useActionToast(editState);
 
@@ -157,6 +178,17 @@ export default function MemberAdmin({
                                 letterSpacing: "0.06em", color: status.colour, fontWeight: 600 }}>
                 {tier ? `${tier.label.toUpperCase()} · ` : ""}{status.text}
               </Typography>
+              {/* The address, which nobody running a club could see at all.
+                  Selectable rather than a mailto: a club copying it into
+                  their own mail merge is the ordinary case, and a link that
+                  opens an empty mail client is not what they asked for. */}
+              {email ? (
+                <Typography variant="body2"
+                  sx={{ color: tokens.inkMuted, wordBreak: "break-all",
+                        userSelect: "all" }}>
+                  {email}
+                </Typography>
+              ) : null}
             </Box>
             <IconButton onClick={() => setOpen(false)} aria-label="Close" sx={{ flexShrink: 0 }}>
               <CloseIcon />
@@ -227,6 +259,13 @@ export default function MemberAdmin({
             <RecordPayment membershipId={membershipId} slug={slug} tierKey={tierKey}
               tierLabel={tier?.label ?? ""} options={options} busy={paying}
               send={recordPayment} />
+
+            {/* Last, under the money, because it is the one control here that
+                ends something. The house order every card in this console
+                uses: do-this-first, the quiet ones, then this. */}
+            <MemberAccess membershipId={membershipId} slug={slug}
+              memberName={memberName} suspended={suspended} reason={suspendedReason}
+              onTeam={onTeam} busy={changingAccess} send={setAccess} />
 
             <Box>
               <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.68rem",

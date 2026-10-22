@@ -112,8 +112,14 @@ assert.equal(
   listingCostLine({ enabled: true, monthly_price_pence: 0, yearly_price_pence: 0 }),
   null);
 
-// What happens next has to match where it actually lands.
+// What happens next has to match where it actually lands. 0215 reversed the
+// order the client asked us to reverse: a listing goes to the queue and the
+// fee is asked for once it is approved, so a note promising a payment desk
+// first would be describing a flow that no longer exists.
 assert.match(
+  listingSubmitNote({ enabled: true, monthly_price_pence: 1500, yearly_price_pence: 15000 }),
+  /nothing to pay unless it is approved/);
+assert.doesNotMatch(
   listingSubmitNote({ enabled: true, monthly_price_pence: 1500, yearly_price_pence: 15000 }),
   /how to pay/);
 assert.match(

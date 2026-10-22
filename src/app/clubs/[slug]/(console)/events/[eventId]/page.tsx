@@ -30,14 +30,14 @@ import EventTeams from "@/components/events/EventTeams";
 import EventTeamDraw from "@/components/events/EventTeamDraw";
 import TeamResults from "@/components/events/TeamResults";
 import EventArmyMeta from "@/components/events/EventArmyMeta";
+import EventMetaBreakdown from "@/components/events/EventMetaBreakdown";
 import EmptyState from "@/components/ui/EmptyState";
 import FacilityChips from "@/components/clubs/FacilityChips";
 import EventHero from "@/components/events/EventHero";
 import { getEventDetail } from "@/services/eventDetail.service";
 import { countClaimableNames } from "@/services/memberCodes.service";
-import { getEventMeta } from "@/services/meta.service";
+import { getEventBreakdown, getEventMeta } from "@/services/meta.service";
 import { armyMetaWait, eventRecordsArmies } from "@/utils/event-meta";
-import { londonToday } from "@/services/bookingCalendar.service";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getMyMembership } from "@/services/memberships.service";
 import { getBuyableTickets, getTicketStanding } from "@/services/tickets.service";
@@ -112,7 +112,7 @@ export default async function EventPage({
   // Rides the roster's wave rather than a wave of its own: it needs nothing
   // the roster does not already have, and it was costing a round trip of its
   // own further down the page.
-  const [roster, threads, eventArmies] = await Promise.all([
+  const [roster, threads, eventArmies, eventBreakdown] = await Promise.all([
     canSeeRecord ? getEventRoster(event.id) : Promise.resolve([]),
     // The summary shows three titles and a count, so it takes the first page
     // rather than every thread on the event.
@@ -127,6 +127,12 @@ export default async function EventPage({
     eventRecordsArmies(event.featuredGames)
       ? getEventMeta(event.id).catch(() => [])
       : Promise.resolve([]),
+    // The grouped reading, in the same wave: it needs nothing the others
+    // return, and each read costs a round trip whatever it asks for.
+    eventRecordsArmies(event.featuredGames)
+      ? getEventBreakdown(event.id)
+      : Promise.resolve({ factions: [], detachments: [], dispositions: [],
+                          matchups: [], players: [], loaded: true }),
   ]);
 
   // Why the panel is empty, for the club only. Computed rather than inferred
@@ -189,7 +195,9 @@ export default async function EventPage({
         <TakenDownNotice kind="event" reason={takenDown.reason} at={takenDown.at}
           byName={takenDown.byName} canAct={isSiteAdmin}
           ask={{ id: event.id, slug: event.clubSlug,
-                 askedAt: takenDown.askedAt, askedNote: takenDown.askedNote }} />
+                 askedAt: takenDown.askedAt, askedNote: takenDown.askedNote }}
+          messageAdmin={takenDown.adminId
+            ? { id: takenDown.adminId, name: takenDown.adminName } : null} />
       ) : null}
 
       {/* First thing on the page, above the artwork. Everything under it reads
@@ -298,9 +306,21 @@ export default async function EventPage({
           has nothing to do about it and an empty panel would be noise. */}
       {eventArmies.length ? (
         <Section navLabel="Armies" title="Event analytics" icon={EmojiEventsIcon}
-          note="What was taken to this event, from the finishing places and the draw.">
-          <EventArmyMeta rows={eventArmies} top={3}
-            href={`/clubs/${slug}/events/${eventId}/armies`} />
+          note="How this event went, by army, detachment, disposition and match up.">
+          {/* The grouped reading leads. The per-army list underneath answers
+              the other question, "what exactly did each person bring", and is
+              the one the client said was too basic on its own. */}
+          <Stack spacing={4}>
+            <EventMetaBreakdown breakdown={eventBreakdown} top={3} />
+            <Stack spacing={1.25}>
+              <Typography sx={{ fontFamily: mono, fontSize: "0.68rem", fontWeight: 700,
+                                letterSpacing: "0.1em", color: tokens.inkMuted }}>
+                WHAT EACH PERSON BROUGHT
+              </Typography>
+              <EventArmyMeta rows={eventArmies} top={3}
+                href={`/clubs/${slug}/events/${eventId}/armies`} />
+            </Stack>
+          </Stack>
         </Section>
       ) : event.canManageClub && metaWait ? (
         <Section navLabel="Armies" title="Event analytics" icon={EmojiEventsIcon}
@@ -498,6 +518,7 @@ export default async function EventPage({
 
           {event.ticketTypes.length ? (
             <EventTickets
+              teamEvent={event.teamEvent}
               tickets={tickets}
               cart={cart}
               standing={standing}

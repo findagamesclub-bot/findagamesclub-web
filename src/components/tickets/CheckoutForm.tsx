@@ -12,7 +12,7 @@ import { ticketAction, type TicketState } from "@/app/clubs/[slug]/(console)/eve
 import TicketPointsField from "./TicketPointsField";
 import { formatMoney } from "@/utils/format";
 import type { TicketPrice, TicketStanding } from "@/utils/ticket-pricing";
-import { tokens, type Faction } from "@/lib/tokens";
+import { display, mono, tokens, type Faction } from "@/lib/tokens";
 
 /**
  * Confirm and reserve.
@@ -23,7 +23,7 @@ import { tokens, type Faction } from "@/lib/tokens";
  */
 export default function CheckoutForm({
   slug, eventKey, eventId, fullName, email, currency, faction,
-  standing, price, points, onPoints, showPaymentNote = true,
+  standing, price, points, onPoints, showPaymentNote = true, teamEvent = false,
 }: {
   slug: string;
   eventKey: string;
@@ -44,6 +44,13 @@ export default function CheckoutForm({
    * of a phone screen to say nothing new.
    */
   showPaymentNote?: boolean;
+  /**
+   * Asked for only at a team event. The client's words: "for a team event
+   * ticket booking, we should also capture a team name as part of the
+   * booking." Anywhere else it is a field nobody can read back, and 0211
+   * drops it on the way in rather than trusting the screen to have asked.
+   */
+  teamEvent?: boolean;
 }) {
   const [state, submit, busy] = useActionState<TicketState, FormData>(ticketAction, {});
 
@@ -53,6 +60,10 @@ export default function CheckoutForm({
       <input type="hidden" name="slug" value={slug} />
       <input type="hidden" name="eventKey" value={eventKey} />
       <input type="hidden" name="eventId" value={eventId} />
+      {/* Still posted, because the database keeps them as a fallback for an
+          account whose profile carries no name. Never editable here. */}
+      <input type="hidden" name="fullName" value={fullName} />
+      <input type="hidden" name="email" value={email} />
 
       <Stack spacing={2.5}>
         {state.error ? <Alert severity="error">{state.error}</Alert> : null}
@@ -60,13 +71,39 @@ export default function CheckoutForm({
         <TicketPointsField standing={standing} price={price}
           points={points} onPoints={onPoints} />
 
-        <Stack spacing={2}>
-          <TextField name="fullName" label="Your name" defaultValue={fullName} required fullWidth
-            autoComplete="name" />
-          <TextField name="email" type="email" label="Email for your confirmation"
-            defaultValue={email} required fullWidth autoComplete="email"
-            helperText="Your reference and the club's notes for the day go here." />
+        {/* Read back, not asked for. The place is the account's: a member
+            typing somebody else's name here was booking them a place on the
+            member's own tier discount, which is the thing the client objected
+            to on the club's side first. 0208 reads both from the account on
+            the way in as well, because a form is a claim and not a fact.
+
+            Booking for somebody else has not gone, it has moved: the club does
+            it from the door list, priced off whoever is named. */}
+        <Stack spacing={0.75}
+          sx={{ p: 2, borderRadius: 1.5, backgroundColor: tokens.surface,
+                border: `1px solid ${tokens.rule}` }}>
+          <Typography sx={{ fontFamily: mono, fontSize: "0.66rem", fontWeight: 700,
+                            letterSpacing: "0.1em", color: tokens.inkMuted }}>
+            THIS PLACE IS FOR
+          </Typography>
+          <Typography sx={{ fontFamily: display, fontWeight: 700, fontSize: "1rem" }}>
+            {fullName || "You"}
+          </Typography>
+          <Typography variant="body2" sx={{ color: tokens.inkMuted, wordBreak: "break-all" }}>
+            {email}
+          </Typography>
+          <Typography variant="caption"
+            sx={{ fontFamily: display, color: tokens.inkMuted, pt: 0.5 }}>
+            Your reference and the club&apos;s notes for the day go to this address.
+            Booking somebody else in is the club&apos;s to do, so ask them.
+          </Typography>
         </Stack>
+
+        {teamEvent ? (
+          <TextField name="teamName" label="Your team" fullWidth
+            slotProps={{ htmlInput: { maxLength: 80 } }}
+            helperText="Who you are playing for. The club builds the teams from these, so everybody in yours should type the same thing." />
+        ) : null}
 
         {showPaymentNote ? (
         <Box sx={{ p: 2, borderRadius: 1.5, backgroundColor: tokens.surface,

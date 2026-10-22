@@ -66,7 +66,7 @@ export default function MyReports({
         tabs={page.tabs}
         sort={sort || "recent"}
         sorts={MY_REPORT_SORTS}
-        second={{ label: "Kind", value: type, options: TYPES, param: "type" }}
+        pickers={[{ label: "Kind", value: type, options: TYPES, param: "type" }]}
         defaults={{ state: "", sort: "recent", type: "" }}
         onBusy={setSifting}
       />

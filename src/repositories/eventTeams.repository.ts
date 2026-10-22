@@ -179,3 +179,20 @@ export async function clearRoundFixtures(pairingId: number) {
   const { error } = await fixtures.delete().eq("pairing_id", pairingId);
   if (error) throw new Error(error.message);
 }
+
+/**
+ * The team names people booked under, and who typed each one.
+ *
+ * 0211. Not a list of teams: a list of what the bookers said, which the club
+ * turns into a real team in one press. "made" is true once a team of that
+ * name exists, so the console offers the press once and not twice.
+ */
+export type BookedTeamRow = {
+  team_name: string;
+  people: number | string;
+  players: { profileId: string | null; name: string }[] | null;
+  made: boolean;
+};
+
+export const findBookedTeams = (eventId: number) =>
+  callRpc<BookedTeamRow[]>("event_booked_teams", { p_event: eventId });

@@ -4,6 +4,8 @@ import { sendEmail } from "@/lib/email/send";
 import * as templates from "@/lib/email/templates";
 import { deliver, siteUrl } from "./mail-recipient.service";
 import { findSiteSettings } from "@/repositories/siteSettings.repository";
+import { findPublicPrices } from "@/repositories/billing.repository";
+import { pricePence } from "@/utils/format";
 import {
   findClubForNotice, findClubSuspension, findEventForNotice, findEventSuspension,
 } from "@/repositories/adminListings.repository";
@@ -95,11 +97,38 @@ export async function declined(row: Row, reason: string) {
 }
 
 export async function approved(row: Row, slug: string) {
+  // What they owe, where there is anything. 0215 moved the fee to after the
+  // review, so this email is the moment somebody is told about it, and
+  // `listing_public_prices` is the one read that answers it: the settings
+  // table is `authenticated` only and holds bank details.
+  //
+  // Caught rather than awaited for a result. A price we could not read must
+  // not stop a club being told its listing is live.
+  let fee: { price: string; billingUrl: string } | null = null;
+  try {
+    const prices = await findPublicPrices();
+    if (prices?.enabled) {
+      const yearly = String(
+        (row as { plan_interval?: unknown }).plan_interval ?? "",
+      ).toLowerCase() === "yearly";
+      const pence = yearly ? prices.yearly_price_pence : prices.monthly_price_pence;
+      if (pence > 0) {
+        fee = {
+          price: `${pricePence(pence, prices.currency)} ${yearly ? "a year" : "a month"}`,
+          billingUrl: `${siteUrl()}/clubs/${slug}/manage/billing`,
+        };
+      }
+    }
+  } catch (error) {
+    console.error("[listing] approved but what it costs did not read", error);
+  }
+
   await deliver(row.owner_id, "listing-approved", (name) => templates.listingApproved({
     name,
     clubName: row.club_name || "your club",
     url: `${siteUrl()}/clubs/${slug}`,
     consoleUrl: `${siteUrl()}/clubs/${slug}/manage`,
+    fee,
   }));
 }
 

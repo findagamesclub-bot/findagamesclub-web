@@ -220,3 +220,40 @@ export async function setJoinDateAction(
   refresh(slug);
   return { notice: "Join date saved." };
 }
+
+/**
+ * A club pausing somebody's access to itself.
+ *
+ * The screen checks the capability so somebody who cannot do this is not shown
+ * a button, and `set_membership_suspended` checks it again, because the anon
+ * key is public and a screen is not a guard.
+ */
+export async function setMemberSuspendedAction(
+  _prev: MembershipState,
+  data: FormData,
+): Promise<MembershipState> {
+  const viewer = await getCurrentProfile();
+  if (!viewer) return { error: "Sign in first." };
+
+  const membershipId = Number(data.get("membershipId"));
+  const slug = String(data.get("slug") ?? "");
+  if (!membershipId || !slug) {
+    return { error: "Something went wrong. Reload and try again." };
+  }
+
+  const on = String(data.get("on") ?? "") === "yes";
+  const reason = String(data.get("reason") ?? "");
+  if (on && !reason.trim()) {
+    return { error: "Give a reason. It is what they will be told." };
+  }
+
+  const result = await memberships.setMemberSuspended(membershipId, on, reason);
+  if (!result.ok) return { error: result.error };
+
+  refresh(slug);
+  return {
+    notice: on
+      ? "Paused. They cannot use the club until you put it back."
+      : "Put back. They can use the club again.",
+  };
+}

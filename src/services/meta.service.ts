@@ -242,3 +242,99 @@ export async function getEventMeta(event: number): Promise<EventArmy[]> {
     earlySignal: r.early_signal,
   }));
 }
+
+/**
+ * One event, grouped the way a club reads it.
+ *
+ * The client, on the panel 9d switched on: *"the data doesn't look correct or
+ * show the detail we need ... a grouping of the best to worst performing
+ * Factions, Detachments, Dispositions and Match ups ... it seems too basic."*
+ *
+ * `getEventMeta` above answers "what exact army did each person bring", which
+ * is a real question and the wrong one for a panel: grouped by the whole
+ * triple, an event where fifteen people brought Sororitas under four
+ * detachments is four rows that each look like a minority army. This is the
+ * tracker's own four questions, scoped to one event.
+ */
+export type EventGroupRow = {
+  label: string;
+  /** The faction a detachment or disposition was played under. Empty for a faction. */
+  parent: string;
+  /** People, not rows: one person has an army row per table plus a podium one. */
+  players: number;
+  appearances: number;
+  games: number;
+  wins: number;
+  winRate: number | null;
+  earlySignal: boolean;
+};
+
+export type EventPlayer = {
+  profileId: string | null;
+  player: string;
+  faction: string;
+  games: number;
+  wins: number;
+  draws: number;
+  losses: number;
+};
+
+export type EventBreakdown = {
+  factions: EventGroupRow[];
+  detachments: EventGroupRow[];
+  dispositions: EventGroupRow[];
+  matchups: Matchup[];
+  players: EventPlayer[];
+  /** False when a read failed, so the panel says so rather than "nothing yet". */
+  loaded: boolean;
+};
+
+const toGroup = (r: repo.EventBreakdownRow): EventGroupRow => ({
+  label: r.label,
+  parent: r.parent ?? "",
+  players: Number(r.players),
+  appearances: Number(r.appearances),
+  games: Number(r.games),
+  wins: Number(r.wins),
+  winRate: rate(Number(r.games), Number(r.win_rate ?? 0)),
+  earlySignal: r.early_signal,
+});
+
+export async function getEventBreakdown(event: number): Promise<EventBreakdown> {
+  // One wave. None of the three needs another's answer, and each costs a round
+  // trip of about 300ms whatever it asks for.
+  const [groups, matchups, players] = await Promise.all([
+    repo.findEventBreakdown(event).catch((error) => {
+      console.error("[meta] the event breakdown did not load", error);
+      return null;
+    }),
+    repo.findEventMatchups(event).catch(() => []),
+    repo.findEventPlayers(event).catch(() => []),
+  ]);
+
+  const of = (kind: string) =>
+    (groups ?? []).filter((row) => row.kind === kind).map(toGroup);
+
+  return {
+    factions: of("faction"),
+    detachments: of("detachment"),
+    dispositions: of("disposition"),
+    matchups: (matchups ?? []).map((r) => ({
+      label: r.faction_label || r.faction_id,
+      opponent: r.opponent_label || r.opponent_id,
+      games: Number(r.games),
+      winRate: rate(Number(r.games), Number(r.win_rate)),
+      earlySignal: r.early_signal,
+    })),
+    players: (players ?? []).map((r) => ({
+      profileId: r.profile_id,
+      player: r.player,
+      faction: r.faction_label ?? "",
+      games: Number(r.games),
+      wins: Number(r.wins),
+      draws: Number(r.draws),
+      losses: Number(r.losses),
+    })),
+    loaded: groups !== null,
+  };
+}

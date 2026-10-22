@@ -1,6 +1,7 @@
 import Alert from "@mui/material/Alert";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import NextLink from "next/link";
 import AskForReview from "./AskForReview";
 import LongText from "./LongText";
 import { shortDate } from "@/utils/dates";
@@ -22,7 +23,7 @@ import { mono, tokens } from "@/lib/tokens";
  * and has no length anybody controls.
  */
 export default function TakenDownNotice({
-  kind, reason, at, byName, canAct = false, ask,
+  kind, reason, at, byName, canAct = false, ask, messageAdmin = null,
 }: {
   kind: "club" | "event";
   reason: string;
@@ -40,6 +41,15 @@ export default function TakenDownNotice({
    * end of the road, which is what the client reported.
    */
   ask?: { id: number; slug: string; askedAt: string | null; askedNote: string };
+  /**
+   * Somebody to write to about it, where there is one (0215).
+   *
+   * The client asked for a message admin button here. The ask above sends one
+   * note and then becomes a record; this is for the conversation that follows
+   * it, which is the half they said was missing. Null for an admin reading
+   * their own decision, and for anybody whose listing is not down.
+   */
+  messageAdmin?: { id: string; name: string } | null;
 }) {
   const when = at ? shortDate(at.slice(0, 10)) : null;
   const stamp = [when ? `TAKEN DOWN ${when}` : "TAKEN DOWN",
@@ -83,6 +93,17 @@ export default function TakenDownNotice({
         {!canAct && ask ? (
           <AskForReview kind={kind} id={ask.id} slug={ask.slug}
             askedAt={ask.askedAt} askedNote={ask.askedNote} />
+        ) : null}
+
+        {/* A plain `next/link` with styles on it, not MUI's `component` prop:
+            this is a Server Component and that prop cannot cross the line. */}
+        {!canAct && messageAdmin ? (
+          <NextLink href={`/account/messages/0/${messageAdmin.id}`}
+            style={{ textDecoration: "none", alignSelf: "flex-start" }}>
+            <Typography variant="body2" sx={{ color: tokens.brand, fontWeight: 600 }}>
+              Message the admins
+            </Typography>
+          </NextLink>
         ) : null}
       </Stack>
     </Alert>

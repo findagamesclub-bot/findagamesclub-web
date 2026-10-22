@@ -47,7 +47,7 @@ export default async function EditListPage(
           { label: "Edit" },
         ]} />
         <PageHead title={`Editing ${held.list.name}`}
-          lede="Four steps: what it is, the faction, its detachments, then the units. Saving makes a version only when the army changes." />
+          lede="Five steps: what it is, the faction, its detachments, the disposition it is playing, then the units. Saving makes a version only when the army changes." />
         <ArmyWizard slug={slug} catalogue={gate.build?.catalogue ?? null}
           start={{
             listId: held.list.id, name: held.list.name,

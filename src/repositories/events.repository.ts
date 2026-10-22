@@ -161,7 +161,7 @@ export async function saveEventPlacing(params: {
   profileId: string | null;
   memberCode?: string | null;
   faction: string;
-  detachment: string;
+  detachments: string[];
   disposition: string;
 }) {
   const supabase = await createClient();
@@ -178,7 +178,7 @@ export async function saveEventPlacing(params: {
     p_name: params.name,
     p_profile: params.profileId,
     p_faction: params.faction,
-    p_detachment: params.detachment,
+    p_detachments: params.detachments,
     p_disposition: params.disposition,
     p_code: params.memberCode ?? null,
   });

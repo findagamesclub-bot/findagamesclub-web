@@ -21,7 +21,9 @@ export function StepRail({
   /** Which steps can be reached, so a half-filled list cannot jump to units. */
   ready: boolean[];
 }) {
-  const titles = ["List details", "Faction", "Detachments", "Units"];
+  // Five since the disposition became a step of its own. One for the whole
+  // army, chosen from what the detachments above it offer.
+  const titles = ["List details", "Faction", "Detachments", "Disposition", "Units"];
   return (
     <Stack direction="row" spacing={1.25} sx={{ flexWrap: "wrap" }} useFlexGap>
       {titles.map((title, index) => {

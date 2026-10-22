@@ -3,7 +3,8 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 
 import { getCurrentProfile } from "@/services/auth.service";
-import { FEATURED_TAG, featureClub, unfeatureClub } from "@/services/featured.service";
+import { FEATURED_TAG, featureClub, recordFeaturedPayment, unfeatureClub }
+  from "@/services/featured.service";
 import { answerFeatured } from "@/services/featuredRequests.service";
 
 export type FeaturedState = { error?: string; notice?: string };
@@ -27,6 +28,28 @@ export async function featuredAction(
 
     refresh();
     return { notice: "Taken off the homepage." };
+  }
+
+  // What arrived for a slot. Only an admin reaches this action at all, and
+  // `record_featured_payment` asks `is_admin()` again, because the anon key is
+  // public and a screen is not a guard.
+  if (intent === "payment") {
+    const slot = Number(data.get("slot") ?? 0);
+    if (!slot) return { error: "That slot is not here any more." };
+
+    const paid = String(data.get("paid") ?? "") === "yes";
+    const done = await recordFeaturedPayment({
+      slot, paid,
+      method: String(data.get("method") ?? ""),
+      note: String(data.get("note") ?? ""),
+    });
+    if (!done.ok) return { error: done.error };
+
+    // No homepage revalidation: who leads it does not depend on whether we
+    // have banked the money, and refreshing the front page to move a chip on
+    // an admin screen is work for nothing.
+    revalidatePath("/admin/featured");
+    return { notice: paid ? "Recorded as paid." : "Marked as not paid yet." };
   }
 
   const club = Number(data.get("club") ?? 0);

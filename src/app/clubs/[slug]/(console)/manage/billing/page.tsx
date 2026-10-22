@@ -23,6 +23,7 @@ import {
 import { getClubSlots } from "@/services/featured.service";
 import { getClubFeaturedAsks } from "@/services/featuredRequests.service";
 import { ownerStanding, standingLabel, standingTone } from "@/utils/listing-billing";
+import { clubPayments } from "@/utils/club-payments";
 import { formatPence } from "@/utils/format";
 import { londonNow, shortDate } from "@/utils/dates";
 import { mono, tokens } from "@/lib/tokens";
@@ -59,7 +60,12 @@ export default async function ClubBillingPage({
     getClubSlots(club.id),
   ]);
 
-  const payments = subscription ? await getPayments(subscription.id) : [];
+  // Everything they have paid us, not just their listing. A club that was
+  // taken on free and has bought three homepage weeks was told "Nothing
+  // recorded yet" under a slot list reading PAID · BANK TRANSFER, which is
+  // the page arguing with itself. What counts as a payment is `clubPayments`.
+  const subscriptionPayments = subscription ? await getPayments(subscription.id) : [];
+  const payments = clubPayments(subscriptionPayments, slots);
   // No subscription means nobody has ever billed this listing, and that is
   // every club that was in the directory before charging was switched on. 0112
   // opens a subscription only for a listing sent in after that, and its header
@@ -107,7 +113,7 @@ export default async function ClubBillingPage({
 
             <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
               {!charging
-                ? payments.length > 0
+                ? subscriptionPayments.length > 0
                   ? "We are not charging for listings at the moment, so there is "
                     + "nothing to pay and nothing runs out. What you paid before is "
                     + "below."

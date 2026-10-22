@@ -17,7 +17,18 @@ export type CompetitionStanding = {
    * catalogue's own spelling at one that runs it.
    */
   faction: string;
+  /**
+   * The one `club_competition_standings.detachment` holds, which is the first
+   * of the list below. Kept because the table has printed it since 0024 and
+   * the Meta Tracker groups on its mirror.
+   */
   detachment: string;
+  /**
+   * All of them (0217). Read off the mirror in `game_result_armies` rather
+   * than off the standing, because a select naming a column the generated
+   * types have not caught up with is what `check:columns` exists to refuse.
+   */
+  detachments: string[];
   disposition: string;
   /**
    * Which of their own lists it was (0194). The id is what the editor posts

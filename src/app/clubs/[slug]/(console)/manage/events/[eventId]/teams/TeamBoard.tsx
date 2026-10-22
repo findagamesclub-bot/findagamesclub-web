@@ -15,9 +15,11 @@ import LinkButton from "@/components/ui/LinkButton";
 import { useActionSuccess } from "@/hooks/useActionSuccess";
 import { useActionToast } from "@/components/ui/Toaster";
 import TeamCard from "./TeamCard";
+import BookedTeams from "./BookedTeams";
 import TeamDialog from "./TeamDialog";
 import PlaceDialog from "./PlaceDialog";
 import { teamsAction, type TeamsState } from "./actions";
+import type { BookedTeam } from "@/services/eventTeams.service";
 import { teamStandings } from "@/utils/team-standings";
 import { mono, tokens } from "@/lib/tokens";
 import type { EventTeam, TeamFixture } from "@/types/eventTeams";
@@ -32,7 +34,7 @@ import type { Player } from "@/utils/pairings-draw";
  * be the one that looked broken.
  */
 export default function TeamBoard({
-  slug, eventId, teamEvent, teams, fixtures, roster,
+  slug, eventId, teamEvent, teams, fixtures, roster, booked = [],
 }: {
   slug: string;
   eventId: number;
@@ -41,6 +43,8 @@ export default function TeamBoard({
   /** Every fixture on the event, for the running table. */
   fixtures: TeamFixture[];
   roster: Player[];
+  /** The team names people booked under, and who typed each (0211). */
+  booked?: BookedTeam[];
 }) {
   const [state, submit, busy] = useActionState<TeamsState, FormData>(teamsAction, {});
   useActionToast(state);
@@ -48,12 +52,17 @@ export default function TeamBoard({
   const [editing, setEditing] = useState<EventTeam | null | undefined>(undefined);
   const [placing, setPlacing] = useState<EventTeam | null>(null);
   const [removing, setRemoving] = useState<EventTeam | null>(null);
+  // What the team dialog opens filled in with, when it was opened from a
+  // booking rather than from the Add button.
+  const [prefill, setPrefill] = useState<BookedTeam | null>(null);
 
   // Closed by the answer landing, never by the click. A team is a name and
   // four players, and the refusal that actually happens is somebody already
   // being in another team: closing on the click threw the whole team away and
   // then explained why. Same rule the placing editor learned.
-  useActionSuccess(state, () => { setEditing(undefined); setPlacing(null); });
+  useActionSuccess(state, () => {
+    setEditing(undefined); setPlacing(null); setPrefill(null);
+  });
 
   const standings = useMemo(
     () => teamStandings(teams, fixtures), [teams, fixtures]);
@@ -114,6 +123,12 @@ export default function TeamBoard({
             ) : null}
           </Stack>
 
+          {/* What the bookers said, above the teams themselves: at an open
+              tournament this is where the teams come from, and a club looking
+              at an empty board needs to be told they are already here. */}
+          <BookedTeams booked={booked} busy={busy}
+            onBuild={(team) => { setPrefill(team); setEditing(null); }} />
+
           {/* Said once, here, rather than refused at the draw: a team a player
               short is a real state on the morning of an event, and the club
               fixes it by finding somebody rather than by being blocked. */}
@@ -155,8 +170,9 @@ export default function TeamBoard({
 
       {editing !== undefined ? (
         <TeamDialog open team={editing} roster={roster} saving={busy}
+          prefill={prefill ? { name: prefill.name, players: prefill.players } : null}
           nextPosition={teams.length}
-          onClose={() => setEditing(undefined)}
+          onClose={() => { setEditing(undefined); setPrefill(null); }}
           onSave={(fields, rows) => {
             send(fields, (data) => {
               for (const row of rows) {

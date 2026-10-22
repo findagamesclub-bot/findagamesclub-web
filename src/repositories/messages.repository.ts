@@ -169,3 +169,23 @@ export async function findAdminContacts(query: string): Promise<AdminContactRow[
   if (error) throw new Error(`Failed to search accounts: ${error.message}`);
   return data ?? [];
 }
+
+/**
+ * The admins this reader may open a site thread with (0215).
+ *
+ * Definer, because a member has nothing tying them to an admin and no policy
+ * would return the row. It answers an empty list for everybody who has
+ * nothing of theirs taken down, which is almost everybody.
+ */
+export async function findSiteContacts() {
+  const supabase = await createClient();
+  const { data, error } = await (supabase as unknown as {
+    rpc(name: string, args: Record<string, unknown>): Promise<{
+      data: { id: string; full_name: string }[] | null;
+      error: { message: string } | null;
+    }>;
+  }).rpc("my_site_contacts", {});
+
+  if (error) throw new Error(`Failed to read who you can write to: ${error.message}`);
+  return data ?? [];
+}

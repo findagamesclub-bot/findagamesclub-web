@@ -22,7 +22,9 @@ import {
   cancelListingAction, deleteListingAction, restartListingAction,
   type ListingFlowState,
 } from "@/app/list-your-club/actions";
-import { ownerCanCancel, ownerCanEdit, ownerCanRestart } from "@/utils/submission-status";
+import {
+  clubStateLine, ownerCanCancel, ownerCanEdit, ownerCanRestart,
+} from "@/utils/submission-status";
 import { carryListingFrom } from "@/utils/back-link";
 import type { ListingCard } from "@/services/submissions.service";
 import { shortDate } from "@/utils/dates";
@@ -115,7 +117,11 @@ export default function ListingList({
     // card with a column of empty paper under one sentence.
     <Box sx={{ display: "grid", gap: 2, alignItems: "start",
                gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 300px), 1fr))" }}>
-      {shown.map((card) => (
+      {shown.map((card) => {
+        // What the CLUB is doing now, which wins over what the request says.
+        // A request is approved forever; a listing is live only while it is.
+        const state = clubStateLine(card.status, card.clubStatus);
+        return (
         <Stack key={card.id} spacing={1.25}
           sx={{ p: 2.5, borderRadius: 1.5, border: `1px solid ${tokens.rule}`,
                 backgroundColor: tokens.paper }}>
@@ -125,8 +131,10 @@ export default function ListingList({
               {card.clubName}{card.city ? `, ${card.city}` : ""}
             </Typography>
             <Chip size="small"
-              label={card.clubStatus === "paused" ? "Paused" : card.statusLabel}
-              sx={{ bgcolor: card.clubStatus === "paused" ? tokens.brass : toneOf(card.tone),
+              label={state ? state.label : card.statusLabel}
+              sx={{ bgcolor: state
+                      ? (state.tone === "bad" ? tokens.danger : tokens.brass)
+                      : toneOf(card.tone),
                     color: "#fff", fontWeight: 700, fontSize: "0.68rem" }} />
           </Stack>
 
@@ -141,10 +149,7 @@ export default function ListingList({
           <Typography variant="body2"
             sx={{ color: tokens.inkMuted, display: "-webkit-box",
                   WebkitBoxOrient: "vertical", WebkitLineClamp: 3, overflow: "hidden" }}>
-            {card.clubStatus === "paused"
-              ? "It is out of the directory at the moment. Nobody new can find it, "
-                + "and your members still have everything."
-              : card.next}
+            {state ? state.next : card.next}
           </Typography>
 
           {/* One order on every card, whatever state it is in: the thing to do
@@ -212,7 +217,12 @@ export default function ListingList({
             {/* Here as well as on the listing editor, because this is where
                 somebody with a live club actually looks for it. Same component,
                 so the wording and the confirmation cannot drift apart. */}
-            {card.status === "approved" && card.clubSlug ? (
+            {/* Not while a site admin has it down. `pause_club_listing`
+                refuses anything but `active` (0108: an owner cannot pause out
+                of a suspension), so the button was offered and the press was
+                refused. A control that cannot work is worse than none. */}
+            {card.status === "approved" && card.clubSlug
+              && card.clubStatus !== "suspended" ? (
               <PauseListing slug={card.clubSlug}
                 paused={card.clubStatus === "paused"} canPause compact />
             ) : null}
@@ -235,7 +245,8 @@ export default function ListingList({
             ) : null}
           </Stack>
         </Stack>
-      ))}
+        );
+      })}
 
       <Dialog open={reading !== null} onClose={() => setReading(null)}
         fullWidth maxWidth="sm" fullScreen={onPhone}>
@@ -244,8 +255,15 @@ export default function ListingList({
         </DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2.5}>
+            {/* The club's own state wins here too. The card above learned
+                that and this dialog did not, so opening the history of a
+                suspended club led with "It is live. Your club page is in the
+                directory" over a list whose first line says it was taken
+                down. */}
             <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-              {reading?.next}
+              {reading
+                ? (clubStateLine(reading.status, reading.clubStatus)?.next ?? reading.next)
+                : ""}
             </Typography>
 
             {/* The attempt this one replaced. Not a second card in the grid:

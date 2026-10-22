@@ -56,7 +56,17 @@ export function listingApproved(params: {
   clubName: string;
   url: string;
   consoleUrl: string;
+  /**
+   * What the listing costs, where there is a charge.
+   *
+   * The fee is asked for at approval now rather than before the review, so
+   * this is the moment somebody is told about it. Left out where charging is
+   * switched off, which is how the site ships and how every club already in
+   * the directory was taken on.
+   */
+  fee?: { price: string; billingUrl: string } | null;
 }): Email {
+  const fee = params.fee;
   return build(`${params.clubName} is live`, {
     previewText: "Your club is in the directory.",
     eyebrow: "Listing approved",
@@ -66,9 +76,17 @@ export function listingApproved(params: {
       "Your club page is up and people can find it in the directory.",
       "From here you run everything about the club yourself: your nights, your members, "
         + "your events and your shop. The console is where all of that lives.",
+      ...(fee
+        ? [`Your listing is ${fee.price}. Your billing page has how to pay, and we `
+           + "mark it off as soon as it lands."]
+        : []),
     ],
-    action: { label: "Open your club console", url: params.consoleUrl },
-    footnote: `Your public page: ${params.url}`,
+    action: fee
+      ? { label: "See what to pay", url: fee.billingUrl }
+      : { label: "Open your club console", url: params.consoleUrl },
+    footnote: fee
+      ? `Your club console: ${params.consoleUrl}`
+      : `Your public page: ${params.url}`,
   });
 }
 

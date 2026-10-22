@@ -7,6 +7,7 @@ import MetalPlate from "@/components/ui/MetalPlate";
 import MemberLoyaltyButton from "@/components/loyalty/MemberLoyaltyButton";
 import type { LoyaltyEntry } from "@/types/loyalty";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import StatusChip from "@/components/ui/StatusChip";
 import TagChip from "./TagChip";
 import { tokens, type Faction } from "@/lib/tokens";
 import { monthYear } from "@/utils/dates";
@@ -94,9 +95,20 @@ export default function MemberCard({
           </Avatar>
 
           <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography variant="subtitle1" noWrap className="member-card-name">
-              {member.fullName}
-            </Typography>
+            {/* A paused member is still on the roster and has to read as a
+                different kind of row, not a faded one. The chip is the same
+                one the control below the card uses, in the same word, so the
+                roster and the dialog cannot disagree about what happened. */}
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center", minWidth: 0 }}>
+              <Typography variant="subtitle1" noWrap className="member-card-name">
+                {member.fullName}
+              </Typography>
+              {member.status === "suspended" ? (
+                <Box sx={{ flexShrink: 0 }}>
+                  <StatusChip label="Paused" tone="down" />
+                </Box>
+              ) : null}
+            </Stack>
 
             <Stack direction="row" spacing={1} sx={{ alignItems: "baseline", flexWrap: "wrap" }}>
               {since ? (

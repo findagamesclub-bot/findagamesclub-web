@@ -15,7 +15,14 @@ export type ClubMember = {
   membershipId: number;
   profileId: string;
   fullName: string;
-  status: "pending" | "approved";
+  /**
+   * `suspended` is a club pausing somebody's access to ITSELF (0212). Not
+   * their account and not their other clubs, which is the line the whole
+   * feature rests on.
+   */
+  status: "pending" | "approved" | "suspended";
+  /** The club's own words, which the member reads. Empty unless paused. */
+  suspendedReason?: string;
   tierKey: string | null;
   tierAssignedAt: string | null;
   joinedAt?: string | null;

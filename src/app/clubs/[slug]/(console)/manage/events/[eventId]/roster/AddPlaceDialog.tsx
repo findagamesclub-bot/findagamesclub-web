@@ -33,7 +33,7 @@ export type Person = { id: string; name: string };
  * points, and is priced off their tier.
  */
 export default function AddPlaceDialog({
-  open, onClose, tickets, members, faction, busy, onSave,
+  open, onClose, tickets, members, faction, busy, onSave, teamEvent = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -42,9 +42,11 @@ export default function AddPlaceDialog({
   members: Person[];
   faction: Faction;
   busy: boolean;
+  /** Asked for at a team event only (0211). */
+  teamEvent?: boolean;
   onSave: (fields: {
     profileId: string; fullName: string; email: string;
-    ticketTypeId: number; quantity: number;
+    ticketTypeId: number; quantity: number; teamName: string;
   }) => void;
 }) {
   const small = useMediaQuery("(max-width:600px)");
@@ -54,6 +56,7 @@ export default function AddPlaceDialog({
   const [email, setEmail] = useState("");
   const [ticket, setTicket] = useState<number | "">("");
   const [quantity, setQuantity] = useState("1");
+  const [team, setTeam] = useState("");
 
   // Fresh every time it opens. A dialog that remembers the last person put on
   // the list is a dialog that adds them twice, and a club works down a queue
@@ -161,6 +164,15 @@ export default function AddPlaceDialog({
               sx={{ minWidth: 120 }} />
           </Stack>
 
+          {/* Who they are playing for. The club takes this at the desk at a
+              team tournament, the same question the checkout asks. */}
+          {teamEvent ? (
+            <TextField label="Their team" fullWidth value={team}
+              onChange={(event) => setTeam(event.target.value)}
+              slotProps={{ htmlInput: { maxLength: 80 } }}
+              helperText="Type it the same way their team mates did and they group together." />
+          ) : null}
+
           {/* What is actually left on the chosen ticket, so a club does not
               find out by being refused. */}
           <Typography sx={{ fontSize: "0.75rem", fontFamily: display,
@@ -186,6 +198,7 @@ export default function AddPlaceDialog({
             fullName: name, email,
             ticketTypeId: Number(ticket),
             quantity: Math.max(1, Number(quantity) || 1),
+            teamName: team,
           })} />
       </DialogActions>
     </Dialog>

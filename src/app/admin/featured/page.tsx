@@ -4,7 +4,7 @@ import NavTabs from "@/components/ui/NavTabs";
 import FeaturedBoard from "@/components/admin/FeaturedBoard";
 import FeaturedRequests from "@/components/admin/FeaturedRequests";
 import { getBillingSettings } from "@/services/billing.service";
-import { getClubsForPicker, getSlots } from "@/services/featured.service";
+import { getClubsForPicker, getSlotPayments, getSlots } from "@/services/featured.service";
 import { getFeaturedRequests } from "@/services/featuredRequests.service";
 import { londonNow } from "@/utils/dates";
 
@@ -38,6 +38,11 @@ export default async function AdminFeaturedPage({
     getClubsForPicker(),
     getFeaturedRequests(),
   ]);
+
+  // Whether each slot has been settled. A second wave rather than a second
+  // wave of its own: it needs the ids the first one returned, so it cannot
+  // join it, and a failure costs the chips rather than the page.
+  const payments = await getSlotPayments(slots.map((slot) => slot.id));
 
   // Carried from a club's own request, so pressing "Book a slot" on it lands
   // on the form with the club already chosen and the request still attached.
@@ -81,6 +86,7 @@ export default async function AdminFeaturedPage({
         prefillClubId={prefillClubId}
         requestId={requestId}
         slots={slots}
+        payments={payments}
         clubs={clubs}
         today={today}
         defaultPricePence={settings.featured_price_pence}

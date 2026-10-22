@@ -86,6 +86,39 @@ export function dispositionsFor(
   return found?.dispositions ?? [];
 }
 
+/**
+ * The dispositions several detachments have between them.
+ *
+ * The client's words: *"Only one disposition should be selected overall, but
+ * multiple detachments can be selected ... the options are based on what
+ * dispositions are associated to the selected detachments."*
+ *
+ * A union, not an intersection. A disposition one of the chosen detachments
+ * can play is a disposition the army can play, and narrowing to what they ALL
+ * share would hide a legal choice the moment somebody added a second
+ * detachment. Since 0193 every detachment in the live catalogue carries the
+ * same five, so the two only differ on a catalogue somebody has edited by
+ * hand; the union is the one that is right either way.
+ *
+ * In the order the catalogue gives them, deduplicated on the fold, because
+ * the same disposition under two detachments is one option.
+ */
+export function dispositionsForAll(
+  catalogue: Catalogue | null, factionId: string, detachments: string[],
+): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const detachment of detachments) {
+    for (const one of dispositionsFor(catalogue, factionId, detachment)) {
+      const key = fold(one);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(one);
+    }
+  }
+  return out;
+}
+
 /** A faction's units, priced, for the MVP pickers and the builder. */
 export function unitsFor(
   catalogue: Catalogue | null, factionId: string,

@@ -28,8 +28,20 @@ export type DoorRow = {
   email: string;
   reference: string;
   status: string;
+  /**
+   * What the booker said their team is called, at a team event. Empty
+   * everywhere else: 0211 only keeps it where it can mean something.
+   */
+  teamName: string;
   paymentStatus: PaymentStatus;
   paymentMethod: string;
+  /**
+   * What the club wrote down when it recorded the money, and the member reads
+   * it too. 0092 granted the column and the dialog has been writing to it ever
+   * since; until 0205 nothing on any screen read it back, so a club typed a
+   * reference into a box that swallowed it.
+   */
+  paymentNote: string;
   checkedInAt: string | null;
   refundStatus: RefundStatus;
   cancelReason: string;

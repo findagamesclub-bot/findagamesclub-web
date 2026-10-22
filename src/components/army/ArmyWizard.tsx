@@ -14,18 +14,31 @@ import { useActionToast } from "@/components/ui/Toaster";
 import PointsBar from "./PointsBar";
 import ArmyLines from "./ArmyLines";
 import ArmyUnitPicker from "./ArmyUnitPicker";
-import { StepDetails, StepFaction, StepDetachments } from "./ArmySteps";
+import {
+  StepDetails, StepFaction, StepDetachments, StepDisposition,
+} from "./ArmySteps";
 import { StepRail } from "./ArmyStepRail";
 import { saveArmyList } from "@/app/clubs/[slug]/(console)/army-builder/actions";
 import { useArmyDraft, type ArmyDraft } from "@/hooks/useArmyDraft";
 import { refusalFor } from "@/utils/army-list";
+import {
+  dispositionsForAll,
+} from "@/utils/army-catalogue";
+import {
+  heldDisposition, oneDisposition, withDisposition,
+} from "@/utils/army-disposition";
 import { factionsIn, pointsOptionsIn, type Catalogue } from "@/utils/army-catalogue";
 import { tokens } from "@/lib/tokens";
 
 export type WizardStart = ArmyDraft;
 
 /**
- * Building a list, in legacy's four steps.
+ * Building a list, in five steps.
+ *
+ * Legacy's four, with the disposition lifted out of the detachment rows into
+ * one of its own: the game allows one disposition for the whole army and a
+ * picker per row allowed as many as you had detachments. What it writes is
+ * unchanged, which `utils/army-disposition.ts` explains.
  *
  * The draft is held merged: one entry per unit and option, exactly what the
  * screen shows, so adding the same unit twice moves a number rather than
@@ -67,12 +80,26 @@ export default function ArmyWizard({
     { factionIds: factions.map((one) => one.id), pointsOptions },
     priced);
 
+  // The army's one disposition, and what the chosen detachments offer. Kept
+  // to what is still on offer: dropping a detachment can take the only one
+  // that offered the chosen disposition with it, and a list pointing at
+  // something nothing offers is one the picker cannot show.
+  const offered = dispositionsForAll(
+    catalogue, draft.factionId, draft.detachments.map((one) => one.detachment));
+  const disposition = heldDisposition(oneDisposition(draft.detachments), offered);
+
+  const setDisposition = (next: string) =>
+    patch({ detachments: withDisposition(draft.detachments, next) });
+
   // Which steps can be reached. A list with no faction has no units to pick
-  // from, so step four would be an empty page with a search box on it.
+  // from, so the last step would be an empty page with a search box on it.
+  // The disposition is deliberately NOT a gate: a catalogue can record none
+  // for a detachment, and a step nobody can answer must not stop the list.
   const ready = [
     true,
     Boolean(draft.name.trim() && (collection || draft.pointsLimit)),
     Boolean(draft.factionId),
+    Boolean(draft.factionId && (collection || draft.detachments.length)),
     Boolean(draft.factionId && (collection || draft.detachments.length)),
   ];
 
@@ -109,7 +136,7 @@ export default function ArmyWizard({
       <Stack spacing={2.5}>
         <StepRail step={step} onStep={setStep} ready={ready} />
 
-        {step === 4 ? (
+        {step === 5 ? (
           <PointsBar total={priced.total} limit={limit} collection={collection} />
         ) : null}
 
@@ -133,10 +160,20 @@ export default function ArmyWizard({
         {step === 3 ? (
           <StepDetachments catalogue={catalogue} factionId={draft.factionId}
             chosen={draft.detachments} collection={collection}
-            onChange={(next) => patch({ detachments: next })} />
+            // The army's one disposition rides onto whatever the list becomes,
+            // including a detachment added after it was chosen: a row left
+            // blank is one the rollups count as having no disposition at all.
+            onChange={(next) => patch({
+              detachments: withDisposition(next, disposition) })} />
         ) : null}
 
         {step === 4 ? (
+          <StepDisposition catalogue={catalogue} factionId={draft.factionId}
+            chosen={draft.detachments} disposition={disposition}
+            collection={collection} onPick={setDisposition} />
+        ) : null}
+
+        {step === 5 ? (
           <Stack spacing={2.5}>
             {priced.dropped.length ? (
               <Alert severity="warning">
@@ -160,7 +197,7 @@ export default function ArmyWizard({
             <Button size="large" variant="outlined"
               onClick={() => setStep(step - 1)}>Back</Button>
           ) : null}
-          {step < 4 ? (
+          {step < 5 ? (
             <Button size="large" variant="contained" disabled={!ready[step]}
               onClick={() => setStep(step + 1)}>Next</Button>
           ) : (
@@ -169,7 +206,7 @@ export default function ArmyWizard({
               {draft.listId ? "Save changes" : "Save list"}
             </Button>
           )}
-          {step === 4 && refusal ? (
+          {step === 5 && refusal ? (
             <Typography sx={{ color: tokens.danger, fontSize: "0.95rem" }}>
               {refusal}
             </Typography>

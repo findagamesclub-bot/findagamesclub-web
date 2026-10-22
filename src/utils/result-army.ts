@@ -14,6 +14,45 @@ export const PRIMARY_MAX = 50;
 export const SECONDARY_MAX = 40;
 export const PAINTED_BONUS = 10;
 
+/**
+ * The detachments on a stored row, whichever way it was written down.
+ *
+ * `detachments` is 0217's column and `detachment` is the one that came before
+ * it, still written with the lead one so nothing downstream had to change. A
+ * row saved before the migration has the second and not the first, so reading
+ * the list alone would empty every army already recorded.
+ */
+export function readDetachments(row: {
+  detachments?: string[] | null; detachment?: string | null;
+}): string[] {
+  const list = (row.detachments ?? []).map((one) => one.trim()).filter(Boolean);
+  if (list.length) return list;
+  const one = (row.detachment ?? "").trim();
+  return one ? [one] : [];
+}
+
+/**
+ * The one `game_result_armies.detachment` holds, and the one the Meta Tracker
+ * groups on. Empty when the army named none.
+ */
+export const leadDetachment = (detachments: string[]): string =>
+  detachments.find((one) => one.trim()) ?? "";
+
+/**
+ * Several detachments on one line.
+ *
+ * A comma, where everything else on a result line is separated by a middle
+ * dot: the dot divides the faction from its detachments from the disposition,
+ * so using it inside the group as well would make "Faction · A · B · Take and
+ * Hold" out of two detachments and a disposition, which reads as four things
+ * of the same kind.
+ */
+export function detachmentLine(army: {
+  detachments?: string[] | null; detachment?: string | null;
+}): string {
+  return readDetachments(army).join(", ");
+}
+
 export const TURN_ORDER = [
   { value: "first", label: "Went first" },
   { value: "second", label: "Went second" },
@@ -27,7 +66,20 @@ export const BATTLE_ROLE = [
 export type ResultArmy = {
   factionId: string;
   factionLabel: string;
-  detachment: string;
+  /**
+   * Every detachment the army brought, and one disposition for all of them.
+   *
+   * It was one string each. The client's words: *"we only allow one detachment
+   * to be selected, which is incorrect. This should follow the same process as
+   * the army list builder, where multiple detachments can be selected but only
+   * one disposition."* So the same rule the builder learned in its own step,
+   * one layer out: a list of detachments, and the disposition belongs to the
+   * army rather than to any one of them.
+   *
+   * The first is still the one `game_result_armies.detachment` holds and the
+   * one the Meta Tracker groups on. See `leadDetachment`.
+   */
+  detachments: string[];
   disposition: string;
   mvpUnits: string[];
   underwhelmingUnits: string[];
@@ -54,7 +106,7 @@ export type GameSide = ResultArmy & {
 };
 
 export const EMPTY_SIDE: GameSide = {
-  factionId: "", factionLabel: "", detachment: "", disposition: "",
+  factionId: "", factionLabel: "", detachments: [], disposition: "",
   mvpUnits: [], underwhelmingUnits: [],
   primaryScore: null, secondaryScore: null, painted: false,
   firstTurn: "", battleRole: "",
@@ -64,7 +116,8 @@ export const EMPTY_SIDE: GameSide = {
 /** A row out of `game_result_armies`, in the shape the dialogs edit. */
 export function sideFromRow(row: {
   faction_id?: string | null; faction_label?: string | null;
-  detachment?: string | null; disposition?: string | null;
+  detachment?: string | null; detachments?: string[] | null;
+  disposition?: string | null;
   mvp_units?: string[] | null; underwhelming_units?: string[] | null;
   primary_score?: number | null; secondary_score?: number | null;
   painted?: boolean | null; first_turn?: string | null; battle_role?: string | null;
@@ -74,7 +127,7 @@ export function sideFromRow(row: {
   return {
     factionId: row.faction_id ?? "",
     factionLabel: row.faction_label ?? "",
-    detachment: row.detachment ?? "",
+    detachments: readDetachments(row),
     disposition: row.disposition ?? "",
     mvpUnits: row.mvp_units ?? [],
     underwhelmingUnits: row.underwhelming_units ?? [],
@@ -89,7 +142,7 @@ export function sideFromRow(row: {
 }
 
 export const EMPTY_ARMY: ResultArmy = {
-  factionId: "", factionLabel: "", detachment: "", disposition: "",
+  factionId: "", factionLabel: "", detachments: [], disposition: "",
   mvpUnits: [], underwhelmingUnits: [],
   primaryScore: null, secondaryScore: null, painted: false,
   firstTurn: "", battleRole: "",
@@ -143,9 +196,9 @@ export const isBattleRole = (value: string) =>
 
 /** What a result row shows in one line, matching `result_army_label` in SQL. */
 export function armyLabel(army: {
-  factionLabel?: string; detachment?: string;
+  factionLabel?: string; detachment?: string; detachments?: string[];
 }): string {
-  return [army.factionLabel?.trim(), army.detachment?.trim()]
+  return [army.factionLabel?.trim(), detachmentLine(army)]
     .filter(Boolean).join(" · ");
 }
 
@@ -163,6 +216,7 @@ export function armyFromRow(row: {
   faction_id?: string | null;
   faction_label?: string | null;
   detachment?: string | null;
+  detachments?: string[] | null;
   disposition?: string | null;
   mvp_units?: string[] | null;
   underwhelming_units?: string[] | null;
@@ -182,7 +236,7 @@ export function armyFromRow(row: {
     listName: row.list_name ?? "",
     factionId: row.faction_id ?? "",
     factionLabel: row.faction_label ?? "",
-    detachment: row.detachment ?? "",
+    detachments: readDetachments(row),
     disposition: row.disposition ?? "",
     mvpUnits: row.mvp_units ?? [],
     underwhelmingUnits: row.underwhelming_units ?? [],

@@ -98,7 +98,7 @@ export default function GameResultDialog({
     if (!list) { set({ ...value, listId: null }); return; }
     set({ ...value, listId: list.id, listName: list.name,
           factionId: list.factionId, factionLabel: list.faction,
-          detachment: list.detachment, disposition: list.disposition });
+          detachments: list.detachments, disposition: list.disposition });
   };
 
   const send = () => onSave({

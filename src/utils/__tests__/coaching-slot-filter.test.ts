@@ -21,9 +21,12 @@ const slots = [
 ];
 
 // The three status groups add up to All, so nothing can hide between tabs.
+// `past` is not one of them and is left out of that sum deliberately: a
+// session that has happened still has a status, so counting it in would make
+// the groups add up to more than All.
 const counts = countCoachingSlots(slots);
 assert.deepEqual(counts,
-  { all: 4, open: 2, closed: 1, cancelled: 1, mine: 0, topay: 0 });
+  { all: 4, past: 0, open: 2, closed: 1, cancelled: 1, mine: 0, topay: 0 });
 assert.equal(counts.open + counts.closed + counts.cancelled, counts.all);
 
 assert.deepEqual(filterCoachingSlots(slots, {}).map((s) => s.id), [1, 2, 3, 4]);
@@ -70,5 +73,31 @@ assert.deepEqual(filterCoachingSlots(held, { filter: "topay" }).map((s) => s.id)
 assert.deepEqual(
   filterCoachingSlots(held, { filter: "mine", query: "clinic" }).map((s) => s.id), [11, 12]);
 assert.deepEqual(filterCoachingSlots(held, { filter: "mine", query: "chess" }), []);
+
+// Time is its own axis. A date going by is not something the club DID to a
+// session, so Past cuts across the statuses the way `mine` does, and today
+// itself is not past.
+const past = countCoachingSlots(slots, "2026-10-17");
+assert.equal(past.past, 2);
+assert.equal(past.open, 2);
+assert.deepEqual(
+  filterCoachingSlots(slots, { filter: "past", today: "2026-10-17" }).map((s) => s.id),
+  [1, 2]);
+
+// It really does cut across them: once every date is behind us, the closed one
+// and the called-off one are in Past as well.
+const allBehind = countCoachingSlots(slots, "2026-10-25");
+assert.equal(allBehind.past, 4);
+assert.deepEqual(
+  filterCoachingSlots(slots, { filter: "past", today: "2026-10-25" }).map((s) => s.id),
+  [1, 2, 3, 4]);
+
+// And with no day in hand it answers nothing rather than guessing one, which
+// is what keeps the tab off a screen that cannot say what today is. This pins
+// the behaviour and not the `Boolean(today)` guard: every real date sorts
+// after "", so the comparison alone already answers false and removing the
+// guard leaves this green. It is there to say the intent out loud.
+assert.equal(countCoachingSlots(slots).past, 0);
+assert.deepEqual(filterCoachingSlots(slots, { filter: "past" }), []);
 
 console.log("coaching-slot-filter: all assertions passed");

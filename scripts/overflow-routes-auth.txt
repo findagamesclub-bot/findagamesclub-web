@@ -107,3 +107,9 @@
 /clubs/didcot-wargames-didcot/manage/analytics?tab=sales
 /members/6273f61b-a34f-4c59-9d0b-507ee57f9b5d
 /clubs/didcot-wargames-didcot/rivalries/1ee93437-165d-46ae-83d5-9781ff7a11e5_6273f61b-a34f-4c59-9d0b-507ee57f9b5d
+/clubs/didcot-wargames-didcot/manage/bookings
+
+# The nights that have already happened, for a member rather than the club.
+# Its filter bar carries two pickers beside a search box, which is the first
+# place that row has had to wrap.
+/clubs/didcot-wargames-didcot/bookings/past

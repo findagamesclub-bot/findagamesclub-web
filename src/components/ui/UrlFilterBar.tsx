@@ -16,6 +16,10 @@ import { mono, tokens } from "@/lib/tokens";
 
 export type UrlTab = { value: string; label: string; count: number };
 export type UrlOption = { value: string; label: string };
+/** A narrowing axis of its own: which event, which kind, which month. */
+export type UrlPicker = {
+  label: string; value: string; options: UrlOption[]; param: string;
+};
 
 /**
  * The same bar as `account/FilterBar`, for a list the server filters.
@@ -29,7 +33,7 @@ export type UrlOption = { value: string; label: string };
  * still owes me for the Winter Open" to whoever is chasing it.
  */
 export default function UrlFilterBar({
-  query, placeholder, tabs, tab, sorts, sort, second, defaults, onBusy,
+  query, placeholder, tabs, tab, sorts, sort, pickers, defaults, onBusy,
 }: {
   query: string;
   /**
@@ -48,8 +52,13 @@ export default function UrlFilterBar({
   /** Left out on a list with one sensible order, which then has no picker. */
   sorts?: UrlOption[];
   sort: string;
-  /** A second axis, such as which event. Optional. */
-  second?: { label: string; value: string; options: UrlOption[]; param: string };
+  /**
+   * Axes of their own, such as which event, which month, which game. A list
+   * rather than a single `second`, because the Scores page narrows on three
+   * at once and a second prop for the third would be two props doing one job.
+   * Pass an empty list where there is nothing to narrow by.
+   */
+  pickers?: UrlPicker[];
   /**
    * What each param means when it is absent, so a plain list has a plain URL
    * and the pager's links match the ones this writes.
@@ -88,7 +97,7 @@ export default function UrlFilterBar({
     // committed value belongs in the address.
     const search = nextSearch(current, {
       q: query, state: tab, sort,
-      ...(second ? { [second.param]: second.value } : {}),
+      ...Object.fromEntries((pickers ?? []).map((one) => [one.param, one.value])),
       ...changes,
     }, defaults);
 
@@ -107,11 +116,16 @@ export default function UrlFilterBar({
             border: `1px solid ${tokens.rule}`, backgroundColor: tokens.paper }}>
       {/* The whole row goes when there is neither a search nor a picker on
           it, rather than leaving an empty strip above the tabs. */}
-      {placeholder || second || sorts?.length ? (
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+      {placeholder || pickers?.length || sorts?.length ? (
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}
+        sx={{ flexWrap: "wrap" }} useFlexGap>
         {placeholder ? (
           <TextField
             size="small" fullWidth placeholder={placeholder} value={typed}
+            // A basis rather than the width `fullWidth` sets: the row wraps
+            // now, and a child 100% wide takes a line to itself and pushes
+            // every picker under it whether or not they would have fitted.
+            sx={{ flex: "1 1 220px" }}
             onChange={(event) => setTyped(event.target.value)}
             slotProps={{
               input: {
@@ -125,15 +139,15 @@ export default function UrlFilterBar({
           />
         ) : null}
 
-        {second ? (
-          <TextField select size="small" label={second.label} value={second.value}
-            onChange={(event) => go({ [second.param]: event.target.value })}
-            sx={{ minWidth: { sm: 220 } }}>
-            {second.options.map((option) => (
+        {(pickers ?? []).map((one) => (
+          <TextField key={one.param} select size="small" label={one.label} value={one.value}
+            onChange={(event) => go({ [one.param]: event.target.value })}
+            sx={{ minWidth: { sm: 190 } }}>
+            {one.options.map((option) => (
               <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
             ))}
           </TextField>
-        ) : null}
+        ))}
 
         {sorts?.length ? (
           <TextField select size="small" label="Sort" value={sort}

@@ -71,6 +71,10 @@ function toBooking(row: Row, money?: PaymentStanding): EventBooking {
     // booking starts.
     paymentStatus: money?.payment_status ?? "unpaid",
     paymentMethod: money?.payment_method ?? "",
+    // The club's own words about this payment, which the member sees too. A
+    // note nobody can read is a note nobody writes, which is how the column
+    // sat written-and-unread from 0092 to 0205.
+    paymentNote: money?.payment_note ?? "",
     refundStatus: money?.refund_status ?? "not_due",
     cancelReason: money?.cancel_reason ?? "",
     lines: toLines(row.club_event_booking_items),

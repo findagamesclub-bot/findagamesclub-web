@@ -18,7 +18,7 @@ import type { CoachingSlot, CoachingStanding } from "@/types/clubExtras";
 
 /** The calendar, and whatever the viewer is allowed to do to it. */
 export default function CoachingCalendar({
-  slots, slug, clubId, faction, canManage, isMember, standing = null,
+  slots, slug, clubId, faction, canManage, isMember, today = "", standing = null,
 }: {
   slots: CoachingSlot[];
   slug: string;
@@ -26,6 +26,12 @@ export default function CoachingCalendar({
   faction: Faction;
   canManage: boolean;
   isMember: boolean;
+  /**
+   * Today as a London day, so the list can tell a session that has happened
+   * from one that is still to come. The server knows the day; the browser's
+   * own clock is the wrong one to ask about a club night.
+   */
+  today?: string;
   /** One read for the page; each card quotes itself from it. */
   standing?: CoachingStanding | null;
 }) {
@@ -39,9 +45,10 @@ export default function CoachingCalendar({
   /** Which session is open for changing. One dialog, not one per card. */
   const [editing, setEditing] = useState<number | null>(null);
 
-  const counts = useMemo(() => countCoachingSlots(slots), [slots]);
+  const counts = useMemo(() => countCoachingSlots(slots, today), [slots, today]);
   const results = useMemo(
-    () => filterCoachingSlots(slots, { query, filter, sort }), [slots, query, filter, sort]);
+    () => filterCoachingSlots(slots, { query, filter, sort, today }),
+    [slots, query, filter, sort, today]);
 
   const send = (fields: Record<string, string | number | boolean>) => {
     const data = new FormData();
@@ -82,6 +89,11 @@ export default function CoachingCalendar({
             ] : []),
             { value: "closed" as const, label: "Closed", count: counts.closed },
             { value: "cancelled" as const, label: "Called off", count: counts.cancelled },
+            // Only where there are any, which on a member's page is never:
+            // they are never shown a session that has already happened.
+            ...(counts.past ? [
+              { value: "past" as const, label: "Past", count: counts.past },
+            ] : []),
           ]}
           filter={filter}
           onFilter={(value) => startSift(() => setFilter(value))}
