@@ -21,14 +21,16 @@ import type { TablePaymentStatus, TableSort, TableTab } from "@/utils/table-book
 
 export type TableBookingRpcRow = {
   booking_id: number;
+  /** Which seat of the table this row is: 0221 split the fee between them. */
+  side: "booker" | "opponent";
+  person_id: string | null;
+  person_name: string | null;
+  against_name: string | null;
   session_date: string;
   session_label: string | null;
   session_time: string | null;
   table_index: number;
   game_title: string | null;
-  booked_by: string | null;
-  booked_name: string | null;
-  opponent_name: string | null;
   status: string;
   payment_status: TablePaymentStatus;
   payment_method: string | null;
@@ -105,13 +107,26 @@ export type TablePaymentRow = {
   payment_method: string | null;
   payment_note: string | null;
   paid_at: string | null;
+  opponent_payment_status: TablePaymentStatus;
+  opponent_payment_method: string | null;
+  opponent_payment_note: string | null;
+  opponent_paid_at: string | null;
 };
 
+/**
+ * One person's half, not the table's.
+ *
+ * The client, item gg: "member A may have paid their half, but member B has
+ * not." `p_side` is what makes that sayable, and 0221 drops the four-argument
+ * form so a caller that forgets it cannot quietly go on settling the booker.
+ */
 export function setBookingPayment(params: {
-  booking: number; status: TablePaymentStatus; method: string; note: string;
+  booking: number; side: "booker" | "opponent";
+  status: TablePaymentStatus; method: string; note: string;
 }) {
   return callRpc<TablePaymentRow[] | null>("club_set_booking_payment", {
     p_booking: params.booking,
+    p_side: params.side,
     p_status: params.status,
     p_method: params.method,
     p_note: params.note,

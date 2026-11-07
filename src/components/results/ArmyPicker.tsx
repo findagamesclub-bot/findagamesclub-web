@@ -50,6 +50,17 @@ export default function ArmyPicker({
   /** A row where there is width for one, a column inside a dialog. */
   direction?: "row" | "column";
 }) {
+  /**
+   * A basis only where the fields are in a row.
+   *
+   * In a column, flex-basis is the HEIGHT, so a 180px basis makes a 40px
+   * picker 180px tall. The row is a column at xs and inside a dialog that
+   * asks for one, which is most of the places this is used.
+   */
+  const span = (basis: string) => (direction === "row"
+    ? { flex: { xs: "1 1 auto", md: `1 1 ${basis}` }, minWidth: 0 }
+    : { minWidth: 0 });
+
   const factions = factionsIn(catalogue);
   const detachments = detachmentsFor(catalogue, value.factionId);
   const offered = dispositionsForAll(catalogue, value.factionId, value.detachments);
@@ -105,7 +116,7 @@ export default function ArmyPicker({
           // leaving detachments this faction has never had.
           detachments: [], disposition: "",
         })}
-        sx={{ flex: "1 1 180px", minWidth: 0 }}
+        sx={span("180px")}
         renderInput={(params) => (
           <TextField {...params} label="Faction"
             helperText={unknown
@@ -139,7 +150,9 @@ export default function ArmyPicker({
         })}
         // The widest basis of the three, because it is the one field holding
         // several values and a chip has a delete button inside it.
-        sx={{ flex: "1.4 1 260px", minWidth: 0 }}
+        sx={direction === "row"
+          ? { flex: { xs: "1 1 auto", md: "1.4 1 260px" }, minWidth: 0 }
+          : { minWidth: 0 }}
         renderInput={(params) => (
           <TextField {...params} label="Detachments"
             helperText={unknown
@@ -154,7 +167,7 @@ export default function ArmyPicker({
           : heldDisposition(value.disposition, offered)}
         disabled={held.length === 0 || unknown}
         onChange={(event) => onChange({ ...value, disposition: event.target.value })}
-        sx={{ flex: "1 1 180px", minWidth: 0 }}
+        sx={span("180px")}
         // The count, not just the rule. The client reported this box as broken
         // because it offered one option; it was offering every disposition the
         // detachment holds, and every detachment in the imported catalogue

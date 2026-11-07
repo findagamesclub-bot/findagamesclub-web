@@ -102,7 +102,12 @@ export default function CheckoutForm({
         {teamEvent ? (
           <TextField name="teamName" label="Your team" fullWidth
             slotProps={{ htmlInput: { maxLength: 80 } }}
-            helperText="Who you are playing for. The club builds the teams from these, so everybody in yours should type the same thing." />
+            // The client's own words. What was here told the booker that
+            // everybody in their team had to type the same thing, which is a
+            // job nobody can do from a checkout page: the organiser collects
+            // the squad afterwards, so saying so is what stops four people
+            // guessing at one spelling.
+            helperText="Provide the name of the team you are entering. Player names and member codes for your team will be requested by the event organiser in advance of the event and before the draw is done." />
         ) : null}
 
         {showPaymentNote ? (

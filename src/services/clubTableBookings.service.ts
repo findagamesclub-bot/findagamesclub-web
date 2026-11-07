@@ -4,7 +4,7 @@ import * as repo from "@/repositories/clubTableBookings.repository";
 import { splitFacets, NO_FACETS, type BookingFacets } from "@/utils/booking-facets";
 import { PER_PAGE } from "@/utils/paging";
 import type {
-  TableBookingRow, TablePaymentStatus, TableSort, TableTab,
+  TableBookingRow, TableBookingSide, TablePaymentStatus, TableSort, TableTab,
 } from "@/utils/table-bookings";
 
 /**
@@ -33,14 +33,17 @@ const text = (value: string | null | undefined) => value ?? "";
 function toRow(row: repo.TableBookingRpcRow): TableBookingRow {
   return {
     bookingId: row.booking_id,
+    side: row.side,
     sessionDate: row.session_date,
     sessionLabel: text(row.session_label),
     sessionTime: text(row.session_time),
     tableIndex: Number(row.table_index ?? 0),
     gameTitle: text(row.game_title),
-    bookedById: row.booked_by,
-    bookedName: text(row.booked_name) || "A member",
-    opponentName: text(row.opponent_name),
+    // The person this half belongs to, and who they are playing. A guest has
+    // no account, so the id can be null on either side.
+    bookedById: row.person_id,
+    bookedName: text(row.person_name) || "A member",
+    opponentName: text(row.against_name),
     status: row.status,
     paymentStatus: row.payment_status,
     paymentMethod: text(row.payment_method),
@@ -124,10 +127,14 @@ const REFUSALS: Record<string, string> = {
   BOOKING_NOT_LIVE:
     "That table was cancelled, so there is nothing left to settle on it.",
   BOOKING_PAYMENT_UNKNOWN: "Pick one of the payment states from the list.",
+  BOOKING_SIDE_UNKNOWN: "That is not one of the two seats on the table.",
+  BOOKING_NO_OPPONENT:
+    "Nobody is down on the other seat, so there is no second half to settle.",
 };
 
 export async function setTablePayment(params: {
-  booking: number; status: TablePaymentStatus; method: string; note: string;
+  booking: number; side: TableBookingSide;
+  status: TablePaymentStatus; method: string; note: string;
 }): Promise<TablePaymentResult> {
   try {
     await repo.setBookingPayment(params);

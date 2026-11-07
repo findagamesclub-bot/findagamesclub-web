@@ -11,6 +11,7 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import CoachingPaymentDialog from "./CoachingPaymentDialog";
 import StatusChip from "@/components/ui/StatusChip";
 import PriceBreakdown from "@/components/ui/PriceBreakdown";
 import { nightLabel } from "@/utils/dates";
@@ -37,12 +38,13 @@ export default function BookingRow({
 }: {
   row: CoachingBookingRow;
   busy: boolean;
-  onPaid: (bookingId: number, paid: boolean) => void;
+  onPaid: (bookingId: number, paid: boolean, note: string) => void;
   onCancel: (bookingId: number, reason: string) => void;
   onRefund: (bookingId: number, status: string) => void;
 }) {
   const [menu, setMenu] = useState<HTMLElement | null>(null);
   const [asking, setAsking] = useState(false);
+  const [paying, setPaying] = useState(false);
   const [reason, setReason] = useState("");
 
   const tags = bookingTags(row);
@@ -89,6 +91,15 @@ export default function BookingRow({
           </Stack>
         ) : null}
 
+        {/* What the club wrote beside the money, which the member reads too.
+            Under the breakdown rather than beside the name: it is about the
+            payment, and that is where the payment is. */}
+        {row.paymentNote ? (
+          <Typography variant="caption" sx={{ color: tokens.inkMuted }}>
+            {row.paymentNote}
+          </Typography>
+        ) : null}
+
         {/* The club's own words, so a row nobody can remember explains itself. */}
         {row.cancelReason ? (
           <Typography variant="body2" sx={{ color: tokens.inkMuted, fontStyle: "italic" }}>
@@ -99,11 +110,15 @@ export default function BookingRow({
 
       <Stack direction="row" spacing={0.5}
         sx={{ justifySelf: "end", alignItems: "center", flexShrink: 0 }}>
+        {/* The same two words, in the same order, as a table booking and an
+            event ticket. "Paid" used to sit here as the label on a button that
+            un-marked the payment when pressed, which reads as a status and
+            acts as an undo. */}
         {row.cancelled ? null : (
           <Button size="small" variant={row.paid ? "text" : "outlined"} disabled={busy}
-            onClick={() => onPaid(row.id, !row.paid)}
+            onClick={() => setPaying(true)}
             sx={{ color: row.paid ? tokens.positive : undefined }}>
-            {row.paid ? "Paid" : "Mark paid"}
+            {row.paid ? "Payment" : "Mark paid"}
           </Button>
         )}
 
@@ -134,6 +149,13 @@ export default function BookingRow({
           ))
           : null}
       </Menu>
+
+      <CoachingPaymentDialog
+        row={paying ? row : null}
+        saving={busy}
+        onClose={() => setPaying(false)}
+        onSave={({ paid, note }) => { onPaid(row.id, paid, note); setPaying(false); }}
+      />
 
       <ConfirmDialog
         open={asking}

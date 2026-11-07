@@ -32,8 +32,13 @@ export default function ClubCompetitions({
         </Typography>
       )}
 
+      {/* Each card its own door, landing on itself. The way to the rounds
+          used to be one strip under all of them, which the client read as
+          hidden — and they were right: it is a footer, and the thing it opens
+          is about the card above it. */}
       {featured.map((competition) => (
-        <CompetitionCard key={competition.id} competition={competition} faction={faction} />
+        <CompetitionCard key={competition.id} competition={competition} faction={faction}
+          href={`/clubs/${slug}/competitions#c${competition.id}`} />
       ))}
 
       {/* Always here, not only when there are more. Round-by-round history is
@@ -46,11 +51,11 @@ export default function ClubCompetitions({
                   border: `1px solid ${tokens.rule}`, backgroundColor: tokens.surface,
                   "&:hover": { borderColor: faction.base } }}>
             <Typography sx={{ fontFamily: mono, fontSize: "0.72rem", color: tokens.inkMuted }}>
-              {more ? `SHOWING ${featured.length} OF ${total}` : "ROUND BY ROUND"}
+              {more ? `SHOWING ${featured.length} OF ${total}` : "EVERY SEASON"}
             </Typography>
             <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
               <Typography variant="body2" sx={{ color: tokens.brand, fontWeight: 600 }}>
-                {more ? "All leagues and campaigns" : "Full results history"}
+                {more ? "All leagues and campaigns" : "The whole history"}
               </Typography>
               <ArrowForwardIcon sx={{ fontSize: 16, color: tokens.brand }} />
             </Stack>

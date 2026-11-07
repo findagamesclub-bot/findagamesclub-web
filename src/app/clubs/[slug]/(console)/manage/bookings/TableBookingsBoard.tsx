@@ -41,21 +41,24 @@ export default function TableBookingsBoard({
   useActionToast(state);
 
   const [sifting, setSifting] = useState(false);
-  // Which booking a save is running for. One flag across every row means
-  // either all of them spin or, as shipped elsewhere once, none of them does.
-  const [pendingId, setPendingId] = useState<number | null>(null);
+  // Which HALF a save is running for. One flag across every row means either
+  // all of them spin or, as shipped elsewhere once, none of them does — and
+  // since 0221 a booking is two rows, so the booking's id alone would spin
+  // both halves of one table for a press on one of them.
+  const [pendingId, setPendingId] = useState<string | null>(null);
   const [paying, setPaying] = useState<Row | null>(null);
 
   // Closed on the answer landing, not on the click, or a refusal goes off the
   // screen with whatever was typed into it.
   useActionSuccess(state, () => setPaying(null));
 
-  const send = (bookingId: number, fields: Record<string, string>) => {
+  const send = (row: Row, fields: Record<string, string>) => {
     const data = new FormData();
     data.set("slug", slug);
-    data.set("bookingId", String(bookingId));
+    data.set("bookingId", String(row.bookingId));
+    data.set("side", row.side);
     for (const [key, value] of Object.entries(fields)) data.set(key, value);
-    setPendingId(bookingId);
+    setPendingId(keyOf(row));
     startTransition(() => submit(data));
   };
 
@@ -80,7 +83,11 @@ export default function TableBookingsBoard({
                 // that month and a count with no window on it is the figure
                 // the client read as wrong on the analytics page.
                 filters.month ? monthLabel(filters.month).toUpperCase() : null,
-                `${counts.all} BOOKED`,
+                // A row is one person's half of a table since 0221, not a
+                // booking, so "55 BOOKED" would be counting something nobody
+                // booked. Said as what the club is looking at: shares to
+                // settle, of which some are still owed.
+                `${counts.all} TO SETTLE`,
                 counts.topay ? `${counts.topay} STILL TO PAY` : "NOTHING OUTSTANDING",
               ].filter(Boolean).join(" · ")
             : "THE COUNTS WOULD NOT LOAD"}
@@ -144,14 +151,14 @@ export default function TableBookingsBoard({
           ) : null}
 
           {view.rows.map((row) => (
-            <TableBookingRow key={row.bookingId} row={row} faction={faction}
-              busy={busy && pendingId === row.bookingId}
+            <TableBookingRow key={keyOf(row)} row={row} faction={faction}
+              busy={busy && pendingId === keyOf(row)}
               onPayment={() => setPaying(row)} />
           ))}
         </Stack>
       </BusyOverlay>
 
-      <Pager page={filters.page} total={view.total} noun="tables"
+      <Pager page={filters.page} total={view.total} noun="shares"
         size={PER_PAGE.rows}
         href={{
           path: `/clubs/${slug}/manage/bookings`,
@@ -164,7 +171,15 @@ export default function TableBookingsBoard({
         }} />
 
       <TablePaymentDialog row={paying} saving={busy} onClose={() => setPaying(null)}
-        onSave={(fields) => { if (paying) send(paying.bookingId, fields); }} />
+        onSave={(fields) => { if (paying) send(paying, fields); }} />
     </Stack>
   );
 }
+
+/**
+ * A row's identity, which is no longer the booking's id.
+ *
+ * 0221 made this list one row per person per table, so the two halves of one
+ * booking share an id and differ only by which seat they are.
+ */
+const keyOf = (row: Row) => `${row.bookingId}:${row.side}`;

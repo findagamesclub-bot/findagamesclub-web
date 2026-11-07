@@ -23,7 +23,8 @@ import { tokens, type Faction } from "@/lib/tokens";
 import BookingPricePanel from "./BookingPricePanel";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { nightLabel } from "@/utils/dates";
-import type { BookingStanding } from "@/utils/booking-pricing";
+import type { BookingStanding, OpponentShare } from "@/utils/booking-pricing";
+import type { RosterShare } from "@/services/bookingPricing.service";
 import EditBookingDialog from "./EditBookingDialog";
 import type { Booking, CalendarSession } from "@/types/booking";
 
@@ -39,8 +40,13 @@ export default function BookingActions({
   canCancelMine, mine = null, myQueueEntryId, queueLength, lfgEnabled, hasOpenPost,
   roster = [],
 }: {
-  /** Club members who can be named as the opponent. */
-  roster?: { id: string; name: string }[];
+  /**
+   * Club members who can be named as the opponent, with what their own tier
+   * takes off their half of the table. 0221 split the fee between the people
+   * on it, so the screen cannot say what the other seat owes without knowing
+   * whose membership covers it.
+   */
+  roster?: RosterShare[];
   session: CalendarSession;
   clubId: number;
   slug: string;
@@ -64,6 +70,10 @@ export default function BookingActions({
   const [opened, setOpened] = useState(false);
   // Set only when a real member was picked; a typed name leaves it null.
   const [opponent, setOpponent] = useState<string | null>(null);
+  // The typed half of the same field. A guest counts as somebody on the table
+  // — they are playing and the club collects their half — so the split has to
+  // follow the text as well as the picker.
+  const [opponentName, setOpponentName] = useState("");
   const [points, setPoints] = useState(0);
   const [dropping, setDropping] = useState(false);
 
@@ -260,16 +270,20 @@ export default function BookingActions({
                   }}
                   getOptionLabel={(option) =>
                     typeof option === "string" ? option : option.name}
-                  onChange={(_event, value) =>
-                    setOpponent(typeof value === "string" || !value ? null : value.id)}
+                  onChange={(_event, value) => {
+                    setOpponent(typeof value === "string" || !value ? null : value.id);
+                    setOpponentName(typeof value === "string" ? value : value?.name ?? "");
+                  }}
                   // `onChange` fires on a pick and on a clear and never on a
                   // keystroke, so picking a member and then typing a guest's
                   // name over them left the member's id on the form: the
                   // booking was filed against the member and the typed name
                   // thrown away. The same fault 0178 found on the club's own
                   // opponent field, in the member's half of the same question.
-                  onInputChange={(_event, _value, reason) => {
-                    if (reason === "input") setOpponent(null);
+                  onInputChange={(_event, value, reason) => {
+                    if (reason !== "input") return;
+                    setOpponent(null);
+                    setOpponentName(value);
                   }}
                   renderInput={(params) => (
                     <TextField
@@ -301,7 +315,8 @@ export default function BookingActions({
                 slotProps={{ htmlInput: { maxLength: 500 } }}
               />
               {mode === "book" && standing ? (
-                <BookingPricePanel standing={standing} points={points} onPoints={setPoints} />
+                <BookingPricePanel standing={standing} points={points} onPoints={setPoints}
+                  opponent={shareFor(roster, opponent, opponentName)} />
               ) : null}
 
               <Button type="submit" variant="contained" size="large" fullWidth
@@ -319,4 +334,27 @@ export default function BookingActions({
       </Dialog>
     </Stack>
   );
+}
+
+/**
+ * The other seat, as the price panel needs it.
+ *
+ * A picked member brings their own tier; a typed guest has none and owes their
+ * half in full; an empty field is nobody, and the booker has the whole table.
+ */
+function shareFor(
+  roster: RosterShare[], id: string | null, typed: string,
+): OpponentShare | null {
+  const picked = id ? roster.find((one) => one.id === id) : undefined;
+  if (picked) {
+    return {
+      name: picked.name,
+      discountPercent: picked.discountPercent,
+      tierLabel: picked.tierLabel,
+      isMember: true,
+    };
+  }
+  const name = typed.trim();
+  if (!name) return null;
+  return { name, discountPercent: 0, tierLabel: null, isMember: false };
 }

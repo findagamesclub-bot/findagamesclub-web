@@ -236,13 +236,19 @@ export async function getSectionWidgets(
 
   // ------------------------------------------------------------------- events
   if (upcoming.total || sales.size) {
-    const tickets = [...sales.values()].reduce((n, s) => n + s.tickets, 0);
+    // The events coming up, and nothing else. The card reads "2 · coming up,
+    // 29 tickets sold" and the 29 was every ticket the club had ever sold,
+    // against a figure that was only the next two: the client read it as 29
+    // sold for those two, which it never was. The bars underneath are those
+    // same two events, so the number and the chart now answer one question.
+    const tickets = upcoming.events.reduce(
+      (n, event) => n + (sales.get(event.id)?.tickets ?? 0), 0);
     add({
       key: "events", group: "Events", label: "Events", href: at("/events"),
       needs: "events.manage",
       value: String(upcoming.total),
       note: tickets
-        ? `coming up, ${plural(tickets, "ticket")} sold`
+        ? `coming up, ${plural(tickets, "ticket")} sold for them`
         : "coming up, no tickets sold yet",
       chart: upcoming.events.length
         ? { kind: "ranked", rows: upcoming.events

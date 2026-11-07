@@ -101,8 +101,9 @@ export default function ModerationQueue({
       {scope === "club" ? (
         <Typography sx={{ fontFamily: mono, fontSize: "0.72rem",
                           color: tokens.inkMuted, px: 0.5 }}>
-          A review of your club, and anything your own team wrote, goes to a
-          site admin instead of here. Nobody rules on themselves.
+          A review of your club goes to a site admin instead of here, and so
+          does a message one of your team wrote. Nobody rules on themselves.
+          Everything said on a board is yours to answer, whoever wrote it.
           {/* Only when there are some. "0 are there" is the page answering a
               question nobody asked, and it is the ordinary case. */}
           {elsewhere && elsewhere.waiting + elsewhere.answered > 0 ? (
@@ -124,7 +125,7 @@ export default function ModerationQueue({
               description={tab !== ""
                 ? "Try a different kind, or clear the filters to see everything."
                 : scope === "club"
-                  ? "Members can report a board post, a reply or a message. Anything reported at this club lands here. A review of the club, and anything your own team wrote, goes to a site admin instead."
+                  ? "Members can report a board post, a reply or a message. Anything said on a board at this club lands here, whoever wrote it. A review of the club, and a message one of your team sent, goes to a site admin instead."
                   : "Members can report a review, a board post, a reply or a message. Anything they report lands here."} />
           ) : (
             <Box sx={{ display: "grid", gap: 2, alignItems: "stretch",

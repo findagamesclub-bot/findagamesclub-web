@@ -2,7 +2,9 @@ import "server-only";
 import { clubLogoUrl } from "@/utils/club-media";
 import { publicUrl } from "@/lib/supabase/storage";
 
-import { findMine, requestTier } from "@/repositories/myMemberships.repository";
+import {
+  findMine, findMySuspensions, requestTier, type SuspensionRow,
+} from "@/repositories/myMemberships.repository";
 import { findClubBasics } from "@/repositories/memberships.repository";
 import { findProfileById } from "@/repositories/profiles.repository";
 import { notifyTierRequested } from "./membership-notify.service";
@@ -14,7 +16,15 @@ import type { MembershipTier } from "@/types/clubDetail";
 
 export type MyClubMembership = {
   membershipId: number;
-  status: "pending" | "approved" | "declined" | "cancelled";
+  status: "pending" | "approved" | "declined" | "cancelled" | "suspended";
+  /**
+   * Why the club took their access away, in the club's own words, and when.
+   * Empty on every other status. 0212 wrote it and nothing read it, so a
+   * suspended member saw a card with no status on it at all — which is the
+   * crash the client found, because the status map had four keys.
+   */
+  suspendedReason: string;
+  suspendedAt: string | null;
   club: { id: number; slug: string; name: string; city: string; logoUrl: string | null };
   tierKey: string | null;
   tierLabel: string | null;
@@ -64,7 +74,13 @@ export async function getMyMemberships(profileId: string): Promise<MyClubMembers
   const rows = await findMine(profileId);
   if (!rows.length) return [];
 
-  const payments = await findPaymentsForMemberships(rows.map((row) => row.id));
+  // One wave. A suspension is rare and the list is drawn without it far more
+  // often than with it, so it rides along with the payments rather than
+  // costing a round trip of its own.
+  const [payments, suspensions] = await Promise.all([
+    findPaymentsForMemberships(rows.map((row) => row.id)),
+    findMySuspensions().catch(() => new Map<number, SuspensionRow>()),
+  ]);
   const byMembership = new Map<number, MembershipPayment[]>();
   for (const row of payments) {
     const list = byMembership.get(row.membership_id) ?? [];
@@ -104,6 +120,8 @@ export async function getMyMemberships(profileId: string): Promise<MyClubMembers
       requestedBillingLabel: row.requested_billing_label ?? "",
       requestedAtTier: row.tier_requested_at,
       payments: paid,
+      suspendedReason: suspensions.get(row.id)?.reason ?? "",
+      suspendedAt: suspensions.get(row.id)?.suspended_at ?? null,
       standing: standing(paid, row.tier_key, row.tier_assigned_at),
       tiers,
     };

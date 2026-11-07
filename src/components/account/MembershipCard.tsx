@@ -19,6 +19,11 @@ const STATUS: Record<MyClubMembership["status"], { label: string; tone: string; 
   pending: { label: "Waiting on the club", tone: "#5c4310", bg: tokens.brassSoft },
   declined: { label: "Not accepted", tone: tokens.danger, bg: "#FBE9E7" },
   cancelled: { label: "You left", tone: tokens.inkMuted, bg: tokens.surface },
+  // 0212's status, and this map had four keys until the client found the
+  // fifth: `STATUS[status]` came back undefined and the card threw, which took
+  // the whole memberships page down and with it every OTHER club they belong
+  // to. A union with a `Record` over it is what makes that a type error now.
+  suspended: { label: "Suspended", tone: tokens.danger, bg: "#FBE9E7" },
 };
 
 /** One labelled fact. Four of these answer the whole card. */
@@ -120,6 +125,17 @@ export default function MembershipCard({
       {membership.status === "declined" && membership.declineReason ? (
         <Typography variant="body2" sx={{ px: 2.25, pb: 2, color: tokens.inkMuted }}>
           {membership.declineReason}
+        </Typography>
+      ) : null}
+
+      {/* What it means and why, in the club's own words. The tier above still
+          reads as theirs, which is the point: a suspension is the club
+          shutting its door, not the membership being over. */}
+      {membership.status === "suspended" ? (
+        <Typography variant="body2" sx={{ px: 2.25, pb: 2, color: tokens.inkMuted }}>
+          {`${membership.club.name} has suspended you, so you cannot use the club `}
+          until they lift it. Everything you have here is still yours.
+          {membership.suspendedReason ? ` They said: "${membership.suspendedReason}"` : ""}
         </Typography>
       ) : null}
 

@@ -3,24 +3,24 @@
 import { useActionState, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
-import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
-import Typography from "@mui/material/Typography";
+import BusyOverlay from "@/components/ui/BusyOverlay";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import EmptyState from "@/components/ui/EmptyState";
+import Pager from "@/components/ui/Pager";
+import UrlFilterBar from "@/components/ui/UrlFilterBar";
 import FeaturedBookForm from "@/components/admin/FeaturedBookForm";
 import FeaturedPaymentDialog, { type PayableSlot }
   from "@/components/admin/FeaturedPaymentDialog";
-import type { SlotPayments } from "@/services/featured.service";
+import FeaturedSlotCard from "@/components/admin/FeaturedSlotCard";
+import type { FeaturedList, FeaturedSlot } from "@/services/featured.service";
 import { useActionToast } from "@/components/ui/Toaster";
 import { useActionSuccess } from "@/hooks/useActionSuccess";
 import { featuredAction, type FeaturedState } from "@/app/admin/featured/actions";
-import { formatPence } from "@/utils/format";
-import { shortDate } from "@/utils/dates";
-import { clubIdentity } from "@/utils/club-identity";
-import { display, mono, tokens } from "@/lib/tokens";
-import type { FeaturedSlotRow } from "@/repositories/featured.repository";
+import {
+  FEATURED_DEFAULTS, FEATURED_SORTS, FEATURED_TABS, FEATURED_WHEN,
+  clubChoices, monthChoices, type FeaturedFilters,
+} from "@/utils/featured-filters";
 
 /**
  * Who leads the homepage, and when.
@@ -29,18 +29,17 @@ import type { FeaturedSlotRow } from "@/repositories/featured.repository";
  * nobody has to remember to take down, and a slot with a price is a row the
  * treasurer can add up. The old `spotlight` flag still fills whatever is left,
  * so the front page is never empty before anybody has bought anything.
+ *
+ * Filtered, counted and paged in SQL (0226). The client asked for it because
+ * "when lots of featured bookings are added, it will be hard to navigate", and
+ * this screen drew every slot the site had ever sold as a card.
  */
 export default function FeaturedBoard({
-  slots, payments, clubs, today, defaultPricePence, defaultDays, showing,
+  list, filters, clubs, today, defaultPricePence, defaultDays, showing,
   prefillClubId = null, requestId = null,
 }: {
-  slots: FeaturedSlotRow[];
-  /**
-   * Whether each slot has been settled, keyed by id. Its own read rather than
-   * columns on the slot rows: `database.ts` has not been regenerated since
-   * 0151 and `check:columns` is right to refuse a select naming them.
-   */
-  payments: SlotPayments;
+  list: FeaturedList;
+  filters: FeaturedFilters;
   clubs: { id: number; name: string; city: string }[];
   today: string;
   defaultPricePence: number;
@@ -66,15 +65,25 @@ export default function FeaturedBoard({
   });
 
   const [, start] = useTransition();
-  const [ending, setEnding] = useState<FeaturedSlotRow | null>(null);
+  const [sifting, setSifting] = useState(false);
+  const [ending, setEnding] = useState<FeaturedSlot | null>(null);
   const [paying, setPaying] = useState<PayableSlot | null>(null);
 
   // Closed on the answer landing, not on the click: closing on the click takes
   // a refusal off the screen along with whatever was typed into it.
   useActionSuccess(state, () => setPaying(null));
 
-  const live = (slot: FeaturedSlotRow) =>
-    slot.starts_on <= today && slot.ends_on >= today;
+  // What the pager and the filter bar both have to carry, so page two of
+  // "Didcot, unpaid" is page two of the same list rather than page two of
+  // everything wearing its link.
+  const held = {
+    q: filters.query || undefined,
+    state: list.state || undefined,
+    when: list.when || undefined,
+    month: filters.month || undefined,
+    club: filters.club || undefined,
+    sort: list.sort === "newest" ? undefined : list.sort,
+  };
 
   return (
     <Stack spacing={2.5}>
@@ -93,123 +102,82 @@ export default function FeaturedBoard({
           from one and the other admin lists render bare. */}
       {showing === "slots" ? (
       <>
-        {slots.length === 0 ? (
-          <EmptyState
-            title="Nobody has bought a slot"
-            description="Until somebody does, the homepage leads with the clubs marked spotlight and never calls them featured."
-          />
-        ) : (
-          <Box sx={{ display: "grid", gap: 2, alignItems: "stretch",
-                     gridTemplateColumns: { xs: "minmax(0, 1fr)",
-                                            sm: "repeat(2, minmax(0, 1fr))",
-                                            lg: "repeat(3, minmax(0, 1fr))" } }}>
-            {slots.map((slot) => {
-              const name = slot.club?.name ?? "A club that has gone";
-              const { faction, monogram } = clubIdentity(slot.club?.slug ?? name, name);
-              return (
-                <Stack key={slot.id} spacing={1.5}
-                  sx={{ height: "100%", p: 2, borderRadius: 1.5,
-                        border: `1px solid ${tokens.rule}`,
-                        backgroundColor: tokens.paper,
-                        // A slot that has finished is still worth finding, and
-                        // is not worth the same weight as one running now.
-                        opacity: live(slot) ? 1 : 0.72 }}>
-                  <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-                    <Box aria-hidden sx={{
-                      flexShrink: 0, width: 40, height: 40, borderRadius: 1.25,
-                      display: "grid", placeItems: "center",
-                      backgroundColor: faction.base, color: "#FFFFFF",
-                      fontFamily: mono, fontSize: "0.78rem", fontWeight: 700 }}>
-                      {monogram}
-                    </Box>
-                    <Stack spacing={0.2} sx={{ minWidth: 0, flex: 1 }}>
-                      <Typography sx={{ fontFamily: display, fontWeight: 700,
-                                        fontSize: "1rem", minWidth: 0,
-                                        overflow: "hidden", textOverflow: "ellipsis",
-                                        whiteSpace: "nowrap" }}>
-                        {name}
-                      </Typography>
-                      <Typography sx={{ fontFamily: mono, fontSize: "0.7rem",
-                                        color: tokens.inkMuted }}>
-                        {`${shortDate(slot.starts_on)} to ${shortDate(slot.ends_on)}`}
-                      </Typography>
-                    </Stack>
-                  </Stack>
+        {/* The money is the tab row and the calendar is a picker beside it,
+            because they are two axes: a slot can be running today AND unpaid,
+            which is the one row on this screen somebody has to act on. Tabs
+            imply one choice at a time, so folding them together would mean
+            picking either word hid it. */}
+        <UrlFilterBar
+          query={filters.query}
+          placeholder="Search by club, town or note"
+          tab={list.state}
+          tabs={FEATURED_TABS.map((tab) => ({
+            value: tab.key, label: tab.label,
+            count: list.counts[tab.key || "all"] ?? 0,
+          }))}
+          sort={list.sort}
+          sorts={FEATURED_SORTS}
+          pickers={[
+            { label: "When", param: "when", value: list.when, options: FEATURED_WHEN },
+            // Only where there is more than one to tell apart. A picker
+            // offering the single month that exists is a control that cannot
+            // narrow anything, which is the rule the roster filters follow.
+            ...(list.facets.months.length > 1 ? [{
+              label: "Month", param: "month", value: filters.month,
+              options: monthChoices(list.facets, filters.month),
+            }] : []),
+            ...(list.facets.clubs.length > 1 ? [{
+              label: "Club", param: "club", value: filters.club,
+              options: clubChoices(list.facets, filters.club),
+            }] : []),
+          ]}
+          defaults={FEATURED_DEFAULTS}
+          onBusy={setSifting}
+        />
 
-                  <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap" }} useFlexGap>
-                    {live(slot) ? (
-                      <Chip size="small" label="Live now"
-                        sx={{ fontSize: "0.68rem", fontWeight: 700,
-                              bgcolor: tokens.positive, color: "#fff" }} />
-                    ) : slot.starts_on > today ? (
-                      <Chip size="small" variant="outlined" label="Booked"
-                        sx={{ fontSize: "0.68rem", fontWeight: 700,
-                              color: tokens.inkMuted, borderColor: tokens.rule }} />
-                    ) : (
-                      <Chip size="small" variant="outlined" label="Finished"
-                        sx={{ fontSize: "0.68rem", fontWeight: 700,
-                              color: tokens.inkMuted, borderColor: tokens.rule }} />
-                    )}
-                    <Chip size="small" variant="outlined"
-                      label={formatPence(slot.price_pence, slot.currency)}
-                      sx={{ fontSize: "0.68rem", fontWeight: 700,
-                            color: tokens.inkMuted, borderColor: tokens.rule }} />
-                    {/* Only where there is a price. A slot given away has
-                        nothing to settle, so "not paid" would be a bill. */}
-                    {slot.price_pence > 0 && payments.known ? (
-                      <Chip size="small"
-                        variant={payments.rows[slot.id]?.paidAt ? "filled" : "outlined"}
-                        label={payments.rows[slot.id]?.paidAt ? "Paid" : "Not paid yet"}
-                        sx={{ fontSize: "0.68rem", fontWeight: 700,
-                              ...(payments.rows[slot.id]?.paidAt
-                                ? { bgcolor: tokens.positive, color: "#fff" }
-                                : { color: tokens.brass, borderColor: tokens.brass }) }} />
-                    ) : null}
-                  </Stack>
+        <BusyOverlay busy={sifting} variant="dim" label="Filtering slots">
+          <Stack spacing={2}>
+            {list.failed ? (
+              <EmptyState
+                title="The slots would not load"
+                description="Nothing was read, so this is not an empty list. Check the database is reachable and that the latest migrations have been run, then try again."
+              />
+            ) : list.rows.length === 0 ? (
+              list.counts.all === 0 && !filters.query && !list.when
+                && !filters.month && !filters.club ? (
+                <EmptyState
+                  title="Nobody has bought a slot"
+                  description="Until somebody does, the homepage leads with the clubs marked spotlight and never calls them featured."
+                />
+              ) : (
+                <EmptyState
+                  title="No slot matches that"
+                  description="Try another month or club, or clear the filters to see every slot that has been sold."
+                />
+              )
+            ) : (
+              <Box sx={{ display: "grid", gap: 2, alignItems: "stretch",
+                         gridTemplateColumns: { xs: "minmax(0, 1fr)",
+                                                sm: "repeat(2, minmax(0, 1fr))",
+                                                lg: "repeat(3, minmax(0, 1fr))" } }}>
+                {list.rows.map((slot) => (
+                  <FeaturedSlotCard key={slot.id} slot={slot} today={today}
+                    onRemove={() => setEnding(slot)}
+                    onPay={slot.pricePence > 0 ? () => setPaying({
+                      id: slot.id, clubName: slot.clubName,
+                      startsOn: slot.startsOn, endsOn: slot.endsOn,
+                      pricePence: slot.pricePence, currency: slot.currency,
+                      paidAt: slot.paidAt, method: slot.paymentMethod,
+                      note: slot.paymentNote,
+                    }) : null} />
+                ))}
+              </Box>
+            )}
 
-                  {slot.note ? (
-                    <Typography sx={{ fontSize: "0.86rem", color: tokens.inkMuted }}>
-                      {slot.note}
-                    </Typography>
-                  ) : null}
-
-                  {/* Pushed down so Remove sits on the same line on every card
-                      in a row, however long the note above it ran. */}
-                  <Box sx={{ flex: 1 }} />
-                  <Stack direction="row" spacing={1}
-                    sx={{ pt: 1.25, borderTop: `1px solid ${tokens.rule}`,
-                          alignItems: "center", justifyContent: "space-between" }}>
-                    {/* Do-this-first, then the one that ends something, which
-                        is the button order every card in this console uses. */}
-                    {/* Gated on the standing being readable as well as on
-                        there being a price: opening the dialog with "not paid"
-                        preselected, because the read failed rather than
-                        because nobody has paid, is how a slot gets cleared by
-                        accident. */}
-                    {slot.price_pence > 0 && payments.known ? (
-                      <Button variant="outlined" size="small"
-                        onClick={() => setPaying({
-                          id: slot.id, clubName: name,
-                          startsOn: slot.starts_on, endsOn: slot.ends_on,
-                          pricePence: slot.price_pence, currency: slot.currency,
-                          paidAt: payments.rows[slot.id]?.paidAt ?? null,
-                          method: payments.rows[slot.id]?.method ?? "",
-                          note: payments.rows[slot.id]?.note ?? "",
-                        })}
-                        sx={{ borderColor: tokens.rule, color: tokens.ink }}>
-                        {payments.rows[slot.id]?.paidAt ? "Payment" : "Record payment"}
-                      </Button>
-                    ) : <span />}
-                    <Button variant="text" size="small" onClick={() => setEnding(slot)}
-                      sx={{ color: tokens.danger }}>
-                      Remove
-                    </Button>
-                  </Stack>
-                </Stack>
-              );
-            })}
-          </Box>
-        )}
+            <Pager page={list.page} total={list.total} size={list.perPage}
+              noun="slots" href={{ path: "/admin/featured", params: held }} />
+          </Stack>
+        </BusyOverlay>
       </>
       ) : null}
 
@@ -230,7 +198,7 @@ export default function FeaturedBoard({
 
       <ConfirmDialog
         open={ending !== null}
-        title={`Remove ${ending?.club?.name ?? "this slot"}?`}
+        title={`Remove ${ending?.clubName ?? "this slot"}?`}
         body="The slot goes for good. If it is running now the club drops off the homepage straight away; the payment stays on the record."
         confirmLabel="Remove it"
         destructive

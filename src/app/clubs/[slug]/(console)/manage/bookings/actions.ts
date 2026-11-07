@@ -36,6 +36,14 @@ export async function tablePaymentAction(
     return { error: "Pick one of the payment states from the list." };
   }
 
+  // Which of the two seats is being settled. 0221 split the fee between the
+  // people on the table, and a missing field here would quietly settle the
+  // booker's half for somebody pressing the opponent's row.
+  const side = String(data.get("side") ?? "");
+  if (side !== "booker" && side !== "opponent") {
+    return { error: "That is not one of the two seats on the table." };
+  }
+
   const club = await getClubDetail(slug);
   if (!club) return { error: "That club is not here any more." };
 
@@ -46,6 +54,7 @@ export async function tablePaymentAction(
 
   const done = await setTablePayment({
     booking,
+    side,
     status: status as TablePaymentStatus,
     method: String(data.get("method") ?? ""),
     note: String(data.get("note") ?? ""),

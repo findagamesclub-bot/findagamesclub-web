@@ -3,6 +3,7 @@ import "server-only";
 import { findEventsForClubs } from "@/repositories/events.repository";
 import { findOwnedClubs } from "@/repositories/ownerInbox.repository";
 import { getEventBookingCounts, type EventSales } from "./eventBookings.service";
+import type { SalesTotals } from "@/utils/event-sales";
 import { splitByDate, toEventSummary } from "@/utils/event-summary";
 import type { ClubEventSummary } from "@/types/clubDetail";
 
@@ -23,7 +24,7 @@ export type OwnerEvents = {
   upcoming: OwnerEvent[];
   past: OwnerEvent[];
   clubCount: number;
-  totals: EventSales;
+  totals: SalesTotals;
 };
 
 const EMPTY: OwnerEvents = {

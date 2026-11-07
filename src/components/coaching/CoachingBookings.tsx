@@ -150,8 +150,12 @@ export default function CoachingBookings({
               key={row.id}
               row={row}
               busy={busy}
-              onPaid={(bookingId, paid) =>
-                send({ intent: "mark-paid", bookingId: String(bookingId), paid: String(paid) })}
+              // The note always rides along from here, because this list knows
+              // what is stored and the dialog opened with it. The session
+              // card's quick tick-off sends none, which leaves it alone.
+              onPaid={(bookingId, paid, note) =>
+                send({ intent: "mark-paid", bookingId: String(bookingId),
+                       paid: String(paid), note })}
               onCancel={(bookingId, reason) =>
                 send({ intent: "club-cancel", bookingId: String(bookingId), reason })}
               onRefund={(bookingId, refund) =>

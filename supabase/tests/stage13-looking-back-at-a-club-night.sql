@@ -125,7 +125,7 @@ set local role authenticated;
 
 do $$
 declare
-  w record; m record; v_club bigint; n bigint; v_all bigint;
+  w record; m record; v_club bigint; n bigint; v_all bigint; v_counted bigint;
   r record; v_text text;
 begin
   select * into w from who;
@@ -173,14 +173,21 @@ begin
 
   -- 3 · The money screen narrows to a month, and so do its counts. A tab
   --     reading "To pay 3" under September has to mean three in September.
+  --     Four rows, not two: since 0221 the money screen is one row per
+  --     PERSON, because a table's price is split between the two playing on
+  --     it and the club collects each half separately.
   perform pg_temp.be(w.owner);
   select count(*) into n from public.club_table_bookings(v_club, 'all', '', m.m1);
-  if n <> 2 then
-    raise exception 'FAIL 3: the first month lists % tables, expected 2', n;
+  if n <> 4 then
+    raise exception 'FAIL 3: the first month lists % sides, expected 4', n;
   end if;
-  select all_rows into n from public.club_table_booking_counts(v_club, '', m.m1);
-  if n <> 2 then
-    raise exception 'FAIL 3b: the counts say % for a month the list says 2', n;
+  -- Compared against the list rather than against a number written twice:
+  -- what this assertion is actually for is that the tab and the rows under it
+  -- cannot disagree, and a hardcoded pair drifts apart the first time the
+  -- fixture changes. That is how this one went stale.
+  select all_rows into v_counted from public.club_table_booking_counts(v_club, '', m.m1);
+  if v_counted <> n then
+    raise exception 'FAIL 3b: the counts say % for a month the list says %', v_counted, n;
   end if;
   -- And an empty month is every night, never none.
   select all_rows into v_all from public.club_table_booking_counts(v_club, '', '');

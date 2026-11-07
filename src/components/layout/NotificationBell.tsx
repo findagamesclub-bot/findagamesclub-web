@@ -23,7 +23,6 @@ import StorefrontIcon from "@mui/icons-material/Storefront";
 import SchoolIcon from "@mui/icons-material/School";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import GavelIcon from "@mui/icons-material/Gavel";
-import EventSeatIcon from "@mui/icons-material/EventSeat";
 import TableRestaurantIcon from "@mui/icons-material/TableRestaurant";
 import EventBusyIcon from "@mui/icons-material/EventBusy";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
@@ -61,9 +60,11 @@ const ICONS: Record<string, SvgIconComponent> = {
   // A score went in, or the club settled one.
   result_recorded: SportsEsportsIcon,
   result_state: GavelIcon,
-  // Somebody put you on a table, or the waiting list came good.
-  booked_in: EventSeatIcon,
-  waitlist_promoted: EventSeatIcon,
+  // Somebody put you on a table, or the waiting list came good. The same
+  // table the club's own rail and the member's bookings page are drawn with:
+  // a chair is where you sit, and what is being booked is the table.
+  booked_in: TableRestaurantIcon,
+  waitlist_promoted: TableRestaurantIcon,
   // What the club is told, as opposed to what the players are told.
   table_booked: TableRestaurantIcon,
   booking_cancelled: EventBusyIcon,

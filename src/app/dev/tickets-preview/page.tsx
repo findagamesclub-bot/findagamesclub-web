@@ -61,7 +61,11 @@ export default function TicketsPreviewPage() {
     },
     paymentStatus: "paid_in_advance", paymentMethod: "Bank transfer",
     paymentNote: "Paid for both places in one transfer, ref MARCHETTI.",
-    refundStatus: "not_due", cancelReason: "",
+    refundStatus: "not_due", refundMethod: "", refundNote: "", refundedAt: null,
+    cancelReason: "",
+    // A team ticket, so the preview draws the caption the member reads on
+    // their own confirmation (0224).
+    teamName: "Red Dice",
     lines: cart.lines,
   };
 

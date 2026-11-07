@@ -69,33 +69,39 @@ begin
   perform public.flag_content('review', i.review, 'unfair');
 
   -- ----------------------------------------------------- who was told (0131)
-  -- The club's own team, because the club is the one who answers a report on
-  -- an ordinary member's post.
-  assert pg_temp.notices(w.owner, 'content-reported') = 1,
-    'the owner was not told about a report on their club';
-  assert pg_temp.notices(w.helper, 'content-reported') = 1,
-    'a helper was not told, and a helper can answer one';
+  -- The club's own team hears about BOTH board posts, since 0223: the one an
+  -- ordinary member wrote and the one the owner wrote. A board is the club's
+  -- own room, whoever spoke in it. These two used to expect 1, back when
+  -- anything the team wrote went to a site admin instead.
+  assert pg_temp.notices(w.owner, 'content-reported') = 2,
+    'the owner has ' || pg_temp.notices(w.owner, 'content-reported')
+      || ' notices, expected both board posts';
+  assert pg_temp.notices(w.helper, 'content-reported') = 2,
+    'a helper has ' || pg_temp.notices(w.helper, 'content-reported')
+      || ' notices, and a helper can answer either';
   t := pg_temp.told(w.owner, 'content-reported');
   assert t like '%at Badge Club%' and t like '%a board post%'
      and t like '%/clubs/badge-club/manage/moderation%',
     'the club''s notice is wrong: ' || t;
   raise notice 'PASS told: the club is told, named, and linked to its own queue';
 
-  -- The admin hears about the two nobody at the club may rule on, the review
-  -- and the owner's own post, and about nothing else. Three were reported.
-  assert pg_temp.notices(w.admin, 'content-reported') = 2,
+  -- The admin hears about the one nobody at the club may rule on, the review,
+  -- and about nothing else. Three were reported.
+  assert pg_temp.notices(w.admin, 'content-reported') = 1,
     'the admin has ' || pg_temp.notices(w.admin, 'content-reported')
-      || ' notices, expected the review and the team''s own post';
+      || ' notices, expected only the review';
   t := pg_temp.told(w.admin, 'content-reported');
   assert t like '%a review%' and t like '%/admin/moderation%',
     'the admin was told about the wrong one: ' || t;
   raise notice 'PASS told: the admin hears only what only they can answer';
 
-  -- Nobody at the club was told about the report on the owner's own post,
-  -- which is the whole point of it going to an admin instead.
-  assert pg_temp.notices(w.owner, 'content-reported') = 1,
-    'the club was told about a report only an admin can answer';
-  raise notice 'PASS told: the club hears nothing about its own team''s words';
+  -- And the three split cleanly between them: two to the club, one to the
+  -- admin, none counted twice and none dropped. That partition is what the
+  -- numbers above are really asserting, so it is worth saying once directly.
+  assert pg_temp.notices(w.owner, 'content-reported')
+       + pg_temp.notices(w.admin, 'content-reported') = 3,
+    'the three reports did not split cleanly between the club and the admin';
+  raise notice 'PASS told: a review goes to the admin and a board stays at the club';
 
   -- ---------------------------------------------------------------- the gate
   perform pg_temp.be(w.stranger);
@@ -118,16 +124,21 @@ begin
   -- A helper may, because taking a post down is already theirs.
   perform pg_temp.be(w.helper);
   select count(*) into n from public.club_moderation_queue(v_club);
-  assert n = 1, 'a helper sees ' || n || ' reports, expected one';
+  assert n = 2, 'a helper sees ' || n || ' reports, expected both board posts';
   raise notice 'PASS gate: a helper sees the queue';
 
   -- ------------------------------------------------------- what the club sees
   perform pg_temp.be(w.owner);
+  -- Both board posts since 0223, and the review still not. What the club may
+  -- never rule on is a review OF ITSELF, which is the conflict of interest
+  -- the queue exists to prevent; its own team's words on its own board are a
+  -- different question and the client asked for them to come here.
   select count(*) into n from public.club_moderation_queue(v_club);
-  assert n = 1, 'the club sees ' || n || ', expected only the ordinary member''s post';
-  select target_id into f from public.club_moderation_queue(v_club);
-  assert f = i.mine, 'the club is being shown the wrong report';
-  raise notice 'PASS scope: a review and the team''s own words never reach the club';
+  assert n = 2, 'the club sees ' || n || ', expected both board posts';
+  select count(*) into n from public.club_moderation_queue(v_club) q
+   where q.target_id = i.review;
+  assert n = 0, 'a review of the club reached the club''s own queue';
+  raise notice 'PASS scope: a review never reaches the club, a board always does';
 
   -- And the admin still has all three.
   perform pg_temp.be(w.admin);
@@ -140,7 +151,7 @@ begin
   -- so without the extra clause the console page would read "would not load"
   -- about a queue that works.
   select count(*) into n from public.club_moderation_queue(v_club);
-  assert n = 1, 'an admin opening the club queue sees ' || n;
+  assert n = 2, 'an admin opening the club queue sees ' || n;
   raise notice 'PASS admin: a site admin can read a club''s own queue';
 
   -- The club is told who reported it (0129). 0128 returned 'Somebody' and the
@@ -152,20 +163,23 @@ begin
 
   -- ------------------------------------------------------------- the counts
   j := public.club_moderation_counts(v_club);
-  assert (j->>'open')::int = 1 and (j->>'all')::int = 1, 'counts are wrong: ' || j::text;
+  assert (j->>'open')::int = 2 and (j->>'all')::int = 2, 'counts are wrong: ' || j::text;
   raise notice 'PASS counts: they count what the club can actually see';
 
   -- --------------------------------------------------------- the club answers
+  -- What the club cannot answer is a review OF ITSELF, and that line
+  -- has not moved: a club ruling on a bad review of itself is the one
+  -- conflict of interest this whole queue exists to prevent.
   select id into f from public.moderation_flags
-   where target_type = 'post' and target_id = i.theirs;
+   where target_type = 'review' and target_id = i.review;
   begin
-    perform public.resolve_club_flag(f, 'remove', 'mine to take down');
+    perform public.resolve_club_flag(f, 'remove', 'we did not like it');
     raise exception 'NOT_REACHED';
   exception
     when others then
       assert sqlerrm like '%ADMIN_ONLY%',
-        'wrong error answering a report about the team: ' || sqlerrm;
-      raise notice 'PASS refuse: the club cannot answer a report about its own team';
+        'wrong error answering a review of the club: ' || sqlerrm;
+      raise notice 'PASS refuse: the club cannot rule on a review of itself';
   end;
 
   select id into f from public.moderation_flags
@@ -202,6 +216,23 @@ begin
   assert pg_temp.notice(w.member, 'report-answered') = s,
     'the same answer twice rewrote the notice';
   raise notice 'PASS quiet: the same answer twice tells nobody again';
+
+  -- ------------------------------------------- the team's own board post
+  -- Last, because answering it writes the reporter another notice and the
+  -- de-duplication assertions above count them. A report about the OWNER's
+  -- own board post is the club's to answer since 0223; this used to expect
+  -- ADMIN_ONLY, on 0128's rule that nobody rules on themselves. The client
+  -- overruled that for boards in item 14b: "for board reports, I think it
+  -- should go to club owner, as will be hard to manage with lots of clubs
+  -- for admin."
+  perform pg_temp.be(w.owner);
+  select id into f from public.moderation_flags
+   where target_type = 'post' and target_id = i.theirs;
+  assert public.resolve_club_flag(f, 'keep', 'Fine as it stands.'),
+    'the club could not answer a report about its own owner''s board post';
+  assert pg_temp.notices(w.member, 'report-answered') = 2,
+    'the reporter was not told about the second answer';
+  raise notice 'PASS answer: a board post by the team is the club''s to answer';
 
   raise notice 'ALL PASS · 0128 club moderation';
 end $$;

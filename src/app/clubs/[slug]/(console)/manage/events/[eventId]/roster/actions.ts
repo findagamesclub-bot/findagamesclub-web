@@ -95,7 +95,11 @@ export async function rosterAction(
         if (!REFUND_STATUSES.includes(status as RefundStatus)) {
           return { ok: false as const, error: "Something went wrong. Reload and try again." };
         }
-        return roster.setRefundStatus(facts.id, bookingId, status as RefundStatus);
+        // How it went back and what the club wrote beside it, which is the
+        // half of a refund record the client asked for: "when a payment was
+        // made, and when a refund was then given and how".
+        return roster.setRefundStatus(facts.id, bookingId, status as RefundStatus,
+          String(data.get("refundMethod") ?? ""), String(data.get("refundNote") ?? ""));
       }
 
       case "edit":
@@ -109,6 +113,11 @@ export async function rosterAction(
           ...(data.has("memberId")
             ? { memberId: String(data.get("memberId") ?? ""),
                 memberCode: String(data.get("memberCode") ?? "") }
+            : {}),
+          // Only from a dialog that asked. Absent elsewhere means "leave it
+          // alone", never "empty it", for the reason the memberId above gives.
+          ...(data.has("teamName")
+            ? { teamName: String(data.get("teamName") ?? "") }
             : {}),
         });
 

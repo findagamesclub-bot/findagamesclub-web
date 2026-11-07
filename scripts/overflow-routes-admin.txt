@@ -20,6 +20,7 @@
 /admin/claims
 /admin/claims?tab=declined
 /admin/featured
+/admin/featured?state=topay&when=finished&sort=club
 /admin/clubs
 /admin/clubs?q=didcot
 /admin/clubs?state=suspended

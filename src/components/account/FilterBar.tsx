@@ -62,10 +62,16 @@ export default function FilterBar<T extends string, S extends string>({
         sx={{ flexWrap: "wrap" }} useFlexGap>
         <TextField
           size="small" fullWidth placeholder={placeholder}
-          // A basis rather than the width `fullWidth` sets: the row wraps now,
-          // and a child 100% wide takes a line to itself and pushes every
-          // picker under it whether or not they would have fitted.
-          sx={{ flex: "1 1 220px" }}
+          // A basis rather than the width `fullWidth` sets: the row wraps
+          // now, and a child 100% wide takes a line to itself and pushes
+          // every picker under it whether or not they would have fitted.
+          //
+          // Only where it IS a row. This Stack is a column at xs, and in a
+          // column flex-basis is the HEIGHT: the search box was 220px tall
+          // on every phone, a 40px input floating in an empty band, on six
+          // screens. Measured at 390 rather than seen, which is the only
+          // way to find a gap that looks like deliberate spacing.
+          sx={{ flex: { xs: "1 1 auto", sm: "1 1 220px" } }}
           value={query} onChange={(event) => onQuery(event.target.value)}
           slotProps={{
             input: {

@@ -18,17 +18,30 @@ import type { Priced } from "./price-lines";
 
 export type TablePaymentStatus = "unpaid" | "paid_on_the_door" | "paid_in_advance";
 
+export type TableBookingSide = "booker" | "opponent";
+
 export type TableBookingRow = {
   bookingId: number;
+  /**
+   * Which seat of the table this row is about.
+   *
+   * 0221 split the fee between the people on it, so this list is one row per
+   * person per table rather than one per booking: the client's own words were
+   * "member A may have paid their half, but member B has not", and a row per
+   * booking cannot hold two answers. `bookingId` is therefore not a key here
+   * — `${bookingId}:${side}` is.
+   */
+  side: TableBookingSide;
   sessionDate: string;
   sessionLabel: string;
   sessionTime: string;
   /** A seat index, which starts at 0. Never shown raw: see `tableNumber`. */
   tableIndex: number;
   gameTitle: string;
+  /** Whose half this is. Null for a guest, who has no account. */
   bookedById: string | null;
   bookedName: string;
-  /** Empty where nobody was named, which is most of a looking-for-a-game row. */
+  /** Who they are playing. Empty on a table nobody else is down for. */
   opponentName: string;
   status: string;
   paymentStatus: TablePaymentStatus;

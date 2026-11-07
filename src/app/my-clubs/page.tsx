@@ -12,6 +12,7 @@ import { getOwnerInbox } from "@/services/ownerInbox.service";
 import { getOwnedOrders, getScoreQueue } from "@/services/ownerBookings.service";
 import { countUnanswered } from "@/utils/club-order-filter";
 import { clubAccess } from "@/utils/club-access";
+import NextLink from "next/link";
 import { tokens } from "@/lib/tokens";
 
 export const metadata = { title: "My clubs" };
@@ -77,12 +78,27 @@ export default async function MyClubsPage() {
             ))}
           </Stack>
 
-          <Typography variant="body2" sx={{ color: tokens.inkMuted, mb: 3 }}>
+          <Typography variant="body2" sx={{ color: tokens.inkMuted, mb: 1 }}>
             {tasks.length === 0
               ? `All ${clubs.length === 1 ? "clear" : `${clubs.length} clear`}. Nothing is waiting on you.`
               : clear
                 ? `${clear} of your ${clubs.length} clubs ${clear === 1 ? "is" : "are"} clear.`
                 : "Every club has something outstanding."}
+          </Typography>
+
+          {/* What this page is, and what the other one is. The client counted
+              seven here and four on Club requests and asked which was wrong:
+              neither. This holds clubs you RUN, however you came to run them;
+              that holds the ones you ASKED us to list. A club an admin set up
+              and handed over is here and was never a request, and a request
+              that has not been approved has no club yet. */}
+          <Typography variant="body2" sx={{ color: tokens.inkMuted, mb: 3 }}>
+            {`Every club you run, as owner, manager or helper. `}
+            <NextLink href="/account/listings" style={{ color: tokens.brand }}>
+              Club requests
+            </NextLink>
+            {" is the other list: the ones you asked us to put in the directory, "}
+            {"and how far each one got."}
           </Typography>
 
           {/* Across every club, rather than per club. An owner with four clubs

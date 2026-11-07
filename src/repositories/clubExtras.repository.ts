@@ -309,6 +309,8 @@ export type ClubCoachingBookingRow = {
   payment_status: string;
   refund_status: string;
   cancel_reason: string;
+  /** What the club wrote down when it recorded the money. 0220. */
+  payment_note: string;
   base_price: number | string;
   price_currency: string | null;
   tier_label: string | null;
@@ -322,6 +324,23 @@ export type ClubCoachingBookingRow = {
 
 export const findClubCoachingBookings = (clubId: number) =>
   callRpc<ClubCoachingBookingRow[]>("club_coaching_bookings_list", { p_club: clubId });
+
+/**
+ * The club records a coaching payment, and what it wants to remember about it.
+ *
+ * Through 0220's function rather than an update, because `payment_note` is
+ * deliberately not grantable: the booking's own update policy admits the
+ * MEMBER for their own row, so a column `authenticated` may write is a column
+ * a member can write about their own money.
+ *
+ * A null note means "leave what is there", which is what the session card's
+ * quick tick-off passes.
+ */
+export const recordCoachingPayment = (
+  bookingId: number, paid: boolean, note: string | null,
+) => callRpc<void>("record_coaching_payment", {
+  p_booking: bookingId, p_paid: paid, p_note: note,
+});
 
 /** The club's own changes to somebody's booking. */
 export async function setClubBookingState(

@@ -45,3 +45,30 @@ assert.deepEqual(names(filterMemberships(clubs, { sort: "attention" }))[0], "Del
 assert.equal(countNeedingAttention(clubs), 1);
 
 console.log("membership-filter ok");
+
+// ------------------------------------------------- a club shuts its door
+//
+// The client, item 26: "when you suspend a member, they then cannot see any of
+// their memberships to other clubs in the dashboard and get the below error".
+// 0212 made `suspended` a membership status and this union had four words in
+// it, so the card's status map came back undefined and the whole page threw —
+// taking every OTHER club they belong to down with it.
+const shut = make({ name: "Echo", status: "suspended" });
+
+// It is its own group, not "past": the membership is live and the tier is
+// still theirs. The club has shut the door, which is a different thing from
+// having left or been turned away.
+assert.deepEqual(names(filterMemberships([shut], { filter: "suspended" })), ["Echo"]);
+assert.deepEqual(filterMemberships([shut], { filter: "past" }), []);
+assert.deepEqual(filterMemberships([shut], { filter: "approved" }), []);
+assert.deepEqual(names(filterMemberships([shut], { filter: "all" })), ["Echo"]);
+
+// And it sorts above everything under "Needs you first". Somebody who cannot
+// get into a club wants to read why before they read that another club wants
+// ten pounds.
+const owing = make({ name: "Foxtrot",
+  standing: { paidThrough: "2026-01-01", overdue: true, settledOneOff: false } });
+assert.deepEqual(
+  names(filterMemberships([owing, shut], { sort: "attention" })), ["Echo", "Foxtrot"]);
+
+console.log("membership-filter: a suspension is its own group");

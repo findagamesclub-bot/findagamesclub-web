@@ -17,6 +17,7 @@ import { getClubAccess } from "@/services/clubAccess.service";
 import { getEventBookingCounts } from "@/services/eventBookings.service";
 import { CLUB_EVENTS_PAGE, getClubEventsPage } from "@/services/events.service";
 import { pageFrom } from "@/utils/paging";
+import { publishedSales } from "@/utils/event-sales";
 import { clubIdentity } from "@/utils/club-identity";
 import { backTarget, FROM_CLUB_EVENTS } from "@/utils/back-link";
 import { formatMoney } from "@/utils/format";
@@ -54,26 +55,12 @@ export default async function ClubEventsPage({
   // fetched-and-hidden — anyone else reads zero and would see "nobody booked".
   const sales = canManage ? await getEventBookingCounts(club.id) : undefined;
 
-  const totals = sales
-    ? [...sales.values()].reduce(
-        (t, s) => ({ bookings: t.bookings + s.bookings, tickets: t.tickets + s.tickets, due: t.due + s.due }),
-        { bookings: 0, tickets: 0, due: 0 },
-      )
-    : null;
-
-  // Built from the sales already loaded, so the chart costs no query. Only
-  // events that sold anything: a row of zeroes is a list, not a ranking.
-  const ticketRows = sales
-    ? [...upcoming.events, ...past.events]
-        .map((event) => ({
-          label: event.title,
-          value: sales.get(event.id)?.tickets ?? 0,
-          color: faction.base,
-        }))
-        .filter((row) => row.value > 0)
-        .sort((a, b) => b.value - a.value)
-        .slice(0, 8)
-    : [];
+  // Published only, and the ranking from the same rows: "29 tickets sold, but
+  // we only have 28 in total across all events" was a header counting an event
+  // this page may not show, over a chart built from whichever page of past
+  // events was on screen. `publishedSales` is the one answer both read.
+  const { totals, ranked } = publishedSales(sales);
+  const ticketRows = ranked.map((row) => ({ ...row, color: faction.base }));
 
   const stats = [
     { label: "coming up", value: String(upcoming.total),

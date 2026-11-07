@@ -1,10 +1,15 @@
 import type { MyClubMembership } from "@/services/myMemberships.service";
 
-export type MembershipFilter = "all" | "approved" | "pending" | "past";
+export type MembershipFilter =
+  | "all" | "approved" | "pending" | "suspended" | "past";
 export type MembershipSort = "recent" | "name" | "attention";
 
 const fold = (value: string) => value.trim().toLowerCase();
 
+// A suspension is its own group rather than part of "past": the membership is
+// live, the tier is still theirs, and the club has simply shut the door. 0212
+// made it a status and nothing here knew the word, so a suspended membership
+// was in All and in no other tab, under a card that had no status to draw.
 const inGroup = (status: MyClubMembership["status"], filter: MembershipFilter) =>
   filter === "all"
     ? true
@@ -14,6 +19,9 @@ const inGroup = (status: MyClubMembership["status"], filter: MembershipFilter) =
 
 /** How much this membership wants looking at. Higher sorts first. */
 function urgency(membership: MyClubMembership): number {
+  // Above everything: a member who cannot get into a club wants to read why
+  // before they read that another club wants ten pounds.
+  if (membership.status === "suspended") return 4;
   if (membership.standing.overdue) return 3;
   if (membership.requestedTierKey) return 2;
   if (membership.status === "pending") return 1;

@@ -3,7 +3,7 @@ import PersonIcon from "@mui/icons-material/PersonOutlined";
 import CardMembershipIcon from "@mui/icons-material/CardMembership";
 import LoyaltyIcon from "@mui/icons-material/Loyalty";
 import ConfirmationNumberIcon from "@mui/icons-material/ConfirmationNumber";
-import EventSeatIcon from "@mui/icons-material/EventSeat";
+import TableRestaurantIcon from "@mui/icons-material/TableRestaurant";
 import ShieldIcon from "@mui/icons-material/Shield";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import NotificationsIcon from "@mui/icons-material/NotificationsActive";
@@ -59,7 +59,7 @@ export function accountGroups(counts: AccountCounts): NavGroup[] {
         { label: "Event tickets", href: "/account/tickets",
           icon: ConfirmationNumberIcon, count: counts.tickets },
         { label: "Table bookings", href: "/account/bookings",
-          icon: EventSeatIcon, count: counts.bookings },
+          icon: TableRestaurantIcon, count: counts.bookings },
         { label: "Coaching", href: "/account/coaching", icon: SchoolIcon,
           count: counts.coaching },
         { label: "Merchandise", href: "/account/orders", icon: StorefrontIcon,
@@ -92,7 +92,17 @@ export function accountGroups(counts: AccountCounts): NavGroup[] {
           { label: "My clubs", href: "/my-clubs", icon: GroupsIcon },
           { label: "My events", href: "/my-events", icon: EventIcon },
         ] : []),
-        { label: "Club listings", href: "/account/listings", icon: AddClubIcon },
+        // "Club requests", the admin's own word for the same rows. Two
+        // entries a row apart reading "My clubs" and "Club listings" said
+        // nothing about the difference between them, and the client asked
+        // what it was: one is clubs you RUN, this is clubs you have ASKED to
+        // have listed. 0104 already renamed the admin's side for exactly this
+        // reason, and leaving the member's side on the old word meant the two
+        // halves of one conversation used two names for it.
+        //
+        // The path does not move. A path is not a label, and the fourth time
+        // this file has had to say so.
+        { label: "Club requests", href: "/account/listings", icon: AddClubIcon },
       ],
     },
   ];

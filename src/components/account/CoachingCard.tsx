@@ -115,6 +115,18 @@ export default function CoachingCard({ session }: { session: MyCoaching }) {
         </Box>
       ) : null}
 
+      {/* The club's own words about the money. Nothing on this site takes
+          payment, so what the club wrote down when it recorded yours is the
+          only receipt there is, and until now it was written where only the
+          club could read it. */}
+      {session.paymentNote ? (
+        <Typography variant="body2"
+          sx={{ px: 2.25, pt: 1, pb: session.description ? 0 : 1.5,
+                color: tokens.inkMuted, fontStyle: "italic" }}>
+          {session.paymentNote}
+        </Typography>
+      ) : null}
+
       {session.description ? (
         <Typography variant="body2"
           sx={{ px: 2.25, pb: 2, color: tokens.inkMuted,

@@ -30,7 +30,9 @@ function toLines(items: Row["club_event_booking_items"]): CartLine[] {
     .sort((a, b) => a.label.localeCompare(b.label));
 }
 
-function toBooking(row: Row, money?: PaymentStanding): EventBooking {
+function toBooking(
+  row: Row, money?: PaymentStanding, extras?: repo.BookingExtras,
+): EventBooking {
   const event = (row as unknown as {
     club_events: {
       id: number; legacy_id: string; title: string; start_date: string | null;
@@ -76,6 +78,13 @@ function toBooking(row: Row, money?: PaymentStanding): EventBooking {
     // sat written-and-unread from 0092 to 0205.
     paymentNote: money?.payment_note ?? "",
     refundStatus: money?.refund_status ?? "not_due",
+    // Beside the payment they answer, through 0224's function because none of
+    // these three is in the generated types. A refund with no date and no
+    // method is the half of the record the client asked for.
+    refundMethod: extras?.refund_method ?? "",
+    refundNote: extras?.refund_note ?? "",
+    refundedAt: extras?.refunded_at ?? null,
+    teamName: extras?.team_name ?? "",
     cancelReason: money?.cancel_reason ?? "",
     lines: toLines(row.club_event_booking_items),
   };
@@ -85,17 +94,24 @@ function toBooking(row: Row, money?: PaymentStanding): EventBooking {
 export async function getBooking(reference: string): Promise<EventBooking | null> {
   const row = await repo.findBooking(reference.trim().toUpperCase());
   if (!row) return null;
-  // Swallowed, because the money is a detail and the ticket is the point: a
-  // reader who can see the booking should still get their reference if this
-  // second read fails.
-  const money = await findPaymentStanding([row.id]).catch(() => new Map());
-  return toBooking(row, money.get(row.id));
+  // Both swallowed, because the money and the team are details and the ticket
+  // is the point: a reader who can see the booking should still get their
+  // reference if either second read fails. One wave, not two.
+  const [money, teams] = await Promise.all([
+    findPaymentStanding([row.id]).catch(() => new Map()),
+    repo.findBookingExtras([row.id]).catch(() => new Map<number, repo.BookingExtras>()),
+  ]);
+  return toBooking(row, money.get(row.id), teams.get(row.id));
 }
 
 export async function getMyBookings(profileId: string): Promise<EventBooking[]> {
   const rows = await repo.findMyBookings(profileId);
-  const money = await findPaymentStanding(rows.map((r) => r.id)).catch(() => new Map());
-  return rows.map((r) => toBooking(r as Row, money.get(r.id)));
+  const ids = rows.map((r) => r.id);
+  const [money, teams] = await Promise.all([
+    findPaymentStanding(ids).catch(() => new Map()),
+    repo.findBookingExtras(ids).catch(() => new Map<number, repo.BookingExtras>()),
+  ]);
+  return rows.map((r) => toBooking(r as Row, money.get(r.id), teams.get(r.id)));
 }
 
 /** Who is coming. Only the club can read these rows. */
@@ -123,7 +139,13 @@ export async function getAttendees(eventId: number) {
   });
 }
 
-export type EventSales = { bookings: number; tickets: number; due: number };
+export type EventSales = {
+  bookings: number; tickets: number; due: number;
+  /** The event these belong to, so a ranking needs no second read. */
+  title: string;
+  /** Published, draft or taken down. A list shows only what it may show. */
+  status: string;
+};
 
 /**
  * Sales per event for one club, for the club's own events list.
@@ -140,9 +162,16 @@ export async function getEventBookingCounts(
   const sales = new Map<number, EventSales>();
 
   for (const row of rows) {
-    const items = (row as unknown as { club_event_booking_items: { quantity: number }[] })
-      .club_event_booking_items ?? [];
-    const held = sales.get(row.event_id) ?? { bookings: 0, tickets: 0, due: 0 };
+    const joined = row as unknown as {
+      club_event_booking_items: { quantity: number }[];
+      club_events: { title: string; status: string } | null;
+    };
+    const items = joined.club_event_booking_items ?? [];
+    const held = sales.get(row.event_id) ?? {
+      bookings: 0, tickets: 0, due: 0,
+      title: joined.club_events?.title ?? "An event",
+      status: joined.club_events?.status ?? "published",
+    };
     held.bookings += 1;
     held.tickets += items.reduce((n, i) => n + i.quantity, 0);
     // Only what is still owed. Counting a booking the club has already been

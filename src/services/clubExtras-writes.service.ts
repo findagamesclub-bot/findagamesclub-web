@@ -205,11 +205,26 @@ export async function cancelCoaching(bookingId: number): Promise<Result> {
   }
 }
 
-export async function markCoachingPaid(bookingId: number, paid: boolean): Promise<Result> {
+/**
+ * The club records a coaching payment, with what it wants to remember about it.
+ *
+ * Through 0220's function rather than a table update: the note is not a
+ * grantable column, because the booking's update policy admits the member for
+ * their own row. A null note means "leave what is stored", which is what the
+ * session card's quick tick-off passes; the bookings list knows the note and
+ * always sends one.
+ */
+export async function markCoachingPaid(
+  bookingId: number, paid: boolean, note: string | null = null,
+): Promise<Result> {
   try {
-    await repo.setBookingState(bookingId, { payment_status: paid ? "paid" : "unpaid" });
+    await repo.recordCoachingPayment(bookingId, paid, note);
     return { ok: true };
-  } catch {
+  } catch (error) {
+    const raw = error instanceof Error ? error.message : "";
+    if (raw.includes("BOOKING_CANCELLED")) {
+      return { ok: false, error: "That place was called off, so there is no payment to record." };
+    }
     return { ok: false, error: "Only the club records payment." };
   }
 }

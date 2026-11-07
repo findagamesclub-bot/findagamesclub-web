@@ -34,7 +34,7 @@ import TimelineIcon from "@mui/icons-material/Timeline";
 import { getOpenPosts } from "@/services/lookingForGames.service";
 import { londonToday } from "@/services/bookingCalendar.service";
 import { addDays } from "@/utils/booking-sessions";
-import EventSeatIcon from "@mui/icons-material/EventSeat";
+import TableRestaurantIcon from "@mui/icons-material/TableRestaurant";
 import ForumIcon from "@mui/icons-material/ForumOutlined";
 import { categoryOptions, tierRank } from "@/utils/discussion-categories";
 import { MembershipTiers, PricingList } from "@/components/clubs/ClubTiers";
@@ -66,7 +66,9 @@ import { getMyClaim } from "@/services/claims.service";
 import { getClubSuspension } from "@/services/adminListings.service";
 import TakenDownNotice from "@/components/ui/TakenDownNotice";
 import ClaimPrompt from "@/components/clubs/ClaimPrompt";
-import { getJoinedCount, getMyMembership, getPendingRequests, getRoster } from "@/services/memberships.service";
+import {
+  getJoinedCount, getMyMembership, getMySuspension, getPendingRequests, getRoster,
+} from "@/services/memberships.service";
 import { getPayments, standing } from "@/services/payments.service";
 import JoinClubPanel from "@/components/members/JoinClubPanel";
 import ClubReviews from "@/components/reviews/ClubReviews";
@@ -133,8 +135,16 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
     ? await getMyMembership(club.id, viewer.id)
     : { id: null, status: "none" as const, tierKey: null, tierAssignedAt: null };
 
+  // Why the door is shut, where it is. Only asked of somebody the club has
+  // suspended, so an ordinary reader never pays for the round trip. 0212 made
+  // this a status and no screen knew the word, so a suspended member read as a
+  // stranger on a club they have belonged to for two years.
+  const suspension = membership.status === "suspended"
+    ? await getMySuspension(club.id)
+    : null;
+
   // The roster is members-only by policy, so a non-member would silently read
-  // zero rows. Asking at all would render "0 members" on a club with eighty.
+  // zero rows. Asking at all would render "0 members" on a club with eighty."
   const isMember = canManage || membership.status === "approved";
 
   // The viewer's own tier. A member with no tier key sits on the basic one,
@@ -335,7 +345,7 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
           {/* Legacy gives this a section and a primary button
               (detail.js:927). Ours had a four-character "Book" link inside a
               stat, on a page three thousand pixels long. */}
-          <Section navLabel="Book" title="Club nights and table booking" icon={EventSeatIcon}>
+          <Section navLabel="Book" title="Club nights and table booking" icon={TableRestaurantIcon}>
             <ClubNights
               schedule={club.schedule}
               tablesAvailable={club.tablesAvailable}
@@ -648,6 +658,11 @@ export default async function ClubPage({ params }: PageProps<"/clubs/[slug]">) {
             slug={club.slug}
             clubName={club.name}
             membership={membership}
+            suspension={suspension}
+            // Whoever runs the club, so somebody shut out has one door left to
+            // knock on. 0225 is what makes the thread legal; without it this
+            // link would land on a page that refuses.
+            ownerId={club.ownerId}
             hasLoyalty={Boolean(programme)}
             hasShop={shopItems.length > 0}
             hasCoaching={coachingOn}

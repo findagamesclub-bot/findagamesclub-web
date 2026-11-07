@@ -20,6 +20,7 @@ import { useActionSuccess } from "@/hooks/useActionSuccess";
 import RosterRow from "./RosterRow";
 import PaymentDialog from "./PaymentDialog";
 import CancelPlaceDialog from "./CancelPlaceDialog";
+import RefundDialog from "./RefundDialog";
 import EditBookingDialog from "./EditBookingDialog";
 import { rosterAction, type RosterState } from "./actions";
 import {
@@ -76,6 +77,9 @@ export default function RosterBoard({
   const [cancelling, setCancelling] = useState<DoorRow | null>(null);
   const [editing, setEditing] = useState<DoorRow | null>(null);
   const [adding, setAdding] = useState(false);
+  // Marking a refund asks two questions, so it is a dialog; putting one
+  // back to "still owed" asks none and stays a single press.
+  const [refunding, setRefunding] = useState<DoorRow | null>(null);
 
   // Every dialog here closes when the answer lands, never on the click. One
   // hook for all four because only one is ever open, and closing on the click
@@ -225,8 +229,9 @@ export default function RosterBoard({
               onPayment={() => setPaying(row)}
               onCancel={() => setCancelling(row)}
               onEdit={() => setEditing(row)}
-              onRefund={(status) => send(row.bookingId,
-                { intent: "refund", refundStatus: status })}
+              onRefund={(status) => (status === "refunded"
+                ? setRefunding(row)
+                : send(row.bookingId, { intent: "refund", refundStatus: status }))}
             />
           ))}
         </Stack>
@@ -242,6 +247,13 @@ export default function RosterBoard({
             { intent: "payment", total: String(paying.total), ...fields });
         }} />
 
+      <RefundDialog row={refunding} saving={busy} onClose={() => setRefunding(null)}
+        onSave={(fields) => {
+          if (!refunding) return;
+          send(refunding.bookingId,
+            { intent: "refund", refundStatus: "refunded", ...fields });
+        }} />
+
       <CancelPlaceDialog row={cancelling} saving={busy} onClose={() => setCancelling(null)}
         onConfirm={(reason) => {
           if (!cancelling) return;
@@ -249,7 +261,7 @@ export default function RosterBoard({
         }} />
 
       <EditBookingDialog row={editing} slug={slug} members={members}
-        accountNames={accountNames}
+        accountNames={accountNames} teamEvent={teamEvent}
         saving={busy} onClose={() => setEditing(null)}
         onSave={(fields) => {
           if (!editing) return;

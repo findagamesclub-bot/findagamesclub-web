@@ -26,7 +26,8 @@ import { tokens } from "@/lib/tokens";
  * somebody agreed to it is not a thing this app allows.
  */
 export default function EditBookingDialog({
-  row, slug, members = [], accountNames = {}, saving, onClose, onSave,
+  row, slug, members = [], accountNames = {}, teamEvent = false,
+  saving, onClose, onSave,
 }: {
   row: DoorRow | null;
   /** For the member-code lookup, which works at any club. */
@@ -42,6 +43,8 @@ export default function EditBookingDialog({
   accountNames?: Record<string, string>;
   saving: boolean;
   onClose: () => void;
+  /** Only a team event asks who they are playing for. 0211, 0224. */
+  teamEvent?: boolean;
   onSave: (fields: Record<string, string>) => void;
 }) {
   const fullScreen = useMediaQuery(useTheme().breakpoints.down("sm"));
@@ -49,6 +52,7 @@ export default function EditBookingDialog({
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [notes, setNotes] = useState("");
+  const [team, setTeam] = useState("");
   // Whose place this is. A booking made signed in already carries it, which
   // is the client's scenario 1; the other two are what this control is for.
   const [linked, setLinked] = useState<Linked | null>(null);
@@ -58,6 +62,7 @@ export default function EditBookingDialog({
     setFullName(row.fullName);
     setEmail(row.email);
     setNotes(row.notes);
+    setTeam(row.teamName);
     // Only the id is stored, so a name is offered where the roster knows one
     // and left off where it does not. Echoing the name the club typed would
     // make a wrong link unspottable, which 0177 already paid for.
@@ -119,6 +124,17 @@ export default function EditBookingDialog({
             onChange={(e) => setEmail(e.target.value)}
             helperText="Where their ticket emails go." />
 
+          {/* A team renames itself between entering and turning up, and a
+              booker types it from memory. The club could read it from 0211
+              and not change it, so one wrong spelling split a team in two on
+              the Teams page with nothing anybody could do about it. */}
+          {teamEvent ? (
+            <TextField label="Team" fullWidth value={team}
+              onChange={(e) => setTeam(e.target.value)}
+              slotProps={{ htmlInput: { maxLength: 80 } }}
+              helperText="Who they are playing for. The Teams page groups the bookings by this, so a spelling that matches joins them up." />
+          ) : null}
+
           <TextField label="Notes" fullWidth multiline minRows={2} value={notes}
             onChange={(e) => setNotes(e.target.value)}
             slotProps={{ htmlInput: { maxLength: 1000 } }}
@@ -143,6 +159,9 @@ export default function EditBookingDialog({
             // nobody at this club is only attachable with one.
             memberId: linked?.id ?? "",
             memberCode: linked?.code ?? "",
+            // Only where the dialog asked. Sending "" from an ordinary event
+            // would empty the column on every booking it touched.
+            ...(teamEvent ? { teamName: team } : {}),
           })}>
           Save
         </Button>

@@ -51,6 +51,7 @@ export default function MembershipBrowser({
     all: memberships.length,
     approved: memberships.filter((m) => m.status === "approved").length,
     pending: memberships.filter((m) => m.status === "pending").length,
+    suspended: memberships.filter((m) => m.status === "suspended").length,
     past: memberships.filter((m) => m.status === "declined" || m.status === "cancelled").length,
     attention: countNeedingAttention(memberships),
   }), [memberships]);
@@ -83,6 +84,12 @@ export default function MembershipBrowser({
           { value: "all" as const, label: "All", count: counts.all },
           { value: "approved" as const, label: "Member", count: counts.approved },
           { value: "pending" as const, label: "Waiting", count: counts.pending },
+          // Only where there is one. A tab that is always empty is one more
+          // thing to read past, and most members are suspended nowhere.
+          ...(counts.suspended
+            ? [{ value: "suspended" as const, label: "Suspended",
+                 count: counts.suspended }]
+            : []),
           { value: "past" as const, label: "Past", count: counts.past },
         ]}
         filter={filter}

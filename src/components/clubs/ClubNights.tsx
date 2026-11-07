@@ -5,7 +5,7 @@ import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import JumpLink from "@/components/ui/JumpLink";
 import LoginIcon from "@mui/icons-material/Login";
-import EventSeatIcon from "@mui/icons-material/EventSeat";
+import TableRestaurantIcon from "@mui/icons-material/TableRestaurant";
 import LockIcon from "@mui/icons-material/Lock";
 import { mono, tokens, type Faction } from "@/lib/tokens";
 import type { ClubSession } from "@/types/club";
@@ -92,7 +92,7 @@ export default function ClubNights({
           sx={{ alignItems: { sm: "center" } }}>
           {canBook ? (
             <NextLink href={`/clubs/${slug}/bookings`} style={{ textDecoration: "none" }}>
-              <Button variant="contained" size="large" startIcon={<EventSeatIcon />}
+              <Button variant="contained" size="large" startIcon={<TableRestaurantIcon />}
                 sx={{ minHeight: 48, px: 3, bgcolor: faction.base,
                       "&:hover": { bgcolor: faction.deep } }}>
                 Book a table

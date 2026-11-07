@@ -28,6 +28,8 @@ export type MyCoachingRow = {
   payment_status: string;
   refund_status: string | null;
   cancel_reason: string | null;
+  /** What the club wrote beside the money. 0220. */
+  payment_note: string | null;
   base_price: number | string | null;
   price_currency: string | null;
   tier_label: string | null;

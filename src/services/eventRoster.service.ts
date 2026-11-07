@@ -86,9 +86,11 @@ export async function cancelPlace(
 
 export async function setRefundStatus(
   eventId: number, bookingId: number, status: RefundStatus,
+  method = "", note = "",
 ): Promise<Result> {
   try {
-    await repo.setRefundStatus(eventId, bookingId, status);
+    await repo.setRefundStatus(eventId, bookingId, status,
+      method.trim().slice(0, 40), note.trim().slice(0, 500));
     return { ok: true, notice: `Marked as ${REFUND_LABELS[status].toLowerCase()}.` };
   } catch (error) {
     return { ok: false, error: refusalOf(error, "That did not save. Try again.") };
@@ -99,6 +101,13 @@ export async function editBooking(
   eventId: number, bookingId: number,
   fields: {
     fullName: string; email: string; notes: string;
+    /**
+     * Who they are playing for, at a team event. Undefined where the dialog
+     * does not ask: the club-wide bookings list has no idea what event this
+     * is, and an empty string there would wipe the team off every booking it
+     * touched.
+     */
+    teamName?: string;
     /**
      * Whose place it is. Empty means nobody, which is a real answer: a member
      * who bought a ticket and put a friend's name on it leaves a booking
@@ -117,6 +126,9 @@ export async function editBooking(
       full_name: fields.fullName.trim(),
       email: fields.email.trim(),
       notes: fields.notes.trim(),
+      ...(fields.teamName !== undefined
+        ? { team_name: fields.teamName.trim().slice(0, 80) }
+        : {}),
     });
 
     // Second, and only when the dialog asked about it. The name and the

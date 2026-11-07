@@ -20,24 +20,25 @@ const slots = [
   slot({ id: 4, title: "Painting evening", date: "2026-10-24", status: "cancelled" }),
 ];
 
-// The three status groups add up to All, so nothing can hide between tabs.
-// `past` is not one of them and is left out of that sum deliberately: a
-// session that has happened still has a status, so counting it in would make
-// the groups add up to more than All.
+// Every tab answers one question; they are not a partition and are not meant
+// to be. With no day in hand nothing is past, so `active` is every open
+// session, which is exactly what the club page shows: it is only ever handed
+// sessions still to come.
 const counts = countCoachingSlots(slots);
 assert.deepEqual(counts,
-  { all: 4, past: 0, open: 2, closed: 1, cancelled: 1, mine: 0, topay: 0 });
-assert.equal(counts.open + counts.closed + counts.cancelled, counts.all);
+  { all: 4, past: 0, active: 2, closed: 1, cancelled: 1, mine: 0, topay: 0 });
 
 assert.deepEqual(filterCoachingSlots(slots, {}).map((s) => s.id), [1, 2, 3, 4]);
 assert.deepEqual(filterCoachingSlots(slots, { sort: "latest" }).map((s) => s.id), [4, 3, 2, 1]);
 
-assert.deepEqual(filterCoachingSlots(slots, { filter: "open" }).map((s) => s.id), [1, 2]);
+assert.deepEqual(filterCoachingSlots(slots, { filter: "active" }).map((s) => s.id), [1, 2]);
 assert.deepEqual(filterCoachingSlots(slots, { filter: "cancelled" }).map((s) => s.id), [4]);
 
-// A full session is still open: it is the club's to close, not the tab's to hide.
+// A full session is still active: it is the club's to close, not the tab's to
+// hide, and a club looking at what it is running wants the full one in front
+// of it rather than filed away.
 assert.equal(filterCoachingSlots([slot({ id: 7, spacesLeft: 0, status: "open" })],
-  { filter: "open" }).length, 1);
+  { filter: "active" }).length, 1);
 
 // The name, and what it says, because either is what somebody remembers.
 assert.deepEqual(filterCoachingSlots(slots, { query: "beginner" }).map((s) => s.id), [2]);
@@ -79,7 +80,6 @@ assert.deepEqual(filterCoachingSlots(held, { filter: "mine", query: "chess" }), 
 // itself is not past.
 const past = countCoachingSlots(slots, "2026-10-17");
 assert.equal(past.past, 2);
-assert.equal(past.open, 2);
 assert.deepEqual(
   filterCoachingSlots(slots, { filter: "past", today: "2026-10-17" }).map((s) => s.id),
   [1, 2]);
@@ -99,5 +99,45 @@ assert.deepEqual(
 // guard leaves this green. It is there to say the intent out loud.
 assert.equal(countCoachingSlots(slots).past, 0);
 assert.deepEqual(filterCoachingSlots(slots, { filter: "past" }), []);
+
+// ------------------------------------------------- what can still be booked
+//
+// The client's own report: seven sessions, "Open 7", and three cards on screen
+// dated weeks ago. Status and date are two facts and the tabs only read the
+// first, so a session that is open and over sat in the tab for things members
+// can book.
+const yearBehind = [
+  slot({ id: 21, date: "2026-08-25", status: "open" }),
+  slot({ id: 22, date: "2026-09-05", status: "open" }),
+  slot({ id: 23, date: "2026-12-12", status: "open" }),
+  slot({ id: 24, date: "2026-12-20", status: "closed" }),
+];
+const today = "2026-11-06";
+
+// One of the four is bookable. Reading the status alone answers three, which
+// is the number the client was shown.
+assert.equal(countCoachingSlots(yearBehind, today).active, 1);
+assert.deepEqual(
+  filterCoachingSlots(yearBehind, { filter: "active", today }).map((s) => s.id), [23]);
+
+// And the ones it leaves out are not lost: Past holds both, and All holds
+// everything, so no session is in no tab.
+assert.equal(countCoachingSlots(yearBehind, today).past, 2);
+assert.deepEqual(
+  filterCoachingSlots(yearBehind, { filter: "past", today }).map((s) => s.id), [21, 22]);
+assert.equal(countCoachingSlots(yearBehind, today).all, 4);
+
+// A session the club closed and that has also happened is in both, because
+// those are two different facts about it and the club may want either.
+const closedAndOver = [slot({ id: 25, date: "2026-08-01", status: "closed" })];
+assert.equal(countCoachingSlots(closedAndOver, today).closed, 1);
+assert.equal(countCoachingSlots(closedAndOver, today).past, 1);
+assert.equal(countCoachingSlots(closedAndOver, today).active, 0);
+
+// Today is not past, so a session running this evening is still bookable.
+assert.equal(
+  countCoachingSlots([slot({ id: 26, date: today, status: "open" })], today).active, 1);
+assert.equal(
+  countCoachingSlots([slot({ id: 26, date: today, status: "open" })], today).past, 0);
 
 console.log("coaching-slot-filter: all assertions passed");

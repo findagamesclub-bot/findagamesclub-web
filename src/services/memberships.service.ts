@@ -1,6 +1,7 @@
 import "server-only";
 
 import * as repo from "@/repositories/memberships.repository";
+import { findMySuspensions } from "@/repositories/myMemberships.repository";
 import { JOIN_DATE_ERRORS, JOIN_DATE_MESSAGES, joinDateProblem } from "@/utils/join-date";
 import { londonToday } from "./bookingCalendar.service";
 import * as notify from "./membership-notify.service";
@@ -33,6 +34,23 @@ export async function getMyMembership(clubId: number, profileId: string): Promis
     joinedAt: row.joined_at,
     declineReason: row.decline_reason,
   };
+}
+
+/**
+ * Why this club shut its door on them, in the club's own words.
+ *
+ * Only asked where the membership already says `suspended`, so an ordinary
+ * reader never pays for it. Through 0225's function because the column is not
+ * in the generated types, and it deliberately does not say who did it: that is
+ * the club's business, not a name to hand somebody who has just been told they
+ * are out.
+ */
+export async function getMySuspension(
+  clubId: number,
+): Promise<{ at: string | null; reason: string } | null> {
+  const rows = await findMySuspensions().catch(() => new Map());
+  const one = [...rows.values()].find((row) => row.club_id === clubId);
+  return one ? { at: one.suspended_at, reason: one.reason } : null;
 }
 
 export async function requestToJoin(

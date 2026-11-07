@@ -5,6 +5,10 @@ import { unstable_cache } from "next/cache";
 import * as repo from "@/repositories/featured.repository";
 import * as notify from "./featured-notify.service";
 import { billingRefusal } from "@/utils/billing-refusals";
+import {
+  NO_FEATURED_FACETS, featuredClubId, featuredSort, featuredState, featuredWhen,
+  type FeaturedFacets, type FeaturedFilters,
+} from "@/utils/featured-filters";
 import { londonNow } from "@/utils/dates";
 
 export type FeaturedResult = { ok: true } | { ok: false; error: string };
@@ -29,8 +33,139 @@ export async function getFeaturedClubs(limit = 6) {
   return readFeatured(limit);
 }
 
-export async function getSlots() {
-  return repo.findSlots().catch(() => []);
+// Twenty-four, not the twenty-five the other admin lists use: this one draws
+// three across, and twenty-five leaves a last row holding one card.
+const PER_PAGE = 24;
+
+/**
+ * One slot as the admin board draws it.
+ *
+ * The payment is on the row rather than in a map beside it, because 0226
+ * hands both back together. Before this the page read every slot the site had
+ * ever sold and then passed every one of their ids into a second function, so
+ * the cost of opening it grew with the whole history of the product.
+ */
+export type FeaturedSlot = {
+  id: number;
+  clubId: number;
+  clubSlug: string;
+  clubName: string;
+  clubCity: string;
+  startsOn: string;
+  endsOn: string;
+  pricePence: number;
+  currency: string;
+  note: string;
+  paidAt: string | null;
+  paymentMethod: string;
+  paymentNote: string;
+};
+
+/**
+ * A page of slots, the counts beside the tabs, and what the pickers may offer.
+ *
+ * One wave of three. None of them needs another's answer, so waiting would
+ * cost 300ms for nothing, and each is caught on its own: a board whose month
+ * picker would not load is still a board.
+ *
+ * The client, item 16c: *"on the featured section in admin, we need to add
+ * some filters for paid/unpaid, date and club. Without these when lots of
+ * featured bookings are added, it will be hard to navigate."*
+ */
+export type FeaturedList = {
+  rows: FeaturedSlot[];
+  total: number; page: number; perPage: number; failed: boolean;
+  counts: Record<string, number>;
+  facets: FeaturedFacets;
+  live: number;
+  state: string; when: string; sort: string;
+};
+
+const EMPTY_LIST: Omit<FeaturedList, "live"> = {
+  rows: [], total: 0, page: 1, perPage: PER_PAGE, failed: false,
+  counts: { all: 0, topay: 0, paid: 0 }, facets: NO_FEATURED_FACETS,
+  state: "", when: "", sort: "newest",
+};
+
+/**
+ * Just the figure the Slots tab wears, for the two tabs that draw no list.
+ *
+ * The tab row is on every tab, so the live count has to be read on every tab;
+ * the page of slots and the counts beside its own tabs do not. Asking for all
+ * three from the Asked-for tab is two round trips spent on a list nobody is
+ * looking at.
+ */
+export async function getFeaturedHeadline(): Promise<FeaturedList> {
+  const facets = await repo
+    .findFeaturedFacets({ when: "", query: "", month: "", club: null })
+    .catch(() => null);
+  return { ...EMPTY_LIST, live: facets?.live ?? 0 };
+}
+
+export async function getFeaturedSlots(filters: FeaturedFilters): Promise<FeaturedList> {
+  const state = featuredState(filters.state);
+  const when = featuredWhen(filters.when);
+  const sort = featuredSort(filters.sort);
+  const club = featuredClubId(filters.club);
+
+  const [rows, counts, facets] = await Promise.all([
+    repo.findFeaturedSlotsPage({
+      state, when, sort, club,
+      query: filters.query, month: filters.month,
+      page: filters.page, per: PER_PAGE,
+    }).catch((error) => {
+      console.error("[featured] the slots did not load", error);
+      return null;
+    }),
+    repo.findFeaturedSlotCounts({
+      when, club, query: filters.query, month: filters.month,
+    }).catch(() => null),
+    // Each picker is narrowed by the others, so the months it offers and the
+    // clubs it offers both answer the screen in front of the reader rather
+    // than the whole site.
+    repo.findFeaturedFacets({
+      when, club, query: filters.query, month: filters.month,
+    }).catch(() => null),
+  ]);
+
+  return {
+    rows: (rows ?? []).map((row): FeaturedSlot => ({
+      id: row.id,
+      clubId: row.club_id,
+      clubSlug: row.club_slug ?? "",
+      // A slot outlives the club it was sold to, because the row is kept for
+      // the accounts. Saying so beats drawing a card with no name on it.
+      clubName: row.club_name ?? "A club that has gone",
+      clubCity: row.club_city ?? "",
+      startsOn: row.starts_on,
+      endsOn: row.ends_on,
+      pricePence: row.price_pence,
+      currency: row.currency ?? "GBP",
+      note: row.note ?? "",
+      paidAt: row.paid_at,
+      paymentMethod: row.payment_method ?? "",
+      paymentNote: row.payment_note ?? "",
+    })),
+    // The total rides on every row, so an empty page answers zero rather than
+    // reading it off a row that is not there. Getting that wrong shows "no
+    // slots" beside a pager offering page four.
+    total: rows?.[0]?.total_rows ?? 0,
+    page: filters.page,
+    perPage: PER_PAGE,
+    // A read that failed is not a filter that matched nothing. Without this
+    // the page says "No slot matches that" to somebody whose database has not
+    // had 0226 run against it, which sends them looking for a slot that is
+    // sitting right there.
+    failed: rows === null,
+    // Zeros rather than nothing when the counts fail: the bar prints what it
+    // is given and `undefined` draws a blank where a number should be.
+    counts: counts ?? { all: 0, topay: 0, paid: 0 },
+    facets: facets
+      ? { months: facets.months ?? [], clubs: facets.clubs ?? [] }
+      : NO_FEATURED_FACETS,
+    live: facets?.live ?? 0,
+    state, when, sort,
+  };
 }
 
 /**
@@ -99,37 +234,6 @@ export async function getClubSlots(clubId: number): Promise<ClubFeaturedSlot[]> 
     paymentNote: paid.get(row.id)?.payment_note ?? "",
     paymentKnown: known,
   }));
-}
-
-/**
- * The same fact for the admin's own board, keyed by slot.
- *
- * Handed back as a map rather than written onto the rows, because that list is
- * `FeaturedSlotRow` straight from the table and widening it would mean every
- * reader of it learning about money.
- */
-export type SlotPayments = {
-  /** False when the read failed, so the board says nothing rather than "not
-   *  paid yet" about every slot on the page. */
-  known: boolean;
-  rows: Record<number, { paidAt: string | null; method: string; note: string }>;
-};
-
-export async function getSlotPayments(ids: number[]): Promise<SlotPayments> {
-  let known = true;
-  const rows = await repo.findFeaturedPayments(ids).catch((error) => {
-    console.error("[featured] the payment standing did not load", error);
-    known = false;
-    return new Map<number, repo.FeaturedPayment>();
-  });
-  return {
-    known,
-    rows: Object.fromEntries([...rows].map(([id, row]) => [id, {
-      paidAt: row.paid_at,
-      method: row.payment_method ?? "",
-      note: row.payment_note ?? "",
-    }])),
-  };
 }
 
 /**

@@ -66,11 +66,13 @@ export default async function ManageShopPage({
 
       {showing === "orders" ? (
         <>
-          <OrderQueue orders={orders} slug={slug} faction={faction} />
-
-          {/* Two orders waiting is fine in a month with thirty and a disaster
-              in a month with two, and the queue above cannot say which. */}
-          <Box sx={{ mt: 3 }}>
+          {/* Above the queue, not under it. Two orders waiting is fine in a
+              month with thirty and a disaster in a month with two, and the
+              queue cannot say which — but the queue pages, so under it the
+              chart sat past twelve rows and a pager and the client never
+              found it. The shape of the year is what you read first and the
+              rows are what you then work down. */}
+          <Box sx={{ mb: 3 }}>
             <SectionPulse
               label="Orders over the year"
               labels={months.map((m) => m.label)}
@@ -79,6 +81,8 @@ export default async function ManageShopPage({
               note={`${orders.length} in the last year · ${waiting} still to answer`}
             />
           </Box>
+
+          <OrderQueue orders={orders} slug={slug} faction={faction} />
         </>
       ) : (
         <ShopEditor slug={slug} clubId={club.id} items={items} faction={faction}

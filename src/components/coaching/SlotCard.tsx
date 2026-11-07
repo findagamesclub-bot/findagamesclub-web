@@ -36,13 +36,21 @@ const NAMES_ON_CARD = 3;
 
 export default function SlotCard({
   slot, slug, faction, busy, canManage, standing, onEdit,
-  onBook, onCancel, onPaid, onStatus,
+  onBook, onCancel, onPaid, onStatus, today = "",
 }: {
   slot: CoachingSlot;
   slug: string;
   faction: Faction;
   busy: boolean;
   canManage: boolean;
+  /**
+   * Today as a London day, where the reader is shown sessions that have
+   * happened. Only the club's console is: a member is never handed one. The
+   * card said what the club had DONE to a session and never that the day had
+   * simply gone by, so a January session and next Tuesday's looked alike down
+   * to the Edit and Close buttons on both.
+   */
+  today?: string;
   /**
    * What this member's tier and wallet are worth here. One read for the whole
    * page; each card quotes itself from it. Null for a visitor, or for a club
@@ -63,6 +71,7 @@ export default function SlotCard({
 
   const full = slot.spacesLeft <= 0;
   const closed = slot.status !== "open";
+  const past = Boolean(today) && slot.date < today;
   const group = slot.coachingType !== "one-to-one";
 
   /**
@@ -72,7 +81,7 @@ export default function SlotCard({
    * a tier that takes 10% off coaching was still charged the full price.
    */
   const quote = standing ? priceCoaching(standing, slot.price, points) : null;
-  const canBook = !canManage && !slot.mine && !full && !closed;
+  const canBook = !canManage && !slot.mine && !full && !closed && !past;
 
   return (
     <Stack
@@ -82,7 +91,7 @@ export default function SlotCard({
         borderRadius: 1.5,
         overflow: "hidden",
         backgroundColor: tokens.paper,
-        opacity: closed ? 0.7 : 1,
+        opacity: closed || past ? 0.7 : 1,
       }}
     >
       <Stack direction="row" spacing={1.75}
@@ -127,8 +136,22 @@ export default function SlotCard({
                             fontWeight: full ? 700 : 400 }}>
             {closed ? slot.status.toUpperCase()
               : full ? "FULL"
+              // Nought in words. "0 CAME" is a bare zero in a run of figures
+              // that otherwise count places, and reads for a moment as a
+              // count of something still to happen.
+              : past ? (slot.taken ? `${slot.taken} CAME` : "NOBODY CAME")
               : `${slot.spacesLeft} OF ${slot.capacity} LEFT`}
           </Typography>
+
+          {/* The day went by. Not a status: nobody did it, which is why it is
+              quiet and sits beside the status rather than replacing it. A
+              session the club also closed says both. */}
+          {past ? (
+            <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.68rem",
+                              letterSpacing: "0.08em", color: tokens.inkMuted }}>
+              BEEN AND GONE
+            </Typography>
+          ) : null}
 
           {/* Where the member stands on their own place. The club marks it paid
               from its own list, and this is the only way the person who handed
@@ -219,12 +242,19 @@ export default function SlotCard({
             )}
           </Stack>
         ) : slot.mine ? (
-          <Button fullWidth variant="outlined" disabled={busy}
-            onClick={() => setConfirming("mine")}
-            sx={{ borderColor: tokens.rule, color: tokens.inkMuted,
-                  "&:hover": { borderColor: tokens.danger, color: tokens.danger } }}>
-            Cancel my place
-          </Button>
+          // Not on a session that has already run. Giving up a place on a
+          // night that has been and gone is nothing anybody can do, and on a
+          // place that was paid for it would put a refund the club does not
+          // owe into their queue (0158). The line above already says where
+          // the member stands, which is all a past session has to say.
+          past ? null : (
+            <Button fullWidth variant="outlined" disabled={busy}
+              onClick={() => setConfirming("mine")}
+              sx={{ borderColor: tokens.rule, color: tokens.inkMuted,
+                    "&:hover": { borderColor: tokens.danger, color: tokens.danger } }}>
+              Cancel my place
+            </Button>
+          )
         ) : (
           <Stack spacing={1.25}>
             {canBook && quote ? (

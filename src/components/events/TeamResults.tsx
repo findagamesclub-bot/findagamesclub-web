@@ -2,6 +2,7 @@ import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { display, mono, tokens, type Faction } from "@/lib/tokens";
+import PlayerName from "./PlayerName";
 import type { EventTeam } from "@/types/eventTeams";
 
 /**
@@ -60,12 +61,28 @@ export default function TeamResults({ teams, faction }: {
               </Typography>
             ) : null}
             {/* Who it was. A team's result belongs to the people in it, which
-                is also where every one of their podium badges comes from. */}
+                is also where every one of their podium badges comes from.
+
+                Linked, through the same component the Teams section and the
+                draw use. The names were joined into one string here, so the
+                one place a reader most wants to follow somebody — the podium
+                — was the one place their name went nowhere. */}
             {team.players.length ? (
-              <Typography variant="body2"
-                sx={{ color: tokens.inkMuted, mt: 0.5 }}>
-                {team.players.map((player) => player.name).join(" · ")}
-              </Typography>
+              <Stack direction="row" spacing={0.75} useFlexGap
+                sx={{ flexWrap: "wrap", alignItems: "baseline", mt: 0.5 }}>
+                {team.players.map((player, seat) => (
+                  <Stack key={player.id} direction="row" spacing={0.75}
+                    sx={{ alignItems: "baseline" }}>
+                    {seat > 0 ? (
+                      <Typography aria-hidden variant="body2"
+                        sx={{ color: tokens.inkMuted }}>
+                        ·
+                      </Typography>
+                    ) : null}
+                    <PlayerName name={player.name} profileId={player.profileId} />
+                  </Stack>
+                ))}
+              </Stack>
             ) : null}
           </Box>
 

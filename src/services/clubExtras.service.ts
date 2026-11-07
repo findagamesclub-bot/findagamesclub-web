@@ -240,6 +240,7 @@ export async function getClubCoachingBookings(
     refundStatus: (["not_due", "due", "refunded"].includes(row.refund_status)
       ? row.refund_status : "not_due") as CoachingBookingRow["refundStatus"],
     cancelReason: row.cancel_reason ?? "",
+    paymentNote: row.payment_note ?? "",
     slotId: row.slot_id,
     title: row.slot_title,
     date: row.slot_date,

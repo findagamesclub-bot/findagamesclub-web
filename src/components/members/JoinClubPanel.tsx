@@ -12,6 +12,8 @@ import VerifiedIcon from "@mui/icons-material/Verified";
 import LoginIcon from "@mui/icons-material/Login";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import ShieldIcon from "@mui/icons-material/Shield";
+import BlockIcon from "@mui/icons-material/Block";
+import ForumIcon from "@mui/icons-material/ForumOutlined";
 import ClubLinks from "./ClubLinks";
 import TableRestaurantIcon from "@mui/icons-material/TableRestaurant";
 import LogoutIcon from "@mui/icons-material/Logout";
@@ -52,6 +54,10 @@ type Props = {
   unmatchedResults?: number;
   standing: PaymentStanding;
   payments: MembershipPayment[];
+  /** Set only where this club has suspended the reader. 0225. */
+  suspension?: { at: string | null; reason: string } | null;
+  /** Whoever runs the club, for the one message a suspended member may send. */
+  ownerId?: string | null;
 };
 
 /**
@@ -63,7 +69,7 @@ export default function JoinClubPanel({
   clubId, slug, clubName, membership, signedIn, faction, pendingCount, tiers, canManage, takesBookings,
   hasLoyalty, hasShop, hasCoaching, hasRivalries = false, hasCompetitions = false,
   unmatchedResults = 0,
-  standing, payments,
+  standing, payments, suspension = null, ownerId = null,
 }: Props) {
   // Default to the free tier when there is one, so the common case is one click.
   const [tierKey, setTierKey] = useState(
@@ -78,10 +84,14 @@ export default function JoinClubPanel({
 
   const approved = membership.status === "approved";
   const pending = membership.status === "pending";
+  // Not a stranger. They belong to this club and the club has shut the door,
+  // which is a different thing from never having joined and has to read like
+  // one: the tier below is still theirs.
+  const suspended = membership.status === "suspended";
 
   // Someone who runs the club has no business applying to it — they could
   // approve themselves, and the queue would show their own name.
-  const manages = canManage && !approved && !pending;
+  const manages = canManage && !approved && !pending && !suspended;
 
   /**
    * What membership actually buys you here. The old copy promised table
@@ -108,7 +118,9 @@ export default function JoinClubPanel({
     >
       <Stack spacing={1.5} sx={{ p: 2.5 }}>
         <Stack direction="row" spacing={1.25} sx={{ alignItems: "center" }}>
-          {manages ? (
+          {suspended ? (
+            <BlockIcon sx={{ color: tokens.danger, fontSize: 26 }} />
+          ) : manages ? (
             <ShieldIcon sx={{ color: faction.base, fontSize: 26 }} />
           ) : approved ? (
             <VerifiedIcon sx={{ color: faction.base, fontSize: 26 }} />
@@ -118,21 +130,55 @@ export default function JoinClubPanel({
             <GroupAddIcon sx={{ color: tokens.brand, fontSize: 26 }} />
           )}
           <Typography variant="h4" sx={{ fontSize: "1.15rem" }}>
-            {manages ? "You manage this club" : approved ? "You are a member" : pending ? "Request pending" : "Join this club"}
+            {suspended ? "You are suspended here"
+              : manages ? "You manage this club"
+              : approved ? "You are a member"
+              : pending ? "Request pending" : "Join this club"}
           </Typography>
         </Stack>
 
-        {(approved || pending) && membership.tierKey ? (
+        {(approved || pending || suspended) && membership.tierKey ? (
           <Typography
             variant="body2"
             sx={{ fontFamily: "var(--font-mono)", fontSize: "0.8rem", letterSpacing: "0.04em",
-                  textTransform: "uppercase", color: approved ? faction.deep : tokens.brass }}
+                  textTransform: "uppercase",
+                  color: suspended ? tokens.inkMuted
+                    : approved ? faction.deep : tokens.brass }}
           >
             {tiers.find((t) => t.key === membership.tierKey)?.label ?? membership.tierKey}
           </Typography>
         ) : null}
 
-        {approved ? (
+        {/* What it means, and the club's own words for why. Both, because
+            "suspended" on its own is the sentence people ring a club about. */}
+        {suspended ? (
+          <Stack spacing={1.25}>
+            <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
+              {`${clubName} has taken your access away for now. Your membership and `}
+              everything you have here are still yours, and the club can lift it.
+            </Typography>
+            {suspension?.reason ? (
+              <Typography variant="body2"
+                sx={{ p: 1.5, borderRadius: 1.5, backgroundColor: tokens.surface,
+                      border: `1px solid ${tokens.rule}`, fontStyle: "italic" }}>
+                {suspension.reason}
+              </Typography>
+            ) : (
+              <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
+                They did not leave a reason. Asking them is the quickest way to find out.
+              </Typography>
+            )}
+            {ownerId ? (
+              <NextLink href={`/account/messages/${clubId}/${ownerId}`}
+                style={{ textDecoration: "none" }}>
+                <Button variant="contained" fullWidth startIcon={<ForumIcon />}
+                  sx={{ bgcolor: faction.base, "&:hover": { bgcolor: faction.deep } }}>
+                  Message the club
+                </Button>
+              </NextLink>
+            ) : null}
+          </Stack>
+        ) : approved ? (
           <MyPaymentsDialog
             clubName={clubName}
             tierLabel={tiers.find((t) => t.key === membership.tierKey)?.label ?? null}
@@ -214,6 +260,13 @@ export default function JoinClubPanel({
             hasRivalries={hasRivalries} hasCompetitions={hasCompetitions} />
         ) : null}
 
+        {/* Nothing to offer somebody the club has shut out. The join form
+            underneath used to draw "Choose a membership" and "Ask to join"
+            under a panel that had just told them they were suspended, which
+            is the "shows them like a non-member" half of the client's report
+            wearing a second hat: they ARE a member, and the database would
+            refuse the application anyway — `club_memberships_one_live` covers
+            suspended on purpose (0212). */}
         {!signedIn ? (
           <Button
             component={NextLink}
@@ -224,7 +277,7 @@ export default function JoinClubPanel({
           >
             Sign in to join
           </Button>
-        ) : approved ? (
+        ) : suspended ? null : approved ? (
           <Stack spacing={1.25}>
             {/* Booking is what a member comes here to do; leaving is rare. The
                 primary button follows the likely action, not the panel's name. */}

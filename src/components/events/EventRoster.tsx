@@ -84,7 +84,13 @@ export default function EventRoster({
             {paged.shown.map((r, i) => {
               const mine = Boolean(viewerId) && r.profileId === viewerId;
               return (
-                <Box key={r.profileId ?? `${r.name}-${i}`}
+                // The three columns `club_event_roster` groups by, which is
+                // what makes a row unique: one person who booked twice under
+                // two team names is two rows with one account between them,
+                // and keying on the account alone had React warning that it
+                // "may duplicate or omit" them. Found on a team event, where
+                // booking twice is the ordinary case.
+                <Box key={`${r.profileId ?? ""}|${r.name}|${r.teamName}`}
                   sx={{ display: "grid", gap: 1.5, px: 2, py: 1.25, alignItems: "baseline",
                         gridTemplateColumns: "minmax(0, 1fr) auto",
                         borderTop: i === 0 ? "none" : `1px solid ${tokens.rule}`,

@@ -44,7 +44,15 @@ export default async function CoachingPage({
   const membership = await getMyMembership(club.id, viewer.id);
   const isMember = canManage || membership.status === "approved";
 
-  const coaching = await getCoaching(club.id, viewer.id, londonToday());
+  const today = londonToday();
+  // Every session, not only the ones still to come. The club's own console has
+  // always read the whole history and this page asked for `today` onwards, so
+  // the two screens disagreed about how much coaching a club had ever done and
+  // the client asked which was right. Neither was wrong; the member simply had
+  // no way back to a session they had been on, which is where the receipt and
+  // the "still to pay" marker live. The tabs are what make it bearable: this
+  // opens on Active, and Past is a press away.
+  const coaching = await getCoaching(club.id, viewer.id, null);
   // A visitor to a club that has not switched coaching on has no page here.
   // The club itself does: the console lists Coaching for everybody who can run
   // it, and 404ing the people it is listed for turns their own rail into a
@@ -64,15 +72,21 @@ export default async function CoachingPage({
     );
   }
 
-  const open = coaching.slots.filter((s) => s.status === "open" && s.spacesLeft > 0).length;
+  // The header answers "what can I still do", so it counts forward. A club a
+  // year in would otherwise lead with a figure that is almost all history.
+  const ahead = coaching.slots.filter((s) => s.date >= today);
+  const behind = coaching.slots.length - ahead.length;
+  const open = ahead.filter((s) => s.status === "open" && s.spacesLeft > 0).length;
 
   // Seats rather than slots. A club running one slot of ten and one of one has
-  // "two slots", which says nothing about whether anybody is coming.
-  const live = coaching.slots.filter((s) => s.status === "open");
+  // "two slots", which says nothing about whether anybody is coming. Only the
+  // sessions still to come: last season's empty seats are not something
+  // anybody can fill.
+  const live = ahead.filter((s) => s.status === "open");
   const seats = {
     taken: live.reduce((n, s) => n + s.taken, 0),
     free: live.reduce((n, s) => n + s.spacesLeft, 0),
-    closed: coaching.slots
+    closed: ahead
       .filter((s) => s.status !== "open")
       .reduce((n, s) => n + s.capacity, 0),
     get total() { return this.taken + this.free + this.closed; },
@@ -83,8 +97,9 @@ export default async function CoachingPage({
       <ClubSectionHeader back={back} title="Coaching" clubName={club.name} clubSlug={club.slug}
         faction={faction}
         stats={isMember ? [
-          { label: coaching.slots.length === 1 ? "slot" : "slots", value: String(coaching.slots.length) },
+          { label: "coming up", value: String(ahead.length) },
           ...(open ? [{ label: "with places", value: String(open), emphasis: true }] : []),
+          ...(behind ? [{ label: "already run", value: String(behind) }] : []),
         ] : []} />
 
       {coaching.intro ? (
@@ -110,7 +125,10 @@ export default async function CoachingPage({
 
           <CoachingCalendar slots={coaching.slots} slug={slug} clubId={club.id}
             faction={faction} canManage={canManage} isMember={isMember}
-            standing={coaching.standing} />
+            today={today} standing={coaching.standing}
+            // What a member came here to do. Everything that has run is one
+            // press away on Past, which is the point of carrying it at all.
+            startOn="active" />
 
           {coaching.policy ? (
             <Typography variant="body2" sx={{ color: tokens.inkMuted, mt: 3 }}>

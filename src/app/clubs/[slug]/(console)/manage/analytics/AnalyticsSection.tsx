@@ -77,7 +77,7 @@ export default function AnalyticsSection({
     const money = totalMoney(data.money);
     return (
       <Section flush title="Money in" icon={PaymentsIcon}
-        note="Gross is before discounts, net is what arrived. Both, because the gap is what loyalty and tiers cost you."
+        note="Gross is before discounts, net is what arrived. Both, because the gap is what loyalty and tiers cost you. Everything counts on the day it was bought, except table bookings, which count on the night they are for."
         action={(
           <DownloadButton variant="outlined" size="small"
             href={`/clubs/${slug}/manage/analytics/export/revenue?period=${period}`} />
@@ -163,7 +163,7 @@ export default function AnalyticsSection({
     const { items, sessions } = data.sales;
     return (
       <Section flush title="Shop and coaching" icon={StorefrontIcon}
-        note="What sold and what was booked, inside the window you picked. Ranked by how many went rather than by what they brought in: the most popular thing and the most valuable one are often not the same, so both figures are on the row.">
+        note="What sold and what was booked, counted on the day somebody bought it rather than on the night a session runs. Ranked by how many went rather than by what they brought in: the most popular thing and the most valuable one are often not the same, so both figures are on the row.">
         {!items.length && !sessions.length ? (
           <EmptyState title="Nothing sold in this window"
             description="An order or a coaching place inside the window puts a ranking here. Try a wider one if the club has been going longer than this." />
@@ -192,7 +192,10 @@ export default function AnalyticsSection({
                   asked whether it was places left or places taken. It is what
                   members booked, so it says booked, which also reads as the
                   pair of "15 sold" opposite. */}
-              <MonoLabel>{`COACHING · ${data.sales.placesTaken} PLACES BOOKED`}</MonoLabel>
+              <MonoLabel>
+                {`COACHING · ${data.sales.placesTaken} `
+                  + `${data.sales.placesTaken === 1 ? "PLACE" : "PLACES"} BOOKED`}
+              </MonoLabel>
               {sessions.length ? (
                 <RankedBars
                   rows={sessions.map((s) => ({

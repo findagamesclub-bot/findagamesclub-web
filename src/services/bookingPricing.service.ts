@@ -3,6 +3,7 @@ import "server-only";
 import * as extras from "@/repositories/clubExtras.repository";
 import * as loyaltyRepo from "@/repositories/loyalty.repository";
 import * as repo from "@/repositories/bookings.repository";
+import { tierBookingDiscount } from "@/utils/booking-pricing";
 import type { BookingStanding } from "@/utils/booking-pricing";
 
 /**
@@ -59,4 +60,42 @@ export async function getBookingStanding(
       tier?.benefits as Record<string, unknown> | undefined,
     ),
   };
+}
+
+/**
+ * One member of the roster, with what their own tier takes off their half.
+ *
+ * 0221 splits a table between the people on it and prices each half off that
+ * person's tier, so the booking screen cannot say what the other seat owes
+ * without this. One read of the club's tiers rather than one call per member:
+ * `booking_discount_percent` is a round trip and a roster is forty of them.
+ */
+export type RosterShare = {
+  id: string;
+  name: string;
+  discountPercent: number;
+  tierLabel: string | null;
+};
+
+export async function withBookingShares(
+  clubId: number,
+  members: { profileId: string; fullName: string; tierKey: string | null }[],
+): Promise<RosterShare[]> {
+  if (!members.length) return [];
+
+  // A club whose tiers will not load still gets a bookable screen: everybody
+  // reads as paying their half in full, which is what the database charges
+  // anybody without a tier anyway.
+  const tiers = await repo.findTierBookingBenefits(clubId).catch(() => []);
+  const byKey = new Map(tiers.map((tier) => [tier.tier_key, tier]));
+
+  return members.map((member) => {
+    const tier = member.tierKey ? byKey.get(member.tierKey) : undefined;
+    return {
+      id: member.profileId,
+      name: member.fullName,
+      discountPercent: tierBookingDiscount(tier?.benefits),
+      tierLabel: tier?.label ?? null,
+    };
+  });
 }

@@ -26,6 +26,8 @@ export type CoachingBookingRow = {
   refundStatus: RefundStatus;
   /** The club's own words when it called the place off. */
   cancelReason: string;
+  /** What the club wrote down when it took the money. The member reads it. */
+  paymentNote: string;
   slotId: number;
   title: string;
   /** ISO date of the session, for sorting and for the label. */
@@ -111,6 +113,17 @@ export function bookingTags(
   if (row.refundStatus === "refunded") tags.push({ label: "Refunded", tone: "kept" });
   return tags;
 }
+
+/**
+ * The two a coaching place can be in, in the words the other two payment
+ * dialogs use. Coaching has no `payment_method` column and no "on the door"
+ * against "in advance", so it is the pair rather than the trio: the one word
+ * both lists share is "Unpaid", and a status is one vocabulary everywhere.
+ */
+export const COACHING_PAYMENT_STATES = [
+  { value: "paid", label: "Paid" },
+  { value: "unpaid", label: "Unpaid" },
+] as const;
 
 /** The three refund states, as a club reads them. */
 export const REFUND_STATES = [

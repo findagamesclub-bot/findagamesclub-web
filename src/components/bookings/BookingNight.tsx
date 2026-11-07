@@ -10,6 +10,7 @@ import { tokens, type Faction } from "@/lib/tokens";
 import { nightLabel } from "@/utils/dates";
 import type { CalendarSession } from "@/types/booking";
 import type { QueueEntry } from "@/services/waitlist.service";
+import type { RosterShare } from "@/services/bookingPricing.service";
 import type { LookingForGame } from "@/services/lookingForGames.service";
 import { tableNumber } from "@/utils/table-number";
 
@@ -28,7 +29,7 @@ export default function BookingNight({
   showTime, canManage, roster = [], people = [],
 }: {
   /** Club members the booker can name as their opponent. */
-  roster?: { id: string; name: string }[];
+  roster?: RosterShare[];
   /** The full roster, for the club's own edit dialog. Empty for a member. */
   people?: { id: string; name: string }[];
   session: CalendarSession;

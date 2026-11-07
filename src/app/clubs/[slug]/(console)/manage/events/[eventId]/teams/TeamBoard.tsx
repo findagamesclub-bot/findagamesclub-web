@@ -169,7 +169,7 @@ export default function TeamBoard({
       )}
 
       {editing !== undefined ? (
-        <TeamDialog open team={editing} roster={roster} saving={busy}
+        <TeamDialog open slug={slug} team={editing} roster={roster} saving={busy}
           prefill={prefill ? { name: prefill.name, players: prefill.players } : null}
           nextPosition={teams.length}
           onClose={() => { setEditing(undefined); setPrefill(null); }}

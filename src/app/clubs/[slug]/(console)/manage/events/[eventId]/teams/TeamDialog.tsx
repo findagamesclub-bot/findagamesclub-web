@@ -21,9 +21,15 @@ import CloseIcon from "@mui/icons-material/Close";
 import { useWhenChanged } from "@/hooks/useWhenChanged";
 import { mono, tokens } from "@/lib/tokens";
 import type { EventTeam } from "@/types/eventTeams";
+import MemberCodeField from "@/components/results/MemberCodeField";
 import type { Player } from "@/utils/pairings-draw";
 
-type Row = { name: string; profileId: string };
+type Row = {
+  name: string;
+  profileId: string;
+  /** Linked by a code rather than by matching this club's roster. */
+  linkedByCode?: boolean;
+};
 
 /**
  * A team, and the order it plays in.
@@ -38,11 +44,24 @@ type Row = { name: string; profileId: string };
  * Names take free text and offer the roster, the same as the draw's own table
  * dialog: somebody who paid at the door is in the team long before anybody has
  * typed them into a booking.
+ *
+ * And a member code under each one, which is the client's item 21l: "we do not
+ * look to have a way to link members via their member code on team events ...
+ * If no member code added, we assume they are not a registered member on the
+ * site and just record a name." The roster above only knows THIS club's
+ * members, and a team tournament is four clubs in a room — so for everybody
+ * else the code is the only way their result reaches their own profile.
+ *
+ * The same `MemberCodeField` the placings and the round results use, for the
+ * reason the status chips already taught: one fact, drawn one way, wherever it
+ * appears.
  */
 export default function TeamDialog({
-  open, team, roster, nextPosition, saving, onClose, onSave, prefill = null,
+  open, slug, team, roster, nextPosition, saving, onClose, onSave, prefill = null,
 }: {
   open: boolean;
+  /** For the member-code lookup, which works at any club. */
+  slug: string;
   /** Null for a new team. */
   team: EventTeam | null;
   /**
@@ -98,9 +117,22 @@ export default function TeamDialog({
 
   // The account is resolved as they type rather than on save, so a name
   // changed to somebody else's does not keep the first person's profile.
+  //
+  // A code lookup wins over the roster match, which is why `linked` is held
+  // per row: typing over a name that was linked by code would otherwise fall
+  // back to "nobody at this club is called that" and quietly drop the link.
   const set = (index: number, value: string) =>
-    setRows(rows.map((row, i) =>
-      (i === index ? { name: value, profileId: idOf(value) } : row)));
+    setRows(rows.map((row, i) => (i === index
+      ? { name: value, profileId: row.linkedByCode ? row.profileId : idOf(value),
+          linkedByCode: row.linkedByCode }
+      : row)));
+
+  const link = (index: number, holder: { id: string; name?: string } | null) =>
+    setRows(rows.map((row, i) => (i === index
+      ? { name: holder?.name?.trim() || row.name,
+          profileId: holder?.id ?? idOf(row.name),
+          linkedByCode: Boolean(holder) }
+      : row)));
 
   return (
     <Dialog open={open} onClose={saving ? undefined : onClose}
@@ -131,8 +163,9 @@ export default function TeamDialog({
                     {index + 1}
                   </Typography>
 
+                  <Stack spacing={0} sx={{ flex: 1, minWidth: 0 }}>
                   <Autocomplete
-                    freeSolo options={names} value={row.name} sx={{ flex: 1, minWidth: 0 }}
+                    freeSolo options={names} value={row.name} sx={{ width: "100%" }}
                     onInputChange={(_event, next) => set(index, next)}
                     renderInput={(params) => (
                       // Labelled Player, not "Player 2": the mono number to
@@ -142,6 +175,17 @@ export default function TeamDialog({
                       <TextField {...params} label="Player" fullWidth />
                     )}
                   />
+
+                  <MemberCodeField
+                    slug={slug}
+                    linked={row.profileId
+                      ? { id: row.profileId, name: row.name || undefined }
+                      : null}
+                    onFound={(holder) => link(index, holder)}
+                    onClear={() => link(index, null)}
+                    unlinkedNote="No code is fine: the name still plays, with nobody's profile behind it."
+                  />
+                  </Stack>
 
                   {/* Spaced, because three of these sit together and one of
                       them takes a player off. `size="small"` is the house

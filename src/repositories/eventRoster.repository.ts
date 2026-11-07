@@ -139,12 +139,29 @@ export function cancelBooking(eventId: number, bookingId: number, reason: string
     ["reserved"]);
 }
 
-export function setRefundStatus(eventId: number, bookingId: number, status: RefundStatus) {
-  return change(eventId, bookingId, { refund_status: status }, ["cancelled", "reserved"]);
+/**
+ * The refund, with how it went back and what the club wrote beside it.
+ *
+ * `refunded_at` is stamped by 0224's trigger rather than sent from here, the
+ * same rule `paid_at` has followed since 0092: when the money went back is a
+ * fact about the row, not something a form names. Moving the status off
+ * `refunded` clears all three, so the method and the note cannot outlive the
+ * refund they describe.
+ */
+export function setRefundStatus(
+  eventId: number, bookingId: number, status: RefundStatus,
+  method = "", note = "",
+) {
+  return change(eventId, bookingId, {
+    refund_status: status,
+    refund_method: status === "refunded" ? method : "",
+    refund_note: status === "refunded" ? note : "",
+  }, ["cancelled", "reserved"]);
 }
 
 export function editBooking(
-  eventId: number, bookingId: number, fields: { full_name: string; email: string; notes: string },
+  eventId: number, bookingId: number,
+  fields: { full_name: string; email: string; notes: string; team_name?: string },
 ) {
   return change(eventId, bookingId, fields, ["reserved", "cancelled"]);
 }

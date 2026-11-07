@@ -67,7 +67,7 @@ export default async function TablePaymentsPage({
     <Container maxWidth="lg" component="main" sx={{ py: { xs: 3, md: 4 } }}>
       <PageHead
         title="Table payments"
-        lede="Every table booked at your club, and what was paid for it. Narrow it to a month to see what one of them took. Nothing here takes money, so this is the record of what happened at the door."
+        lede="What each person owes for a table, and what was paid for it. A table is split between the people on it, so both of them have a line here and either can be settled on its own. Narrow it to a month to see what one of them took. Nothing here takes money, so this is the record of what happened at the door."
       />
       <TableBookingsBoard
         slug={slug}

@@ -109,7 +109,10 @@ export default async function CompetitionsPage({
       <Stack spacing={2.5} sx={{ mt: 3 }}>
         {items.length ? (
           items.map((competition) => (
+            // Anchored, so a card on the club page lands on its own one here
+            // rather than at the top of a list of twenty.
             <CompetitionCard key={competition.id} competition={competition}
+              anchorId={`c${competition.id}`}
               faction={faction} played={played[competition.id]} />
           ))
         ) : (

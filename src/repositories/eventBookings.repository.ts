@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { callRpc } from "@/lib/supabase/table";
 
 /** Reading and cancelling bookings. The buying side is tickets.repository. */
 
@@ -17,6 +18,30 @@ const BOOKING_COLUMNS =
 // left out while "nothing on a receipt shows points spent yet", and the
 // client found the consequence from the other end: a ticket showed what the
 // membership took off and silently dropped what the member's own points did.
+
+export type BookingExtras = {
+  team_name: string;
+  refund_method: string;
+  refund_note: string;
+  refunded_at: string | null;
+};
+
+/**
+ * What the club wrote down that the column list above cannot carry.
+ *
+ * Through 0224's function: `team_name` arrived in 0211 and the three refund
+ * columns in 0224, and the generated `database.ts` has never carried any of
+ * them, which `npm run check:columns` is right to refuse. `security invoker`,
+ * so the booking's own select policy decides what comes back.
+ */
+export async function findBookingExtras(
+  ids: number[],
+): Promise<Map<number, BookingExtras>> {
+  if (!ids.length) return new Map();
+  const rows = await callRpc<(BookingExtras & { booking_id: number })[] | null>(
+    "event_booking_extras", { p_bookings: ids });
+  return new Map((rows ?? []).map((row) => [row.booking_id, row]));
+}
 
 /** One booking with its lines and enough of the event to name it. */
 export async function findBooking(reference: string) {
@@ -114,13 +139,21 @@ export async function findMyBookingsForEvent(eventId: number, profileId: string)
  * One query for the whole club rather than one per event: an owner looking at
  * a season of twenty events would otherwise fire twenty round trips to draw
  * twenty small numbers.
+ *
+ * The event comes back with its rows. A booking outlives the publishing of the
+ * event it is on — a club that takes an event down keeps whoever had booked —
+ * so a count over bookings alone cannot say which of a club's lists an event
+ * belongs on, and the club events page was adding up events it was forbidden
+ * to show. Title as well as status, so a ranking of what sells can be built
+ * from this one read rather than from whichever page of events is on screen.
  */
 export async function findBookingCountsByClub(clubIds: number[]) {
   if (!clubIds.length) return [];
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("club_event_bookings")
-    .select("event_id, total, payment_status, club_event_booking_items(quantity)")
+    .select(`event_id, total, payment_status, club_event_booking_items(quantity),
+             club_events!inner(title, status)`)
     .in("club_id", clubIds)
     .eq("status", "reserved");
 

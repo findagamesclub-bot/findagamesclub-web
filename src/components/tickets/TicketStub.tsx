@@ -5,7 +5,7 @@ import Typography from "@mui/material/Typography";
 import { formatMoney } from "@/utils/format";
 import PriceBreakdown from "@/components/ui/PriceBreakdown";
 import { PAYMENT_LABELS, REFUND_LABELS } from "@/utils/door-list";
-import { nightLabel } from "@/utils/dates";
+import { nightLabel, stampDate } from "@/utils/dates";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { EventBooking } from "@/types/ticket";
 
@@ -82,6 +82,14 @@ export default function TicketStub({
               booking.eventDate ? nightLabel(booking.eventDate) : "To be confirmed"
             } />
             <Fact label="Name" value={booking.fullName} />
+
+            {/* Who they said they were playing for, at a team event. The
+                booker types it at checkout (0211) and until now only the club
+                could read it back, so the one person who has to get the
+                spelling right could not check what they had typed. */}
+            {booking.teamName ? (
+              <Fact label="Team" value={booking.teamName} />
+            ) : null}
 
             <Stack spacing={0.5}>
               <Label>Tickets</Label>
@@ -167,6 +175,19 @@ export default function TicketStub({
             {!cancelled && booking.paymentNote ? (
               <Typography variant="body2" sx={{ color: tokens.inkMuted, mt: 0.75 }}>
                 {booking.paymentNote}
+              </Typography>
+            ) : null}
+
+            {/* When the money went back and how, which is what somebody owed
+                a refund actually wants to know. The status alone said it was
+                settled and left them to ask the club the two questions that
+                follow it. */}
+            {cancelled && booking.refundStatus === "refunded" ? (
+              <Typography variant="body2" sx={{ color: tokens.inkMuted, mt: 0.75 }}>
+                {[booking.refundedAt ? `Refunded ${stampDate(booking.refundedAt)}` : "Refunded",
+                  booking.refundMethod ? `by ${booking.refundMethod.toLowerCase()}` : "",
+                ].filter(Boolean).join(" ")}
+                {booking.refundNote ? `. ${booking.refundNote}` : "."}
               </Typography>
             ) : null}
           </Box>

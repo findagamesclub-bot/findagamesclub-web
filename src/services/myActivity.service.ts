@@ -30,6 +30,12 @@ export type MyCoaching = {
   kind: string;
   status: string;
   paid: boolean;
+  /**
+   * What the club wrote beside the money when it recorded the payment. The
+   * member's only receipt: nothing here takes payment, so "£30 cash, thanks"
+   * from the club is the whole of it.
+   */
+  paymentNote: string;
   cancelled: boolean;
   /** The session has happened. Nothing to do about it either way. */
   past: boolean;
@@ -113,6 +119,7 @@ export async function getMyCoaching(_profileId: string): Promise<MyCoaching[]> {
       kind: row.coaching_type === "one-to-one" ? "1:1" : `${row.capacity ?? 0} seats`,
       status: row.status,
       paid: row.payment_status === "paid",
+      paymentNote: row.payment_note ?? "",
       cancelled: row.status === "cancelled",
       past: row.slot_date < today,
     }))

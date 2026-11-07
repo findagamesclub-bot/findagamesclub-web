@@ -13,33 +13,80 @@ import { callRpc, table } from "@/lib/supabase/table";
  * page and hiding the row while showing the result would be theatre.
  */
 
-export type FeaturedSlotRow = {
+/**
+ * A page of slots for the admin screen, filtered and counted in SQL (0226).
+ *
+ * This used to be one unpaged select of every slot the site has ever sold,
+ * with every id then passed into `featured_payment_standing` on each load. The
+ * client asked for filters because "when lots of featured bookings are added,
+ * it will be hard to navigate", and the answer to a list that can reach a
+ * thousand rows is the same one the club-wide bookings list already gives: ask
+ * SQL for the page, not the browser for a sieve.
+ *
+ * The payment columns come back on the row, which is what retires the second
+ * wave. `check:columns` never sees them, because they reach us through a
+ * function rather than a typed select.
+ */
+export type FeaturedSlotPageRow = {
   id: number;
   club_id: number;
+  club_slug: string | null;
+  club_name: string | null;
+  club_city: string | null;
+  club_status: string | null;
   starts_on: string;
   ends_on: string;
   price_pence: number;
   currency: string;
   note: string;
   created_at: string;
-  club?: { slug: string; name: string; city: string; status: string } | null;
+  paid_at: string | null;
+  payment_method: string | null;
+  payment_note: string | null;
+  /** The same figure on every row: one round trip beats two for a number the
+   *  pager cannot render without. */
+  total_rows: number;
 };
 
-const COLUMNS =
-  `id, club_id, starts_on, ends_on, price_pence, currency, note, created_at,
-   club:clubs(slug, name, city, status)`;
+export const findFeaturedSlotsPage = (params: {
+  state: string; when: string; query: string; month: string;
+  club: number | null; sort: string; page: number; per: number;
+}) => callRpc<FeaturedSlotPageRow[]>("admin_featured_slots", {
+  p_state: params.state, p_when: params.when, p_query: params.query,
+  p_month: params.month, p_club: params.club, p_sort: params.sort,
+  p_page: params.page, p_per: params.per,
+});
 
-/** Every slot, for the admin screen. Newest booking first. */
-export async function findSlots(): Promise<FeaturedSlotRow[]> {
-  const rows = await table<FeaturedSlotRow>("featured_listings");
-  const { data, error } = await rows
-    .select(COLUMNS)
-    .order("starts_on", { ascending: false })
-    .order("id", { ascending: false });
+/** The figure beside each tab, over the set the list is filtered to. */
+export const findFeaturedSlotCounts = (params: {
+  when: string; query: string; month: string; club: number | null;
+}) => callRpc<Record<string, number>>("admin_featured_counts", {
+  p_when: params.when, p_query: params.query,
+  p_month: params.month, p_club: params.club,
+});
 
-  if (error) throw new Error(`Failed to load the featured slots: ${error.message}`);
-  return data ?? [];
-}
+/**
+ * What the two pickers may offer, and how many slots are live right now.
+ *
+ * Narrowed by every axis except the one each picker labels (0227), so the
+ * months are counted under the club and the clubs under the month. Counting
+ * the whole site instead put "Didcot Wargames (3)" over a page drawing one,
+ * which is 0214 point iii on a fifth screen.
+ *
+ * `live` is narrowed by nothing: it labels the Slots tab rather than the list.
+ */
+export type FeaturedFacetRows = {
+  months: { month: string; slots: number }[];
+  clubs: { id: number; name: string; slots: number }[];
+  live: number;
+};
+
+export const findFeaturedFacets = (params: {
+  when: string; query: string; month: string; club: number | null;
+}) => callRpc<FeaturedFacetRows>("admin_featured_facets", {
+  p_when: params.when, p_query: params.query,
+  p_month: params.month, p_club: params.club,
+});
 
 /**
  * Who leads the homepage today.

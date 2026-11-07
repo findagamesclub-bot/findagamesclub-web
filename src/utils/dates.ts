@@ -123,6 +123,23 @@ function londonDay(d: Date): string {
   }).format(d);
 }
 
+/**
+ * "6 Nov 2026" from a TIMESTAMP, read as the London day it happened on.
+ *
+ * Not `shortDate`, which is for a calendar date like "2026-09-03": that is
+ * parsed as UTC midnight and read back with UTC getters, which is right for a
+ * date and wrong for a stamp. A refund recorded at 00:30 on a London morning
+ * is 23:30 the previous day in UTC, so `shortDate` would put it on the day
+ * before it happened — the same fault 0123 fixed on the SQL side, where the
+ * rule is now "never a bare ::date on a timestamp".
+ */
+export function stampDate(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return withYear.format(d);
+}
+
 export function messageTime(iso: string | null | undefined, now = new Date()): string | null {
   if (!iso) return null;
   const d = new Date(iso);

@@ -5,7 +5,7 @@ import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import CardMembershipIcon from "@mui/icons-material/CardMembership";
 import ConfirmationNumberIcon from "@mui/icons-material/ConfirmationNumber";
-import EventSeatIcon from "@mui/icons-material/EventSeat";
+import TableRestaurantIcon from "@mui/icons-material/TableRestaurant";
 import ForumIcon from "@mui/icons-material/ForumOutlined";
 import LoyaltyIcon from "@mui/icons-material/Loyalty";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
@@ -115,7 +115,7 @@ export default function DashboardPanels({
         )}
       </PanelCard>
 
-      <PanelCard title="Table bookings" icon={EventSeatIcon} figure={data.bookings.length}
+      <PanelCard title="Table bookings" icon={TableRestaurantIcon} figure={data.bookings.length}
         href="/account/bookings" linkLabel="All bookings"
         caption="Where you are playing next.">
         {data.bookings.length ? (

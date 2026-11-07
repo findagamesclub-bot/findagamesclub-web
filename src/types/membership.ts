@@ -1,4 +1,13 @@
-export type MembershipStatus = "none" | "pending" | "approved" | "cancelled";
+/**
+ * Where somebody stands with one club.
+ *
+ * `suspended` is 0212's, and it was missing here for three releases: every
+ * guard asks for `approved`, so the club's door closed correctly while every
+ * screen read the member as a stranger. That is the client's item 26 — "when
+ * visiting the club they are suspended from, it shows them like a non-member".
+ */
+export type MembershipStatus =
+  | "none" | "pending" | "approved" | "cancelled" | "suspended";
 
 /** What the club page needs to decide which button to show. */
 export type MyMembership = {

@@ -96,7 +96,10 @@ export default async function ManageCoachingPage({
       ) : settings?.enabled ? (
         <CoachingCalendar slots={coaching.slots} slug={slug} clubId={club.id}
           faction={faction} canManage isMember={membership.status === "approved"}
-          today={londonToday()} standing={coaching.standing} />
+          today={londonToday()} standing={coaching.standing}
+          // What members can still book, which is the question a club opens
+          // this tab with. Everything behind it is one press away on All.
+          startOn="active" />
       ) : (
         <EmptyState
           title="Coaching is switched off"

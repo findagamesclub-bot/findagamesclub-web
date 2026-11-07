@@ -4,9 +4,12 @@ import NavTabs from "@/components/ui/NavTabs";
 import FeaturedBoard from "@/components/admin/FeaturedBoard";
 import FeaturedRequests from "@/components/admin/FeaturedRequests";
 import { getBillingSettings } from "@/services/billing.service";
-import { getClubsForPicker, getSlotPayments, getSlots } from "@/services/featured.service";
+import {
+  getClubsForPicker, getFeaturedHeadline, getFeaturedSlots,
+} from "@/services/featured.service";
 import { getFeaturedRequests } from "@/services/featuredRequests.service";
 import { londonNow } from "@/utils/dates";
+import { readFeaturedFilters } from "@/utils/featured-filters";
 
 export const metadata = { title: "Featured clubs" };
 
@@ -32,17 +35,18 @@ export default async function AdminFeaturedPage({
   const tab = one("tab");
   const showing = tab === "book" ? "book" : tab === "asked" ? "asked" : "slots";
 
-  const [slots, settings, clubs, requests] = await Promise.all([
-    getSlots(),
+  // Filtered, counted and paged in SQL. One wave, where it used to be two: the
+  // payment standing rides on the row now, so the page no longer passes every
+  // slot id the site has ever sold into a second function on each load.
+  // The headline figure alone on the tabs that draw no list, because the tab
+  // row is on all three and the page of slots is only on one of them.
+  const filters = readFeaturedFilters(params);
+  const [list, settings, clubs, requests] = await Promise.all([
+    showing === "slots" ? getFeaturedSlots(filters) : getFeaturedHeadline(),
     getBillingSettings(),
     getClubsForPicker(),
     getFeaturedRequests(),
   ]);
-
-  // Whether each slot has been settled. A second wave rather than a second
-  // wave of its own: it needs the ids the first one returned, so it cannot
-  // join it, and a failure costs the chips rather than the page.
-  const payments = await getSlotPayments(slots.map((slot) => slot.id));
 
   // Carried from a club's own request, so pressing "Book a slot" on it lands
   // on the form with the club already chosen and the request still attached.
@@ -51,9 +55,6 @@ export default async function AdminFeaturedPage({
   const waiting = requests.filter((r) => r.status === "pending").length;
 
   const today = londonNow().date;
-  // What is on the homepage right now, which is the only figure on this page
-  // that means somebody should look. A slot booked for next month is not.
-  const liveNow = slots.filter((s) => s.starts_on <= today && s.ends_on >= today).length;
 
   return (
     <>
@@ -71,7 +72,11 @@ export default async function AdminFeaturedPage({
           ariaLabel="Featured clubs"
           value={showing}
           tabs={[
-            { value: "slots", label: "Slots", href: "/admin/featured", count: liveNow },
+            // What is on the homepage right now, which is the only figure on
+            // this page that means somebody should look. A slot booked for
+            // next month is not. Counted in SQL over every slot, because the
+            // list underneath is a page of them and may be filtered besides.
+            { value: "slots", label: "Slots", href: "/admin/featured", count: list.live },
             { value: "asked", label: "Asked for",
               href: "/admin/featured?tab=asked", count: waiting },
             { value: "book", label: "Book a slot", href: "/admin/featured?tab=book" },
@@ -85,8 +90,8 @@ export default async function AdminFeaturedPage({
       <FeaturedBoard
         prefillClubId={prefillClubId}
         requestId={requestId}
-        slots={slots}
-        payments={payments}
+        list={list}
+        filters={filters}
         clubs={clubs}
         today={today}
         defaultPricePence={settings.featured_price_pence}

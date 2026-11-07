@@ -123,14 +123,20 @@ export async function markRead(clubId: number | null, low: string, high: string)
 export async function findContacts(profileId: string) {
   const supabase = await createClient();
 
-  const [joined, owned] = await Promise.all([
+  const [joined, owned, shut] = await Promise.all([
     supabase.from("club_memberships").select("club_id")
       .eq("profile_id", profileId).eq("status", "approved"),
     supabase.from("clubs").select("id").eq("owner_id", profileId),
+    // Clubs that have suspended them. They can write to whoever runs it and to
+    // nobody else there, which is what 0225's `can_message_member` allows and
+    // what the panel on the club page offers them.
+    supabase.from("club_memberships").select("club_id")
+      .eq("profile_id", profileId).eq("status", "suspended"),
   ]);
 
   if (joined.error) throw new Error(`Failed to load your clubs: ${joined.error.message}`);
   if (owned.error) throw new Error(`Failed to load your clubs: ${owned.error.message}`);
+  if (shut.error) throw new Error(`Failed to load your clubs: ${shut.error.message}`);
 
   const clubIds = [...new Set([
     ...(joined.data ?? []).map((m) => m.club_id),
@@ -146,7 +152,21 @@ export async function findContacts(profileId: string) {
     .neq("profile_id", profileId);
 
   if (error) throw new Error(`Failed to load club members: ${error.message}`);
-  return data ?? [];
+
+  // And the team of any club that has suspended them. A suspended member is
+  // not on that club's roster any more, so the query above finds nobody there:
+  // without this the one conversation they are allowed is a page that 404s.
+  const shutIds = [...new Set((shut.data ?? []).map((m) => m.club_id))];
+  const team = shutIds.length
+    ? await supabase
+        .from("club_team")
+        .select("club_id, profile_id, profiles!club_team_profile_id_fkey(id, full_name), clubs!inner(id, slug, name)")
+        .in("club_id", shutIds)
+        .neq("profile_id", profileId)
+    : { data: [], error: null };
+  if (team.error) throw new Error(`Failed to load club members: ${team.error.message}`);
+
+  return [...(data ?? []), ...(team.data ?? [])];
 }
 
 export type AdminContactRow = { id: string; full_name: string | null; email: string };

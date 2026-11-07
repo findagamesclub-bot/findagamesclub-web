@@ -6,7 +6,7 @@ import StarIcon from "@mui/icons-material/StarBorder";
 import EditIcon from "@mui/icons-material/EditNote";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import PriceCheckIcon from "@mui/icons-material/PriceCheck";
-import EventSeatIcon from "@mui/icons-material/EventSeat";
+import TableRestaurantIcon from "@mui/icons-material/TableRestaurant";
 import ScoreboardIcon from "@mui/icons-material/Scoreboard";
 import LinkIcon from "@mui/icons-material/AddLink";
 import SchoolIcon from "@mui/icons-material/School";
@@ -104,7 +104,7 @@ export function consoleGroups(
     {
       title: "Club nights",
       items: [
-        { label: "Table bookings", href: at("/bookings"), icon: EventSeatIcon,
+        { label: "Table bookings", href: at("/bookings"), icon: TableRestaurantIcon,
           needs: "bookings.manage" },
         // Named for money rather than for nights, so it cannot read as the
         // entry above wearing a second label. Two entries a row apart both

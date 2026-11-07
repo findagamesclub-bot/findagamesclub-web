@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { callRpc } from "@/lib/supabase/table";
 
 export type TierRow = {
   tier_key: string; label: string; price: string | null; price_duration: string | null;
@@ -45,6 +46,24 @@ const COLUMNS = `
   clubs!inner(id, slug, name, city, logo_url, logo_path,
     club_membership_tiers(tier_key, label, price, price_duration, description,
                           is_basic, position, benefits, billing_options))`;
+
+export type SuspensionRow = {
+  membership_id: number; club_id: number;
+  suspended_at: string | null; reason: string;
+};
+
+/**
+ * The viewer's own suspensions, by membership.
+ *
+ * Through 0225's function: `suspended_reason` arrived in 0212 and the
+ * generated `database.ts` has never carried it, which `check:columns` is right
+ * to refuse. `security invoker`, so the membership's own select policy
+ * decides, and it returns the club's words and not who wrote them.
+ */
+export async function findMySuspensions(): Promise<Map<number, SuspensionRow>> {
+  const rows = await callRpc<SuspensionRow[] | null>("my_suspensions", {});
+  return new Map((rows ?? []).map((row) => [row.membership_id, row]));
+}
 
 /**
  * Every club the viewer has applied to, in one query.

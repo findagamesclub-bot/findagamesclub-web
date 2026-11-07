@@ -13,7 +13,7 @@ import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
 import { getMyMembership, getRoster } from "@/services/memberships.service";
 import { getBookingCalendar, londonToday } from "@/services/bookingCalendar.service";
-import { getBookingStanding } from "@/services/bookingPricing.service";
+import { getBookingStanding, withBookingShares } from "@/services/bookingPricing.service";
 import { priceBooking, priceSummary } from "@/utils/booking-pricing";
 import { getWaitlist } from "@/services/waitlist.service";
 import { getOpenPosts } from "@/services/lookingForGames.service";
@@ -48,9 +48,14 @@ export default async function BookingsPage({ params, searchParams }: PageProps<"
   // Who you can name as your opponent. Typing a name records a game against
   // nobody: the head to head has no person to count it against, and the other
   // player never sees it in their own history.
+  // With each member's own booking discount on them. 0221 splits a table
+  // between the people on it and prices each half off that person's tier, so
+  // the panel cannot say what the other seat owes without this.
   const everyone = isMember && viewer
-    ? (await getRoster(club.id).catch(() => []))
-        .map((member) => ({ id: member.profileId, name: member.fullName }))
+    ? await withBookingShares(club.id, (await getRoster(club.id).catch(() => []))
+        .map((member) => ({
+          profileId: member.profileId, fullName: member.fullName, tierKey: member.tierKey,
+        })))
     : [];
   const roster = viewer ? everyone.filter((member) => member.id !== viewer.id) : [];
   // The club's edit dialog needs the whole list, itself included: the person

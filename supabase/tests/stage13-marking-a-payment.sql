@@ -44,7 +44,13 @@ begin
     from public.club_bookings b order by b.id limit 1
   returning id into v_id;
 
-  update public.club_bookings set total_price = 0, base_price = 0 where id = v_id;
+  -- Both sides, since 0221. Zeroing only the booker's two columns left the
+  -- opponent on the trigger's price, so the "free" table had a free booker and
+  -- a charged walk-in and turned up in `topay` after all.
+  update public.club_bookings
+     set total_price = 0, base_price = 0,
+         opponent_total_price = 0, opponent_base_price = 0
+   where id = v_id;
   return v_id;
 end $fn$;
 
@@ -104,7 +110,7 @@ begin
 
   -- 1 · The club records the money, and the stamp is the function's to write.
   perform pg_temp.be(w.owner);
-  perform public.club_set_booking_payment(v_bk, 'paid_on_the_door', 'Cash',
+  perform public.club_set_booking_payment(v_bk, 'booker', 'paid_on_the_door', 'Cash',
     '  Handed over at the door.  ');
   select * into r from pg_temp.money(v_bk);
   if r.payment_status <> 'paid_on_the_door' then
@@ -122,19 +128,19 @@ begin
 
   -- 3 · Back to unpaid clears the stamp, so a row marked by mistake does not
   --     keep a date saying otherwise.
-  perform public.club_set_booking_payment(v_bk, 'unpaid', '', '');
+  perform public.club_set_booking_payment(v_bk, 'booker', 'unpaid', '', '');
   select * into r from pg_temp.money(v_bk);
   if r.paid_at is not null then
     raise exception 'FAIL 3: unpaid kept its paid_at';
   end if;
-  perform public.club_set_booking_payment(v_bk, 'paid_in_advance', 'Bank transfer', 'Paid up.');
+  perform public.club_set_booking_payment(v_bk, 'booker', 'paid_in_advance', 'Bank transfer', 'Paid up.');
 
   -- 4 · A member cannot say their own table is paid. This is the assertion a
   --     column grant would have failed, because club_bookings_cancel's USING
   --     admits the booker and the policies are OR'd.
   perform pg_temp.be(w.member);
   begin
-    perform public.club_set_booking_payment(v_bk, 'paid_on_the_door', 'Cash', 'I paid.');
+    perform public.club_set_booking_payment(v_bk, 'booker', 'paid_on_the_door', 'Cash', 'I paid.');
     raise exception 'FAIL 4: the member marked their own table paid';
   exception when insufficient_privilege then null;
   end;
@@ -142,7 +148,7 @@ begin
   -- 5 · And neither can somebody with nothing to do with the club.
   perform pg_temp.be(w.stranger);
   begin
-    perform public.club_set_booking_payment(v_bk, 'unpaid', '', '');
+    perform public.club_set_booking_payment(v_bk, 'booker', 'unpaid', '', '');
     raise exception 'FAIL 5: a stranger moved the money on a booking';
   exception when insufficient_privilege then null;
   end;
@@ -150,8 +156,20 @@ begin
   -- 6 · A status nobody offers is refused rather than stored.
   perform pg_temp.be(w.owner);
   begin
-    perform public.club_set_booking_payment(v_bk, 'sort of paid', '', '');
+    perform public.club_set_booking_payment(v_bk, 'booker', 'sort of paid', '', '');
     raise exception 'FAIL 6: an unknown payment status was accepted';
+  exception when check_violation then null;
+  end;
+
+  -- 6b · And a side nobody offers, which is 0221's own argument. This is
+  --      worth its own line because of how this suite broke: 0221 put
+  --      `p_side` SECOND and left defaults on the two after it, so every
+  --      four-argument call here went on resolving and silently read the
+  --      status as the side. Assertion 6 above still passed, for the wrong
+  --      reason, because both refusals raise check_violation.
+  begin
+    perform public.club_set_booking_payment(v_bk, 'somebody else', 'unpaid', '', '');
+    raise exception 'FAIL 6b: an unknown side was accepted';
   exception when check_violation then null;
   end;
 
@@ -161,9 +179,13 @@ begin
   if n <> 1 then
     raise exception 'FAIL 7: free holds % rows, expected the one priced at nothing', n;
   end if;
+  -- Since 0221 the list is one row per PERSON, and settling the booker's half
+  -- does not settle the opponent's. Assertion 1 marked the booker paid, so the
+  -- other side of that table is still owed and still has to be chaseable: it
+  -- is the whole reason the price was split.
   select count(*) into n from public.club_table_bookings((select id from c), 'topay');
-  if n <> 0 then
-    raise exception 'FAIL 7b: topay holds % rows, and the only unpaid one is free', n;
+  if n <> 1 then
+    raise exception 'FAIL 7b: topay holds % rows, expected the opponent''s unsettled half', n;
   end if;
   select count(*) into n from public.club_table_bookings((select id from c), 'paid');
   if n <> 1 then
@@ -173,8 +195,8 @@ begin
   -- 8 · The counts say the same thing the list does, which is what lets a tab
   --     reading "To pay 3" be trusted.
   select topay into n from public.club_table_booking_counts((select id from c));
-  if n <> 0 then
-    raise exception 'FAIL 8: the counts say topay %, the list says 0', n;
+  if n <> 1 then
+    raise exception 'FAIL 8: the counts say topay %, the list says 1', n;
   end if;
   select free into n from public.club_table_booking_counts((select id from c));
   if n <> 1 then

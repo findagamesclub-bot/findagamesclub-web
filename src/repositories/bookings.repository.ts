@@ -341,6 +341,24 @@ export async function findBookingSettings(clubId: number) {
   return data;
 }
 
+/**
+ * Every tier's booking-fee benefit, for pricing the OTHER seat.
+ *
+ * The raw jsonb, not the display strings `MembershipTier.benefits` carries:
+ * `tierBookingDiscount` mirrors `booking_discount_percent` (0014) and needs
+ * the typed keys the importer stores.
+ */
+export async function findTierBookingBenefits(clubId: number) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("club_membership_tiers")
+    .select("tier_key, label, benefits")
+    .eq("club_id", clubId);
+
+  if (error) throw new Error(`Failed to load tiers: ${error.message}`);
+  return data ?? [];
+}
+
 /** The six per-club membership settings, from 0008. */
 export async function findMembershipSettings(clubId: number) {
   const supabase = await createClient();

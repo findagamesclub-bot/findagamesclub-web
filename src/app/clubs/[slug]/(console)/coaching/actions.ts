@@ -44,12 +44,18 @@ export async function coachingAction(
   }
 
   if (intent === "mark-paid") {
+    const paid = String(data.get("paid") ?? "") === "true";
+    // An absent field is not an empty note. The session card ticks somebody
+    // off on a club night and has no note to send, and sending "" from there
+    // would empty whatever the bookings list had written.
+    const sent = data.get("note");
     return done(
       await extras.markCoachingPaid(
         Number(data.get("bookingId")),
-        String(data.get("paid") ?? "") === "true",
+        paid,
+        sent === null ? null : String(sent),
       ),
-      "Payment recorded.",
+      paid ? "Payment recorded." : "Marked as unpaid.",
     );
   }
 

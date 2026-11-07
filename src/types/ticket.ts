@@ -73,7 +73,16 @@ export type EventBooking = {
   /** What the club wrote beside it. Theirs to write, the member's to read. */
   paymentNote: string;
   refundStatus: RefundStatus;
+  /** How the money went back, and what the club wrote beside it. 0224. */
+  refundMethod: string;
+  refundNote: string;
+  refundedAt: string | null;
   /** Why the club took the place back, when it was not the member's doing. */
   cancelReason: string;
+  /**
+   * Who the booker said they are playing for, at a team event. Empty
+   * everywhere else: an ordinary event never asks.
+   */
+  teamName: string;
   lines: CartLine[];
 };

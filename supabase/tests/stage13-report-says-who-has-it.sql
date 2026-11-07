@@ -64,13 +64,21 @@ begin
       v_with_club;
   end if;
 
-  -- 2 · A report about the OWNER's post is not, and this is the whole item.
+  -- 2 · And so is a report about the OWNER's own post, since 0223. This
+  --     assertion used to read `is not false`: under 0128 anything the club's
+  --     own team wrote went to a site admin, on the reasoning that nobody
+  --     rules on themselves. The client overruled that for boards in item
+  --     14b, having read the argument: "for board reports, I think it should
+  --     go to club owner, as will be hard to manage with lots of clubs for
+  --     admin." A board is the club's own room. A review of the club still
+  --     goes to an admin, and so does a message, which sections 3 and 4 of
+  --     stage13-a-board-report-is-the-clubs.sql hold down.
   select r.with_club into v_with_club
     from public.my_reports('any', '', '', 'recent', 100, 0) r
    where r.id = v_owner_flag;
-  if v_with_club is not false then
-    raise exception 'FAIL 2: a report on the owner''s own post read as the club''s: %',
-      v_with_club;
+  if v_with_club is not true then
+    raise exception 'FAIL 2: a report on the owner''s own board post did not read '
+      'as the club''s: %', v_with_club;
   end if;
 
   -- 3 · And the two screens agree. The club's queue holds exactly the one the
@@ -83,11 +91,16 @@ begin
     raise exception 'FAIL 3: the club queue is missing the report its member was told it had';
   end if;
 
+  -- 4 · The other half of the same agreement. The member's list said this
+  --     one is the club's, so the club's queue has to hold it: two screens
+  --     disagreeing is the thing this suite exists to stop, whichever way the
+  --     routing rule happens to point.
   select count(*) into v_in_club_queue
     from public.club_moderation_queue(v_club, '', 'open', '', 'waiting', 100, 0) q
    where q.id = v_owner_flag;
-  if v_in_club_queue <> 0 then
-    raise exception 'FAIL 4: the club queue holds a report about its own owner';
+  if v_in_club_queue <> 1 then
+    raise exception 'FAIL 4: the member was told the club has the report on its '
+      'own owner, and the club''s queue does not hold it';
   end if;
 
   -- 5 · A stranger reading their own list sees neither, because it is not

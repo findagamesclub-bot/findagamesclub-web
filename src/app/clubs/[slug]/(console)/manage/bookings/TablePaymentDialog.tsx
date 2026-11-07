@@ -63,10 +63,17 @@ export default function TablePaymentDialog({
 
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
+          {/* Whose half, not the table's total. 0221 split the fee between
+              the people on it, so "£5 for table 1" over a £2.50 figure was
+              the dialog contradicting the row that opened it. */}
           <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
             {row
-              ? `${formatMoney(row.total, row.priced.currency ?? "GBP")} for table `
+              ? `${formatMoney(row.total, row.priced.currency ?? "GBP")}, `
+                + `${row.opponentName ? `${row.bookedName}'s half of table` : "the whole of table"} `
                 + `${tableNumber(row.tableIndex)} on ${nightLabel(row.sessionDate)}.`
+              : ""}
+            {row?.opponentName
+              ? ` ${row.opponentName} settles their own half separately.`
               : ""}
           </Typography>
 
