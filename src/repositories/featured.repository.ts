@@ -43,6 +43,13 @@ export type FeaturedSlotPageRow = {
   paid_at: string | null;
   payment_method: string | null;
   payment_note: string | null;
+  /** Called off by the club after booking, and the money going back (0232). */
+  cancelled_at: string | null;
+  cancel_reason: string | null;
+  refund_status: string | null;
+  refunded_at: string | null;
+  refund_method: string | null;
+  refund_note: string | null;
   /** The same figure on every row: one round trip beats two for a number the
    *  pager cannot render without. */
   total_rows: number;
@@ -210,6 +217,20 @@ export async function findFeaturedPayments(
   return new Map((rows ?? []).map((row) => [row.slot_id, row]));
 }
 
+/** Call a slot off, or put it back (0232). Not a delete: the payment stays. */
+export const cancelFeaturedSlot = (params: {
+  slot: number; cancel: boolean; reason: string;
+}) => callRpc<boolean>("cancel_featured_slot", {
+  p_slot: params.slot, p_cancel: params.cancel, p_reason: params.reason,
+});
+
+export const setFeaturedRefund = (params: {
+  slot: number; status: string; method: string; note: string;
+}) => callRpc<boolean>("set_featured_refund", {
+  p_slot: params.slot, p_status: params.status,
+  p_method: params.method, p_note: params.note,
+});
+
 export const recordFeaturedPayment = (params: {
   slot: number; paid: boolean; method: string; note: string;
 }) => callRpc<FeaturedPayment[]>("record_featured_payment", {
@@ -295,17 +316,23 @@ export async function findLiveFeaturedClubIds(today: string): Promise<number[]> 
   const { data, error } = await (supabase as unknown as {
     from(table: string): {
       select(columns: string): {
-        lte(column: string, value: string): {
-          gte(column: string, value: string): Promise<{
-            data: { club_id: number }[] | null;
-            error: { message: string } | null;
-          }>;
+        // `cancelled_at is null` as well as the dates (0232). A club that
+        // booked, paid and changed its mind must lose the Featured badge the
+        // moment it is called off, not when the dates run out.
+        is(column: string, value: null): {
+          lte(column: string, value: string): {
+            gte(column: string, value: string): Promise<{
+              data: { club_id: number }[] | null;
+              error: { message: string } | null;
+            }>;
+          };
         };
       };
     };
   })
     .from("featured_listings")
     .select("club_id")
+    .is("cancelled_at", null)
     .lte("starts_on", today)
     .gte("ends_on", today);
 

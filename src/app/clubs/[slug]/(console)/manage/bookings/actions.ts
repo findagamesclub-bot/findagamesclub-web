@@ -5,8 +5,9 @@ import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
 import { getClubDetail } from "@/services/clubDetail.service";
-import { setTablePayment } from "@/services/clubTableBookings.service";
+import { setTablePayment, setTableRefund } from "@/services/clubTableBookings.service";
 import type { TablePaymentStatus } from "@/utils/table-bookings";
+import { REFUND_STATUSES, type RefundStatus } from "@/utils/refund-status";
 
 export type TablePaymentState = { error?: string; notice?: string };
 
@@ -61,10 +62,29 @@ export async function tablePaymentAction(
   });
   if (!done.ok) return { error: done.error };
 
+  // The refund is its own write, because it is its own question and the
+  // dialog can move one without the other. It runs after the payment on
+  // purpose: marking a half paid and refunded in one press has to record the
+  // payment first, or the refund is refused for a half nothing was taken on.
+  const refund = String(data.get("refundStatus") ?? "not_due");
+  if (!REFUND_STATUSES.includes(refund as RefundStatus)) {
+    return { error: "Pick one of the three refund states from the list." };
+  }
+  const back = await setTableRefund({
+    booking,
+    side,
+    status: refund as RefundStatus,
+    method: String(data.get("refundMethod") ?? ""),
+    note: String(data.get("refundNote") ?? ""),
+  });
+  if (!back.ok) return { error: back.error };
+
   // Both doors onto the same row: this list, and the night the table is on.
   revalidatePath(`/clubs/${slug}/manage/bookings`);
   revalidatePath(`/clubs/${slug}/bookings`);
   return {
-    notice: status === "unpaid" ? "Set back to unpaid." : "Payment recorded.",
+    notice: refund === "refunded" ? "Refund recorded."
+      : status === "unpaid" ? "Set back to unpaid."
+        : "Payment recorded.",
   };
 }

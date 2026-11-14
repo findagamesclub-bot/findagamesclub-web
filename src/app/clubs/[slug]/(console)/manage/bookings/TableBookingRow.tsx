@@ -9,6 +9,7 @@ import PriceBreakdown from "@/components/ui/PriceBreakdown";
 import { formatMoney } from "@/utils/format";
 import { nightLabel } from "@/utils/dates";
 import { tableNumber } from "@/utils/table-number";
+import { refundTag } from "@/utils/refund-status";
 import {
   tableBookingTag, tableIsFree, tableIsLive, type TableBookingRow as Row,
 } from "@/utils/table-bookings";
@@ -34,6 +35,7 @@ export default function TableBookingRow({
   const tag = tableBookingTag(row);
   const live = tableIsLive(row);
   const free = tableIsFree(row);
+  const refund = refundTag(row.refundStatus);
 
   return (
     <Stack
@@ -77,6 +79,21 @@ export default function TableBookingRow({
               </Typography>
             ) : null}
             {tag ? <StatusChip label={tag.label} tone={tag.tone} /> : null}
+            {/* WHY there is nothing to pay, which is the client's item 13:
+                "for members who have nothing to pay due to their membership
+                level, can we include this text". The tag alone says a club is
+                collecting nothing and leaves the reader to guess whether that
+                is a tier, a comp or a mistake. A marker rather than a second
+                status, because the tier qualifies the tag beside it rather
+                than being a state of its own. */}
+            {free && live && row.priced.tierLabel ? (
+              <StatusChip label={row.priced.tierLabel} marker />
+            ) : null}
+            {/* And money going back, red, the same tag coaching, events and
+                merchandise draw since 0229. Beside the payment rather than
+                instead of it: "paid in cash, refunded by transfer" is two
+                facts and a club needs both. */}
+            {refund ? <StatusChip label={refund.label} tone={refund.tone} /> : null}
           </Stack>
 
           {/* What the club wrote beside the money, which the member reads too. */}

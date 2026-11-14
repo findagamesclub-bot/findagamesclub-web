@@ -49,6 +49,12 @@ export const FEATURED_TABS: { key: string; label: string }[] = [
   { key: "", label: "All" },
   { key: "topay", label: "To pay" },
   { key: "paid", label: "Paid" },
+  // A slot the club called off after booking, and the money going back
+  // (0232, the client's item 16d). The same five words the table payments
+  // board uses, because it is the same question about a different thing.
+  { key: "cancelled", label: "Cancelled" },
+  { key: "refunddue", label: "Refund due" },
+  { key: "refunded", label: "Refunded" },
 ];
 
 /**
@@ -83,8 +89,11 @@ export const featuredSort = (sort: string): string =>
 export const featuredWhen = (when: string): string =>
   FEATURED_WHEN.some((one) => one.value === when && one.value) ? when : "";
 
+const FEATURED_STATES = new Set(
+  ["topay", "paid", "cancelled", "refunddue", "refunded"]);
+
 export const featuredState = (state: string): string =>
-  state === "topay" || state === "paid" ? state : "";
+  FEATURED_STATES.has(state) ? state : "";
 
 /** The club picker holds an id, and an address can carry anything. */
 export const featuredClubId = (club: string): number | null =>

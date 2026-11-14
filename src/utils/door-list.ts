@@ -12,10 +12,16 @@
 export const PAYMENT_STATUSES = ["unpaid", "paid_on_the_door", "paid_in_advance"] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
-export const REFUND_STATUSES = ["not_due", "due", "refunded"] as const;
-export type RefundStatus = (typeof REFUND_STATUSES)[number];
+// Re-exported rather than declared, so the event door list and the coaching
+// list cannot drift about what the three words are or what they look like.
+import type { RefundStatus } from "./refund-status";
 
-export const DOOR_TABS = ["all", "reserved", "paid", "checkedin", "cancelled"] as const;
+export { REFUND_LABELS, REFUND_STATUSES, refundTag } from "./refund-status";
+export type { RefundStatus };
+
+export const DOOR_TABS = [
+  "all", "reserved", "paid", "checkedin", "cancelled", "refunddue", "refunded",
+] as const;
 export type DoorTab = (typeof DOOR_TABS)[number];
 
 export const DOOR_SORTS = ["name", "newest", "value"] as const;
@@ -57,12 +63,6 @@ export const PAYMENT_LABELS: Record<PaymentStatus, string> = {
   paid_in_advance: "Paid in advance",
 };
 
-export const REFUND_LABELS: Record<RefundStatus, string> = {
-  not_due: "Not due",
-  due: "Refund due",
-  refunded: "Refunded",
-};
-
 const fold = (value: string) => value.trim().toLowerCase();
 
 const isCancelled = (row: DoorRow) => row.status === "cancelled";
@@ -70,6 +70,14 @@ const isPaid = (row: DoorRow) => row.paymentStatus !== "unpaid";
 
 function inTab(row: DoorRow, tab: DoorTab): boolean {
   if (tab === "all") return true;
+  // The two money-back groups come FIRST, before the cancelled check below
+  // sends everything else away. A refund almost always sits on a cancelled
+  // place, so putting them after it would have made both tabs permanently
+  // empty. They also overlap Cancelled on purpose: unlike the other four
+  // these are not a slice of the same partition, they are a second question
+  // about rows that are already in it.
+  if (tab === "refunddue") return row.refundStatus === "due";
+  if (tab === "refunded") return row.refundStatus === "refunded";
   if (tab === "cancelled") return isCancelled(row);
   // Everything else is about people who still hold a place, so a cancellation
   // drops out of all three rather than sitting in Reserved looking live.
@@ -82,6 +90,7 @@ function inTab(row: DoorRow, tab: DoorTab): boolean {
 export function countDoorRows(rows: DoorRow[]): Record<DoorTab, number> {
   const counts: Record<DoorTab, number> = {
     all: 0, reserved: 0, paid: 0, checkedin: 0, cancelled: 0,
+    refunddue: 0, refunded: 0,
   };
   for (const tab of DOOR_TABS) counts[tab] = rows.filter((row) => inTab(row, tab)).length;
   return counts;

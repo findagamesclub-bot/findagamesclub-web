@@ -6,6 +6,7 @@ import { PER_PAGE } from "@/utils/paging";
 import type {
   TableBookingRow, TableBookingSide, TablePaymentStatus, TableSort, TableTab,
 } from "@/utils/table-bookings";
+import type { RefundStatus } from "@/utils/refund-status";
 
 /**
  * Every table a club has booked, filtered and counted in SQL.
@@ -64,12 +65,19 @@ function toRow(row: repo.TableBookingRpcRow): TableBookingRow {
     },
     total: num(row.total_price),
     bookedAt: row.booked_at,
+    // `not_due` for a row read before 0229, which is every booking the club
+    // took until this week. A null here would draw a tag that says nothing.
+    refundStatus: (text(row.refund_status) || "not_due") as RefundStatus,
+    refundedAt: row.refunded_at,
+    refundMethod: text(row.refund_method),
+    refundNote: text(row.refund_note),
   };
 }
 
 export async function getTableBookings(
   clubId: number,
-  filters: { tab: TableTab; query: string; month: string; sort: TableSort; page: number },
+  filters: { tab: TableTab; query: string; month: string; night: string;
+             sort: TableSort; page: number },
 ): Promise<TableBookingsResult> {
   const per = PER_PAGE.rows;
 
@@ -82,13 +90,17 @@ export async function getTableBookings(
     }),
     // Narrowed by the month as well as the search: "To pay 3" under September
     // has to mean three in September, which is 0118's rule on a second axis.
-    repo.findTableBookingCounts(clubId, filters.query, filters.month).catch((error) => {
+    repo.findTableBookingCounts(clubId, filters.query, filters.month, filters.night)
+      .catch((error) => {
       console.error("[table bookings] the counts did not load", error);
       return null;
     }),
     // Every booking, cancelled and still to come included: this screen is
     // about the money the club has taken, not about what was played.
-    repo.findClubBookingFacets(clubId, "all").catch((error) => {
+    // The month goes in so the nights that come back are that month's. Every
+    // other facet here is the club's whole history; the nights are not, for
+    // the reason 0228 gives.
+    repo.findClubBookingFacets(clubId, "all", filters.month).catch((error) => {
       console.error("[table bookings] the months did not load", error);
       return null;
     }),
@@ -107,6 +119,8 @@ export async function getTableBookings(
         paid: num(raw.paid),
         free: num(raw.free),
         cancelled: num(raw.cancelled),
+        refunddue: num(raw.refunddue),
+        refunded: num(raw.refunded),
       }
     : null;
 
@@ -130,7 +144,32 @@ const REFUSALS: Record<string, string> = {
   BOOKING_SIDE_UNKNOWN: "That is not one of the two seats on the table.",
   BOOKING_NO_OPPONENT:
     "Nobody is down on the other seat, so there is no second half to settle.",
+  REFUND_STATUS_UNKNOWN: "Pick one of the three refund states from the list.",
+  BOOKING_NOT_PAID:
+    "Nothing was taken on that half, so there is nothing to give back.",
 };
+
+/**
+ * Money going back on one half (0229).
+ *
+ * Its own call rather than more arguments on the payment write, because the
+ * two answer different questions and the dialog may change one without the
+ * other. Same refusal map, because the guards it can hit are the same ones.
+ */
+export async function setTableRefund(params: {
+  booking: number; side: TableBookingSide;
+  status: RefundStatus; method: string; note: string;
+}): Promise<TablePaymentResult> {
+  try {
+    await repo.setBookingRefund(params);
+    return { ok: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    const code = Object.keys(REFUSALS).find((key) => message.includes(key));
+    if (!code) console.error("[table bookings] an unmapped refund refusal", error);
+    return { ok: false, error: code ? REFUSALS[code]! : "That did not save. Try again." };
+  }
+}
 
 export async function setTablePayment(params: {
   booking: number; side: TableBookingSide;

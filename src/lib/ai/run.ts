@@ -27,7 +27,10 @@ import type { AiFeature } from "@/utils/ai-access";
 const TIMEOUT_MS = 90_000;
 
 function provider(): Provider {
-  const named = String(process.env.AI_PROVIDER ?? "").toLowerCase();
+  // Trimmed, and `models.ts` trims the same way. These two have to agree:
+  // one decides whether a screen draws the button, the other whether the
+  // button works.
+  const named = String(process.env.AI_PROVIDER ?? "").trim().toLowerCase();
   // `stub` is a test seam, not a fallback: it only runs when it is asked for
   // by name, so a missing or mistyped AI_PROVIDER never quietly serves fake
   // coaching to a real member.

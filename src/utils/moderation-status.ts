@@ -9,7 +9,13 @@
  * Pure, so the words can be tested without rendering anything.
  */
 
-export type StatusTone = "waiting" | "down" | "kept" | "quiet";
+export type StatusTone =
+  | "waiting" | "down" | "kept" | "quiet"
+  // Money going back. Red like `down`, and a separate word from it because
+  // the two mean different things: one is content taken off the site, the
+  // other is a payment reversed. A tone named for its colour would have been
+  // the same mistake as a chip styled at the call site.
+  | "refunded";
 
 export type StatusTag = { label: string; tone: StatusTone };
 

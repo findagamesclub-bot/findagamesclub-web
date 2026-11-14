@@ -16,9 +16,12 @@ import { useWhenChanged } from "@/hooks/useWhenChanged";
 import { formatMoney } from "@/utils/format";
 import { nightLabel } from "@/utils/dates";
 import { tableNumber } from "@/utils/table-number";
+import Divider from "@mui/material/Divider";
 import {
   TABLE_PAYMENT_LABELS, type TableBookingRow, type TablePaymentStatus,
 } from "@/utils/table-bookings";
+import { REFUND_STATES } from "@/utils/coaching-bookings-filter";
+import type { RefundStatus } from "@/utils/refund-status";
 import { tokens } from "@/lib/tokens";
 
 const METHODS = ["Cash", "Card", "Bank transfer", "PayPal", "Other"];
@@ -40,12 +43,18 @@ export default function TablePaymentDialog({
   row: TableBookingRow | null;
   saving: boolean;
   onClose: () => void;
-  onSave: (fields: { paymentStatus: string; method: string; note: string }) => void;
+  onSave: (fields: {
+    paymentStatus: string; method: string; note: string;
+    refundStatus: string; refundMethod: string; refundNote: string;
+  }) => void;
 }) {
   const fullScreen = useMediaQuery(useTheme().breakpoints.down("sm"));
   const [status, setStatus] = useState<TablePaymentStatus>("paid_on_the_door");
   const [method, setMethod] = useState("Cash");
   const note = useRef<HTMLTextAreaElement>(null);
+  const [refund, setRefund] = useState<RefundStatus>("not_due");
+  const [refundMethod, setRefundMethod] = useState("Cash");
+  const refundNote = useRef<HTMLTextAreaElement>(null);
 
   useWhenChanged([row], () => {
     if (!row) return;
@@ -54,6 +63,10 @@ export default function TablePaymentDialog({
     // ordinary thing.
     setStatus(row.paymentStatus === "unpaid" ? "paid_on_the_door" : row.paymentStatus);
     setMethod(row.paymentMethod || "Cash");
+    setRefund(row.refundStatus);
+    // However it came in is how it usually goes back, which is the same
+    // default the event refund dialog settled on in 0224.
+    setRefundMethod(row.refundMethod || row.paymentMethod || "Cash");
   });
 
   return (
@@ -103,6 +116,41 @@ export default function TablePaymentDialog({
               by mistake keeps nothing. Nobody is emailed either way.
             </Typography>
           )}
+
+          {/* Money going back, the client's item 15. Only on a half that was
+              actually paid: a refund on a half nobody settled is money
+              leaving that never arrived, and the database refuses it anyway.
+              A called-off table keeps this, because afterwards is exactly
+              when a club gives money back. */}
+          {row && row.paymentStatus !== "unpaid" ? (
+            <>
+              <Divider />
+              <TextField select label="Money back" fullWidth value={refund}
+                onChange={(e) => setRefund(e.target.value as RefundStatus)}>
+                {REFUND_STATES.map((one) => (
+                  <MenuItem key={one.value} value={one.value}>{one.label}</MenuItem>
+                ))}
+              </TextField>
+
+              {refund === "refunded" ? (
+                <>
+                  <TextField select label="How it went back" fullWidth
+                    value={refundMethod}
+                    onChange={(e) => setRefundMethod(e.target.value)}>
+                    {METHODS.map((one) => (
+                      <MenuItem key={one} value={one}>{one}</MenuItem>
+                    ))}
+                  </TextField>
+                  <TextField key={`r${row.bookingId}${row.side}`} label="Refund note"
+                    fullWidth multiline minRows={2}
+                    defaultValue={row.refundNote}
+                    inputRef={refundNote}
+                    slotProps={{ htmlInput: { maxLength: 300 } }}
+                    helperText="Today's date goes on the record for you." />
+                </>
+              ) : null}
+            </>
+          ) : null}
         </Stack>
       </DialogContent>
 
@@ -114,6 +162,11 @@ export default function TablePaymentDialog({
             paymentStatus: status,
             method: status === "unpaid" ? "" : method,
             note: status === "unpaid" ? "" : (note.current?.value ?? ""),
+            // Unpaid takes the refund with it: there is nothing to give back
+            // on a half the club is no longer saying it took.
+            refundStatus: status === "unpaid" ? "not_due" : refund,
+            refundMethod: refund === "refunded" ? refundMethod : "",
+            refundNote: refund === "refunded" ? (refundNote.current?.value ?? "") : "",
           })}>
           Save
         </Button>

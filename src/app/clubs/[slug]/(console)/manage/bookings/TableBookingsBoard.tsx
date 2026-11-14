@@ -14,6 +14,7 @@ import TablePaymentDialog from "./TablePaymentDialog";
 import { tablePaymentAction, type TablePaymentState } from "./actions";
 import { PER_PAGE } from "@/utils/paging";
 import { monthLabel, pickerOptions } from "@/utils/booking-facets";
+import { nightLabel } from "@/utils/dates";
 import { formatMoney } from "@/utils/format";
 import {
   TABLE_SORTS, TABLE_TABS, type TableBookingRow as Row,
@@ -34,7 +35,8 @@ export default function TableBookingsBoard({
   slug: string;
   faction: Faction;
   view: TableBookingsResult;
-  filters: { tab: TableTab; sort: TableSort; query: string; month: string; page: number };
+  filters: { tab: TableTab; sort: TableSort; query: string; month: string;
+             night: string; page: number };
 }) {
   const [state, submit, busy] =
     useActionState<TablePaymentState, FormData>(tablePaymentAction, {});
@@ -82,7 +84,8 @@ export default function TableBookingsBoard({
                 // The month leads, because every figure beside it is about
                 // that month and a count with no window on it is the figure
                 // the client read as wrong on the analytics page.
-                filters.month ? monthLabel(filters.month).toUpperCase() : null,
+                filters.night ? nightLabel(filters.night).toUpperCase()
+                  : filters.month ? monthLabel(filters.month).toUpperCase() : null,
                 // A row is one person's half of a table since 0221, not a
                 // booking, so "55 BOOKED" would be counting something nobody
                 // booked. Said as what the club is looking at: shares to
@@ -115,14 +118,28 @@ export default function TableBookingsBoard({
         // Only where the club has more than one month to tell apart. A picker
         // offering the one month that exists is a control that cannot narrow
         // anything, which is the rule the roster filters already follow.
-        pickers={view.facets.months.length > 1 ? [{
-          label: "Month", param: "month", value: filters.month,
-          options: pickerOptions({
-            any: "Every month", options: view.facets.months,
-            picked: filters.month, label: monthLabel,
-          }),
-        }] : []}
-        defaults={{ state: "all", sort: "newest", month: "" }}
+        pickers={[
+          ...(view.facets.months.length > 1 ? [{
+            label: "Month", param: "month", value: filters.month,
+            options: pickerOptions({
+              any: "Every month", options: view.facets.months,
+              picked: filters.month, label: monthLabel,
+            }),
+          }] : []),
+          // The nights appear once a month is chosen, which is the client's
+          // own suggestion in item 12: a club has run far too many nights for
+          // a picker to hold all of them, and a month is the natural way in.
+          // Only where the month holds more than one, for the same reason the
+          // month picker itself only appears above one.
+          ...(filters.month && view.facets.nights.length > 1 ? [{
+            label: "Night", param: "night", value: filters.night,
+            options: pickerOptions({
+              any: "Every night that month", options: view.facets.nights,
+              picked: filters.night, label: nightLabel,
+            }),
+          }] : []),
+        ]}
+        defaults={{ state: "all", sort: "newest", month: "", night: "" }}
         onBusy={setSifting}
       />
 
@@ -143,8 +160,10 @@ export default function TableBookingsBoard({
               <Typography variant="body2" sx={{ color: tokens.inkMuted, py: 2 }}>
                 {filters.query
                   ? `Nobody matching "${filters.query}" in this group.`
-                  : filters.month
-                    ? `Nothing in this group in ${monthLabel(filters.month)}.`
+                  : filters.night
+                    ? `Nothing in this group on ${nightLabel(filters.night)}.`
+                    : filters.month
+                      ? `Nothing in this group in ${monthLabel(filters.month)}.`
                     : "Nothing in this group."}
               </Typography>
             )

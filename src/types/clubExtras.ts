@@ -60,7 +60,8 @@ export type MerchOrder = {
   id: number;
   personId: string;
   personName: string;
-  status: "placed" | "paid" | "fulfilled" | "cancelled";
+  status:
+    | "placed" | "paid" | "fulfilled" | "cancelled" | "refund_due" | "refunded";
   notes: string;
   /** The club's own working log, oldest first. Members never see these. */
   log: { id: number; body: string; automatic: boolean; author: string; at: string }[];

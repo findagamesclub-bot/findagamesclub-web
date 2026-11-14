@@ -57,9 +57,14 @@ export default async function TablePaymentsPage({
   const sort = isTableSort(order) ? order : "newest";
   const search = one("q").trim();
   const month = one("month").trim();
+  // Only inside a month, because that is where the picker lives. A night left
+  // in a bookmark after the month was cleared would otherwise narrow the list
+  // to one evening while the bar above it said "every month".
+  const night = month ? one("night").trim() : "";
   const page = Number(one("page")) || 1;
 
-  const view = await getTableBookings(club.id, { tab, sort, query: search, month, page });
+  const view = await getTableBookings(
+    club.id, { tab, sort, query: search, month, night, page });
 
   const { faction } = clubIdentity(club.slug, club.name);
 
@@ -73,7 +78,7 @@ export default async function TablePaymentsPage({
         slug={slug}
         faction={faction}
         view={view}
-        filters={{ tab, sort, query: search, month, page }}
+        filters={{ tab, sort, query: search, month, night, page }}
       />
     </Container>
   );

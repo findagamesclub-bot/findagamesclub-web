@@ -10,6 +10,7 @@ import StartListingButton from "@/components/listing/StartListingButton";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getMyListings } from "@/services/submissions.service";
 import { getOwnerInbox } from "@/services/ownerInbox.service";
+import { listingsVersusClubs } from "@/utils/listing-reconcile";
 
 export const metadata = { title: "Your club requests" };
 
@@ -29,13 +30,24 @@ export default async function AccountListingsPage() {
   const viewer = await getCurrentProfile();
   if (!viewer) redirect("/auth/sign-in?next=/account/listings");
 
-  // Cheap: the inbox is already built for the rail's own counts, and this
-  // only decides whether to draw one sentence.
-  const [listings, runsClubs] = await Promise.all([
+  // Cheap: the inbox is already built for the rail's own counts, and My clubs
+  // reads exactly this, so the two pages cannot disagree about how many clubs
+  // somebody runs. That matters here more than anywhere: the whole point of
+  // the sentence below is that the two figures add up.
+  const [listings, runs] = await Promise.all([
     getMyListings(viewer.id),
-    getOwnerInbox(viewer.id).then((clubs) => clubs.length > 0).catch(() => false),
+    getOwnerInbox(viewer.id).catch(() => []),
   ]);
   const live = listings.filter((card) => card.status !== "cancelled");
+
+  // How many of the clubs they RUN began as a request on this page. Matched on
+  // the club id a submission gets when it is approved, so a request still
+  // waiting counts towards neither: it has no club yet.
+  const asked = new Set(live.map((card) => card.clubId).filter(Boolean));
+  const reconciled = listingsVersusClubs({
+    runs: runs.length,
+    fromHere: runs.filter((club) => asked.has(club.id)).length,
+  });
 
   return (
     <>
@@ -44,18 +56,16 @@ export default async function AccountListingsPage() {
         lede="Clubs you have asked us to put in the directory, and how far each one got. You can have more than one on the go."
       />
 
-      {/* The other half of the client's question, said on the page rather than
-          left to be worked out from two different counts. Only what YOU sent
-          in is here, so a club an admin set up and handed over, or one you
-          help run for somebody else, is on My clubs and was never a request.
-          Drawn only for somebody who runs one, because for everybody else
-          there is no second list to be confused by. */}
-      {runsClubs ? (
+      {/* The client's question, answered with the arithmetic rather than with
+          prose. They counted this page against My clubs three times and asked
+          why 4 against 8, so the page now does that sum itself and prints
+          both figures. Prose alone was not enough, twice. */}
+      {reconciled ? (
         <Typography variant="body2" sx={{ color: tokens.inkMuted, mb: 3, maxWidth: 720 }}>
-          {"Only the ones you sent in yourself. A club somebody handed you to run, "}
-          {"or one you help run, is on "}
-          <NextLink href="/my-clubs" style={{ color: tokens.brand }}>My clubs</NextLink>
-          {" instead, and will not have a request here."}
+          {reconciled}{" "}
+          <NextLink href="/my-clubs" style={{ color: tokens.brand }}>
+            See My clubs
+          </NextLink>
         </Typography>
       ) : null}
 

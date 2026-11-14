@@ -1,4 +1,4 @@
-import { monthYear } from "./dates";
+import { monthYear, nightLabel } from "./dates";
 
 /**
  * The months, games and players a club has bookings for.
@@ -12,7 +12,7 @@ import { monthYear } from "./dates";
  * pretending to work.
  */
 
-export type FacetKind = "month" | "game" | "player";
+export type FacetKind = "month" | "night" | "game" | "player";
 
 export type BookingFacet = {
   kind: FacetKind;
@@ -25,11 +25,18 @@ export type FacetOption = { value: string; label: string };
 
 export type BookingFacets = {
   months: FacetOption[];
+  /**
+   * The club nights inside the month that is already picked, and nothing at
+   * all when none is. 0228: a club three seasons in has run two hundred
+   * nights, so the whole list is the problem the month picker solved once.
+   */
+  nights: FacetOption[];
   games: FacetOption[];
   players: FacetOption[];
 };
 
-export const NO_FACETS: BookingFacets = { months: [], games: [], players: [] };
+export const NO_FACETS: BookingFacets =
+  { months: [], nights: [], games: [], players: [] };
 
 /**
  * "2026-10" as a reader says it.
@@ -47,10 +54,15 @@ export function splitFacets(rows: BookingFacet[]): BookingFacets {
     rows.filter((row) => row.kind === kind)
       .map((row) => ({
         value: row.value,
-        label: `${kind === "month" ? monthLabel(row.value) : row.label} (${row.rows})`,
+        label: `${kind === "month" ? monthLabel(row.value)
+                 : kind === "night" ? nightLabel(row.value)
+                 : row.label} (${row.rows})`,
       }));
 
-  return { months: of("month"), games: of("game"), players: of("player") };
+  return {
+    months: of("month"), nights: of("night"),
+    games: of("game"), players: of("player"),
+  };
 }
 
 /**

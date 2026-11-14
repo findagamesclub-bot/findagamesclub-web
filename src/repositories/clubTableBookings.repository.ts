@@ -45,6 +45,10 @@ export type TableBookingRpcRow = {
   total_price: number | string | null;
   currency: string | null;
   booked_at: string;
+  refund_status: string | null;
+  refunded_at: string | null;
+  refund_method: string | null;
+  refund_note: string | null;
   total_rows: number | string | null;
 };
 
@@ -53,6 +57,8 @@ export type TableBookingFilters = {
   query: string;
   /** "YYYY-MM", or empty for every night the club has ever run. */
   month: string;
+  /** One club night inside that month, as an ISO date, or "" for all of it. */
+  night: string;
   sort: TableSort;
   page: number;
   per: number;
@@ -64,6 +70,9 @@ export function findTableBookings(clubId: number, filters: TableBookingFilters) 
     p_tab: filters.tab,
     p_query: filters.query,
     p_month: filters.month,
+    // Null rather than "": the argument is a date, and an empty string is not
+    // one. Postgres would refuse it rather than read it as "every night".
+    p_night: filters.night || null,
     p_sort: filters.sort,
     p_page: filters.page,
     p_per: filters.per,
@@ -76,12 +85,16 @@ export type TableBookingCounts = {
   paid: number | string;
   free: number | string;
   cancelled: number | string;
+  refunddue: number | string;
+  refunded: number | string;
 };
 
-export function findTableBookingCounts(clubId: number, query: string, month: string) {
+export function findTableBookingCounts(
+  clubId: number, query: string, month: string, night: string,
+) {
   return callRpc<TableBookingCounts[] | TableBookingCounts | null>(
     "club_table_booking_counts",
-    { p_club: clubId, p_query: query, p_month: month });
+    { p_club: clubId, p_query: query, p_month: month, p_night: night || null });
 }
 
 /**
@@ -96,9 +109,24 @@ export function findTableBookingCounts(clubId: number, query: string, month: str
  * "Sep 2026 (12)" over a page drawing three games is the screen contradicting
  * itself, which is what it did before 0214.
  */
-export function findClubBookingFacets(clubId: number, scope: "all" | "played") {
+export function findClubBookingFacets(
+  clubId: number, scope: "all" | "played", month = "",
+) {
   return callRpc<BookingFacet[] | null>("club_booking_facets",
-    { p_club: clubId, p_scope: scope });
+    { p_club: clubId, p_scope: scope, p_month: month });
+}
+
+/** Money going back on one half of a table (0229). */
+export function setBookingRefund(params: {
+  booking: number; side: string; status: string; method: string; note: string;
+}) {
+  return callRpc("club_set_booking_refund", {
+    p_booking: params.booking,
+    p_side: params.side,
+    p_status: params.status,
+    p_method: params.method,
+    p_note: params.note,
+  });
 }
 
 export type TablePaymentRow = {

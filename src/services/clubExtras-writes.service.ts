@@ -117,7 +117,8 @@ function orderRefusal(error: unknown): string {
   return "Could not place that order. Try again.";
 }
 
-const ORDER_STATUSES = new Set(["placed", "paid", "fulfilled", "cancelled"]);
+const ORDER_STATUSES =
+  new Set(["placed", "paid", "fulfilled", "cancelled", "refund_due", "refunded"]);
 
 export async function updateOrder(orderId: number, status: string): Promise<Result> {
   if (!ORDER_STATUSES.has(status)) {

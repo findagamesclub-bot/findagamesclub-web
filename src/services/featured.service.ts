@@ -9,6 +9,7 @@ import {
   NO_FEATURED_FACETS, featuredClubId, featuredSort, featuredState, featuredWhen,
   type FeaturedFacets, type FeaturedFilters,
 } from "@/utils/featured-filters";
+import type { RefundStatus } from "@/utils/refund-status";
 import { londonNow } from "@/utils/dates";
 
 export type FeaturedResult = { ok: true } | { ok: false; error: string };
@@ -59,6 +60,13 @@ export type FeaturedSlot = {
   paidAt: string | null;
   paymentMethod: string;
   paymentNote: string;
+  /** Called off after booking, and the money going back (0232). */
+  cancelledAt: string | null;
+  cancelReason: string;
+  refundStatus: RefundStatus;
+  refundedAt: string | null;
+  refundMethod: string;
+  refundNote: string;
 };
 
 /**
@@ -83,7 +91,8 @@ export type FeaturedList = {
 
 const EMPTY_LIST: Omit<FeaturedList, "live"> = {
   rows: [], total: 0, page: 1, perPage: PER_PAGE, failed: false,
-  counts: { all: 0, topay: 0, paid: 0 }, facets: NO_FEATURED_FACETS,
+  counts: { all: 0, topay: 0, paid: 0, cancelled: 0, refunddue: 0, refunded: 0 },
+  facets: NO_FEATURED_FACETS,
   state: "", when: "", sort: "newest",
 };
 
@@ -145,6 +154,14 @@ export async function getFeaturedSlots(filters: FeaturedFilters): Promise<Featur
       paidAt: row.paid_at,
       paymentMethod: row.payment_method ?? "",
       paymentNote: row.payment_note ?? "",
+      cancelledAt: row.cancelled_at,
+      cancelReason: row.cancel_reason ?? "",
+      // `not_due` for a row read before 0232, which is every slot the site
+      // had sold until this week.
+      refundStatus: (row.refund_status || "not_due") as RefundStatus,
+      refundedAt: row.refunded_at,
+      refundMethod: row.refund_method ?? "",
+      refundNote: row.refund_note ?? "",
     })),
     // The total rides on every row, so an empty page answers zero rather than
     // reading it off a row that is not there. Getting that wrong shows "no
@@ -159,7 +176,9 @@ export async function getFeaturedSlots(filters: FeaturedFilters): Promise<Featur
     failed: rows === null,
     // Zeros rather than nothing when the counts fail: the bar prints what it
     // is given and `undefined` draws a blank where a number should be.
-    counts: counts ?? { all: 0, topay: 0, paid: 0 },
+    counts: counts ?? {
+      all: 0, topay: 0, paid: 0, cancelled: 0, refunddue: 0, refunded: 0,
+    },
     facets: facets
       ? { months: facets.months ?? [], clubs: facets.clubs ?? [] }
       : NO_FEATURED_FACETS,
@@ -248,6 +267,29 @@ export async function recordFeaturedPayment(params: {
 }): Promise<FeaturedResult> {
   try {
     await repo.recordFeaturedPayment(params);
+  } catch (error) {
+    return { ok: false, error: billingRefusal(error) };
+  }
+  return { ok: true };
+}
+
+/** Call a slot off, or put it back. Admin only, enforced in SQL (0232). */
+export async function cancelFeaturedSlot(params: {
+  slot: number; cancel: boolean; reason: string;
+}): Promise<FeaturedResult> {
+  try {
+    await repo.cancelFeaturedSlot(params);
+  } catch (error) {
+    return { ok: false, error: billingRefusal(error) };
+  }
+  return { ok: true };
+}
+
+export async function setFeaturedRefund(params: {
+  slot: number; status: string; method: string; note: string;
+}): Promise<FeaturedResult> {
+  try {
+    await repo.setFeaturedRefund(params);
   } catch (error) {
     return { ok: false, error: billingRefusal(error) };
   }

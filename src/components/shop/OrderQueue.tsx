@@ -31,6 +31,10 @@ const STATES: { value: MerchOrder["status"]; label: string; tone: string }[] = [
   { value: "paid", label: "Paid", tone: tokens.brand },
   { value: "fulfilled", label: "Fulfilled", tone: tokens.positive },
   { value: "cancelled", label: "Cancelled", tone: tokens.inkMuted },
+  // Brass for work waiting and red for money gone, the same pair coaching,
+  // events and table payments draw.
+  { value: "refund_due", label: "Refund due", tone: tokens.brass },
+  { value: "refunded", label: "Refunded", tone: tokens.danger },
 ];
 
 /**
@@ -108,6 +112,8 @@ export default function OrderQueue({
           { value: "paid" as const, label: "Paid", count: counts.paid },
           { value: "fulfilled" as const, label: "Collected", count: counts.fulfilled },
           { value: "cancelled" as const, label: "Cancelled", count: counts.cancelled },
+          { value: "refund_due" as const, label: "Refund due", count: counts.refund_due },
+          { value: "refunded" as const, label: "Refunded", count: counts.refunded },
         ]}
         filter={filter}
         onFilter={(value) => startReorder(() => setFilter(value))}

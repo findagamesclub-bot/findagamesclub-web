@@ -12,8 +12,10 @@
  */
 
 import type { Priced } from "./price-lines";
+import type { StatusTone } from "./moderation-status";
+import { refundTag, type RefundStatus } from "./refund-status";
 
-export type RefundStatus = "not_due" | "due" | "refunded";
+export type { RefundStatus };
 
 export type CoachingBookingRow = {
   /** The booking's id, which every action on the row acts on. */
@@ -106,11 +108,14 @@ export function filterCoachingBookings(
  */
 export function bookingTags(
   row: CoachingBookingRow,
-): { label: string; tone: "down" | "waiting" | "kept" }[] {
-  const tags: { label: string; tone: "down" | "waiting" | "kept" }[] = [];
+): { label: string; tone: StatusTone }[] {
+  const tags: { label: string; tone: StatusTone }[] = [];
   if (row.cancelled) tags.push({ label: "Called off", tone: "down" });
-  if (row.refundStatus === "due") tags.push({ label: "Refund due", tone: "waiting" });
-  if (row.refundStatus === "refunded") tags.push({ label: "Refunded", tone: "kept" });
+  // One reading of what a refund looks like, shared with events, merchandise
+  // and table bookings. "Refunded" used to be green here, which said the
+  // money was settled rather than that it had gone back.
+  const refund = refundTag(row.refundStatus);
+  if (refund) tags.push(refund);
   return tags;
 }
 

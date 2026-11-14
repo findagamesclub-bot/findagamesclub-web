@@ -67,9 +67,13 @@ export default function EventsHero({ events, upcomingCount, pastCount }: Props) 
               Tournaments, leagues and club nights
             </Typography>
 
+            {/* The client's own wording, dictated word for word. "Event and
+                Tournament" is capitalised mid-sentence against house style
+                on purpose: they wrote it that way and it is their copy. */}
             <Typography sx={{ color: "#B9C9DD", maxWidth: 560, lineHeight: 1.6 }}>
-              Every event the clubs are running, and every one they have already run.
-              Finished tournaments keep their results and the armies people brought.
+              Search every Event and Tournament a club is currently running, and past
+              Events and Tournaments they have already run. Finished Events and
+              Tournaments keep their results and placings, as well as analytics.
             </Typography>
 
             <Stack

@@ -14,6 +14,8 @@ export type ClubBookingRow = DoorRow & {
   eventTitle: string;
   eventLegacyId: string;
   eventStartDate: string | null;
+  /** Only a team event asks who somebody is playing for (0168, 0211). */
+  eventTeamEvent: boolean;
 };
 
 /** Enough of an event to name it in an email or a filename. */

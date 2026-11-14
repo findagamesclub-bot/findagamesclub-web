@@ -67,11 +67,16 @@ export default function FeaturedBoard({
   const [, start] = useTransition();
   const [sifting, setSifting] = useState(false);
   const [ending, setEnding] = useState<FeaturedSlot | null>(null);
+  // Calling a slot off is NOT removing it: the payment has to stay on the
+  // record, which is the whole of the client's item 16d. Remove still exists
+  // for a slot booked by mistake, where nothing happened to account for.
+  const [callingOff, setCallingOff] = useState<FeaturedSlot | null>(null);
   const [paying, setPaying] = useState<PayableSlot | null>(null);
 
   // Closed on the answer landing, not on the click: closing on the click takes
   // a refusal off the screen along with whatever was typed into it.
   useActionSuccess(state, () => setPaying(null));
+  useActionSuccess(state, () => setCallingOff(null));
 
   // What the pager and the filter bar both have to carry, so page two of
   // "Didcot, unpaid" is page two of the same list rather than page two of
@@ -163,12 +168,16 @@ export default function FeaturedBoard({
                 {list.rows.map((slot) => (
                   <FeaturedSlotCard key={slot.id} slot={slot} today={today}
                     onRemove={() => setEnding(slot)}
+                    onCancel={() => setCallingOff(slot)}
                     onPay={slot.pricePence > 0 ? () => setPaying({
                       id: slot.id, clubName: slot.clubName,
                       startsOn: slot.startsOn, endsOn: slot.endsOn,
                       pricePence: slot.pricePence, currency: slot.currency,
                       paidAt: slot.paidAt, method: slot.paymentMethod,
                       note: slot.paymentNote,
+                      refundStatus: slot.refundStatus,
+                      refundMethod: slot.refundMethod,
+                      refundNote: slot.refundNote,
                     }) : null} />
                 ))}
               </Box>
@@ -192,6 +201,9 @@ export default function FeaturedBoard({
           data.set("paid", fields.paid);
           data.set("method", fields.method);
           data.set("note", fields.note);
+          data.set("refundStatus", fields.refundStatus);
+          data.set("refundMethod", fields.refundMethod);
+          data.set("refundNote", fields.refundNote);
           start(() => act(data));
         }}
       />
@@ -210,6 +222,27 @@ export default function FeaturedBoard({
           start(() => act(data));
         }}
         onClose={() => setEnding(null)}
+      />
+
+      <ConfirmDialog
+        open={callingOff !== null}
+        title={callingOff?.cancelledAt
+          ? `Put ${callingOff.clubName} back?`
+          : `Call off ${callingOff?.clubName ?? "this slot"}?`}
+        body={callingOff?.cancelledAt
+          ? "The slot counts again and the club goes back on the homepage if its dates are running now."
+          : "The slot comes off the homepage straight away and the booking stays on the record, with whatever was paid for it. If money was taken it is marked as owed back, and you record the refund from Payment."}
+        confirmLabel={callingOff?.cancelledAt ? "Put it back" : "Call it off"}
+        destructive={!callingOff?.cancelledAt}
+        busy={working}
+        onConfirm={() => {
+          const data = new FormData();
+          data.set("intent", "cancel");
+          data.set("slot", String(callingOff?.id ?? 0));
+          data.set("cancel", callingOff?.cancelledAt ? "no" : "yes");
+          start(() => act(data));
+        }}
+        onClose={() => setCallingOff(null)}
       />
     </Stack>
   );

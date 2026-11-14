@@ -3,8 +3,11 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 
 import { getCurrentProfile } from "@/services/auth.service";
-import { FEATURED_TAG, featureClub, recordFeaturedPayment, unfeatureClub }
-  from "@/services/featured.service";
+import {
+  FEATURED_TAG, cancelFeaturedSlot, featureClub, recordFeaturedPayment,
+  setFeaturedRefund, unfeatureClub,
+} from "@/services/featured.service";
+import { REFUND_STATUSES, type RefundStatus } from "@/utils/refund-status";
 import { answerFeatured } from "@/services/featuredRequests.service";
 
 export type FeaturedState = { error?: string; notice?: string };
@@ -30,6 +33,27 @@ export async function featuredAction(
     return { notice: "Taken off the homepage." };
   }
 
+  // Called off, or put back. The client's item 16d: a club books, pays and
+  // then changes its mind. Not a removal, because the payment has to stay on
+  // the record and the refund hangs off it.
+  if (intent === "cancel") {
+    const slot = Number(data.get("slot") ?? 0);
+    if (!slot) return { error: "That slot is not here any more." };
+
+    const cancel = String(data.get("cancel") ?? "") === "yes";
+    const done = await cancelFeaturedSlot({
+      slot, cancel, reason: String(data.get("reason") ?? ""),
+    });
+    if (!done.ok) return { error: done.error };
+
+    // This one DOES clear the homepage cache, unlike recording a payment: a
+    // called-off slot has to come off the front page now, not in a minute.
+    refresh();
+    return {
+      notice: cancel ? "Called off and taken off the homepage." : "Put back.",
+    };
+  }
+
   // What arrived for a slot. Only an admin reaches this action at all, and
   // `record_featured_payment` asks `is_admin()` again, because the anon key is
   // public and a screen is not a guard.
@@ -45,11 +69,29 @@ export async function featuredAction(
     });
     if (!done.ok) return { error: done.error };
 
+    // The refund rides on the same save, because the dialog can move it in
+    // the same press. After the payment, so marking a slot paid and refunded
+    // at once records the payment first: the guard refuses a refund on a
+    // slot nothing was taken for.
+    const refund = String(data.get("refundStatus") ?? "not_due");
+    if (!REFUND_STATUSES.includes(refund as RefundStatus)) {
+      return { error: "Pick one of the three refund states from the list." };
+    }
+    const back = await setFeaturedRefund({
+      slot, status: refund,
+      method: String(data.get("refundMethod") ?? ""),
+      note: String(data.get("refundNote") ?? ""),
+    });
+    if (!back.ok) return { error: back.error };
+
     // No homepage revalidation: who leads it does not depend on whether we
     // have banked the money, and refreshing the front page to move a chip on
     // an admin screen is work for nothing.
     revalidatePath("/admin/featured");
-    return { notice: paid ? "Recorded as paid." : "Marked as not paid yet." };
+    return {
+      notice: refund === "refunded" ? "Refund recorded."
+        : paid ? "Recorded as paid." : "Marked as not paid yet.",
+    };
   }
 
   const club = Number(data.get("club") ?? 0);

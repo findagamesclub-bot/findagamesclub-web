@@ -10,7 +10,8 @@ import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
-import { PAYMENT_LABELS, REFUND_LABELS, type DoorRow, type RefundStatus }
+import StatusChip from "@/components/ui/StatusChip";
+import { PAYMENT_LABELS, refundTag, type DoorRow, type RefundStatus }
   from "@/utils/door-list";
 import { formatMoney } from "@/utils/format";
 import { display, mono, tokens, type Faction } from "@/lib/tokens";
@@ -52,6 +53,7 @@ export default function RosterRow({
     ? account
     : "";
   const cancelled = row.status === "cancelled";
+  const refund = refundTag(row.refundStatus);
   const paid = row.paymentStatus !== "unpaid";
 
   const pick = (run: () => void) => () => { setMenu(null); run(); };
@@ -105,11 +107,19 @@ export default function RosterRow({
           {formatMoney(row.total, "GBP")} · {PAYMENT_LABELS[row.paymentStatus]}
           {row.paymentMethod ? ` (${row.paymentMethod})` : ""}
         </Typography>
+        {/* The refund is a tag, not a word in a grey line. It used to be
+            joined to the cancellation reason with a middle dot, so money
+            going back read as part of the reason it was called off. Red,
+            because a refund is a subtraction from the takings this page is
+            adding up. */}
+        {refund ? (
+          <Stack direction="row" sx={{ pt: 0.4 }}>
+            <StatusChip label={refund.label} tone={refund.tone} />
+          </Stack>
+        ) : null}
         {cancelled ? (
           <Typography variant="caption" sx={{ color: tokens.inkMuted }}>
-            {[row.cancelReason || "Cancelled",
-              row.refundStatus === "not_due" ? "" : REFUND_LABELS[row.refundStatus]]
-              .filter(Boolean).join(" · ")}
+            {row.cancelReason || "Cancelled"}
           </Typography>
         ) : null}
         {/* And who they are playing for, at a team event. The club sees it

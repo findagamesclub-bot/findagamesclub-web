@@ -7,6 +7,7 @@ const TONES: Record<StatusTone, string> = {
   down: tokens.danger,
   kept: tokens.positive,
   quiet: tokens.inkMuted,
+  refunded: tokens.danger,
 };
 
 /**

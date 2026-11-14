@@ -5,11 +5,18 @@ import type { MerchOrder } from "@/types/clubExtras";
  *
  * The member's side already has order-filter.ts, which groups by "is the club
  * still holding this for me". The club asks a different question, which is
- * which of the four states an order is in, so the tabs are the states
+ * which of the six states an order is in, so the tabs are the states
  * themselves rather than a rollup of them.
+ *
+ * Refunded is the fifth, added for the client's item 15. It is a state of the
+ * order rather than a flag beside it, because here the status already IS the
+ * payment: placed, paid, fulfilled. A table booking is the other shape, and
+ * 0229 says why the two differ.
  */
 
-export type ClubOrderFilter = "all" | "placed" | "paid" | "fulfilled" | "cancelled";
+export type ClubOrderFilter =
+  | "all" | "placed" | "paid" | "fulfilled" | "cancelled"
+  | "refund_due" | "refunded";
 export type ClubOrderSort = "recent" | "value" | "name";
 
 const fold = (value: string) => value.trim().toLowerCase();
@@ -49,8 +56,11 @@ export function filterClubOrders(
 /**
  * How many sit in each tab.
  *
- * The four states are exclusive, so unlike the renewal views these do add up
- * to the total, and a club can trust the arithmetic.
+ * The six states are exclusive, so unlike the renewal views these do add up
+ * to the total, and a club can trust the arithmetic. That is true here and
+ * NOT true of the same two words on a table booking or an event place, where
+ * a refund is a second column beside the payment rather than a replacement
+ * for it, so it overlaps Cancelled instead of slicing it.
  */
 export function countClubOrders(orders: MerchOrder[]) {
   const of = (status: MerchOrder["status"]) =>
@@ -62,6 +72,8 @@ export function countClubOrders(orders: MerchOrder[]) {
     paid: of("paid"),
     fulfilled: of("fulfilled"),
     cancelled: of("cancelled"),
+    refund_due: of("refund_due"),
+    refunded: of("refunded"),
   };
 }
 

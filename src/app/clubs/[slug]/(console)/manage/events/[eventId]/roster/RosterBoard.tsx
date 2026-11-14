@@ -199,6 +199,11 @@ export default function RosterBoard({
           { value: "paid" as const, label: "Paid", count: counts.paid },
           { value: "checkedin" as const, label: "Checked in", count: counts.checkedin },
           { value: "cancelled" as const, label: "Cancelled", count: counts.cancelled },
+          // The client, item 16f: two more filters, refund due and
+          // refunded. They sit after Cancelled because that is where a
+          // refund comes from, and they overlap it rather than splitting it.
+          { value: "refunddue" as const, label: "Refund due", count: counts.refunddue },
+          { value: "refunded" as const, label: "Refunded", count: counts.refunded },
         ]}
         filter={tab}
         onFilter={(value) => startSift(() => setTab(value))}

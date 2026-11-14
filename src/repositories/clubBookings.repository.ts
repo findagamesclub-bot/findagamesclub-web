@@ -37,7 +37,10 @@ type Row = {
   notes: string | null;
   total: number | string | null;
   created_at: string;
-  club_events: { id: number; title: string; legacy_id: string; start_date: string | null } | null;
+  club_events: {
+    id: number; title: string; legacy_id: string; start_date: string | null;
+    team_event: boolean | null;
+  } | null;
   club_event_booking_items: { quantity: number }[] | null;
 };
 
@@ -45,7 +48,7 @@ const COLUMNS = `id, event_id, profile_id, full_name, email, reference, status,
   team_name, payment_status, payment_method, payment_note, checked_in_at,
   refund_status, cancel_reason, notes,
   total, created_at,
-  club_events!inner(id, title, legacy_id, start_date),
+  club_events!inner(id, title, legacy_id, start_date, team_event),
   club_event_booking_items(quantity)`;
 
 export type BookingFilters = {
@@ -72,6 +75,11 @@ function narrow<T>(query: T, tab: DoorTab): T {
   };
 
   switch (tab) {
+    // The two money-back groups, which 0092 and 0224 record on the booking
+    // itself. They deliberately do not exclude a cancellation: that is where
+    // a refund lives.
+    case "refunddue": return q.eq("refund_status", "due");
+    case "refunded": return q.eq("refund_status", "refunded");
     case "cancelled": return q.eq("status", "cancelled");
     // Everything else is about people who still hold a place, so a
     // cancellation drops out rather than sitting in Reserved looking live.
@@ -112,6 +120,10 @@ function toRow(row: Row): ClubBookingRow {
     eventTitle: row.club_events?.title ?? "",
     eventLegacyId: row.club_events?.legacy_id ?? "",
     eventStartDate: row.club_events?.start_date ?? null,
+    // Whether THIS row's event runs in teams, so the edit dialog can offer
+    // the team name. The roster knows because it is one event; this list
+    // spans every event the club runs, so the answer is per row.
+    eventTeamEvent: Boolean(row.club_events?.team_event),
   };
 }
 

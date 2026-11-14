@@ -15,6 +15,9 @@ import { useTheme } from "@mui/material/styles";
 import { useWhenChanged } from "@/hooks/useWhenChanged";
 import { formatPence } from "@/utils/format";
 import { shortDate } from "@/utils/dates";
+import Divider from "@mui/material/Divider";
+import { REFUND_STATES } from "@/utils/coaching-bookings-filter";
+import type { RefundStatus } from "@/utils/refund-status";
 import { tokens } from "@/lib/tokens";
 
 const METHODS = ["Bank transfer", "Card", "PayPal", "Cash", "Other"];
@@ -29,6 +32,10 @@ export type PayableSlot = {
   paidAt: string | null;
   method: string;
   note: string;
+  /** Money going back on a slot the club called off (0232). */
+  refundStatus: RefundStatus;
+  refundMethod: string;
+  refundNote: string;
 };
 
 /**
@@ -48,7 +55,10 @@ export default function FeaturedPaymentDialog({
   slot: PayableSlot | null;
   saving: boolean;
   onClose: () => void;
-  onSave: (fields: { paid: string; method: string; note: string }) => void;
+  onSave: (fields: {
+    paid: string; method: string; note: string;
+    refundStatus: string; refundMethod: string; refundNote: string;
+  }) => void;
 }) {
   const fullScreen = useMediaQuery(useTheme().breakpoints.down("sm"));
   const [paid, setPaid] = useState(true);
@@ -56,6 +66,9 @@ export default function FeaturedPaymentDialog({
   // Read on save rather than held in state, so the field can stay
   // uncontrolled. See the note above about `multiline`.
   const note = useRef<HTMLTextAreaElement>(null);
+  const [refund, setRefund] = useState<RefundStatus>("not_due");
+  const [refundMethod, setRefundMethod] = useState("Bank transfer");
+  const refundNote = useRef<HTMLTextAreaElement>(null);
 
   useWhenChanged([slot], () => {
     if (!slot) return;
@@ -63,6 +76,10 @@ export default function FeaturedPaymentDialog({
     // somebody opened this to do. A settled one opens on what it says.
     setPaid(true);
     setMethod(slot.method || "Bank transfer");
+    setRefund(slot.refundStatus);
+    // However it came in is how it usually goes back, the same default the
+    // event and table refund dialogs settled on.
+    setRefundMethod(slot.refundMethod || slot.method || "Bank transfer");
   });
 
   return (
@@ -105,6 +122,39 @@ export default function FeaturedPaymentDialog({
               marked by mistake keeps nothing. The slot itself stays where it is.
             </Typography>
           )}
+
+          {/* Money going back, the client's item 16d: a club books, pays and
+              then changes its mind. Only where something was actually taken,
+              because a refund on a slot nobody paid for is money leaving that
+              never arrived, and the database refuses it anyway. */}
+          {slot?.paidAt ? (
+            <>
+              <Divider />
+              <TextField select label="Money back" fullWidth value={refund}
+                onChange={(e) => setRefund(e.target.value as RefundStatus)}>
+                {REFUND_STATES.map((one) => (
+                  <MenuItem key={one.value} value={one.value}>{one.label}</MenuItem>
+                ))}
+              </TextField>
+
+              {refund === "refunded" ? (
+                <>
+                  <TextField select label="How it went back" fullWidth
+                    value={refundMethod}
+                    onChange={(e) => setRefundMethod(e.target.value)}>
+                    {METHODS.map((one) => (
+                      <MenuItem key={one} value={one}>{one}</MenuItem>
+                    ))}
+                  </TextField>
+                  <TextField key={`r${slot.id}`} label="Refund note" fullWidth
+                    multiline minRows={2} defaultValue={slot.refundNote}
+                    inputRef={refundNote}
+                    slotProps={{ htmlInput: { maxLength: 300 } }}
+                    helperText="Today's date goes on the record for you." />
+                </>
+              ) : null}
+            </>
+          ) : null}
         </Stack>
       </DialogContent>
 
@@ -116,6 +166,12 @@ export default function FeaturedPaymentDialog({
             paid: paid ? "yes" : "no",
             method: paid ? method : "",
             note: paid ? (note.current?.value ?? "") : "",
+            // Clearing the payment clears the refund with it: there is
+            // nothing to give back on a slot the club is no longer saying it
+            // took money for.
+            refundStatus: paid ? refund : "not_due",
+            refundMethod: refund === "refunded" ? refundMethod : "",
+            refundNote: refund === "refunded" ? (refundNote.current?.value ?? "") : "",
           })}>
           Save
         </Button>

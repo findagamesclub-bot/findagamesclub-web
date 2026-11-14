@@ -254,7 +254,7 @@ begin
   -- ====================================================================== 9
   set local role authenticated;
   perform pg_temp.be((select owner from who));
-  select count(*) into v_n from public.club_table_bookings(v_club, 'all', '', '', 'newest', 1, 100);
+  select count(*) into v_n from public.club_table_bookings(v_club, 'all', '', '', null, 'newest', 1, 100);
   reset role;
 
   -- Rather than pin the arithmetic, assert the shape that matters: one row
@@ -284,7 +284,7 @@ begin
   select all_rows into v_n from public.club_table_booking_counts(v_club, '', '');
   reset role;
 
-  if v_n <> (select count(*) from public.club_table_bookings(v_club, 'all', '', '', 'newest', 1, 500)) then
+  if v_n <> (select count(*) from public.club_table_bookings(v_club, 'all', '', '', null, 'newest', 1, 500)) then
     raise exception 'FAIL 10: the counts say % and the list says something else', v_n;
   end if;
   raise notice 'PASS 10: the counts and the list answer about one set';

@@ -62,6 +62,8 @@ export default function OwnerOrders({ orders }: { orders: OwnerOrder[] }) {
           { value: "paid" as const, label: "Paid", count: counts.paid },
           { value: "fulfilled" as const, label: "Collected", count: counts.fulfilled },
           { value: "cancelled" as const, label: "Cancelled", count: counts.cancelled },
+          { value: "refund_due" as const, label: "Refund due", count: counts.refund_due },
+          { value: "refunded" as const, label: "Refunded", count: counts.refunded },
         ]}
         filter={filter}
         onFilter={(value) => startReorder(() => setFilter(value))}

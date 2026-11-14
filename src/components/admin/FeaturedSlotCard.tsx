@@ -9,6 +9,8 @@ import type { FeaturedSlot } from "@/services/featured.service";
 import { formatPence } from "@/utils/format";
 import { shortDate } from "@/utils/dates";
 import { clubIdentity } from "@/utils/club-identity";
+import StatusChip from "@/components/ui/StatusChip";
+import { refundTag } from "@/utils/refund-status";
 import { display, mono, tokens } from "@/lib/tokens";
 
 /**
@@ -19,17 +21,22 @@ import { display, mono, tokens } from "@/lib/tokens";
  * while the chip beside it said "Booked" would be two names for one fact.
  */
 export default function FeaturedSlotCard({
-  slot, today, onPay, onRemove,
+  slot, today, onPay, onCancel, onRemove,
 }: {
   slot: FeaturedSlot;
   today: string;
   /** Absent on a slot given away, which has nothing to settle. */
   onPay: (() => void) | null;
+  /** Call it off, or put it back. Always offered: a comped slot can be
+   *  called off too, and gating this on a price would hide the control on
+   *  exactly the rows that have no payment button either. */
+  onCancel: () => void;
   onRemove: () => void;
 }) {
   const { faction, monogram } =
     clubIdentity(slot.clubSlug || slot.clubName, slot.clubName);
   const live = slot.startsOn <= today && slot.endsOn >= today;
+  const refund = refundTag(slot.refundStatus);
 
   return (
     <Stack spacing={1.5}
@@ -62,7 +69,14 @@ export default function FeaturedSlotCard({
       </Stack>
 
       <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap" }} useFlexGap>
-        {live ? (
+        {/* A called-off slot says so first and instead of where it sits in
+            time: "Running now" on a booking the club pulled is the card
+            contradicting the homepage, which no longer shows it. */}
+        {slot.cancelledAt ? (
+          <Chip size="small" label="Called off"
+            sx={{ fontSize: "0.68rem", fontWeight: 700,
+                  bgcolor: tokens.danger, color: "#fff" }} />
+        ) : live ? (
           <Chip size="small" label="Running now"
             sx={{ fontSize: "0.68rem", fontWeight: 700,
                   bgcolor: tokens.positive, color: "#fff" }} />
@@ -89,7 +103,17 @@ export default function FeaturedSlotCard({
                     ? { bgcolor: tokens.positive, color: "#fff" }
                     : { color: tokens.brass, borderColor: tokens.brass }) }} />
         ) : null}
+        {/* And the money going back, in the one tag the rest of the app uses
+            for it since 0229. */}
+        {refund ? <StatusChip label={refund.label} tone={refund.tone} /> : null}
       </Stack>
+
+      {/* Why it was called off, in the club's own words. */}
+      {slot.cancelReason ? (
+        <Typography variant="caption" sx={{ color: tokens.inkMuted }}>
+          {slot.cancelReason}
+        </Typography>
+      ) : null}
 
       {slot.note ? (
         <Typography sx={{ fontSize: "0.86rem", color: tokens.inkMuted }}>
@@ -97,20 +121,31 @@ export default function FeaturedSlotCard({
         </Typography>
       ) : null}
 
-      {/* Pushed down so Remove sits on the same line on every card in a row,
-          however long the note above it ran. */}
+      {/* Pushed down so the footer sits on the same line on every card in a
+          row, however long the note above it ran. */}
       <Box sx={{ flex: 1 }} />
-      <Stack direction="row" spacing={1}
+      <Stack direction="row" spacing={1} useFlexGap
         sx={{ pt: 1.25, borderTop: `1px solid ${tokens.rule}`,
-              alignItems: "center", justifyContent: "space-between" }}>
-        {/* Do-this-first, then the one that ends something, which is the
-            button order every card in this console uses. */}
+              alignItems: "center", flexWrap: "wrap" }}>
+        {/* Do-this-first, then the quieter one, then the one that ends
+            something, which is the button order every card in this console
+            uses. It wraps rather than squeezing: three controls do not fit
+            on one line at three cards across. */}
         {onPay ? (
           <Button variant="outlined" size="small" onClick={onPay}
             sx={{ borderColor: tokens.rule, color: tokens.ink }}>
             {slot.paidAt ? "Payment" : "Record payment"}
           </Button>
-        ) : <span />}
+        ) : null}
+        {/* Calling a slot off is not removing it, which is the client's item
+            16d: the club booked and paid, so there is money to account for
+            and a record to keep. Remove is still there for a slot booked by
+            mistake, where nothing happened. */}
+        <Button variant="text" size="small" onClick={onCancel}
+          sx={{ color: slot.cancelledAt ? tokens.brand : tokens.ink }}>
+          {slot.cancelledAt ? "Put it back" : "Call it off"}
+        </Button>
+        <Box sx={{ flex: 1 }} />
         <Button variant="text" size="small" onClick={onRemove}
           sx={{ color: tokens.danger }}>
           Remove

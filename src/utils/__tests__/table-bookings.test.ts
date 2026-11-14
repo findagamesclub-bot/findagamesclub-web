@@ -10,6 +10,8 @@ const row = (over: Partial<TableBookingRow> = {}): TableBookingRow => ({
   bookedById: null, bookedName: "Gulnabi Afridi", opponentName: "Joe Matthews",
   side: "booker", status: "booked", paymentStatus: "unpaid",
   paymentMethod: "", paymentNote: "",
+  refundStatus: "not_due" as const, refundedAt: null,
+  refundMethod: "", refundNote: "",
   paidAt: null, total: 5,
   priced: { subtotal: 5, tierLabel: null, tierPercent: 0, tierAmount: 0,
             points: 0, pointsAmount: 0, total: 5 },
@@ -62,7 +64,7 @@ assert.equal(isTableSort("random"), false);
 // the function takes the tab as a string and a typo is a tab that silently
 // answers All.
 assert.deepEqual(TABLE_TABS.map((tab) => tab.value),
-  ["all", "topay", "paid", "free", "cancelled"]);
+  ["all", "topay", "paid", "free", "cancelled", "refunddue", "refunded"]);
 assert.deepEqual(TABLE_SORTS.map((sort) => sort.value),
   ["newest", "oldest", "name", "value"]);
 

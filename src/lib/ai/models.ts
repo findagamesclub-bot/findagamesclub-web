@@ -46,7 +46,12 @@ export function featureEnabled(feature: AiFeature): boolean {
  * and that one decides whether the button works.
  */
 export function providerKeyPresent(): boolean {
-  const named = String(process.env.AI_PROVIDER ?? "").toLowerCase();
+  // Trimmed as well as lowercased. A value pasted into a hosting dashboard
+  // picks up a trailing space more often than anyone expects, and without
+  // this `AI_PROVIDER="openai "` falls through to the Anthropic branch and
+  // the site says "not available on this site yet" with a perfectly good
+  // OpenAI key sitting next to it. That is this item's whole history.
+  const named = String(process.env.AI_PROVIDER ?? "").trim().toLowerCase();
   if (named === "stub") return true;
   if (named === "openai") return Boolean(process.env.OPENAI_API_KEY);
   return Boolean(process.env.ANTHROPIC_API_KEY);

@@ -310,13 +310,17 @@ export default async function EventsPreviewPage({
               eventTitle: index % 2 ? "Halloween doubles" : "Autumn Open",
               eventLegacyId: index % 2 ? "2026-10-31-doubles" : "2026-09-26-autumn-open",
               eventStartDate: index % 2 ? "2026-10-31" : "2026-09-26",
+              // Every other one runs in teams, so the preview shows the
+              // edit dialog both with and without the Team field.
+              eventTeamEvent: index % 2 === 0,
             })),
             // Counts that do not match the four rows on purpose: this is what a
             // club a few seasons in looks like, and it is the case the whole
             // server-side filter exists for.
             total: 1042,
             eventCount: 4,
-            counts: { all: 1042, reserved: 217, paid: 781, checkedin: 394, cancelled: 44 },
+            counts: { all: 1042, reserved: 217, paid: 781, checkedin: 394, cancelled: 44,
+                      refunddue: 9, refunded: 31 },
             events: [
               { id: 1, title: "Autumn Open", bookings: 612 },
               { id: 2, title: "Halloween doubles", bookings: 430 },

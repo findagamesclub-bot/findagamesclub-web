@@ -1,4 +1,5 @@
 import type { Priced } from "./price-lines";
+import type { RefundStatus } from "./refund-status";
 
 /**
  * Table bookings, as the club reads its own.
@@ -49,13 +50,27 @@ export type TableBookingRow = {
   /** What the club wrote beside the money. */
   paymentNote: string;
   paidAt: string | null;
+  /**
+   * Money going back on this half, which is the client's item 15. Its own
+   * four fields rather than a fifth payment state, because a club needs to
+   * know it came in as cash on the night AND went back by transfer a week
+   * later. 0229 says why an order is the other shape.
+   */
+  refundStatus: RefundStatus;
+  refundedAt: string | null;
+  refundMethod: string;
+  refundNote: string;
   /** The whole sum, so a row can answer "why is it that much". */
   priced: Priced;
   total: number;
   bookedAt: string;
 };
 
-export type TableTab = "all" | "topay" | "paid" | "free" | "cancelled";
+export type TableTab =
+  | "all" | "topay" | "paid" | "free" | "cancelled"
+  // The client's item 16f. These two overlap Cancelled rather than slicing
+  // it, so unlike the first five they do not add up to All.
+  | "refunddue" | "refunded";
 export type TableSort = "newest" | "oldest" | "name" | "value";
 
 export const TABLE_TABS: { value: TableTab; label: string }[] = [
@@ -64,6 +79,8 @@ export const TABLE_TABS: { value: TableTab; label: string }[] = [
   { value: "paid", label: "Paid" },
   { value: "free", label: "Free" },
   { value: "cancelled", label: "Cancelled" },
+  { value: "refunddue", label: "Refund due" },
+  { value: "refunded", label: "Refunded" },
 ];
 
 export const TABLE_SORTS: { value: TableSort; label: string }[] = [

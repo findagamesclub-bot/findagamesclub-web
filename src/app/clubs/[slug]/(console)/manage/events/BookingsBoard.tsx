@@ -90,6 +90,11 @@ export default function BookingsBoard({
           { value: "paid", label: "Paid", count: counts.paid },
           { value: "checkedin", label: "Checked in", count: counts.checkedin },
           { value: "cancelled", label: "Cancelled", count: counts.cancelled },
+          // The client, item 16f: two more filters, refund due and
+          // refunded. They sit after Cancelled because that is where a
+          // refund comes from, and they overlap it rather than splitting it.
+          { value: "refunddue", label: "Refund due", count: counts.refunddue },
+          { value: "refunded", label: "Refunded", count: counts.refunded },
         ]}
         sort={filters.sort}
         sorts={[
@@ -179,7 +184,14 @@ export default function BookingsBoard({
           send(row.eventId, row.bookingId, { intent: "cancel", reason });
         }} />
 
-      <EditBookingDialog row={editing} slug={slug} saving={busy} onClose={() => setEditing(null)}
+      {/* The client, item 16g: "can we give the same options as on the who is
+          coming section, where team name can be edited?" It is the same
+          dialog; what was missing is the flag that draws the Team field, and
+          here it has to come off the row because this list is every event at
+          once rather than one. */}
+      <EditBookingDialog row={editing} slug={slug} saving={busy}
+        teamEvent={editing?.eventTeamEvent ?? false}
+        onClose={() => setEditing(null)}
         onSave={(fields) => {
           if (!editing) return;
           const row = editing;
