@@ -303,7 +303,7 @@ export default async function EventsPreviewPage({
           <Typography variant="overline" color="text.secondary">
             Every booking the club holds
           </Typography>
-          <BookingsBoard slug="didcot-wargames-didcot" faction={faction} view={{
+          <BookingsBoard slug="didcot-wargames-didcot" faction={faction} history={{}} view={{
             rows: roster.map((row, index) => ({
               ...row,
               eventId: index % 2 ? 2 : 1,

@@ -4,10 +4,13 @@ import Typography from "@mui/material/Typography";
 import PageHead from "@/components/ui/PageHead";
 import EmptyState from "@/components/ui/EmptyState";
 import StatusChip from "@/components/ui/StatusChip";
-import { aiDeployment, getAdminUsage } from "@/services/aiJobs.service";
+import {
+  aiDeployment, getAdminUsage, getRecentFailures,
+} from "@/services/aiJobs.service";
 import { AI_DEPLOYMENT_ADMIN } from "@/utils/ai-deployment";
 import { AI_FEATURES } from "@/utils/ai-access";
-import { monthYear } from "@/utils/dates";
+import { monthYear, messageTime } from "@/utils/dates";
+import { aiErrorCopy } from "@/utils/ai-errors";
 import { display, mono, tokens } from "@/lib/tokens";
 
 export const metadata = { title: "AI usage" };
@@ -29,7 +32,10 @@ export const metadata = { title: "AI usage" };
  * variable on their own deployment.
  */
 export default async function AdminAiUsagePage() {
-  const rows = await getAdminUsage(6);
+  const [rows, failures] = await Promise.all([
+    getAdminUsage(6),
+    getRecentFailures(12),
+  ]);
   const total = rows.reduce((sum, one) => sum + one.spendPence, 0);
 
   // Asked per feature because `AI_FEATURES` can name a subset, and "on" here
@@ -64,6 +70,49 @@ export default async function AdminAiUsagePage() {
           {said.detail}
         </Typography>
       </Stack>
+
+      {/* What actually went wrong, which no screen could say before 0236.
+          For three rounds of item 6 the only thing visible anywhere was "the
+          coaching service did not answer", and the fault was a model name the
+          provider had never heard of — indistinguishable, from the outside,
+          from a bad key or an empty account. The provider and the model are
+          beside it because a refusal is usually about what was asked for
+          rather than about the run. */}
+      {failures.length ? (
+        <Stack spacing={1.25}
+          sx={{ p: 2.5, borderRadius: 1.5, border: `1px solid ${tokens.rule}`,
+                backgroundColor: tokens.paper }}>
+          <Typography sx={{ fontFamily: mono, fontSize: "0.68rem", fontWeight: 700,
+                            letterSpacing: "0.08em", color: tokens.inkMuted }}>
+            {`RUNS THAT DID NOT FINISH · LAST ${failures.length}`}
+          </Typography>
+          <Typography sx={{ fontSize: "0.85rem", color: tokens.inkMuted }}>
+            Nobody was charged for any of these. The member was told whether it
+            was worth trying again; this is what the provider actually said.
+          </Typography>
+          <Stack spacing={1}>
+            {failures.map((one) => (
+              <Stack key={one.id} spacing={0.25}
+                sx={{ pt: 1, borderTop: `1px solid ${tokens.rule}` }}>
+                <Typography sx={{ fontSize: "0.9rem", color: tokens.danger }}>
+                  {aiErrorCopy(one.code)}
+                </Typography>
+                {one.detail ? (
+                  <Typography sx={{ fontFamily: mono, fontSize: "0.72rem",
+                                    color: tokens.ink, wordBreak: "break-word" }}>
+                    {one.detail}
+                  </Typography>
+                ) : null}
+                <Typography sx={{ fontFamily: mono, fontSize: "0.62rem",
+                                  letterSpacing: "0.06em", color: tokens.inkMuted }}>
+                  {[one.feature, one.provider, one.model, messageTime(one.at)]
+                    .filter(Boolean).join(" · ").toUpperCase()}
+                </Typography>
+              </Stack>
+            ))}
+          </Stack>
+        </Stack>
+      ) : null}
 
       {rows.length === 0 ? (
         <EmptyState title="No runs yet"

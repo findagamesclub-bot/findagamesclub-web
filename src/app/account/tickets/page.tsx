@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Box from "@mui/material/Box";
+import { getMoneyHistory } from "@/services/moneyEvents.service";
 import EmptyState from "@/components/ui/EmptyState";
 import PageHead from "@/components/ui/PageHead";
 import MyTickets from "@/components/tickets/MyTickets";
@@ -36,6 +37,8 @@ export default async function MyTicketsPage() {
         // a booking the member cannot prove they ever made.
         <MyTickets
           today={londonToday()}
+          history={Object.fromEntries(await getMoneyHistory(
+            "event", bookings.map((b) => b.id)))}
           entries={bookings.map((b) => ({
             booking: b, ...clubIdentity(b.clubSlug, b.clubName),
           }))}

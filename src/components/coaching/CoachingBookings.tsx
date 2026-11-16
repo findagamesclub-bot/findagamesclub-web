@@ -17,6 +17,7 @@ import {
   countCoachingBookings, filterCoachingBookings,
   type BookingFilter, type BookingSort, type CoachingBookingRow,
 } from "@/utils/coaching-bookings-filter";
+import type { MoneyEvent } from "@/utils/money-events";
 import { mono, tokens } from "@/lib/tokens";
 
 /**
@@ -33,9 +34,11 @@ import { mono, tokens } from "@/lib/tokens";
  * to Cancelled a list that never contained them.
  */
 export default function CoachingBookings({
-  rows, slug,
+  rows, slug, history,
 }: {
   rows: CoachingBookingRow[];
+  /** Keyed by booking id (0233). Empty is fine; a row just shows no log. */
+  history: Record<number, MoneyEvent[]>;
   slug: string;
 }) {
   const [state, submit, busy] = useActionState<CoachingState, FormData>(coachingAction, {});
@@ -119,6 +122,10 @@ export default function CoachingBookings({
           { value: "unpaid" as const, label: "To pay", count: counts.unpaid },
           { value: "paid" as const, label: "Paid", count: counts.paid },
           { value: "refund" as const, label: "Refund due", count: counts.refund },
+          // The other half (21g). Cancelled stays last, because it is the
+          // "everything else" group rather than another money one, and this
+          // is the order the table bookings and event lists already use.
+          { value: "refunded" as const, label: "Refunded", count: counts.refunded },
           { value: "cancelled" as const, label: "Cancelled", count: counts.cancelled },
         ]}
         filter={filter}
@@ -158,8 +165,10 @@ export default function CoachingBookings({
                        paid: String(paid), note })}
               onCancel={(bookingId, reason) =>
                 send({ intent: "club-cancel", bookingId: String(bookingId), reason })}
-              onRefund={(bookingId, refund) =>
-                send({ intent: "set-refund", bookingId: String(bookingId), refund })}
+              history={history[row.id] ?? []}
+              onRefund={(bookingId, refund, refundMethod, refundNote) =>
+                send({ intent: "set-refund", bookingId: String(bookingId), refund,
+                       refundMethod, refundNote })}
             />
           ))}
         </Stack>

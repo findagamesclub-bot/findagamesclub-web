@@ -6,6 +6,7 @@ import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
 import { getClubDetail } from "@/services/clubDetail.service";
 import { getTableBookings } from "@/services/clubTableBookings.service";
+import { getMoneyHistory } from "@/services/moneyEvents.service";
 import { clubIdentity } from "@/utils/club-identity";
 import { isTableSort, isTableTab } from "@/utils/table-bookings";
 
@@ -66,6 +67,12 @@ export default async function TablePaymentsPage({
   const view = await getTableBookings(
     club.id, { tab, sort, query: search, month, night, page });
 
+  // What has happened to the money on each of them. A second wave, because it
+  // needs the ids the first one produced, and one read for the page rather
+  // than one per row.
+  const history = await getMoneyHistory(
+    "booking", view.rows.map((row) => row.bookingId));
+
   const { faction } = clubIdentity(club.slug, club.name);
 
   return (
@@ -78,6 +85,7 @@ export default async function TablePaymentsPage({
         slug={slug}
         faction={faction}
         view={view}
+        history={Object.fromEntries(history)}
         filters={{ tab, sort, query: search, month, night, page }}
       />
     </Container>

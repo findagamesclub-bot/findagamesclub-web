@@ -10,6 +10,7 @@ import Pager from "@/components/ui/Pager";
 import { usePagedList } from "@/hooks/usePagedList";
 import FilterBar from "./FilterBar";
 import CoachingCard from "./CoachingCard";
+import type { MoneyEvent } from "@/utils/money-events";
 import {
   countUnpaid, countUpcoming, filterCoaching,
   type CoachingFilter, type CoachingSort,
@@ -22,7 +23,13 @@ import { paymentNote } from "@/utils/payment-note";
 const PAGE = PER_PAGE.cards;
 
 /** Search, filter and sort over the member's coaching, then a grid. */
-export default function CoachingBrowser({ sessions }: { sessions: MyCoaching[] }) {
+export default function CoachingBrowser({
+  sessions, history = {},
+}: {
+  sessions: MyCoaching[];
+  /** Keyed by booking id (0233). Empty is fine; a card just shows no log. */
+  history?: Record<number, MoneyEvent[]>;
+}) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<CoachingFilter>("all");
   const [sort, setSort] = useState<CoachingSort>("soonest");
@@ -93,7 +100,8 @@ export default function CoachingBrowser({ sessions }: { sessions: MyCoaching[] }
                        xl: "repeat(3, minmax(0, 1fr))",
                      } }}>
             {paged.shown.map((session) => (
-              <CoachingCard key={session.id} session={session} />
+              <CoachingCard key={session.id} session={session}
+                history={history[session.id] ?? []} />
             ))}
           </Box>
 

@@ -2,7 +2,7 @@ import "server-only";
 
 import * as repo from "@/repositories/aiJobs.repository";
 import { runAi } from "@/lib/ai/run";
-import { deploymentState } from "@/lib/ai/models";
+import { MODELS, deploymentState, providerName } from "@/lib/ai/models";
 import { AiError } from "@/lib/ai/provider";
 import { usageFor, type Usage } from "@/utils/ai-usage";
 import { FEATURE_META, type AiFeature } from "@/utils/ai-access";
@@ -63,6 +63,18 @@ export async function getLatest(
  * `usageFor`, from the same numbers, so the button and the guard cannot
  * disagree about whether somebody may press it.
  */
+/** What this person has already been told about this question. */
+export async function getHistory(
+  club: number, feature: AiFeature, signature: string,
+): Promise<{ id: number; at: string; model: string }[]> {
+  const rows = await repo.jobHistory(club, feature, signature).catch(() => []);
+  return (rows ?? []).map((row) => ({
+    id: Number(row.id),
+    at: row.finished_at ?? row.created_at,
+    model: row.model ?? "",
+  }));
+}
+
 export async function getUsage(club: number, feature: AiFeature): Promise<Usage> {
   const rows = await repo.usageWindow(club, feature).catch(() => []);
   const row = rows?.[0];
@@ -77,7 +89,11 @@ export async function getUsage(club: number, feature: AiFeature): Promise<Usage>
       ? new Date(new Date(next).getTime() - 24 * 3600_000).toISOString()
       : new Date().toISOString());
 
-  return usageFor({ at, limit, noun: FEATURE_META[feature].noun, now: new Date() });
+  return usageFor({
+    at, limit,
+    noun: FEATURE_META[feature].noun, one: FEATURE_META[feature].one,
+    now: new Date(),
+  });
 }
 
 export type StartResult =
@@ -125,10 +141,19 @@ export async function work(params: {
     return out.answer.json;
   } catch (error) {
     const kind = error instanceof AiError ? error.kind : "provider";
+    // The kind tells the member whether pressing again is worth it. It cannot
+    // tell anybody WHY, and item 6 is what that costs: "the coaching service
+    // did not answer" fits a dead network, a bad key, no credit and a model
+    // name the provider has never heard of, and the real one was the last of
+    // those. The sentence is kept for the admin screen, and the model goes
+    // with it, because a refusal is usually about the model that was asked
+    // for rather than about the run.
     await repo.finishJob({
-      job: params.job, result: null, provider: "", model: "",
+      job: params.job, result: null,
+      provider: providerName(), model: MODELS[params.feature],
       tokensIn: 0, tokensOut: 0, tokensCached: 0,
       costPence: 0, latencyMs: 0, error: kind,
+      detail: error instanceof Error ? error.message : String(error),
     }).catch(() => {});
     return null;
   }
@@ -175,6 +200,27 @@ export async function getAdminUsage(months = 6) {
     runs: Number(row.runs) || 0,
     failures: Number(row.failures) || 0,
     spendPence: Number(row.spend_pence) || 0,
+  }));
+}
+
+/**
+ * The runs that failed recently, for the admin.
+ *
+ * The detail is the point. Item 6 was a model name the provider had never
+ * heard of, and for three rounds the only thing anybody could see was "the
+ * coaching service did not answer" — which is also what a dead network, a bad
+ * key and an empty account look like. One line here would have ended it.
+ */
+export async function getRecentFailures(limit = 20) {
+  const rows = await repo.recentFailures(limit).catch(() => []);
+  return (rows ?? []).map((row) => ({
+    id: Number(row.id),
+    feature: row.feature,
+    provider: row.provider || "",
+    model: row.model || "",
+    code: row.error_code || "",
+    detail: row.error_detail || "",
+    at: row.created_at,
   }));
 }
 

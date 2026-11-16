@@ -1,73 +1,44 @@
 import "server-only";
 
 import type { AiFeature } from "@/utils/ai-access";
-import type { AiDeployment } from "@/utils/ai-deployment";
 
 /**
- * Which model answers which feature, and what it costs.
+ * Which model answers which feature, and how much of it it may write.
  *
- * Legacy runs `gpt-5.5` for most of it and `gpt-5-mini` for the list coach
- * (server.py:184-185), on the reasoning that the coach's evidence is already
- * deterministic and the model is writing it up. The same split holds here:
- * Sonnet everywhere, and the client can lift matchup to Opus per club.
+ * The provider, the defaults and the two switches moved to
+ * `utils/ai-provider.ts` and are re-exported here so no caller had to change.
+ * They are pure, and they are in `utils` because this file is `server-only`
+ * and the test covering them had to hand-copy the rules into itself — which
+ * is how item 6 survived three rounds.
  *
- * **The prices below must be confirmed against the provider's current pricing
- * before the monthly cap is trusted.** They drive `cost_pence`, which drives
- * the cap and the admin's spend view, and a wrong number there does not fail
- * loudly: it just stops a club too early or too late. `DEFERRED.md` carries
- * this.
+ * **The prices in `utils/ai-cost.ts` must be confirmed against the provider's
+ * current pricing before the monthly cap is trusted.** They drive
+ * `cost_pence`, which drives the cap and the admin's spend view, and a wrong
+ * number there does not fail loudly: it just stops a club too early or too
+ * late. `DEFERRED.md` carries this.
  */
 
+export {
+  AI_DEFAULT_MODELS, deploymentState, featureEnabled, modelFor,
+  providerKeyPresent, providerName,
+} from "@/utils/ai-provider";
+
+import { modelFor } from "@/utils/ai-provider";
+
+/**
+ * Which model answers which feature.
+ *
+ * Getters, because the environment is read at call time: a module-level
+ * constant would freeze whatever was set when the module first loaded, which
+ * is not the same thing in a server component as in a test.
+ */
 export const MODELS: Record<AiFeature, string> = {
-  coach: process.env.AI_MODEL_COACH || "claude-sonnet-5",
-  matchup: process.env.AI_MODEL_MATCHUP || "claude-sonnet-5",
-  scouting: process.env.AI_MODEL_SCOUTING || "claude-sonnet-5",
-  season: process.env.AI_MODEL_SEASON || "claude-sonnet-5",
+  get coach() { return modelFor("coach", process.env.AI_MODEL_COACH); },
+  get matchup() { return modelFor("matchup", process.env.AI_MODEL_MATCHUP); },
+  get scouting() { return modelFor("scouting", process.env.AI_MODEL_SCOUTING); },
+  get season() { return modelFor("season", process.env.AI_MODEL_SEASON); },
 };
 
 export const MAX_TOKENS: Record<AiFeature, number> = {
   coach: 4200, matchup: 4200, scouting: 3600, season: 4200,
 };
-
-/** Off entirely, or off for one feature. Both are a deploy-level decision. */
-export function featureEnabled(feature: AiFeature): boolean {
-  if (String(process.env.AI_ENABLED ?? "").toLowerCase() === "false") return false;
-  const only = String(process.env.AI_FEATURES ?? "").trim();
-  if (!only) return true;
-  return only.split(",").map((one) => one.trim()).includes(feature);
-}
-
-/**
- * Is there an account to call?
- *
- * Mirrors `provider()` in `run.ts`: the default is Anthropic and `stub` is a
- * real answer rather than an absence, so asking for it counts as configured.
- * The two have to agree, because this decides whether a screen draws a button
- * and that one decides whether the button works.
- */
-export function providerKeyPresent(): boolean {
-  // Trimmed as well as lowercased. A value pasted into a hosting dashboard
-  // picks up a trailing space more often than anyone expects, and without
-  // this `AI_PROVIDER="openai "` falls through to the Anthropic branch and
-  // the site says "not available on this site yet" with a perfectly good
-  // OpenAI key sitting next to it. That is this item's whole history.
-  const named = String(process.env.AI_PROVIDER ?? "").trim().toLowerCase();
-  if (named === "stub") return true;
-  if (named === "openai") return Boolean(process.env.OPENAI_API_KEY);
-  return Boolean(process.env.ANTHROPIC_API_KEY);
-}
-
-/**
- * What a screen needs to know before it draws.
- *
- * `featureEnabled` and the key check used to be read only inside `runAi`,
- * which is after the press. So every screen offered a confident primary button
- * it already knew would fail, and the only place the site ever said why was a
- * warning that arrived once the job had been filed and had come back. The
- * client read that as the feature not being built, which is a fair reading of
- * what they were shown.
- */
-export function deploymentState(feature: AiFeature): AiDeployment {
-  if (!featureEnabled(feature)) return "off";
-  return providerKeyPresent() ? "on" : "no_key";
-}

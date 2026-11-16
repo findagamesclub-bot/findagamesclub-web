@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 
 import { getCurrentProfile } from "@/services/auth.service";
-import { getSubscription, recordPayment, saveBillingSettings } from "@/services/billing.service";
+import {
+  correctPayment, getSubscription, recordPayment, saveBillingSettings,
+  setPaymentRefund,
+} from "@/services/billing.service";
 import * as notify from "@/services/billing-notify.service";
 
 export type BillingState = { error?: string; notice?: string };
@@ -140,4 +143,60 @@ export async function saveBillingSettingsAction(
   revalidatePath("/admin/billing");
   revalidatePath("/admin", "layout");
   return { notice: "Saved. New listings are billed on these from now on." };
+}
+
+/**
+ * Put a recorded payment right, and record a refund on it (0233, item 18).
+ *
+ * One action for both halves because it is one dialog: the admin opens a
+ * payment, fixes what is wrong with it and says whether money went back. They
+ * are kept apart on the ledger, which is where the distinction matters.
+ */
+export async function correctPaymentAction(
+  _prev: BillingState, data: FormData,
+): Promise<BillingState> {
+  const viewer = await getCurrentProfile();
+  if (!viewer || viewer.role !== "admin") {
+    return { error: "Only an admin can change a payment." };
+  }
+
+  const payment = Number(data.get("payment") ?? 0);
+  const subscription = Number(data.get("subscription") ?? 0);
+  if (!payment) return { error: "That payment is not here any more." };
+
+  // Pounds on the form, pence in the database, parsed rather than trusted.
+  // Stripping non-digits turns a typo into zero, which is how a mistyped price
+  // once saved as free, so the shape is tested before it is read.
+  const typed = String(data.get("amount") ?? "").trim();
+  if (!/^\d+(\.\d{1,2})?$/.test(typed)) {
+    return { error: "Put in how much was paid, in pounds and pence." };
+  }
+
+  const corrected = await correctPayment({
+    payment,
+    amountPence: Math.round(Number(typed) * 100),
+    method: String(data.get("method") ?? "other"),
+    paidAt: String(data.get("paidAt") ?? "") || null,
+    reference: String(data.get("reference") ?? ""),
+    note: String(data.get("note") ?? ""),
+  });
+  if (!corrected.ok) return { error: corrected.error };
+
+  const refundStatus = String(data.get("refundStatus") ?? "").trim();
+  if (refundStatus) {
+    const went = await setPaymentRefund({
+      payment,
+      status: refundStatus,
+      method: String(data.get("refundMethod") ?? ""),
+      note: String(data.get("refundNote") ?? ""),
+    });
+    if (!went.ok) return { error: went.error };
+  }
+
+  revalidatePath("/admin/billing");
+  if (subscription) revalidatePath(`/admin/billing/${subscription}`);
+
+  return { notice: refundStatus === "refunded"
+    ? "Payment corrected and the refund recorded."
+    : "Payment corrected." };
 }

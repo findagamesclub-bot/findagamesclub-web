@@ -49,6 +49,14 @@ export function usageFor(params: {
   limit: number;
   /** Plural, lower case: "coaching runs", "match-up analyses". */
   noun: string;
+  /**
+   * Singular, for the count of one: "match-up analysis".
+   *
+   * "1 daily match-up analyses left" was on the screen, which is the stage 5
+   * singular lesson for the umpteenth time. An irregular plural cannot be
+   * unmade by stripping an "s", so each feature names both.
+   */
+  one?: string;
   now: Date;
 }): Usage {
   const limit = Math.max(0, Math.floor(params.limit || 0));
@@ -75,7 +83,7 @@ export function usageFor(params: {
     ? `You’ve reached the ${params.noun} limit for now. Try again in ${retryAfterLabel}.`
     : limit <= 0
       ? `Unlimited daily ${params.noun} available.`
-      : `${remaining} daily ${params.noun} left.`;
+      : `${remaining} daily ${remaining === 1 ? (params.one ?? params.noun) : params.noun} left.`;
 
   return {
     limit,

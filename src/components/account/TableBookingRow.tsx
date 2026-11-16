@@ -10,6 +10,8 @@ import NextLink from "next/link";
 import ClubLogo from "@/components/clubs/ClubLogo";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import PriceBreakdown from "@/components/ui/PriceBreakdown";
+import MoneyHistory from "@/components/money/MoneyHistory";
+import type { MoneyEvent } from "@/utils/money-events";
 import { useActionToast } from "@/components/ui/Toaster";
 import { accountBookingAction, type AccountBookingState }
   from "@/app/account/bookings/actions";
@@ -26,7 +28,13 @@ import type { TableBooking } from "@/services/dashboard.service";
  * going to that club's page. Adding the result afterwards lives on Your games,
  * which is linked from here rather than left to be found.
  */
-export default function TableBookingRow({ booking }: { booking: TableBooking }) {
+export default function TableBookingRow({
+  booking, history = [],
+}: {
+  booking: TableBooking;
+  /** What has happened to this table's money (0233). */
+  history?: MoneyEvent[];
+}) {
   const { faction } = clubIdentity(booking.clubSlug, booking.clubName);
   const [state, submit, busy] = useActionState<AccountBookingState, FormData>(
     accountBookingAction, {});
@@ -71,6 +79,10 @@ export default function TableBookingRow({ booking }: { booking: TableBooking }) 
           </Typography>
         ) : null}
         <PriceBreakdown priced={booking.priced} compact />
+
+        {/* When the club marked it paid, and when any money came back. The
+            member is the person it is about, so they read it too. */}
+        {history.length ? <MoneyHistory events={history} dense /> : null}
       </Box>
 
       <Stack sx={{ alignItems: { xs: "flex-start", sm: "flex-end" }, flexShrink: 0 }}>

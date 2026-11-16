@@ -89,6 +89,36 @@ export const startJob = (params: {
   p_source: params.source, p_payload: params.payload, p_force: params.force,
 });
 
+/**
+ * Every answer this person has had to this question, newest first (0236).
+ *
+ * The cache answers "has this exact question already been asked"; this answers
+ * "what did it say last month", which the client asked for twice and which no
+ * screen could reach.
+ */
+/**
+ * The runs that failed recently, with what the provider actually said (0236).
+ *
+ * Through its own definer function: it crosses every club and every member,
+ * so `is_admin()` is the guard, and `error_detail` is not in the generated
+ * types, which `check:columns` is right to refuse in a select.
+ */
+export type FailureRow = {
+  id: number; feature: string; provider: string; model: string;
+  error_code: string; error_detail: string; created_at: string;
+};
+
+export const recentFailures = (limit = 20) =>
+  callRpc<FailureRow[]>("admin_ai_failures", { p_limit: limit });
+
+export const jobHistory = (
+  club: number, feature: string, signature: string,
+) => callRpc<{
+  id: number; created_at: string; finished_at: string | null; model: string;
+}[]>("ai_job_history", {
+  p_club: club, p_feature: feature, p_signature: signature,
+});
+
 export const saveSeasonPlan = (params: {
   club: number; focusKey: string; focus: unknown; goal: string;
   plan: unknown; signature: string; matches: number;
@@ -117,14 +147,49 @@ async function asService(name: string, args: Record<string, unknown>) {
 export const markRunning = (job: number) =>
   asService("mark_ai_job_running", { p_job: job });
 
-export const finishJob = (params: {
+/**
+ * Write the answer, or the failure.
+ *
+ * Tries the 0236 signature and falls back to the one before it.
+ *
+ * `p_detail` is a new argument, which in Postgres makes a NEW function, so a
+ * database that has not had 0236 yet refuses the call outright — and this is
+ * the one write in the whole AI path whose failure is invisible: `work()`
+ * swallows it, the row stays `running`, the member watches a spinner that
+ * will never resolve, and the one-in-flight index then refuses them a second
+ * go for five minutes. It happened on the first run after the change, here,
+ * and prod and dev share one database so a deploy that lands before the
+ * migration would do it to every club at once.
+ *
+ * The fallback costs one extra round trip on exactly one deployment and makes
+ * the order of the two irreversible-ish steps stop mattering.
+ */
+export async function finishJob(params: {
   job: number; result: unknown; provider: string; model: string;
   tokensIn: number; tokensOut: number; tokensCached: number;
   costPence: number; latencyMs: number; error: string;
-}) => asService("finish_ai_job", {
-  p_job: params.job, p_result: params.result, p_provider: params.provider,
-  p_model: params.model, p_tokens_in: params.tokensIn,
-  p_tokens_out: params.tokensOut, p_tokens_cached: params.tokensCached,
-  p_cost_pence: params.costPence, p_latency_ms: params.latencyMs,
-  p_error: params.error,
-});
+  /** What the provider actually said (0236). Admin-only, never the member. */
+  detail?: string;
+}) {
+  const base = {
+    p_job: params.job, p_result: params.result, p_provider: params.provider,
+    p_model: params.model, p_tokens_in: params.tokensIn,
+    p_tokens_out: params.tokensOut, p_tokens_cached: params.tokensCached,
+    p_cost_pence: params.costPence, p_latency_ms: params.latencyMs,
+    p_error: params.error,
+  };
+
+  try {
+    await asService("finish_ai_job", { ...base, p_detail: params.detail ?? "" });
+  } catch (error) {
+    const said = error instanceof Error ? error.message : String(error);
+    // Only the "no such function" shape. Anything else is a real failure and
+    // retrying it without the detail would hide it, which is the whole fault
+    // this migration exists to stop.
+    const missing = said.includes("Could not find the function")
+      || said.includes("PGRST202")
+      || said.includes("does not exist");
+    if (!missing) throw error;
+    await asService("finish_ai_job", base);
+  }
+}

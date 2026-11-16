@@ -133,9 +133,14 @@ export async function updateOrder(orderId: number, status: string): Promise<Resu
   }
 }
 
+/**
+ * The author is no longer a parameter (0233).
+ *
+ * `add_money_note` reads `auth.uid()` for it, because a log that can be told
+ * who wrote a line is a log that can be made to say somebody else did.
+ */
 export async function noteOnOrder(
   orderId: number,
-  authorId: string,
   body: string,
 ): Promise<Result> {
   const clean = body.trim();
@@ -143,7 +148,7 @@ export async function noteOnOrder(
   if (clean.length > 2000) return { ok: false, error: "That note is too long." };
 
   try {
-    await repo.addOrderNote(orderId, authorId, clean);
+    await repo.addOrderNote(orderId, clean);
     return { ok: true };
   } catch {
     return { ok: false, error: "Only the club can add notes to an order." };
@@ -272,17 +277,34 @@ export async function cancelCoachingAsClub(
   }
 }
 
-/** Where a refund has got to. A label, not a transaction: nothing here moves money. */
-export async function setCoachingRefund(
-  bookingId: number, status: string,
-): Promise<Result> {
-  if (!["not_due", "due", "refunded"].includes(status)) {
+/**
+ * Where a refund has got to, and how it went back.
+ *
+ * A label, not a transaction: nothing here moves money. Since 0233 it carries
+ * the date, the method and the note that every other section's refund already
+ * had, which is the client's item 16 — "store the date of the original
+ * payment, and the date of the refund".
+ */
+export async function setCoachingRefund(params: {
+  bookingId: number; status: string; method: string; note: string;
+}): Promise<Result> {
+  if (!["not_due", "due", "refunded"].includes(params.status)) {
     return { ok: false, error: "That is not a refund state." };
   }
   try {
-    await repo.setClubBookingState(bookingId, { refund_status: status });
+    await repo.setCoachingRefund({
+      bookingId: params.bookingId,
+      status: params.status,
+      method: params.method.trim().slice(0, 120),
+      note: params.note.trim().slice(0, 300),
+    });
     return { ok: true };
-  } catch {
+  } catch (error) {
+    const said = error instanceof Error ? error.message : "";
+    if (said.includes("BOOKING_NOT_PAID")) {
+      return { ok: false, error:
+        "Nothing was taken for this place, so there is nothing to give back." };
+    }
     return { ok: false, error: "That booking is not yours to change." };
   }
 }

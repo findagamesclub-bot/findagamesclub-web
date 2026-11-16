@@ -11,6 +11,7 @@ import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
 import { getClubDetail } from "@/services/clubDetail.service";
 import { getMyMembership } from "@/services/memberships.service";
+import { getMoneyHistory } from "@/services/moneyEvents.service";
 import { getClubCoachingBookings, getCoaching } from "@/services/clubExtras.service";
 import { londonToday } from "@/services/bookingCalendar.service";
 import { findCoachingSettings } from "@/repositories/clubSettings.repository";
@@ -85,7 +86,7 @@ export default async function ManageCoachingPage({
       {showing === "bookings" ? (
         // Its own read, through 0158's function, because the cancelled
         // bookings this list is for are deliberately not on the session cards.
-        <CoachingBookings rows={await getClubCoachingBookings(club.id)} slug={slug} />
+        <CoachingBookingsTab clubId={club.id} slug={slug} />
       ) : showing === "settings" ? (
         <CoachingSettingsForm
           slug={slug}
@@ -108,5 +109,23 @@ export default async function ManageCoachingPage({
         />
       )}
     </Container>
+  );
+}
+
+/**
+ * The bookings tab, and its money log.
+ *
+ * Its own component because the log is a second wave: it needs the ids the
+ * list produced, so it cannot ride the same read, and an `await` inside JSX
+ * cannot hold two of them in order.
+ */
+async function CoachingBookingsTab({
+  clubId, slug,
+}: { clubId: number; slug: string }) {
+  const rows = await getClubCoachingBookings(clubId);
+  const history = await getMoneyHistory("coaching", rows.map((row) => row.id));
+  return (
+    <CoachingBookings rows={rows} slug={slug}
+      history={Object.fromEntries(history)} />
   );
 }

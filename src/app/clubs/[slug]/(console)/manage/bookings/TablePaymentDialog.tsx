@@ -21,10 +21,10 @@ import {
   TABLE_PAYMENT_LABELS, type TableBookingRow, type TablePaymentStatus,
 } from "@/utils/table-bookings";
 import { REFUND_STATES } from "@/utils/coaching-bookings-filter";
+import { PAYMENT_WAYS } from "@/utils/money-events";
 import type { RefundStatus } from "@/utils/refund-status";
 import { tokens } from "@/lib/tokens";
 
-const METHODS = ["Cash", "Card", "Bank transfer", "PayPal", "Other"];
 
 /**
  * What the club took for a table.
@@ -101,7 +101,7 @@ export default function TablePaymentDialog({
             <>
               <TextField select label="How" fullWidth value={method}
                 onChange={(e) => setMethod(e.target.value)}>
-                {METHODS.map((one) => <MenuItem key={one} value={one}>{one}</MenuItem>)}
+                {PAYMENT_WAYS.map((one) => <MenuItem key={one} value={one}>{one}</MenuItem>)}
               </TextField>
 
               <TextField key={row?.bookingId ?? 0} label="Note" fullWidth
@@ -137,7 +137,7 @@ export default function TablePaymentDialog({
                   <TextField select label="How it went back" fullWidth
                     value={refundMethod}
                     onChange={(e) => setRefundMethod(e.target.value)}>
-                    {METHODS.map((one) => (
+                    {PAYMENT_WAYS.map((one) => (
                       <MenuItem key={one} value={one}>{one}</MenuItem>
                     ))}
                   </TextField>

@@ -139,15 +139,26 @@ export async function editPaymentAction(
   const slug = String(data.get("slug") ?? "");
   if (!paymentId || !slug) return { error: "Something went wrong. Reload and try again." };
 
+  const refundStatus = String(data.get("refundStatus") ?? "").trim();
+
   const result = await payments.editPayment({
     paymentId,
     billingOptionId: String(data.get("billingOptionId") ?? "").trim() || null,
     note: String(data.get("note") ?? ""),
+    refund: refundStatus
+      ? { status: refundStatus,
+          method: String(data.get("refundMethod") ?? ""),
+          note: String(data.get("refundNote") ?? "") }
+      : null,
   });
 
   refresh(slug);
   if (!result.ok) return { error: result.error };
-  return { notice: "Payment corrected." };
+  // The action keeps the name the button had. "Saved" would be true and would
+  // not say which of the two halves landed.
+  return { notice: refundStatus === "refunded"
+    ? "Payment corrected and the refund recorded."
+    : "Payment corrected." };
 }
 
 /** Owner moves a member between tiers. */

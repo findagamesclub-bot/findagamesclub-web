@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
-import { table, type TableRow } from "@/lib/supabase/table";
+import { callRpc, table, type TableRow } from "@/lib/supabase/table";
 import type { TablesInsert } from "@/types/database";
 
 /**
@@ -17,11 +17,17 @@ export type PaymentRow =
        "id" | "membership_id" | "club_id" | "tier_key" | "tier_label"
        | "billing_option_label" | "price" | "price_duration"
        | "period_start_at" | "period_end_at" | "note" | "created_at">
-  & { edited_at: string | null };
+  & { edited_at: string | null }
+  // 0233. A renewal can be refunded now, which it never could before: the
+  // generated types predate the columns, so they ride on top the same way
+  // `edited_at` has since 0195.
+  & { refund_status: string; refunded_at: string | null;
+      refund_method: string; refund_note: string };
 
 const COLUMNS =
   "id, membership_id, club_id, tier_key, tier_label, billing_option_label, price, "
-  + "price_duration, period_start_at, period_end_at, note, created_at, edited_at";
+  + "price_duration, period_start_at, period_end_at, note, created_at, edited_at, "
+  + "refund_status, refunded_at, refund_method, refund_note";
 
 /** Every payment recorded against one club, newest first. */
 export async function findPaymentsForClub(clubId: number) {
@@ -111,3 +117,17 @@ export async function findTier(clubId: number, tierKey: string) {
   if (error) throw new Error(`Failed to load tier: ${error.message}`);
   return data;
 }
+
+/**
+ * Marking a renewal refunded (0233).
+ *
+ * Through a function rather than an update, because the date is stamped and
+ * the status is not in 0195's column grant: when money went back is a fact
+ * about the row, not something a form gets to name.
+ */
+export const setPaymentRefund = (params: {
+  paymentId: number; status: string; method: string; note: string;
+}) => callRpc<unknown>("club_set_membership_payment_refund", {
+  p_payment: params.paymentId, p_status: params.status,
+  p_method: params.method, p_note: params.note,
+});

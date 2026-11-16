@@ -10,6 +10,8 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import PriceBreakdown from "@/components/ui/PriceBreakdown";
+import MoneyHistory from "@/components/money/MoneyHistory";
+import type { MoneyEvent } from "@/utils/money-events";
 import { shortDate } from "@/utils/dates";
 import { formatPounds } from "@/utils/format";
 import { display, mono, tokens } from "@/lib/tokens";
@@ -28,11 +30,17 @@ import type { MyOrder } from "@/services/myActivity.service";
  * about editing.
  */
 export default function OrderDetailDialog({
-  order, open, onClose,
+  order, open, onClose, history = [],
 }: {
   order: MyOrder;
   open: boolean;
   onClose: () => void;
+  /**
+   * What has happened to this order's money (0233). The member reads the
+   * automatic lines and never the club's own working notes, which the shop's
+   * log has kept to itself since 0020.
+   */
+  history?: MoneyEvent[];
 }) {
   const fullScreen = useMediaQuery("(max-width:600px)");
 
@@ -100,6 +108,20 @@ export default function OrderDetailDialog({
               <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
                 {order.notes}
               </Typography>
+            </Box>
+          ) : null}
+
+          {/* When the club marked it paid, and when any money came back
+              (0233). The status chip says where it ended up; this says when
+              each step happened, which is what somebody chasing a refund
+              actually needs. */}
+          {history.length ? (
+            <Box>
+              <Typography sx={{ fontFamily: mono, fontSize: "0.66rem",
+                                letterSpacing: "0.06em", color: tokens.inkMuted, mb: 0.75 }}>
+                WHAT HAS HAPPENED TO IT
+              </Typography>
+              <MoneyHistory events={history} dense />
             </Box>
           ) : null}
 

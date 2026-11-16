@@ -3,7 +3,7 @@ import "server-only";
 import { anthropic } from "./anthropic";
 import { openai } from "./openai";
 import { stub } from "./stub";
-import { MAX_TOKENS, MODELS, featureEnabled } from "./models";
+import { MAX_TOKENS, MODELS, featureEnabled, providerName } from "./models";
 import { costPence } from "@/utils/ai-cost";
 import { redact } from "@/utils/ai-redact";
 import { SCHEMAS } from "./schemas";
@@ -27,13 +27,15 @@ import type { AiFeature } from "@/utils/ai-access";
 const TIMEOUT_MS = 90_000;
 
 function provider(): Provider {
-  // Trimmed, and `models.ts` trims the same way. These two have to agree:
-  // one decides whether a screen draws the button, the other whether the
-  // button works.
-  const named = String(process.env.AI_PROVIDER ?? "").trim().toLowerCase();
+  // One reading of the name, in `models.ts`, because three copies of the same
+  // parsing is three chances for the screen that draws the button, the model
+  // that gets asked for and the call that gets made to disagree. Item 6 was
+  // the second of those disagreeing with the third.
+  //
   // `stub` is a test seam, not a fallback: it only runs when it is asked for
   // by name, so a missing or mistyped AI_PROVIDER never quietly serves fake
   // coaching to a real member.
+  const named = providerName();
   if (named === "stub") return stub;
   if (named === "openai") return openai;
   return anthropic;

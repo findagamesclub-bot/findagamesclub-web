@@ -10,6 +10,7 @@ import NextLink from "next/link";
 import ClubLogo from "@/components/clubs/ClubLogo";
 import PriceBreakdown from "@/components/ui/PriceBreakdown";
 import OrderDetailDialog from "./OrderDetailDialog";
+import type { MoneyEvent } from "@/utils/money-events";
 import { shortDate } from "@/utils/dates";
 import { display, mono, tokens } from "@/lib/tokens";
 import type { MyOrder } from "@/services/myActivity.service";
@@ -34,7 +35,13 @@ const SHOW_ITEMS = 3;
  * separately, since that is why the total is not the sum of the lines above
  * it, and since they are two different people's money.
  */
-export default function OrderCard({ order }: { order: MyOrder }) {
+export default function OrderCard({
+  order, history = [],
+}: {
+  order: MyOrder;
+  /** What has happened to this order's money (0233). */
+  history?: MoneyEvent[];
+}) {
   const [showing, setShowing] = useState(false);
   const state = STATUS[order.status]
     ?? { label: order.status, tone: tokens.inkMuted, bg: tokens.surface };
@@ -134,7 +141,8 @@ export default function OrderCard({ order }: { order: MyOrder }) {
         </NextLink>
       </Stack>
 
-      <OrderDetailDialog order={order} open={showing} onClose={() => setShowing(false)} />
+      <OrderDetailDialog order={order} open={showing} history={history}
+        onClose={() => setShowing(false)} />
     </Stack>
   );
 }

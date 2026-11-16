@@ -7,6 +7,7 @@ import EventsList from "./EventsList";
 import BookingsBoard from "./BookingsBoard";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getClubAccess } from "@/services/clubAccess.service";
+import { getMoneyHistory } from "@/services/moneyEvents.service";
 import { getClubDetail } from "@/services/clubDetail.service";
 import { listEvents } from "@/services/eventEditor.service";
 import { getClubBookings, readFilters } from "@/services/clubBookings.service";
@@ -82,7 +83,9 @@ export default async function ManageEventsPage({
       </Box>
 
       {showing === "bookings" && bookings ? (
-        <BookingsBoard slug={slug} view={bookings} faction={faction} />
+        <BookingsBoard slug={slug} view={bookings} faction={faction}
+          history={Object.fromEntries(await getMoneyHistory(
+            "event", bookings.rows.map((row) => row.bookingId)))} />
       ) : listing ? (
         <EventsList slug={slug} events={listing.rows} today={listing.today} />
       ) : null}

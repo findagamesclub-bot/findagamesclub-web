@@ -1,3 +1,5 @@
+import type { MoneyEvent } from "@/utils/money-events";
+
 /** Somebody you have marked as a rival at a club, and the record between you. */
 export type Rivalry = {
   id: number;
@@ -63,8 +65,15 @@ export type MerchOrder = {
   status:
     | "placed" | "paid" | "fulfilled" | "cancelled" | "refund_due" | "refunded";
   notes: string;
-  /** The club's own working log, oldest first. Members never see these. */
-  log: { id: number; body: string; automatic: boolean; author: string; at: string }[];
+  /**
+   * Everything that has happened to this order, oldest first (0233).
+   *
+   * The shop's own note table until now; the shared money ledger since, so a
+   * refund on an order and a refund on a table booking are the same kind of
+   * record. The club's typed notes are still the club's — the reader hands a
+   * member the automatic lines and nothing else.
+   */
+  log: MoneyEvent[];
   tierLabel: string | null;
   createdAt: string;
   lines: { name: string; price: string | null; quantity: number; lineTotal: number }[];

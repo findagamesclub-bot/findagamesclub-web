@@ -17,8 +17,10 @@ import PriceBreakdown from "@/components/ui/PriceBreakdown";
 import { nightLabel } from "@/utils/dates";
 import { formatMoney } from "@/utils/format";
 import {
-  REFUND_STATES, bookingTags, type CoachingBookingRow,
+  bookingTags, type CoachingBookingRow,
 } from "@/utils/coaching-bookings-filter";
+import MoneyHistory from "@/components/money/MoneyHistory";
+import type { MoneyEvent } from "@/utils/money-events";
 import { display, mono, tokens } from "@/lib/tokens";
 
 /**
@@ -34,13 +36,16 @@ import { display, mono, tokens } from "@/lib/tokens";
  * does once, and it takes a reason, so it belongs a press further away.
  */
 export default function BookingRow({
-  row, busy, onPaid, onCancel, onRefund,
+  row, busy, history, onPaid, onCancel, onRefund,
 }: {
   row: CoachingBookingRow;
   busy: boolean;
+  /** What has happened to this place's money (0233). */
+  history: MoneyEvent[];
   onPaid: (bookingId: number, paid: boolean, note: string) => void;
   onCancel: (bookingId: number, reason: string) => void;
-  onRefund: (bookingId: number, status: string) => void;
+  onRefund: (
+    bookingId: number, status: string, method: string, note: string) => void;
 }) {
   const [menu, setMenu] = useState<HTMLElement | null>(null);
   const [asking, setAsking] = useState(false);
@@ -100,6 +105,10 @@ export default function BookingRow({
           </Typography>
         ) : null}
 
+        {/* And what has happened to the money since (0233): when it arrived,
+            when it went back, and what the club wrote about each. */}
+        {history.length ? <MoneyHistory events={history} dense shownNote={row.paymentNote} /> : null}
+
         {/* The club's own words, so a row nobody can remember explains itself. */}
         {row.cancelReason ? (
           <Typography variant="body2" sx={{ color: tokens.inkMuted, fontStyle: "italic" }}>
@@ -137,24 +146,36 @@ export default function BookingRow({
           </MenuItem>
         )}
 
-        {/* Only once there is money to be owed. A refund state on a place
-            nobody paid for is a control that cannot mean anything. */}
-        {row.paid || row.refundStatus !== "not_due"
-          ? REFUND_STATES.map((state) => (
-            <MenuItem key={state.value}
-              selected={row.refundStatus === state.value}
-              onClick={() => { setMenu(null); onRefund(row.id, state.value); }}>
-              {state.label}
-            </MenuItem>
-          ))
-          : null}
+        {/* The refund used to be three menu items setting a word and nothing
+            else, which could not say when the money went back or how. It is
+            the payment dialog's second half now, the same two questions a
+            table booking asks, so a club learns one control rather than two.
+            Only once there is money to be owed: a refund on a place nobody
+            paid for is a control that cannot mean anything. */}
+        {row.paid || row.refundStatus !== "not_due" ? (
+          <MenuItem onClick={() => { setMenu(null); setPaying(true); }}>
+            Record a refund
+          </MenuItem>
+        ) : null}
       </Menu>
 
       <CoachingPaymentDialog
         row={paying ? row : null}
         saving={busy}
         onClose={() => setPaying(false)}
-        onSave={({ paid, note }) => { onPaid(row.id, paid, note); setPaying(false); }}
+        onSave={({ paid, note, refundStatus, refundMethod, refundNote }) => {
+          onPaid(row.id, paid, note);
+          // The payment first, then the refund: the database refuses a refund
+          // on a half nothing was taken on, so marking somebody paid and
+          // refunded in one press has to record the payment first. Same order
+          // a table booking saves in.
+          if (refundStatus !== row.refundStatus
+              || refundMethod !== row.refundMethod
+              || refundNote !== row.refundNote) {
+            onRefund(row.id, refundStatus, refundMethod, refundNote);
+          }
+          setPaying(false);
+        }}
       />
 
       <ConfirmDialog

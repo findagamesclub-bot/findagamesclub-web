@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
@@ -11,11 +11,14 @@ import AiJobProgress from "./AiJobProgress";
 import AiResult from "./AiResult";
 import AiResultHeader from "./AiResultHeader";
 import { useAiJob } from "@/hooks/useAiJob";
-import { runAiAction } from "@/app/clubs/[slug]/(console)/army-builder/ai-actions";
+import {
+  aiHistoryAction, runAiAction,
+} from "@/app/clubs/[slug]/(console)/army-builder/ai-actions";
 import { FEATURE_META, type AiFeature } from "@/utils/ai-access";
 import { aiErrorCopy } from "@/utils/ai-errors";
 import { AI_DEPLOYMENT_COPY, type AiDeployment } from "@/utils/ai-deployment";
 import type { AiJob } from "@/types/ai";
+import { shortDate } from "@/utils/dates";
 import { mono, tokens } from "@/lib/tokens";
 
 /**
@@ -35,6 +38,14 @@ import { mono, tokens } from "@/lib/tokens";
  * It used to be offered, pressed, filed as a job, and answered a few seconds
  * later with a warning. That reads as a broken feature, and the client
  * reported it as one.
+ *
+ * And a saved report now says it is one. The match-up and scouting pages open
+ * with nothing on screen, because the question is not known until an opponent
+ * is picked, so the button reads "Plan this match-up" and a press could come
+ * back with a report written weeks earlier and no word about it. The client
+ * reported that as the feature not running at all. 0234 stops a report older
+ * than a day answering a press; this says so for the ones inside the day,
+ * which are the presses that genuinely should not cost a second run.
  */
 export default function AiPanel({
   feature, slug, listId, opponent, opponentProfileId, reason, usage, initial,
@@ -57,6 +68,15 @@ export default function AiPanel({
   const [jobId, setJobId] = useState<number | null>(
     initial && initial.status !== "failed" ? initial.id : null);
   const [error, setError] = useState("");
+  // Every run this reader has had for this question (0236). The client asked
+  // twice for the old ones to stay reachable; they have been in the table
+  // since 0146 and nothing could open them.
+  const [history, setHistory] = useState<
+    { id: number; at: string; model: string }[]>([]);
+  // Whether what is on screen was written by the press that put it there.
+  // Starts true for a report the page opened with: that one is plainly saved,
+  // and `AiResultHeader` has always dated it.
+  const [saved, setSaved] = useState(Boolean(initial));
 
   const live = useAiJob(jobId);
   const job = live.data ?? (jobId === initial?.id ? initial : null);
@@ -66,12 +86,44 @@ export default function AiPanel({
   // time, and forcing past a cache that holds nothing is pointless besides.
   const done = job?.status === "succeeded";
 
+  // An effect, not a render-phase read: this is a round trip, and it has to
+  // run again when the opponent changes, because that is a different
+  // question with a different history.
+  //
+  // The state is set inside the promise's callback rather than in the effect
+  // body, which is what `react-hooks/set-state-in-effect` is asking for, and
+  // `alive` drops the answer to a question the reader has already moved on
+  // from.
+  const faction = opponent?.factionId ?? "";
+  const load = useCallback(() => {
+    let alive = true;
+    aiHistoryAction({
+      slug, feature, listId,
+      ...(faction ? { opponent: { factionId: faction, factionLabel: "" } } : {}),
+      opponentProfileId,
+    })
+      .then((answer) => { if (alive) setHistory(answer.jobs ?? []); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [slug, feature, listId, faction, opponentProfileId]);
+
+  useEffect(() => {
+    if (reason || deployment !== "on") return;
+    return load();
+  }, [load, reason, deployment]);
+
   const run = (force: boolean) => start(async () => {
     setError("");
     const answer = await runAiAction({
       slug, feature, listId, opponent, opponentProfileId, force });
     if (answer.error) return setError(answer.error);
-    if (answer.jobId) setJobId(answer.jobId);
+    if (answer.jobId) {
+      setSaved(Boolean(answer.cached));
+      setJobId(answer.jobId);
+      // A forced run adds a row to the history. Reloaded rather than guessed
+      // at, because the row is only there once the model has answered.
+      if (!answer.cached) load();
+    }
   });
 
   // The site first, then the tier. Telling somebody their tier does not
@@ -107,8 +159,44 @@ export default function AiPanel({
         <Alert severity="warning">{aiErrorCopy(job.errorCode)}</Alert>
       ) : null}
 
+      {/* The ones before this one. Only ever drawn when there is more than
+          the single report already on screen, because a list of one is a
+          control that says "here is the thing you are looking at". */}
+      {history.length > 1 ? (
+        <Stack spacing={0.75}>
+          <Typography sx={{ fontFamily: mono, fontSize: "0.62rem", fontWeight: 700,
+                            letterSpacing: "0.08em", color: tokens.inkMuted }}>
+            EARLIER RUNS
+          </Typography>
+          <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }} useFlexGap>
+            {history.map((one) => (
+              <Button key={one.id} size="small"
+                variant={one.id === jobId ? "contained" : "outlined"}
+                disabled={running}
+                onClick={() => { setSaved(true); setError(""); setJobId(one.id); }}
+                sx={{ fontFamily: mono, fontSize: "0.68rem",
+                      ...(one.id === jobId ? {} : { borderColor: tokens.rule,
+                                                    color: tokens.ink }) }}>
+                {shortDate(one.at)}
+              </Button>
+            ))}
+          </Stack>
+        </Stack>
+      ) : null}
+
       {job?.status === "succeeded" ? (
         <Stack spacing={2}>
+          {/* Said in words, not left to a date in a 0.7rem caption. Somebody
+              who pressed a button and got a report is entitled to know
+              whether it was written for that press. */}
+          {saved ? (
+            <AiNote kind="note">
+              {`This is the ${FEATURE_META[feature].one} saved on `}
+              {shortDate(job.finishedAt ?? job.createdAt)}
+              {". It was not run again. Press Run it again for a fresh one, "}
+              {"which is saved beside this one rather than replacing it."}
+            </AiNote>
+          ) : null}
           <AiResultHeader model={job.model} at={job.finishedAt ?? job.createdAt}
             about={aboutOf(job)} />
           <AiResult feature={feature} result={job.result} />

@@ -17,6 +17,7 @@ import FilterBar from "@/components/account/FilterBar";
 import Pager from "@/components/ui/Pager";
 import { usePagedList } from "@/hooks/usePagedList";
 import TicketStub from "./TicketStub";
+import type { MoneyEvent } from "@/utils/money-events";
 import { cancelTicketAction, type CancelState } from "@/app/tickets/actions";
 import {
   canCancel, countTickets, filterTickets, type TicketSort, type TicketTab,
@@ -36,9 +37,11 @@ type Entry = { booking: EventBooking; faction: Faction; monogram: string };
  * has met one of those has met this.
  */
 export default function MyTickets({
-  entries, today,
+  entries, today, history = {},
 }: {
   entries: Entry[];
+  /** Keyed by booking id (0233). Empty is fine; a stub just shows no log. */
+  history?: Record<number, MoneyEvent[]>;
   /** London's today, so a ticket does not change group at midnight. */
   today: string;
 }) {
@@ -114,7 +117,8 @@ export default function MyTickets({
                 <NextLink href={`/tickets/${entry.booking.reference}`}
                   style={{ textDecoration: "none" }}>
                   <TicketStub booking={entry.booking} faction={entry.faction}
-                    monogram={entry.monogram} />
+                    monogram={entry.monogram}
+                    history={history[entry.booking.id] ?? []} />
                 </NextLink>
                 <Stack direction="row" spacing={1.5} sx={{ justifyContent: "flex-end" }}>
                   <Button component={NextLink} size="small" variant="text"

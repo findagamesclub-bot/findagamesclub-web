@@ -20,6 +20,7 @@ import {
   TABLE_SORTS, TABLE_TABS, type TableBookingRow as Row,
   type TableSort, type TableTab,
 } from "@/utils/table-bookings";
+import type { MoneyEvent } from "@/utils/money-events";
 import { mono, tokens, type Faction } from "@/lib/tokens";
 import type { TableBookingsResult } from "@/services/clubTableBookings.service";
 
@@ -30,11 +31,13 @@ import type { TableBookingsResult } from "@/services/clubTableBookings.service";
  * me for a table" to whoever is chasing it.
  */
 export default function TableBookingsBoard({
-  slug, faction, view, filters,
+  slug, faction, view, history, filters,
 }: {
   slug: string;
   faction: Faction;
   view: TableBookingsResult;
+  /** Keyed by booking id; a row shows only the lines for its own half. */
+  history: Record<number, MoneyEvent[]>;
   filters: { tab: TableTab; sort: TableSort; query: string; month: string;
              night: string; page: number };
 }) {
@@ -171,6 +174,8 @@ export default function TableBookingsBoard({
 
           {view.rows.map((row) => (
             <TableBookingRow key={keyOf(row)} row={row} faction={faction}
+              history={(history[row.bookingId] ?? [])
+                .filter((event) => event.side === row.side)}
               busy={busy && pendingId === keyOf(row)}
               onPayment={() => setPaying(row)} />
           ))}

@@ -1,5 +1,7 @@
 import "server-only";
 
+import { REFUND_STATUSES, type RefundStatus } from "@/utils/refund-status";
+
 import * as repo from "@/repositories/payments.repository";
 import * as memberships from "@/repositories/memberships.repository";
 import * as notify from "./membership-notify.service";
@@ -31,6 +33,10 @@ function toPayment(row: Awaited<ReturnType<typeof repo.findPaymentsForMembership
     note: row.note,
     recordedAt: row.created_at,
     editedAt: row.edited_at,
+    refundStatus: (row.refund_status ?? "not_due") as RefundStatus,
+    refundedAt: row.refunded_at,
+    refundMethod: row.refund_method ?? "",
+    refundNote: row.refund_note ?? "",
   };
 }
 
@@ -160,6 +166,8 @@ export async function editPayment(params: {
   /** Null corrects only the note and leaves the money alone. */
   billingOptionId: string | null;
   note: string;
+  /** 0233: the refund half of the same dialog. Null leaves it alone. */
+  refund?: { status: string; method: string; note: string } | null;
 }): Promise<RecordResult> {
   const payment = await repo.findPayment(params.paymentId);
   if (!payment) return { ok: false, error: "That payment is not here any more." };
@@ -211,8 +219,52 @@ export async function editPayment(params: {
 
   try {
     await repo.updatePayment(params.paymentId, patch);
-    return { ok: true };
   } catch {
     return { ok: false, error: "Only the club can correct a payment." };
+  }
+
+  // The correction first, then the refund, so the ledger reads in the order
+  // the club did it rather than the order the form happened to post.
+  if (params.refund) {
+    const went = await setPaymentRefund({
+      paymentId: params.paymentId,
+      status: params.refund.status,
+      method: params.refund.method,
+      note: params.refund.note,
+    });
+    if (!went.ok) return went;
+  }
+
+  return { ok: true };
+}
+
+/**
+ * Money going back on a renewal (0233, the client's item 17).
+ *
+ * Its own call rather than part of the correction, because the two mean
+ * different things: a correction says the club wrote the row down wrong, and a
+ * refund says the row is right and the money came back afterwards. 0233's
+ * trigger keeps them apart on the ledger for the same reason.
+ */
+export async function setPaymentRefund(params: {
+  paymentId: number; status: string; method: string; note: string;
+}): Promise<RecordResult> {
+  if (!REFUND_STATUSES.includes(params.status as RefundStatus)) {
+    return { ok: false, error: "Choose whether a refund is due, done or not needed." };
+  }
+  try {
+    await repo.setPaymentRefund({
+      paymentId: params.paymentId,
+      status: params.status,
+      method: params.method.trim().slice(0, 120),
+      note: params.note.trim().slice(0, 300),
+    });
+    return { ok: true };
+  } catch (error) {
+    const said = error instanceof Error ? error.message : "";
+    if (said.includes("PAYMENT_NOT_FOUND")) {
+      return { ok: false, error: "That payment is not here any more." };
+    }
+    return { ok: false, error: "Only the club can record a refund." };
   }
 }

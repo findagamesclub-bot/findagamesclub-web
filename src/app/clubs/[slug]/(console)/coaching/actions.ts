@@ -82,9 +82,12 @@ export async function coachingAction(
 
   if (intent === "set-refund") {
     return done(
-      await extras.setCoachingRefund(
-        Number(data.get("bookingId")),
-        String(data.get("refund") ?? "")),
+      await extras.setCoachingRefund({
+        bookingId: Number(data.get("bookingId")),
+        status: String(data.get("refund") ?? ""),
+        method: String(data.get("refundMethod") ?? ""),
+        note: String(data.get("refundNote") ?? ""),
+      }),
       "Refund updated.",
     );
   }

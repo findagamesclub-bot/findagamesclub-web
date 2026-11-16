@@ -6,6 +6,7 @@ import PageHead from "@/components/ui/PageHead";
 import TableBookingRow from "@/components/account/TableBookingRow";
 import CrossLink from "@/components/account/CrossLink";
 import { getCurrentProfile } from "@/services/auth.service";
+import { getMoneyHistory } from "@/services/moneyEvents.service";
 import { getDashboard } from "@/services/dashboard.service";
 import { getMyGames } from "@/services/games.service";
 import { countUnrecorded } from "@/utils/game-filter";
@@ -33,6 +34,13 @@ export default async function AccountBookingsPage() {
   ]);
   const unrecorded = countUnrecorded(games);
 
+  // A second wave: the money log needs the ids the dashboard produced. No
+  // side filter, because the reader has already done it — a table is paid a
+  // side at a time and `club_money_history` hands a member the lines whose
+  // money is theirs, whichever side of the table they are on.
+  const history = Object.fromEntries(
+    await getMoneyHistory("booking", bookings.map((one) => one.id)));
+
   return (
     // Held to a column and centred, like the tickets: a row of one booking
     // stretched across a dashboard is harder to read, not easier.
@@ -47,7 +55,8 @@ export default async function AccountBookingsPage() {
       {bookings.length ? (
         <Stack spacing={1.5}>
           {bookings.map((booking) => (
-            <TableBookingRow key={booking.id} booking={booking} />
+            <TableBookingRow key={booking.id} booking={booking}
+              history={history[booking.id] ?? []} />
           ))}
         </Stack>
       ) : (

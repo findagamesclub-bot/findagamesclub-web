@@ -141,14 +141,32 @@ export async function getOwnedOrders(profileId: string): Promise<OwnerOrder[]> {
 }
 
 /** Tables still to come across every club a person owns. */
+/**
+ * Every table booked at this person's clubs, both sides of today.
+ *
+ * It read forwards only, under a heading that said "All table bookings", so a
+ * club whose last night was on Saturday showed an empty page and the client
+ * reported the feature as broken. It was not: the tables were all behind us
+ * and nothing on the page could reach them.
+ *
+ * Both reads go in one wave. The screen decides which to show; this decides
+ * what there is.
+ */
 export async function getOwnedBookings(profileId: string): Promise<OwnerResult[]> {
   const clubs = await ownedRefs(profileId);
   if (!clubs.length) return [];
 
-  const rows = await repo.findUpcomingBookingsForClubs(
-    clubs.map((c) => c.id), londonToday());
+  const today = londonToday();
+  const [ahead, behind] = await Promise.all([
+    repo.findBookingsForClubs(clubs.map((c) => c.id), today, "upcoming"),
+    repo.findBookingsForClubs(clubs.map((c) => c.id), today, "past"),
+  ]);
+
   const byId = new Map(clubs.map((c) => [c.id, c]));
-  // A table still to come has no result, so it has no army to read.
-  return rows.map((row) => toResult(row, byId, NO_ARMIES))
+  // A table still to come has no result, so it has no army to read. A past one
+  // may have, and this list does not show armies either way: the score queue
+  // next door is the screen for what was played.
+  return [...ahead, ...behind]
+    .map((row) => toResult(row, byId, NO_ARMIES))
     .filter(Boolean) as OwnerResult[];
 }

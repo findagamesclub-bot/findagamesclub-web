@@ -18,16 +18,22 @@ export type AiFeature = (typeof AI_FEATURES)[number];
 
 /** The benefit key, the words in the refusal, and the plural for the usage line. */
 export const FEATURE_META: Record<AiFeature, {
-  benefit: string; label: string; noun: string; title: string;
+  benefit: string; label: string; noun: string; one: string; title: string;
 }> = {
+  // `noun` counts them and `one` names a single one. Stripping an "s" off the
+  // plural gets "match-up analyse", which is the kind of sentence the stage 5
+  // singular lesson is about: an irregular plural needs its own word, not a
+  // rule.
   coach: { benefit: "listCoachingAccess", label: "list coaching",
-    noun: "coaching runs", title: "Coach this list" },
+    noun: "coaching runs", one: "coaching run", title: "Coach this list" },
   matchup: { benefit: "matchupAnalysisAccess", label: "match-up analysis",
-    noun: "match-up analyses", title: "Plan this matchup" },
+    noun: "match-up analyses", one: "match-up analysis",
+    title: "Plan this matchup" },
   scouting: { benefit: "opponentScoutingAccess", label: "opponent scouting",
-    noun: "scouting packs", title: "Scout this opponent" },
+    noun: "scouting packs", one: "scouting pack",
+    title: "Scout this opponent" },
   season: { benefit: "seasonCoachAccess", label: "season coach",
-    noun: "season plans", title: "Build a season plan" },
+    noun: "season plans", one: "season plan", title: "Build a season plan" },
 };
 
 export function aiBlockedReason(params: {

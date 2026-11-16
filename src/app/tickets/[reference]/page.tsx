@@ -8,6 +8,7 @@ import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { getBooking } from "@/services/eventBookings.service";
+import { getMoneyHistoryFor } from "@/services/moneyEvents.service";
 import { getCurrentProfile } from "@/services/auth.service";
 import TicketStub from "@/components/tickets/TicketStub";
 import { clubIdentity } from "@/utils/club-identity";
@@ -24,6 +25,10 @@ export default async function BookingPage({ params }: PageProps<"/tickets/[refer
   // RLS returns nothing rather than refusing, so a booking that is not yours
   // and a booking that does not exist look the same here. Both are 404.
   if (!booking) notFound();
+
+  // What has happened to the money on it, which the stub shows under the
+  // total. A second wave: it needs the booking's own id.
+  const history = await getMoneyHistoryFor("event", booking.id);
 
   const { faction, monogram } = clubIdentity(booking.clubSlug, booking.clubName);
   const cancelled = booking.status === "cancelled";
@@ -44,7 +49,8 @@ export default async function BookingPage({ params }: PageProps<"/tickets/[refer
         </Stack>
       ) : null}
 
-      <TicketStub booking={booking} faction={faction} monogram={monogram} />
+      <TicketStub booking={booking} faction={faction} monogram={monogram}
+        history={history} />
 
       <Box sx={{ mt: 3, p: 2, border: `1px solid ${tokens.rule}`, borderRadius: 1.5,
                  backgroundColor: tokens.surface }}>

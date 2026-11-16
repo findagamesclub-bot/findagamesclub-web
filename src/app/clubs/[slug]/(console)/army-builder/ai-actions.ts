@@ -93,10 +93,7 @@ export async function runAiAction(input: RunInput) {
   const started = await ai.start({
     club: club.id,
     feature: input.feature,
-    // The cache key. An opponent makes it a different question about the same
-    // list, so it joins the signature.
-    signature: [version.id, input.opponent?.factionId ?? "",
-                input.opponentProfileId ?? ""].filter(Boolean).join(":"),
+    signature: signatureFor(version.id, input),
     source: {
       listId: held.list.id, listName: version.name,
       versionNumber: version.versionNumber,
@@ -117,6 +114,54 @@ export async function runAiAction(input: RunInput) {
   });
 
   return { jobId: started.jobId, cached: false };
+}
+
+/**
+ * The cache key, in one place.
+ *
+ * An opponent makes it a different question about the same list, so it joins
+ * the signature. `aiHistoryAction` has to build the identical string or the
+ * list of previous runs would be a list of somebody else's question, which is
+ * exactly the sort of thing two copies of a join do on the first edit.
+ */
+function signatureFor(
+  versionId: number,
+  input: Pick<RunInput, "opponent" | "opponentProfileId">,
+): string {
+  return [versionId, input.opponent?.factionId ?? "",
+          input.opponentProfileId ?? ""].filter(Boolean).join(":");
+}
+
+/**
+ * The runs this person has already had for this question.
+ *
+ * The client, item 6: "Old analysis should cache and stay as previous runs to
+ * look back on, but you should be able to run new versions which are saved
+ * also." The rows have been in `army_ai_jobs` since 0146 and nothing could
+ * reach them: the coach screen opened on the latest one and the match-up and
+ * scouting screens could not even do that, because the question is not known
+ * until an opponent is picked.
+ *
+ * Its own action rather than page data for the same reason.
+ */
+export async function aiHistoryAction(input: RunInput): Promise<{
+  jobs: { id: number; at: string; model: string }[];
+  error?: string;
+}> {
+  const viewer = await getCurrentProfile();
+  if (!viewer) return { jobs: [] };
+
+  const club = await getClubDetail(input.slug);
+  if (!club) return { jobs: [] };
+
+  const held = await getList(input.listId, viewer.id);
+  const version = held?.list.current;
+  // Somebody else's list has no history to show this reader, and the function
+  // underneath would refuse it anyway: it is scoped to `auth.uid()`.
+  if (!version || !held?.list.isOwner) return { jobs: [] };
+
+  return { jobs: await ai.getHistory(
+    club.id, input.feature, signatureFor(version.id, input)) };
 }
 
 /**

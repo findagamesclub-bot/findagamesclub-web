@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import {
-  countCoachingBookings, filterCoachingBookings, owesRefund,
+  countCoachingBookings, filterCoachingBookings, owesRefund, wasRefunded,
   type CoachingBookingRow,
 } from "../coaching-bookings-filter";
 
 const row = (over: Partial<CoachingBookingRow> = {}): CoachingBookingRow => ({
   id: 1, name: "Gulnabi Afridi", profileId: "p1", paid: false, cancelled: false,
   refundStatus: "not_due", cancelReason: "", paymentNote: "", slotId: 9,
+  paymentStatus: "unpaid", paidAt: null, refundedAt: null,
+  refundMethod: "", refundNote: "",
   title: "List clinic",
   date: "2026-10-10", time: "19:00", total: 18, pointsSpent: 0,
   priced: { subtotal: 20, tierLabel: "Premium Membership", tierPercent: 10,
@@ -82,3 +84,21 @@ const rows: CoachingBookingRow[] = [
 }
 
 console.log("coaching-bookings-filter: all pass");
+
+// 21g: the other half of the money. Eve is cancelled AND refunded, which is
+// the normal shape of a refund, so this tab must not be narrowed to live rows
+// the way "To pay" and "Paid" are — that is 0230's rule and it is the one way
+// this group can quietly count nothing.
+{
+  const counts = countCoachingBookings(rows);
+  const ids = (filter: Parameters<typeof filterCoachingBookings>[1]["filter"]) =>
+    filterCoachingBookings(rows, { filter }).map((one) => one.id);
+
+  assert.equal(counts.refunded, 1, "Eve has been refunded");
+  assert.deepEqual(ids("refunded"), [5], "the refunded tab finds the cancelled row");
+  assert.equal(wasRefunded(rows[2]!), false, "still owed is not yet refunded");
+  assert.equal(
+    counts.refund + counts.refunded, 2,
+    "the two money-back tabs between them hold every refund");
+  console.log("ok   refunded is its own group, and keeps its cancelled rows");
+}

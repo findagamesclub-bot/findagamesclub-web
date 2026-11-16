@@ -17,6 +17,8 @@ import { formatMoney } from "@/utils/format";
 import { nightLabel } from "@/utils/dates";
 import { FROM_MANAGE_BOOKINGS } from "@/utils/back-link";
 import { display, mono, tokens, type Faction } from "@/lib/tokens";
+import MoneyHistory from "@/components/money/MoneyHistory";
+import type { MoneyEvent } from "@/utils/money-events";
 import type { ClubBookingRow } from "@/types/eventEditor";
 
 /**
@@ -27,10 +29,13 @@ import type { ClubBookingRow } from "@/types/eventEditor";
  * unpaid" three times over is a list nobody can act on.
  */
 export default function BookingRow({
-  slug, row, busy, faction, onCheckIn, onPayment, onCancel, onEdit, onRefund,
+  slug, row, busy, faction, history,
+  onCheckIn, onPayment, onCancel, onEdit, onRefund,
 }: {
   slug: string;
   row: ClubBookingRow;
+  /** What has happened to this place's money (0233). */
+  history: MoneyEvent[];
   /** True only for the row being saved, so one spinner marks one action. */
   busy: boolean;
   faction: Faction;
@@ -112,11 +117,28 @@ export default function BookingRow({
         {/* The same line the roster draws, because this is the same row read
             from the other door, and two screens about one booking should not
             disagree about what was written on it. */}
+        {/* Who they are playing for, at a team event. The client, item 21i:
+            "team name is missing from the booking info displayed on this
+            page." The roster has drawn it since 0211 and this list, which is
+            the same booking read from the other door, did not — so a club
+            working down the club-wide list could not tell two team entries
+            apart. Same treatment, not a second one: rule 11. */}
+        {row.teamName ? (
+          <Typography sx={{ fontFamily: mono, fontSize: "0.62rem", fontWeight: 700,
+                            letterSpacing: "0.08em", color: tokens.brass }}>
+            {row.teamName.toUpperCase()}
+          </Typography>
+        ) : null}
+
         {row.paymentNote ? (
           <Typography variant="caption" sx={{ color: tokens.inkMuted }}>
             {row.paymentNote}
           </Typography>
         ) : null}
+
+        {/* And what has happened to the money since (0233): when it arrived,
+            when it went back, and what the club wrote about each. */}
+        {history.length ? <MoneyHistory events={history} dense shownNote={row.paymentNote} /> : null}
       </Stack>
 
       {cancelled ? (

@@ -3,10 +3,12 @@ import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
+import TravelExploreIcon from "@mui/icons-material/TravelExplore";
 import GroupsIcon from "@mui/icons-material/Groups";
 import EventIcon from "@mui/icons-material/EventAvailable";
 import StorefrontIcon from "@mui/icons-material/Storefront";
 import InsightsIcon from "@mui/icons-material/Insights";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import LinkButton from "@/components/ui/LinkButton";
 import StartListingButton from "@/components/listing/StartListingButton";
 import { FROM_LIST_YOUR_CLUB } from "@/utils/back-link";
@@ -26,15 +28,51 @@ export const metadata = {
 /** How many listings this page shows before it hands over to the full list. */
 const SHOW_HERE = 3;
 
+/**
+ * What a club owner gets, in the client's own six boxes.
+ *
+ * Their words, kept. Four shorter ones were here and the ask was explicit:
+ * "expand these boxes out and add further ones to describe all the features
+ * and benefits a club owner can get from using the site", with the six
+ * written out to replace them.
+ *
+ * Three small repairs and nothing else: "as well Warhammer" was missing its
+ * second "as", the Team sentence had its object and its verb the wrong way
+ * round, and "Club Directory" is sentence case like the other five and like
+ * every other heading on the site.
+ *
+ * The order is theirs and it is a club's own order: get found, get members,
+ * run the events, sell the kit, read the numbers, hand some of it over. It
+ * would pair into neater rows sorted by length, which is a reason to reorder
+ * a list only if nobody is reading it.
+ */
 const WHAT_YOU_GET = [
-  { icon: GroupsIcon, title: "Members and nights",
-    body: "A page people can find, a membership list you control, and table bookings that cannot double-book." },
+  { icon: TravelExploreIcon, title: "Club directory",
+    body: "Create your club listing to be searchable within our directory, "
+      + "promoting your club, location, games played, gaming schedules, "
+      + "facilities, contact info, events you run, competitions/leagues and more." },
+  { icon: GroupsIcon, title: "Members",
+    body: "Manage your club members, memberships, tiers, benefits and membership "
+      + "renewals. Create loyalty tiers, awards and member badges. Provide your "
+      + "members with community features such as member profiles and messaging, "
+      + "online table bookings and find an opponent requests, club discussion "
+      + "boards, activity feeds, competitions and leagues setup, army builder, "
+      + "game results and score tracking, AI coaching, rivalry tracking and more." },
   { icon: EventIcon, title: "Events and tickets",
-    body: "Run a tournament end to end: tickets, the draw, who is coming, and the door list on the day." },
-  { icon: StorefrontIcon, title: "A shop and coaching",
-    body: "Sell club kit in sizes, take coaching bookings, and hand out loyalty points for turning up." },
-  { icon: InsightsIcon, title: "Something to show for it",
-    body: "See what is selling, who is lapsing and which nights fill, without exporting anything." },
+    body: "Run a tournament or event end to end, from tournament advertising and "
+      + "ticket sales, who is coming, the draw, round and game results, placings, "
+      + "to recording and managing payments and the admin on the day." },
+  { icon: StorefrontIcon, title: "Shop and coaching",
+    body: "Advertise and sell club kit and merchandise, and take coaching or "
+      + "other types of specialist bookings." },
+  { icon: InsightsIcon, title: "Analytics",
+    body: "Rich analytics are provided to show the growth of your club members "
+      + "and revenue over time, what is selling and which club schedules are most "
+      + "popular, as well as Warhammer 40k specific features to track the Meta at "
+      + "your club by faction, detachments and dispositions." },
+  { icon: AdminPanelSettingsIcon, title: "Team",
+    body: "Give other team members who help run your club access to specific "
+      + "admin privileges of the club owner tools." },
 ];
 
 /**
@@ -127,20 +165,38 @@ export default async function ListYourClubPage() {
           </Stack>
         ) : null}
 
-        <Box sx={{ display: "grid", gap: 2,
-                   gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))" } }}>
-          {WHAT_YOU_GET.map(({ icon: Icon, title, body }) => (
-            <Stack key={title} spacing={1}
-              sx={{ p: 2.5, borderRadius: 1.5, border: `1px solid ${tokens.rule}`,
-                    backgroundColor: tokens.paper }}>
-              <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-                <Icon aria-hidden sx={{ fontSize: 18, color: tokens.brass }} />
-                <Typography variant="h4" sx={{ fontSize: "1rem" }}>{title}</Typography>
+        {/* Six boxes of close prose, so they get a heading. Four short ones
+            could sit under the buttons and read as captions; this many cannot,
+            and a reader meeting them cold has no idea what the list is of. */}
+        <Stack spacing={2}>
+          <Typography variant="h2" sx={{ fontSize: "1.3rem" }}>What you get</Typography>
+
+          {/* Three across where there is room, two in the middle, one on a
+              phone. Two across at full width puts about ninety characters on a
+              line, which is half as long again as anything should be; three
+              brings it back to about fifty-five. Each row stretches to its
+              tallest card, so the edges line up however unevenly the client's
+              six paragraphs run. */}
+          <Box sx={{ display: "grid", gap: 2,
+                     gridTemplateColumns: { xs: "minmax(0, 1fr)",
+                                            sm: "repeat(2, minmax(0, 1fr))",
+                                            lg: "repeat(3, minmax(0, 1fr))" } }}>
+            {WHAT_YOU_GET.map(({ icon: Icon, title, body }) => (
+              <Stack key={title} spacing={1}
+                sx={{ p: 2.5, borderRadius: 1.5, border: `1px solid ${tokens.rule}`,
+                      backgroundColor: tokens.paper }}>
+                <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                  <Icon aria-hidden sx={{ fontSize: 18, color: tokens.brass }} />
+                  <Typography variant="h4" sx={{ fontSize: "1rem" }}>{title}</Typography>
+                </Stack>
+                <Typography variant="body2"
+                  sx={{ color: tokens.inkMuted, lineHeight: 1.65 }}>
+                  {body}
+                </Typography>
               </Stack>
-              <Typography variant="body2" sx={{ color: tokens.inkMuted }}>{body}</Typography>
-            </Stack>
-          ))}
-        </Box>
+            ))}
+          </Box>
+        </Stack>
 
         {/* The control again, at the bottom. Somebody who has read this far is
             the person who is convinced, and sending them back to the top to act

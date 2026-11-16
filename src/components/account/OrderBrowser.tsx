@@ -10,6 +10,7 @@ import Pager from "@/components/ui/Pager";
 import { usePagedList } from "@/hooks/usePagedList";
 import FilterBar from "./FilterBar";
 import OrderCard from "./OrderCard";
+import type { MoneyEvent } from "@/utils/money-events";
 import {
   countWaiting, filterOrders, type OrderFilter, type OrderSort,
 } from "@/utils/order-filter";
@@ -20,7 +21,13 @@ import { PER_PAGE } from "@/utils/paging";
 const PAGE = PER_PAGE.cards;
 
 /** Search, filter and sort over the member's kit orders, then a grid. */
-export default function OrderBrowser({ orders }: { orders: MyOrder[] }) {
+export default function OrderBrowser({
+  orders, history = {},
+}: {
+  orders: MyOrder[];
+  /** Keyed by order id (0233). Empty is fine; a card just shows no log. */
+  history?: Record<number, MoneyEvent[]>;
+}) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<OrderFilter>("all");
   const [sort, setSort] = useState<OrderSort>("recent");
@@ -97,7 +104,10 @@ export default function OrderBrowser({ orders }: { orders: MyOrder[] }) {
                        md: "repeat(2, minmax(0, 1fr))",
                        xl: "repeat(3, minmax(0, 1fr))",
                      } }}>
-            {paged.shown.map((order) => <OrderCard key={order.id} order={order} />)}
+            {paged.shown.map((order) => (
+              <OrderCard key={order.id} order={order}
+                history={history[order.id] ?? []} />
+            ))}
           </Box>
 
           <Pager page={paged.page} total={paged.total} noun="orders" size={PAGE}

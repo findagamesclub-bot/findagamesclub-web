@@ -7,6 +7,10 @@
  */
 const MESSAGES: [string, string][] = [
   ["PAYMENT_NEEDS_AMOUNT", "Put in how much was paid."],
+  ["PAYMENT_NOT_FOUND", "That payment is not here any more."],
+  ["AMOUNT_INVALID", "Put in how much was paid."],
+  ["REFUND_STATUS_UNKNOWN",
+   "Choose whether a refund is due, has been given, or is not needed."],
   ["SUBSCRIPTION_NOT_FOUND", "That subscription is not here any more."],
   ["SUBSCRIPTION_CANCELLED",
    "This subscription is closed, so a payment cannot be added to it."],

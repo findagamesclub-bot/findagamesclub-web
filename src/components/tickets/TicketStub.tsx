@@ -7,6 +7,8 @@ import PriceBreakdown from "@/components/ui/PriceBreakdown";
 import { PAYMENT_LABELS, REFUND_LABELS } from "@/utils/door-list";
 import { nightLabel, stampDate } from "@/utils/dates";
 import { tokens, type Faction } from "@/lib/tokens";
+import MoneyHistory from "@/components/money/MoneyHistory";
+import type { MoneyEvent } from "@/utils/money-events";
 import type { EventBooking } from "@/types/ticket";
 
 /**
@@ -17,11 +19,19 @@ import type { EventBooking } from "@/types/ticket";
  * edge, torn perforation, reference set large enough to read across a hall.
  */
 export default function TicketStub({
-  booking, faction, monogram,
+  booking, faction, monogram, history = [],
 }: {
   booking: EventBooking;
   faction: Faction;
   monogram: string;
+  /**
+   * What has happened to this ticket's money (0233).
+   *
+   * The stub already said where the money ended up; what it could not say is
+   * when each step happened, which is the client's item 16. The member reads
+   * the automatic lines and never the club's own working notes.
+   */
+  history?: MoneyEvent[];
 }) {
   const cancelled = booking.status === "cancelled";
   const count = booking.lines.reduce((n, l) => n + l.quantity, 0);
@@ -182,6 +192,14 @@ export default function TicketStub({
                 a refund actually wants to know. The status alone said it was
                 settled and left them to ask the club the two questions that
                 follow it. */}
+            {/* The dates, in order. A status says where the money ended up;
+                this says when it got there. */}
+            {history.length ? (
+              <Box sx={{ mt: 1.25 }}>
+                <MoneyHistory events={history} dense shownNote={booking.paymentNote} />
+              </Box>
+            ) : null}
+
             {cancelled && booking.refundStatus === "refunded" ? (
               <Typography variant="body2" sx={{ color: tokens.inkMuted, mt: 0.75 }}>
                 {[booking.refundedAt ? `Refunded ${stampDate(booking.refundedAt)}` : "Refunded",

@@ -1,3 +1,5 @@
+import type { RefundStatus } from "@/utils/refund-status";
+
 /** One way to pay for a tier — monthly, yearly or a single up-front fee. */
 export type BillingOption = {
   id: string;
@@ -21,6 +23,11 @@ export type MembershipPayment = {
   recordedAt: string;
   /** When the club last put it right (0195). Null means never. */
   editedAt: string | null;
+  /** 0233: not_due, due or refunded. Money going back is its own fact. */
+  refundStatus: RefundStatus;
+  refundedAt: string | null;
+  refundMethod: string;
+  refundNote: string;
 };
 
 /** Where a member's subscription stands right now. */

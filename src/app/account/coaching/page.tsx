@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getMoneyHistory } from "@/services/moneyEvents.service";
 import EmptyState from "@/components/ui/EmptyState";
 import PageHead from "@/components/ui/PageHead";
 import Stack from "@mui/material/Stack";
@@ -53,7 +54,9 @@ export default async function AccountCoachingPage() {
         <OpenCoaching slots={open} />
 
         {sessions.length ? (
-          <CoachingBrowser sessions={sessions} />
+          <CoachingBrowser sessions={sessions}
+            history={Object.fromEntries(await getMoneyHistory(
+              "coaching", sessions.map((one) => one.id)))} />
         ) : (
           <EmptyState
             title="No coaching booked"

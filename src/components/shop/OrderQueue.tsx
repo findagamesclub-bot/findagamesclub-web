@@ -22,6 +22,7 @@ import { formatMoney, initialsOf } from "@/utils/format";
 import { needsQuote } from "@/utils/merch-bag";
 import { orderTotalLabel } from "@/utils/order-total";
 import { messageTime } from "@/utils/dates";
+import MoneyHistory from "@/components/money/MoneyHistory";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { MerchOrder } from "@/types/clubExtras";
 import { PER_PAGE } from "@/utils/paging";
@@ -216,24 +217,11 @@ export default function OrderQueue({
               </TextField>
 
               {/* A log, not a field. Notes are added; nothing overwrites the
-                  last one, and a status change writes its own line. */}
+                  last one, and a payment, a refund or a status move writes its
+                  own line. Since 0233 it is the same log, drawn the same way,
+                  that a table booking and a renewal carry. */}
               {order.log.length ? (
-                <Stack spacing={0.75}
-                  sx={{ pl: 1.5, borderLeft: `2px solid ${tokens.rule}` }}>
-                  {order.log.map((note) => (
-                    <Stack key={note.id} spacing={0.15}>
-                      <Typography variant="body2"
-                        sx={{ color: note.automatic ? tokens.inkMuted : tokens.ink,
-                              fontStyle: note.automatic ? "italic" : "normal" }}>
-                        {note.body}
-                      </Typography>
-                      <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.62rem",
-                                        letterSpacing: "0.06em", color: tokens.inkMuted }}>
-                        {note.author.toUpperCase()} · {messageTime(note.at)}
-                      </Typography>
-                    </Stack>
-                  ))}
-                </Stack>
+                <MoneyHistory events={order.log} dense />
               ) : null}
 
               <Stack direction="row" spacing={1} sx={{ alignItems: "flex-start" }}>

@@ -4,6 +4,7 @@ import PageHead from "@/components/ui/PageHead";
 import OrderBrowser from "@/components/account/OrderBrowser";
 import { getCurrentProfile } from "@/services/auth.service";
 import { getMyOrders } from "@/services/myActivity.service";
+import { getMoneyHistory } from "@/services/moneyEvents.service";
 
 export const metadata = { title: "Your merchandise" };
 
@@ -30,7 +31,9 @@ export default async function AccountOrdersPage() {
       />
 
       {orders.length ? (
-        <OrderBrowser orders={orders} />
+        <OrderBrowser orders={orders}
+          history={Object.fromEntries(await getMoneyHistory(
+            "order", orders.map((order) => order.id)))} />
       ) : (
         <EmptyState
           title="No orders yet"

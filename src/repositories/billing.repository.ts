@@ -196,6 +196,31 @@ export type PaymentRow = {
   created_at: string;
 };
 
+/**
+ * The five 0233 added, read beside the row rather than in it.
+ *
+ * `src/types/database.ts` is generated from the live schema and has never
+ * carried them, so `check:columns` refuses a select that names them. Same
+ * answer 0224 gave for an event booking's refund: a function, invoker, so the
+ * table's own policies still decide who reads what.
+ */
+export type ListingPaymentExtras = {
+  edited_at: string | null;
+  refund_status: string;
+  refunded_at: string | null;
+  refund_method: string;
+  refund_note: string;
+};
+
+export async function findPaymentExtras(
+  ids: number[],
+): Promise<Map<number, ListingPaymentExtras>> {
+  if (!ids.length) return new Map();
+  const rows = await callRpc<(ListingPaymentExtras & { payment_id: number })[] | null>(
+    "listing_payment_extras", { p_payments: ids }).catch(() => []);
+  return new Map((rows ?? []).map((row) => [row.payment_id, row]));
+}
+
 export async function findPayments(subscriptionId: number): Promise<PaymentRow[]> {
   const rows = await table<PaymentRow>("listing_payments");
   const { data, error } = await rows
@@ -265,3 +290,28 @@ export async function expireSubscriptionAsJob(id: number): Promise<void> {
     .rpc("expire_listing_subscription" as never, { p_subscription: id } as never);
   if (error) throw new Error(`Failed to close a subscription: ${error.message}`);
 }
+
+/**
+ * Putting a recorded listing payment right, and recording a refund on it.
+ *
+ * Both are an admin's and both go through a definer function rather than an
+ * update: the table is revoked from `authenticated` outright, so there is no
+ * PostgREST path to it at all. That is a different shape from a renewal, which
+ * a club corrects through an RLS policy, and the reason is who is acting — an
+ * admin is a role, not a row.
+ */
+export const correctPayment = (params: {
+  payment: number; amountPence: number; method: string;
+  paidAt: string | null; reference: string; note: string;
+}) => callRpc<number>("admin_correct_listing_payment", {
+  p_payment: params.payment, p_amount_pence: params.amountPence,
+  p_method: params.method, p_paid_at: params.paidAt,
+  p_reference: params.reference, p_note: params.note,
+});
+
+export const setPaymentRefund = (params: {
+  payment: number; status: string; method: string; note: string;
+}) => callRpc<unknown>("admin_set_listing_payment_refund", {
+  p_payment: params.payment, p_status: params.status,
+  p_method: params.method, p_note: params.note,
+});

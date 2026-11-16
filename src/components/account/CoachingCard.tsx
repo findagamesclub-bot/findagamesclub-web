@@ -7,6 +7,8 @@ import NextLink from "next/link";
 import ClubLogo from "@/components/clubs/ClubLogo";
 import StatusChip from "@/components/ui/StatusChip";
 import PriceBreakdown from "@/components/ui/PriceBreakdown";
+import MoneyHistory from "@/components/money/MoneyHistory";
+import type { MoneyEvent } from "@/utils/money-events";
 import { formatPounds } from "@/utils/format";
 import { nightLabel } from "@/utils/dates";
 import { display, mono, tokens } from "@/lib/tokens";
@@ -33,7 +35,13 @@ function Fact({ label, value, tone }: { label: string; value: string; tone?: str
  * The same three-fact shape as a membership card, so the account reads as one
  * place: when, how long, and where the money stands.
  */
-export default function CoachingCard({ session }: { session: MyCoaching }) {
+export default function CoachingCard({
+  session, history = [],
+}: {
+  session: MyCoaching;
+  /** What has happened to this place's money (0233). */
+  history?: MoneyEvent[];
+}) {
   const done = session.past || session.cancelled;
   const owing = !done && !session.paid;
 
@@ -112,6 +120,15 @@ export default function CoachingCard({ session }: { session: MyCoaching }) {
       {!session.cancelled ? (
         <Box sx={{ px: 2.25, pb: session.description ? 0 : 1.5 }}>
           <PriceBreakdown priced={session.priced} compact />
+        </Box>
+      ) : null}
+
+      {/* When the club marked it paid, and when any money came back (0233).
+          Drawn on a cancelled place too, because that is exactly where
+          somebody is waiting to hear about a refund. */}
+      {history.length ? (
+        <Box sx={{ px: 2.25, pt: session.cancelled ? 1.5 : 0.75, pb: 1.5 }}>
+          <MoneyHistory events={history} dense />
         </Box>
       ) : null}
 

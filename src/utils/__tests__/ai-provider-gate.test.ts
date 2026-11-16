@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { deploymentState } from "../ai-provider";
+import type { AiFeature } from "../ai-access";
 
 // ------------------------------------------- which env turns coaching on
 //
@@ -7,25 +9,14 @@ import assert from "node:assert/strict";
 // alone does nothing: `providerKeyPresent` defaults to Anthropic, so without
 // `AI_PROVIDER=openai` it checks a variable nobody set and answers no.
 //
-// Copied from `src/lib/ai/models.ts` rather than imported, because that file
-// is `server-only` and throws outside a server component. The copy is the
-// reason this test exists at all: if the two drift, the table below stops
-// describing the deployment and somebody spends another round guessing.
+// This used to COPY those rules out of `src/lib/ai/models.ts`, because that
+// file is `server-only` and throws outside a server component. The copy was
+// the problem: a test that transcribes the rule it is checking agrees with
+// whatever it transcribed, and item 6 went three rounds with a real fault
+// sitting beside a passing test. The rules are pure and live in
+// `utils/ai-provider.ts` now, so this imports them.
 
-const featureEnabled = (feature: string) => {
-  if (String(process.env.AI_ENABLED ?? "").toLowerCase() === "false") return false;
-  const only = String(process.env.AI_FEATURES ?? "").trim();
-  if (!only) return true;
-  return only.split(",").map((one) => one.trim()).includes(feature);
-};
-const providerKeyPresent = () => {
-  const named = String(process.env.AI_PROVIDER ?? "").trim().toLowerCase();
-  if (named === "stub") return true;
-  if (named === "openai") return Boolean(process.env.OPENAI_API_KEY);
-  return Boolean(process.env.ANTHROPIC_API_KEY);
-};
-const state = (feature: string) =>
-  !featureEnabled(feature) ? "off" : providerKeyPresent() ? "on" : "no_key";
+const state = (feature: string) => deploymentState(feature as AiFeature);
 
 const KEYS = ["AI_PROVIDER", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
               "AI_ENABLED", "AI_FEATURES"];

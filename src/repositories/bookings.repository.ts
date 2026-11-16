@@ -294,12 +294,25 @@ export async function findPlayedBookingsForClubs(
 }
 
 /** Tables still to come across several clubs, newest night first. */
-export async function findUpcomingBookingsForClubs(
-  clubIds: number[], fromDate: string, limit = 200,
+/**
+ * Tables booked at a set of clubs, either side of today.
+ *
+ * `when` because the owner's own list said "All table bookings" and could
+ * only ever read forwards. A club whose last night was on Saturday showed an
+ * empty page under that heading, which is what the client reported: the data
+ * was all there, in the past, and nothing could reach it.
+ *
+ * Upcoming reads soonest first, because it is a list of what is about to
+ * happen. Past reads newest first, because it is a record and last week
+ * matters more than last March.
+ */
+export async function findBookingsForClubs(
+  clubIds: number[], today: string,
+  when: "upcoming" | "past" = "upcoming", limit = 200,
 ) {
   if (!clubIds.length) return [];
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const rows = supabase
     .from("club_bookings")
     .select(
       `*,
@@ -309,9 +322,11 @@ export async function findUpcomingBookingsForClubs(
        acceptor:profiles!club_bookings_accepted_by_fkey(id, full_name)`,
     )
     .in("club_id", clubIds)
-    .eq("status", "booked")
-    .gte("session_date", fromDate)
-    .order("session_date")
+    .eq("status", "booked");
+
+  const { data, error } = await (when === "past"
+    ? rows.lt("session_date", today).order("session_date", { ascending: false })
+    : rows.gte("session_date", today).order("session_date"))
     .limit(limit);
 
   if (error) throw new Error(`Failed to load bookings: ${error.message}`);

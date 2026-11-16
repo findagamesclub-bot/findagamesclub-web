@@ -140,3 +140,20 @@ const ago = (hours: number) =>
 }
 
 console.log("ai-usage: all pass");
+
+// One left is one analysis, not one analyses. The screen read "1 daily
+// match-up analyses left" until FEATURE_META gained a singular.
+{
+  const one = usageFor({
+    at: [new Date().toISOString()], limit: 2,
+    noun: "match-up analyses", one: "match-up analysis", now: new Date(),
+  });
+  assert.equal(one.message, "1 daily match-up analysis left.");
+
+  const two = usageFor({
+    at: [], limit: 2,
+    noun: "match-up analyses", one: "match-up analysis", now: new Date(),
+  });
+  assert.equal(two.message, "2 daily match-up analyses left.");
+  console.log("ok   the count picks the singular or the plural");
+}

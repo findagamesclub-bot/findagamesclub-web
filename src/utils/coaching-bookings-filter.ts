@@ -26,6 +26,18 @@ export type CoachingBookingRow = {
   paid: boolean;
   cancelled: boolean;
   refundStatus: RefundStatus;
+  /**
+   * The payment, said in full (0233).
+   *
+   * `paid` is a boolean and was all a screen could read, so coaching could
+   * not answer "when did they pay" or "how did the money go back". Both are
+   * what the client asked for in item 16.
+   */
+  paymentStatus: string;
+  paidAt: string | null;
+  refundedAt: string | null;
+  refundMethod: string;
+  refundNote: string;
   /** The club's own words when it called the place off. */
   cancelReason: string;
   /** What the club wrote down when it took the money. The member reads it. */
@@ -42,13 +54,29 @@ export type CoachingBookingRow = {
   priced: Priced;
 };
 
-export type BookingFilter = "all" | "unpaid" | "paid" | "cancelled" | "refund";
+export type BookingFilter =
+  "all" | "unpaid" | "paid" | "cancelled" | "refund" | "refunded";
 export type BookingSort = "soonest" | "latest";
 
 const fold = (value: string) => value.trim().toLowerCase();
 
 /** A refund the club still has to settle. The whole reason the tab exists. */
 export const owesRefund = (row: CoachingBookingRow) => row.refundStatus === "due";
+
+/**
+ * A refund the club has settled.
+ *
+ * The client, item 21g: "refunded status filter missing on coaching
+ * bookings." Table bookings, event places and the shop have had both halves
+ * since 0230, and coaching had only the one it still owes: a club could find
+ * the money it had to give back and never find what it had given.
+ *
+ * Deliberately NOT narrowed to live rows, which is the rule 0230 wrote down:
+ * a refund almost always sits on a cancelled booking, so excluding cancelled
+ * ones would make this tab count nearly nothing.
+ */
+export const wasRefunded = (row: CoachingBookingRow) =>
+  row.refundStatus === "refunded";
 
 /**
  * Live bookings only, for the two money tabs.
@@ -65,6 +93,7 @@ export function countCoachingBookings(rows: CoachingBookingRow[]) {
     paid: rows.filter((row) => live(row) && row.paid).length,
     cancelled: rows.filter((row) => row.cancelled).length,
     refund: rows.filter(owesRefund).length,
+    refunded: rows.filter(wasRefunded).length,
   };
 }
 
@@ -72,6 +101,7 @@ function matches(row: CoachingBookingRow, filter: BookingFilter): boolean {
   if (filter === "all") return true;
   if (filter === "cancelled") return row.cancelled;
   if (filter === "refund") return owesRefund(row);
+  if (filter === "refunded") return wasRefunded(row);
   if (filter === "paid") return live(row) && row.paid;
   return live(row) && !row.paid;
 }

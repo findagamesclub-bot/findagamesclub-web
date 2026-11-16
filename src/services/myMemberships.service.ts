@@ -1,4 +1,6 @@
 import "server-only";
+
+import type { RefundStatus } from "@/utils/refund-status";
 import { clubLogoUrl } from "@/utils/club-media";
 import { publicUrl } from "@/lib/supabase/storage";
 
@@ -48,6 +50,8 @@ const toPayment = (row: {
   price: string; price_duration: string; period_start_at: string | null;
   period_end_at: string | null; note: string | null; created_at: string;
   edited_at?: string | null;
+  refund_status?: string | null; refunded_at?: string | null;
+  refund_method?: string | null; refund_note?: string | null;
 }): MembershipPayment => ({
   id: row.id,
   tierKey: row.tier_key,
@@ -58,6 +62,10 @@ const toPayment = (row: {
   periodStart: row.period_start_at,
   periodEnd: row.period_end_at,
   editedAt: row.edited_at ?? null,
+  refundStatus: (row.refund_status ?? "not_due") as RefundStatus,
+  refundedAt: row.refunded_at ?? null,
+  refundMethod: row.refund_method ?? "",
+  refundNote: row.refund_note ?? "",
   note: row.note ?? "",
   recordedAt: row.created_at,
 });

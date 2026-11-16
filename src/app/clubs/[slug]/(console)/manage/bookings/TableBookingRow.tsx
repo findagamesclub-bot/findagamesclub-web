@@ -13,6 +13,8 @@ import { refundTag } from "@/utils/refund-status";
 import {
   tableBookingTag, tableIsFree, tableIsLive, type TableBookingRow as Row,
 } from "@/utils/table-bookings";
+import MoneyHistory from "@/components/money/MoneyHistory";
+import type { MoneyEvent } from "@/utils/money-events";
 import { display, mono, tokens, type Faction } from "@/lib/tokens";
 
 /**
@@ -25,11 +27,13 @@ import { display, mono, tokens, type Faction } from "@/lib/tokens";
  * answer the member got at the desk.
  */
 export default function TableBookingRow({
-  row, faction, busy, onPayment,
+  row, faction, busy, history, onPayment,
 }: {
   row: Row;
   faction: Faction;
   busy: boolean;
+  /** This half's money log (0233). Already narrowed to the side. */
+  history: MoneyEvent[];
   onPayment: () => void;
 }) {
   const tag = tableBookingTag(row);
@@ -130,6 +134,15 @@ export default function TableBookingRow({
       {live && !free ? (
         <Box sx={{ pt: 1 }}>
           <PriceBreakdown priced={row.priced} compact />
+        </Box>
+      ) : null}
+
+      {/* And what has happened to it since (0233). The client, item 16: the
+          date the money arrived and the date it went back, on the screen,
+          rather than a status that only says where it ended up. */}
+      {history.length ? (
+        <Box sx={{ pt: 1.25 }}>
+          <MoneyHistory events={history} dense shownNote={row.paymentNote} />
         </Box>
       ) : null}
     </Stack>

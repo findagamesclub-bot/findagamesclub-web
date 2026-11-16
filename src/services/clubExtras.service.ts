@@ -1,5 +1,7 @@
 import "server-only";
 
+import { getMoneyHistory } from "./moneyEvents.service";
+
 import * as repo from "@/repositories/clubExtras.repository";
 import * as loyaltyRepo from "@/repositories/loyalty.repository";
 
@@ -161,15 +163,16 @@ export async function getShopStanding(
 export async function getOrders(clubId: number): Promise<MerchOrder[]> {
   const rows = await repo.findOrders(clubId);
 
+  // One read for every order's history rather than an embed per order. It
+  // needs the ids the first query produced, so it is a second wave and not a
+  // second query in the same one.
+  const history = await getMoneyHistory("order", rows.map((row) => row.id));
+
   return rows.map((row) => {
     const r = row as unknown as {
       profiles: Person;
       club_merchandise_order_items:
         { name: string; price: string | null; quantity: number; line_total: number }[] | null;
-      club_merchandise_order_notes: {
-        id: number; body: string; automatic: boolean; created_at: string;
-        profiles: Person;
-      }[] | null;
     };
     const lines = (r.club_merchandise_order_items ?? []).map((i) => ({
       name: i.name,
@@ -184,15 +187,7 @@ export async function getOrders(clubId: number): Promise<MerchOrder[]> {
       personName: nameOf(r.profiles),
       status: row.status as MerchOrder["status"],
       notes: row.notes,
-      log: (r.club_merchandise_order_notes ?? [])
-        .map((n) => ({
-          id: n.id,
-          body: n.body,
-          automatic: n.automatic,
-          author: nameOf(n.profiles),
-          at: n.created_at,
-        }))
-        .sort((a, b) => a.at.localeCompare(b.at)),
+      log: history.get(row.id) ?? [],
       tierLabel: row.membership_tier_label,
       createdAt: row.created_at,
       lines,
@@ -236,6 +231,11 @@ export async function getClubCoachingBookings(
     name: row.member_name,
     profileId: row.profile_id,
     paid: row.payment_status === "paid",
+    paymentStatus: row.payment_status ?? "unpaid",
+    paidAt: row.paid_at ?? null,
+    refundedAt: row.refunded_at ?? null,
+    refundMethod: row.refund_method ?? "",
+    refundNote: row.refund_note ?? "",
     cancelled: row.status === "cancelled",
     refundStatus: (["not_due", "due", "refunded"].includes(row.refund_status)
       ? row.refund_status : "not_due") as CoachingBookingRow["refundStatus"],

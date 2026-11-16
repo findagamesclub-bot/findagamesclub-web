@@ -108,8 +108,6 @@ export async function findOrders(clubId: number) {
        loyalty_points_spent, loyalty_discount, total,
        club_merchandise_order_items(id, item_id, name, price, quantity,
                                     unit_amount, discount_amount, line_total),
-       club_merchandise_order_notes(id, body, automatic, created_at,
-                                    profiles(id, full_name)),
        profiles!inner(id, full_name)`,
     )
     .eq("club_id", clubId)
@@ -184,13 +182,10 @@ export async function setOrderStatus(orderId: number, status: string) {
 }
 
 /** One more line on an order's log. Notes are added, never replaced. */
-export async function addOrderNote(orderId: number, authorId: string, body: string) {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("club_merchandise_order_notes")
-    .insert({ order_id: orderId, author_id: authorId, body });
-
-  if (error) throw Object.assign(new Error(error.message), { code: error.code });
+export async function addOrderNote(orderId: number, body: string) {
+  await callRpc<number>("add_money_note", {
+    p_scope: "order", p_entity: orderId, p_side: "", p_note: body,
+  });
 }
 
 // --- coaching --------------------------------------------------------------
@@ -320,6 +315,11 @@ export type ClubCoachingBookingRow = {
   points_amount: number | string | null;
   total_price: number | string;
   booked_at: string;
+  /** 0233. When the money arrived and when it went back, with how and why. */
+  paid_at: string | null;
+  refunded_at: string | null;
+  refund_method: string;
+  refund_note: string;
 };
 
 export const findClubCoachingBookings = (clubId: number) =>
@@ -478,3 +478,18 @@ export async function findCoachingSeats(clubId: number) {
   if (error) throw new Error(`Failed to count coaching places: ${error.message}`);
   return data ?? [];
 }
+
+/**
+ * A coaching refund, with how it went back and why (0233).
+ *
+ * Through the function rather than the column grant 0158 left: `refunded_at`
+ * is stamped and the method and the note are not writable by hand, for the
+ * reason 0229 gives about a table booking — when money went back is a fact
+ * about the row, not something a form gets to name.
+ */
+export const setCoachingRefund = (params: {
+  bookingId: number; status: string; method: string; note: string;
+}) => callRpc<unknown>("club_set_coaching_refund", {
+  p_booking: params.bookingId, p_status: params.status,
+  p_method: params.method, p_note: params.note,
+});

@@ -54,6 +54,40 @@ export async function saveBillingSettings(
   }
 }
 
+/**
+ * Putting a recorded payment right, and recording a refund on one.
+ *
+ * The client, item 18: "admin also needs a method to edit a payment that was
+ * recorded previously, and record refunds in the billing section." The screen
+ * said in as many words that the ledger could not be edited by anybody, which
+ * was true and was the thing being asked about: nothing here takes money, so
+ * the row is an admin typing what arrived, and a mistyped one had no way back
+ * except the SQL console. 0195 made that call for a renewal and this is the
+ * same call for a listing.
+ */
+export async function correctPayment(params: {
+  payment: number; amountPence: number; method: string;
+  paidAt: string | null; reference: string; note: string;
+}): Promise<BillingResult> {
+  try {
+    await repo.correctPayment(params);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: billingRefusal(error) };
+  }
+}
+
+export async function setPaymentRefund(params: {
+  payment: number; status: string; method: string; note: string;
+}): Promise<BillingResult> {
+  try {
+    await repo.setPaymentRefund(params);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: billingRefusal(error) };
+  }
+}
+
 export type BillingFilters = { standing: string; query: string; page: number };
 
 export function readBillingFilters(
@@ -102,8 +136,29 @@ export async function getSubscriptionForClub(clubId: number) {
   return repo.findSubscriptionForClub(clubId);
 }
 
+/**
+ * One listing's payments, with what 0233 added beside them.
+ *
+ * Two reads rather than one, because the five new columns are not in the
+ * generated types and go through a function. The extras are swallowed on
+ * their own: a ledger that will not say whether a refund was given should
+ * still list the payments.
+ */
 export async function getPayments(subscriptionId: number) {
-  return repo.findPayments(subscriptionId).catch(() => []);
+  const rows = await repo.findPayments(subscriptionId).catch(() => []);
+  const extras = await repo.findPaymentExtras(rows.map((row) => row.id));
+
+  return rows.map((row) => {
+    const more = extras.get(row.id);
+    return {
+      ...row,
+      edited_at: more?.edited_at ?? null,
+      refund_status: more?.refund_status ?? "not_due",
+      refunded_at: more?.refunded_at ?? null,
+      refund_method: more?.refund_method ?? "",
+      refund_note: more?.refund_note ?? "",
+    };
+  });
 }
 
 /**

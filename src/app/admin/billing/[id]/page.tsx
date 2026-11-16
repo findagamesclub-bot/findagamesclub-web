@@ -9,13 +9,14 @@ import ReceiptIcon from "@mui/icons-material/ReceiptLong";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import Panel from "@/components/members/Panel";
 import PageHead from "@/components/ui/PageHead";
-import EmptyState from "@/components/ui/EmptyState";
 import RecordPaymentDialog from "@/components/admin/RecordPaymentDialog";
+import PaymentLedger from "@/components/admin/PaymentLedger";
 import {
   getBillingSettings, getPayments, getSubscription,
 } from "@/services/billing.service";
+import { getMoneyHistory } from "@/services/moneyEvents.service";
 import {
-  methodLabel, ownerStanding, standingLabel, standingTone, suggestedAmount,
+  ownerStanding, standingLabel, standingTone, suggestedAmount,
 } from "@/utils/listing-billing";
 import { formatPence } from "@/utils/format";
 import { londonNow, shortDate } from "@/utils/dates";
@@ -56,6 +57,11 @@ export default async function SubscriptionPage({
     getPayments(subscription.id),
     getBillingSettings(),
   ]);
+
+  // One read for the whole ledger rather than one per row, and it rides a
+  // second wave because it needs the ids the first one produced.
+  const history = await getMoneyHistory(
+    "listing", payments.map((one) => one.id));
 
   const tone = standingTone(subscription.standing);
   const hidden = subscription.club?.status === "suspended";
@@ -100,44 +106,26 @@ export default async function SubscriptionPage({
       <Box sx={{ display: "grid", gap: 3, alignItems: "start",
                  gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "minmax(0, 2fr) minmax(280px, 1fr)" } }}>
         <Panel title="The payments" icon={ReceiptIcon}>
-          {payments.length === 0 ? (
-            <EmptyState
-              title="Nothing recorded yet"
-              description="Payments show here as they are written down. The ledger cannot be edited afterwards, by anybody, so what is on it is what happened."
-            />
-          ) : (
-            <Stack spacing={2}>
-              {payments.map((payment) => (
-                <Stack key={payment.id} spacing={0.4}
-                  sx={{ pb: 1.5, borderBottom: `1px solid ${tokens.rule}`,
-                        "&:last-of-type": { borderBottom: 0, pb: 0 } }}>
-                  <Stack direction="row" spacing={1}
-                    sx={{ alignItems: "baseline", flexWrap: "wrap" }} useFlexGap>
-                    <Typography sx={{ fontFamily: mono, fontSize: "0.95rem", fontWeight: 700 }}>
-                      {formatPence(payment.amount_pence, payment.currency)}
-                    </Typography>
-                    <Typography sx={{ fontFamily: mono, fontSize: "0.68rem",
-                                      color: tokens.inkMuted }}>
-                      {[
-                        shortDate(payment.paid_at.slice(0, 10)),
-                        methodLabel(payment.method),
-                        payment.reference,
-                      ].filter(Boolean).join(" · ")}
-                    </Typography>
-                  </Stack>
-                  {payment.period_start && payment.period_end ? (
-                    <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
-                      {`Bought ${shortDate(payment.period_start.slice(0, 10))} to `
-                        + `${shortDate(payment.period_end.slice(0, 10))}.`}
-                    </Typography>
-                  ) : null}
-                  {payment.note ? (
-                    <Typography variant="body2">{payment.note}</Typography>
-                  ) : null}
-                </Stack>
-              ))}
-            </Stack>
-          )}
+          <PaymentLedger
+            subscription={subscription.id}
+            clubName={subscription.club?.name ?? "this listing"}
+            payments={payments.map((payment) => ({
+              id: payment.id,
+              amountPence: payment.amount_pence,
+              currency: payment.currency,
+              method: payment.method,
+              paidAt: payment.paid_at,
+              reference: payment.reference ?? "",
+              note: payment.note ?? "",
+              periodStart: payment.period_start,
+              periodEnd: payment.period_end,
+              refundStatus: payment.refund_status ?? "not_due",
+              refundedAt: payment.refunded_at,
+              refundMethod: payment.refund_method ?? "",
+              refundNote: payment.refund_note ?? "",
+              editedAt: payment.edited_at,
+            }))}
+            history={Object.fromEntries(history)} />
         </Panel>
 
         <Stack spacing={2.5}>

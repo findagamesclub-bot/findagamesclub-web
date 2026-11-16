@@ -17,6 +17,7 @@ import { PER_PAGE } from "@/utils/paging";
 import { formatMoney } from "@/utils/format";
 import { mono, tokens, type Faction } from "@/lib/tokens";
 import type { BookingsView } from "@/services/clubBookings.service";
+import type { MoneyEvent } from "@/utils/money-events";
 import type { ClubBookingRow } from "@/types/eventEditor";
 
 /**
@@ -28,11 +29,13 @@ import type { ClubBookingRow } from "@/types/eventEditor";
  * shipped to the browser to hide nine hundred is not a list, it is a download.
  */
 export default function BookingsBoard({
-  slug, view, faction,
+  slug, view, faction, history,
 }: {
   slug: string;
   view: BookingsView;
   faction: Faction;
+  /** Keyed by booking id (0233). Empty is fine; a row just shows no log. */
+  history: Record<number, MoneyEvent[]>;
 }) {
   const [state, submit, busy] = useActionState<RosterState, FormData>(rosterAction, {});
   useActionToast(state);
@@ -138,6 +141,7 @@ export default function BookingsBoard({
 
           {view.rows.map((row) => (
             <BookingRow key={row.bookingId} slug={slug} row={row} faction={faction}
+              history={history[row.bookingId] ?? []}
               busy={busy && pendingId === row.bookingId}
               onCheckIn={(arrived) => send(row.eventId, row.bookingId, {
                 intent: "check-in", arrived: arrived ? "yes" : "no",

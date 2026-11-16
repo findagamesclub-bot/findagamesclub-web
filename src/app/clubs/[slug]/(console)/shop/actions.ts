@@ -78,7 +78,7 @@ export async function shopAction(_prev: ShopState, data: FormData): Promise<Shop
   if (intent === "note") {
     return done(
       await extras.noteOnOrder(
-        Number(data.get("orderId")), viewer.id, String(data.get("body") ?? ""),
+        Number(data.get("orderId")), String(data.get("body") ?? ""),
       ),
       "Note added.",
     );
