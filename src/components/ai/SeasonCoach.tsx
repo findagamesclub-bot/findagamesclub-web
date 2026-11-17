@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import MenuItem from "@mui/material/MenuItem";
@@ -15,9 +15,10 @@ import AiJobProgress from "./AiJobProgress";
 import AiResult from "./AiResult";
 import AiResultHeader from "./AiResultHeader";
 import { useAiJob } from "@/hooks/useAiJob";
-import { runSeasonAction } from "@/app/clubs/[slug]/(console)/army-builder/season-actions";
+import { runSeasonAction, seasonHistoryAction } from "@/app/clubs/[slug]/(console)/army-builder/season-actions";
 import { SEASON_GOALS } from "@/utils/season-goals";
 import { aiErrorCopy } from "@/utils/ai-errors";
+import { shortDate } from "@/utils/dates";
 import { AI_DEPLOYMENT_COPY, type AiDeployment } from "@/utils/ai-deployment";
 import type { AiJob } from "@/types/ai";
 import { mono, tokens } from "@/lib/tokens";
@@ -50,11 +51,35 @@ export default function SeasonCoach({
   const [jobId, setJobId] = useState<number | null>(
     initial && initial.status !== "failed" ? initial.id : null);
   const [error, setError] = useState("");
+  // Every plan this reader has had for this list and this goal. The rows have
+  // been in the table since 0146 and this screen could not reach them, so a
+  // spent allowance meant a blank page with an apology on it. Item 8.
+  const [history, setHistory] = useState<
+    { id: number; at: string; model: string }[]>([]);
+  // Whether what is on screen was written by the press that put it there.
+  const [saved, setSaved] = useState(Boolean(initial));
 
   const live = useAiJob(jobId);
   const job = live.data ?? (jobId === initial?.id ? initial : null);
   const running = job?.status === "queued" || job?.status === "running";
   const done = job?.status === "succeeded";
+
+  // Set inside the promise's callback rather than the effect body, which is
+  // what `react-hooks/set-state-in-effect` asks for, and dropped when the
+  // reader has already moved to a different list or goal.
+  const load = useCallback(() => {
+    if (listId === "") return undefined;
+    let alive = true;
+    seasonHistoryAction({ slug, listId: Number(listId), goal })
+      .then((answer) => { if (alive) setHistory(answer.jobs ?? []); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [slug, listId, goal]);
+
+  useEffect(() => {
+    if (reason || deployment !== "on") return;
+    return load();
+  }, [load, reason, deployment]);
 
   const run = () => start(async () => {
     setError("");
@@ -62,7 +87,11 @@ export default function SeasonCoach({
     const answer = await runSeasonAction({
       slug, listId: Number(listId), goal, force: done });
     if (answer.error) return setError(answer.error);
-    if (answer.jobId) setJobId(answer.jobId);
+    if (answer.jobId) {
+      setSaved(false);
+      setJobId(answer.jobId);
+      load();
+    }
   });
 
   if (deployment !== "on") {
@@ -136,8 +165,42 @@ export default function SeasonCoach({
         <Alert severity="warning">{aiErrorCopy(job.errorCode)}</Alert>
       ) : null}
 
+      {/* The plans before this one, which is the half somebody whose
+          allowance has run out actually needs: the button is disabled and
+          this is the only way back to what they already paid for. */}
+      {history.length > 1
+        || (history.length === 1 && history[0]!.id !== jobId) ? (
+        <Stack spacing={0.75}>
+          <Typography sx={{ fontFamily: mono, fontSize: "0.62rem", fontWeight: 700,
+                            letterSpacing: "0.08em", color: tokens.inkMuted }}>
+            EARLIER PLANS
+          </Typography>
+          <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }} useFlexGap>
+            {history.map((one) => (
+              <Button key={one.id} size="small"
+                variant={one.id === jobId ? "contained" : "outlined"}
+                disabled={running}
+                onClick={() => { setSaved(true); setError(""); setJobId(one.id); }}
+                sx={{ fontFamily: mono, fontSize: "0.68rem",
+                      ...(one.id === jobId ? {} : { borderColor: tokens.rule,
+                                                    color: tokens.ink }) }}>
+                {shortDate(one.at)}
+              </Button>
+            ))}
+          </Stack>
+        </Stack>
+      ) : null}
+
       {done ? (
         <Stack spacing={2}>
+          {saved ? (
+            <AiNote kind="note">
+              {"This is the season plan saved on "}
+              {shortDate(job.finishedAt ?? job.createdAt)}
+              {". It was not built again. Press Build it again for a fresh one, "}
+              {"which is saved beside this one rather than replacing it."}
+            </AiNote>
+          ) : null}
           <AiResultHeader model={job.model} at={job.finishedAt ?? job.createdAt}
             about={String((job.source as { listName?: string })?.listName ?? "")} />
           <AiResult feature="season" result={job.result} />

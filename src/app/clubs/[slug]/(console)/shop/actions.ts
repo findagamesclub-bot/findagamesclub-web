@@ -75,6 +75,18 @@ export async function shopAction(_prev: ShopState, data: FormData): Promise<Shop
     );
   }
 
+  if (intent === "set-refund") {
+    return done(
+      await extras.setOrderRefund({
+        orderId: Number(data.get("orderId")),
+        status: String(data.get("status") ?? ""),
+        method: String(data.get("refundMethod") ?? ""),
+        note: String(data.get("refundNote") ?? ""),
+      }),
+      "Refund recorded.",
+    );
+  }
+
   if (intent === "note") {
     return done(
       await extras.noteOnOrder(

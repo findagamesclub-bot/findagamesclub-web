@@ -493,3 +493,17 @@ export const setCoachingRefund = (params: {
   p_booking: params.bookingId, p_status: params.status,
   p_method: params.method, p_note: params.note,
 });
+
+/**
+ * A merchandise refund, with how the money went back and why (0237).
+ *
+ * Through the function rather than the status grant: `refunded_at` is stamped
+ * and the method and the note are not writable by hand, which is the rule
+ * every other section's refund already follows.
+ */
+export const setOrderRefund = (params: {
+  orderId: number; status: string; method: string; note: string;
+}) => callRpc<unknown>("club_set_order_refund", {
+  p_order: params.orderId, p_status: params.status,
+  p_method: params.method, p_note: params.note,
+});

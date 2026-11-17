@@ -57,6 +57,7 @@ export default function GameBrowser({
       played: games.filter((g) => g.outcome !== null).length,
       unrecorded: countUnrecorded(games),
       won: games.filter((g) => g.outcome === "won").length,
+      lost: games.filter((g) => g.outcome === "lost").length,
       free, paid,
       topay: games.length - free - paid,
       // A club that has never charged this member for a table has nothing for
@@ -87,6 +88,7 @@ export default function GameBrowser({
           { value: "played" as const, label: "Scored", count: counts.played },
           { value: "unrecorded" as const, label: "No result", count: counts.unrecorded },
           { value: "won" as const, label: "Won", count: counts.won },
+          { value: "lost" as const, label: "Lost", count: counts.lost },
         ]}
         filter={filter}
         onFilter={(value) => startReorder(() => setFilter(value))}

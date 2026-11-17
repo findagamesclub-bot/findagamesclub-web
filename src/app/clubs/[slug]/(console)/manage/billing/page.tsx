@@ -130,6 +130,15 @@ export default async function ClubBillingPage({
           </Stack>
         </Panel>
 
+        {/* Straight under where they stand, which is the client's item 23:
+            "it's a bit hidden at the bottom of the page". A club opening
+            Billing is asking two questions in a row — where am I, and what
+            have I paid — and the answer to the second was below the homepage
+            slots and the bank details. */}
+        <Panel title="What you have paid" icon={ReceiptIcon}>
+          <ListingPayments payments={payments} />
+        </Panel>
+
         {/* Only with a subscription to move. Charging off means there is no
             plan yet, and a club picking between two prices nobody is charging
             would be choosing the shape of a bill that does not exist. */}
@@ -171,9 +180,6 @@ export default async function ClubBillingPage({
           </Panel>
         ) : null}
 
-        <Panel title="What you have paid" icon={ReceiptIcon}>
-          <ListingPayments payments={payments} />
-        </Panel>
       </Stack>
     </Container>
   );

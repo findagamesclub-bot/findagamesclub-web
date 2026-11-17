@@ -1,3 +1,5 @@
+import { REFUND_STATUSES, type RefundStatus } from "./refund-status";
+
 /**
  * Everything a club has paid us, in one list.
  *
@@ -30,6 +32,20 @@ export type ClubPayment = {
   note: string;
   /** What the money bought, where that is a span of dates. */
   covers: { from: string; to: string } | null;
+  /**
+   * Money going back, which the club could not see at all.
+   *
+   * The client's item 23: an admin marks a listing payment refunded and the
+   * club's own billing page went on showing it as a plain receipt. The admin
+   * screen has shown it since 0233; the two were reading the same row and
+   * only one of them was reading all of it.
+   */
+  refundStatus: RefundStatus;
+  refundedAt: string | null;
+  refundMethod: string;
+  refundNote: string;
+  /** The listing payment this came from, for its money log. Null on a slot. */
+  paymentId: number | null;
 };
 
 /** A subscription payment, as `listing_payments` holds it. */
@@ -42,6 +58,11 @@ export type ListingPaymentLike = {
   reference: string;
   period_start: string | null;
   period_end: string | null;
+  note?: string | null;
+  refund_status?: string | null;
+  refunded_at?: string | null;
+  refund_method?: string | null;
+  refund_note?: string | null;
 };
 
 /** A homepage week, as the club's own billing page already reads it. */
@@ -54,9 +75,18 @@ export type FeaturedSlotLike = {
   paidAt: string | null;
   paymentMethod: string;
   paymentNote: string;
+  refundStatus?: string | null;
+  refundedAt?: string | null;
+  refundMethod?: string | null;
+  refundNote?: string | null;
 };
 
 const day = (value: string) => value.slice(0, 10);
+
+/** Anything we do not recognise owes nothing back, which is the safe answer. */
+const asRefund = (value: string | null | undefined): RefundStatus =>
+  REFUND_STATUSES.includes(value as RefundStatus)
+    ? (value as RefundStatus) : "not_due";
 
 /**
  * A slot only counts once the money is in.
@@ -83,10 +113,18 @@ export function clubPayments(
     on: day(row.paid_at),
     method: row.method,
     reference: row.reference,
-    note: "",
+    // The words we wrote down when we recorded it. This was blank, so a club
+    // reading its own receipts saw the figure and never the reference the
+    // admin had typed beside it.
+    note: row.note ?? "",
     covers: row.period_start && row.period_end
       ? { from: day(row.period_start), to: day(row.period_end) }
       : null,
+    refundStatus: asRefund(row.refund_status),
+    refundedAt: row.refunded_at ?? null,
+    refundMethod: row.refund_method ?? "",
+    refundNote: row.refund_note ?? "",
+    paymentId: row.id,
   }));
 
   const fromSlots: ClubPayment[] = slots.filter(slotIsPaid).map((slot) => ({
@@ -101,6 +139,14 @@ export function clubPayments(
     // The week it bought, which is the slot's own dates rather than a billing
     // period: a homepage week is not a subscription.
     covers: { from: day(slot.startsOn), to: day(slot.endsOn) },
+    refundStatus: asRefund(slot.refundStatus),
+    refundedAt: slot.refundedAt ?? null,
+    refundMethod: slot.refundMethod ?? "",
+    refundNote: slot.refundNote ?? "",
+    // A slot is not in the money ledger: 0233 covers the six sections a
+    // member or a club can be billed through, and a homepage week is sold
+    // from the admin's own screen.
+    paymentId: null,
   }));
 
   // Newest first, and the key breaks the tie so two payments recorded on one

@@ -2,7 +2,9 @@ import Box from "@mui/material/Box";
 import ScrollBox from "@/components/ui/ScrollBox";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import StatusChip from "@/components/ui/StatusChip";
 import { shortDate } from "@/utils/dates";
+import { refundTag } from "@/utils/refund-status";
 import { display, mono, tokens } from "@/lib/tokens";
 import type { MembershipPayment } from "@/types/payment";
 
@@ -19,6 +21,13 @@ import type { MembershipPayment } from "@/types/payment";
  * it bought is the thing a member checks; when it was recorded is what they
  * compare against the day they actually handed the money over; the note is
  * where "paid in cash, £5 short, will settle next week" lives.
+ *
+ * Money going back is on it too (the client's item 19). The club's side has
+ * shown a refund and its note since 0233 and this, the member's copy of the
+ * same ledger, did not: a club could mark a renewal refunded, write why, and
+ * the person it was about read a row that still said they had simply paid.
+ * The whole argument for one component reading one ledger is that the two
+ * sides cannot disagree, and here they were two components.
  *
  * It scrolls once the history is long, and that overrides an earlier call.
  *
@@ -61,15 +70,22 @@ export default function PaymentRows({ payments }: { payments: MembershipPayment[
           payment.editedAt ? `Corrected ${shortDate(payment.editedAt)}` : null,
         ].filter(Boolean).join(" · ");
 
+        const refund = refundTag(payment.refundStatus);
+
         return (
           <Stack key={payment.id} direction="row" spacing={1.5}
             sx={{ py: 1, alignItems: "baseline",
                   "&:not(:last-of-type)": { borderBottom: `1px solid ${tokens.rule}` } }}>
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {payment.tierLabel}
-                {payment.billingOptionLabel ? ` · ${payment.billingOptionLabel}` : ""}
-              </Typography>
+              <Stack direction="row" spacing={1}
+                sx={{ alignItems: "center", flexWrap: "wrap" }} useFlexGap>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {payment.tierLabel}
+                  {payment.billingOptionLabel ? ` · ${payment.billingOptionLabel}` : ""}
+                </Typography>
+                {/* One tag drawn one way, the same one the club sees. */}
+                {refund ? <StatusChip label={refund.label} tone={refund.tone} /> : null}
+              </Stack>
 
               {when ? (
                 <Typography sx={{ fontSize: "0.76rem", color: tokens.inkMuted }}>
@@ -88,6 +104,23 @@ export default function PaymentRows({ payments }: { payments: MembershipPayment[
                     THE CLUB WROTE
                   </Box>
                   {payment.note}
+                </Typography>
+              ) : null}
+
+              {/* When the money went back and how, which is the half somebody
+                  owed a refund actually wants. The status alone said it was
+                  settled and left them to ask the club the two questions that
+                  follow it. */}
+              {payment.refundedAt || payment.refundNote ? (
+                <Typography sx={{ fontSize: "0.75rem", fontFamily: display, lineHeight: 1.6,
+                                  color: tokens.danger, mt: 0.25,
+                                  whiteSpace: "pre-wrap" }}>
+                  {[
+                    payment.refundedAt
+                      ? `Refunded ${shortDate(payment.refundedAt)}` : "Refunded",
+                    payment.refundMethod ? `by ${payment.refundMethod}` : "",
+                  ].filter(Boolean).join(" ")}
+                  {payment.refundNote ? ` · ${payment.refundNote}` : ""}
                 </Typography>
               ) : null}
             </Box>

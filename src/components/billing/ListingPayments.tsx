@@ -1,6 +1,8 @@
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import EmptyState from "@/components/ui/EmptyState";
+import StatusChip from "@/components/ui/StatusChip";
+import { refundTag } from "@/utils/refund-status";
 import { methodLabel } from "@/utils/listing-billing";
 import { PAYMENT_KIND_LABELS, type ClubPayment } from "@/utils/club-payments";
 import { formatPence } from "@/utils/format";
@@ -61,6 +63,10 @@ export default function ListingPayments({
                 payment.reference,
               ].filter(Boolean).join(" · ")}
             </Typography>
+            {refundTag(payment.refundStatus)
+              ? <StatusChip label={refundTag(payment.refundStatus)!.label}
+                  tone={refundTag(payment.refundStatus)!.tone} />
+              : null}
           </Stack>
 
           {payment.covers ? (
@@ -75,6 +81,21 @@ export default function ListingPayments({
           {payment.note ? (
             <Typography variant="body2" sx={{ color: tokens.inkMuted }}>
               {payment.note}
+            </Typography>
+          ) : null}
+
+          {/* And money going back, which an admin can record since 0233 and
+              this page could not show: a club whose listing payment had been
+              refunded read a plain receipt for it. */}
+          {payment.refundedAt || payment.refundNote ? (
+            <Typography variant="body2" sx={{ color: tokens.danger }}>
+              {[
+                payment.refundedAt
+                  ? `Refunded ${shortDate(payment.refundedAt.slice(0, 10))}`
+                  : "Refunded",
+                payment.refundMethod ? `by ${methodLabel(payment.refundMethod)}` : "",
+              ].filter(Boolean).join(" ")}
+              {payment.refundNote ? ` · ${payment.refundNote}` : ""}
             </Typography>
           ) : null}
         </Stack>

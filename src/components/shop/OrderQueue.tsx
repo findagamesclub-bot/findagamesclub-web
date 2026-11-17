@@ -23,6 +23,7 @@ import { needsQuote } from "@/utils/merch-bag";
 import { orderTotalLabel } from "@/utils/order-total";
 import { messageTime } from "@/utils/dates";
 import MoneyHistory from "@/components/money/MoneyHistory";
+import OrderRefundDialog from "./OrderRefundDialog";
 import { tokens, type Faction } from "@/lib/tokens";
 import type { MerchOrder } from "@/types/clubExtras";
 import { PER_PAGE } from "@/utils/paging";
@@ -63,18 +64,41 @@ export default function OrderQueue({
   const counts = useMemo(() => countClubOrders(orders), [orders]);
   const results = useMemo(
     () => filterClubOrders(orders, { query, filter, sort }), [orders, query, filter, sort]);
+  const [refunding, setRefunding] =
+    useState<{ id: number; status: string } | null>(null);
   const top = useRef<HTMLDivElement>(null);
   // Twelve, not the usual page: each order carries its own note log and status
   // control, so a page of them is far taller than a page of cards.
   const paged = usePagedList(results, PER_PAGE.cards, top);
 
   const setStatus = (orderId: number, status: string) => {
+    // A refund is two more questions, and the member reads the answers. The
+    // status on its own used to be the whole of it, so a club typed why into
+    // the note box beside it — which is this club's working log and nobody
+    // else's to read. That is the client's item 18.
+    if (status === "refunded" || status === "refund_due") {
+      setRefunding({ id: orderId, status });
+      return;
+    }
     const data = new FormData();
     data.set("intent", "set-status");
     data.set("slug", slug);
     data.set("orderId", String(orderId));
     data.set("status", status);
     startTransition(() => submit(data));
+  };
+
+  const saveRefund = (method: string, note: string) => {
+    if (!refunding) return;
+    const data = new FormData();
+    data.set("intent", "set-refund");
+    data.set("slug", slug);
+    data.set("orderId", String(refunding.id));
+    data.set("status", refunding.status);
+    data.set("refundMethod", method);
+    data.set("refundNote", note);
+    startTransition(() => submit(data));
+    setRefunding(null);
   };
 
   const addNote = (orderId: number) => {
@@ -226,6 +250,7 @@ export default function OrderQueue({
 
               <Stack direction="row" spacing={1} sx={{ alignItems: "flex-start" }}>
                 <TextField size="small" label="Add a note" fullWidth multiline maxRows={4}
+                  helperText="Only your club team reads this. A refund note goes on the refund."
                   value={drafts[order.id] ?? ""}
                   onChange={(e) => setDrafts((d) => ({ ...d, [order.id]: e.target.value }))}
                   slotProps={{ htmlInput: { maxLength: 2000 } }} />
@@ -244,6 +269,13 @@ export default function OrderQueue({
       <Pager page={paged.page} total={paged.total} noun="orders" size={12}
         onChange={paged.goTo} />
       </BusyOverlay>
+
+      <OrderRefundDialog
+        open={refunding !== null}
+        refundDue={refunding?.status === "refund_due"}
+        saving={busy}
+        onClose={() => setRefunding(null)}
+        onSave={saveRefund} />
     </Stack>
   );
 }

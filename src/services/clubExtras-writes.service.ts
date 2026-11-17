@@ -347,3 +347,39 @@ export async function addCoachingSlot(params: {
     return { ok: false, error: "Only the club can add coaching slots." };
   }
 }
+
+/**
+ * Money going back on a merchandise order (0237, the client's item 18).
+ *
+ * The note is the point. A club could mark an order refunded and type why
+ * into the order's own log, which has been the club's working log since 0020
+ * and which the member cannot read. This one they can: it is the refund's own
+ * note, the same field a table booking and an event place have carried since
+ * 0229 and 0224.
+ */
+export async function setOrderRefund(params: {
+  orderId: number; status: string; method: string; note: string;
+}): Promise<Result> {
+  if (!["refund_due", "refunded"].includes(params.status)) {
+    return { ok: false, error: "That is not a refund state." };
+  }
+  try {
+    await repo.setOrderRefund({
+      orderId: params.orderId,
+      status: params.status,
+      method: params.method.trim().slice(0, 120),
+      note: params.note.trim().slice(0, 300),
+    });
+    return { ok: true };
+  } catch (error) {
+    const said = error instanceof Error ? error.message : "";
+    if (said.includes("ORDER_NOT_PAID")) {
+      return { ok: false, error:
+        "Nothing was taken for this order, so there is nothing to give back." };
+    }
+    if (said.includes("ORDER_NOT_FOUND")) {
+      return { ok: false, error: "That order is not here any more." };
+    }
+    return { ok: false, error: "That order is not yours to change." };
+  }
+}

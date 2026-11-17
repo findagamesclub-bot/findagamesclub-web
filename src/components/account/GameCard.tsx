@@ -6,6 +6,7 @@ import NextLink from "next/link";
 import ClubLogo from "@/components/clubs/ClubLogo";
 import LockIcon from "@mui/icons-material/Lock";
 import ResultDialog from "./ResultDialog";
+import MoneyHistory from "@/components/money/MoneyHistory";
 import type { MemberList } from "@/services/resultArmies.service";
 import StatusChip from "@/components/ui/StatusChip";
 import { confirmationLabel, deploymentLabel } from "@/utils/result-meta";
@@ -96,6 +97,16 @@ export default function GameCard({ game, myLists = [] }: {
             </Typography>
           ) : null}
         </Stack>
+      ) : null}
+
+      {/* What has happened to the money since: the day it arrived, the day
+          it went back, and what the club wrote about each. The chip above
+          says where it ended up and said nothing about how it got there,
+          which is the client's item 20. */}
+      {game.money.length ? (
+        <Box sx={{ px: 2.25, pt: 1.25 }}>
+          <MoneyHistory events={game.money} dense />
+        </Box>
       ) : null}
 
       <Stack direction="row" spacing={1.5}

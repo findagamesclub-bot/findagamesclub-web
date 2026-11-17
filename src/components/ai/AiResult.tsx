@@ -58,7 +58,11 @@ export default function AiResult({
           <Notes title="What they tend to bring" items={notes(answer.patterns)} />
           <Notes title="Watch for" items={notes(answer.watchFor)} />
           <Notes title="Openings" items={notes(answer.openings)} />
-          <Points title="Worth asking them" items={list(answer.questions)} />
+          {/* The client's item 7: "the 'worth asking them' title below should be
+              'Things worth considering'". Theirs is the better word — the list
+              is what to weigh before the game, not a script to read at
+              somebody. */}
+          <Points title="Things worth considering" items={list(answer.questions)} />
         </>
       ) : null}
 

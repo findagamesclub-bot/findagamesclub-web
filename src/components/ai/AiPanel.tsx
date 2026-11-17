@@ -159,10 +159,15 @@ export default function AiPanel({
         <Alert severity="warning">{aiErrorCopy(job.errorCode)}</Alert>
       ) : null}
 
-      {/* The ones before this one. Only ever drawn when there is more than
-          the single report already on screen, because a list of one is a
-          control that says "here is the thing you are looking at". */}
-      {history.length > 1 ? (
+      {/* The ones before this one.
+          Hidden only when the single run it holds is the one already on
+          screen, because a list of one you are looking at is a control that
+          says "here is the thing you are looking at". It is NOT hidden at one
+          run otherwise, which was the bug: somebody who had spent their
+          allowance could not press the button and could not reach the report
+          they had spent it on. The client's item 8. */}
+      {history.length > 1
+        || (history.length === 1 && history[0]!.id !== jobId) ? (
         <Stack spacing={0.75}>
           <Typography sx={{ fontFamily: mono, fontSize: "0.62rem", fontWeight: 700,
                             letterSpacing: "0.08em", color: tokens.inkMuted }}>

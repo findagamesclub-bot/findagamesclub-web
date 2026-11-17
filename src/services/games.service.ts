@@ -11,6 +11,8 @@ import * as repo from "@/repositories/games.repository";
 import { getArmyContext, setMyResultList, type Builder } from "./resultArmies.service";
 import { type GameSide } from "@/utils/result-army";
 import { londonToday } from "./bookingCalendar.service";
+import { getMoneyHistory } from "./moneyEvents.service";
+import type { MoneyEvent } from "@/utils/money-events";
 import { suggestOpponents, winRate, type Suggestion } from "@/utils/opponent-finder";
 import { intensityOf, type Intensity } from "@/utils/rivalry-intensity";
 import { canonicalGame } from "@/utils/game-label";
@@ -84,6 +86,16 @@ export type MyGame = {
    * club's Table payments screen uses rather than a second reading of them.
    */
   payment: { status: TablePaymentStatus; total: number; currency: string };
+  /**
+   * What has happened to the money on this table, from this member's side.
+   *
+   * The client's item 20: a game marked refunded by the club, with the club's
+   * words beside it, read as "paid in advance" and nothing else here. The
+   * ledger has carried both since 0233 and the card could not see it; the
+   * reader narrows to the rows whose money is this member's, so the opposite
+   * half of the table is not theirs to read.
+   */
+  money: MoneyEvent[];
 };
 
 export type Record = {
@@ -136,7 +148,7 @@ export async function getMyGames(
   // the page above, so they cannot join the first wave, but they share this
   // one. A failed payment read costs the money line and never the history,
   // which is the state this page was in before it had one.
-  const [army, paid] = await Promise.all([
+  const [army, paid, money] = await Promise.all([
     getArmyContext("booking",
       rows.filter(({ club_bookings: row }) => row.booked_by_score !== null)
           .map(({ club_bookings: row }) => row.id),
@@ -146,6 +158,7 @@ export async function getMyGames(
         console.error("[games] what you owe did not load", error);
         return [];
       }),
+    getMoneyHistory("booking", rows.map(({ club_bookings: row }) => row.id)),
   ]);
   const payments = new Map(paid.map((row) => [row.booking_id, row.payment_status]));
 
@@ -204,6 +217,7 @@ export async function getMyGames(
         total: Number(row.total_price ?? 0),
         currency: row.price_currency || "GBP",
       },
+      money: money.get(row.id) ?? [],
     };
   });
 }

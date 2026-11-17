@@ -2,7 +2,7 @@ import type { MyGame } from "@/services/games.service";
 import { monthLabel, type FacetOption } from "./booking-facets";
 import { tableIsFree, tableIsPaid } from "./table-bookings";
 
-export type GameFilter = "all" | "played" | "unrecorded" | "won";
+export type GameFilter = "all" | "played" | "unrecorded" | "won" | "lost";
 export type GameSort = "recent" | "oldest" | "opponent";
 
 /**
@@ -41,6 +41,10 @@ const inGroup = (game: MyGame, filter: GameFilter) => {
   if (filter === "played") return game.outcome !== null;
   // Played but nobody said what happened. This is the one worth acting on.
   if (filter === "unrecorded") return game.played && game.outcome === null;
+  // The client's item 20: "add a 'Lost' filter next to Won". A record is two
+  // halves and the page could only show one of them, which is the half
+  // nobody opens a history to study.
+  if (filter === "lost") return game.outcome === "lost";
   return game.outcome === "won";
 };
 

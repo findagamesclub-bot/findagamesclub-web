@@ -102,3 +102,36 @@ export async function runSeasonAction(input: {
 
   return { jobId: started.jobId, cached: false };
 }
+
+/**
+ * The season plans this person has already had for this list and goal.
+ *
+ * The client's item 8: "once you have used all of your credits for the day,
+ * it rightly tells you that you have reached the limit. However, it does not
+ * store and show the previous runs, so you can view these while waiting for
+ * the refresh." The rows have been in `army_ai_jobs` since 0146 and this
+ * screen could not reach them, so a spent allowance meant a blank page with
+ * an apology on it.
+ *
+ * The same signature `runSeasonAction` caches on, built the same way, because
+ * two readings of one key are two readings that drift.
+ */
+export async function seasonHistoryAction(input: {
+  slug: string; listId: number; goal: string;
+}): Promise<{ jobs: { id: number; at: string; model: string }[] }> {
+  const viewer = await getCurrentProfile();
+  if (!viewer) return { jobs: [] };
+  if (!isSeasonGoal(input.goal)) return { jobs: [] };
+
+  const club = await getClubDetail(input.slug);
+  if (!club) return { jobs: [] };
+
+  const held = await getList(input.listId, viewer.id);
+  const version = held?.list.current;
+  // Somebody else's list has no history to show this reader, and the function
+  // underneath is scoped to `auth.uid()` and would refuse it anyway.
+  if (!version || !held?.list.isOwner) return { jobs: [] };
+
+  return { jobs: await ai.getHistory(
+    club.id, "season", `${version.id}:${input.goal}`) };
+}

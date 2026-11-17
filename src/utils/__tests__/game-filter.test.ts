@@ -29,6 +29,22 @@ assert.equal(countUnrecorded(games), 1);
 assert.deepEqual(ids(filterGames(games, { filter: "played" })), [1, 2]);
 assert.deepEqual(ids(filterGames(games, { filter: "won" })), [1]);
 
+// The client's item 20: "add a 'Lost' filter next to Won". A record is two
+// halves and the page could show one of them, which is the half nobody opens
+// a history to study. The two must not overlap and must not both claim a game
+// nobody has scored.
+assert.deepEqual(ids(filterGames(games, { filter: "lost" })), [2]);
+{
+  const won = ids(filterGames(games, { filter: "won" }));
+  const lost = ids(filterGames(games, { filter: "lost" }));
+  assert.equal(won.filter((id) => lost.includes(id)).length, 0,
+    "a game cannot be both won and lost");
+  const scored = ids(filterGames(games, { filter: "played" }));
+  for (const id of [...won, ...lost]) {
+    assert.ok(scored.includes(id), `game ${id} is counted without a score`);
+  }
+}
+
 // Search covers opponent, game, club and either army.
 assert.deepEqual(ids(filterGames(games, { query: "tom" })), [2]);
 assert.deepEqual(ids(filterGames(games, { query: "death guard" })), [1]);
