@@ -54,3 +54,7 @@ next-env.d.ts
 
 # Schema dump used to reconstruct 0020. Regenerate, do not commit.
 schema.sql
+
+# Client scope and feedback documents. They are big binaries and they are
+# not part of the build; one was pushed by accident and had to be undone.
+*.docx
