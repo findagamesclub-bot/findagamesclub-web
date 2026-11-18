@@ -173,7 +173,10 @@ export async function setOrderStatus(orderId: number, status: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("club_merchandise_orders")
-    .update({ status, status_updated_at: new Date().toISOString() })
+    // The stamp is the trigger's (0241). Sending it from here is what broke
+    // marking an order paid: 0237 revoked the column and Postgres refuses the
+    // whole update when one column in it is not granted.
+    .update({ status })
     .eq("id", orderId)
     .select("id")
     .maybeSingle();

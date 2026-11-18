@@ -9,7 +9,7 @@ import {
 {
   // The exact wording holiday_store.py:1014 raises, because the server repeats it.
   assert.equal(strength("short").refusal,
-    "Password must be at least 12 characters long.");
+    `Password must be at least ${PASSWORD_MIN} characters long.`);
   assert.equal(strength("a".repeat(PASSWORD_MAX + 1)).refusal,
     "Password must be 128 characters or fewer.");
   assert.equal(strength(" ".repeat(PASSWORD_MIN + 2)).refusal,
@@ -45,9 +45,26 @@ import {
 
 {
   // Below the minimum can never read as anything but weak, however varied.
-  const s = strength("Ab3!Xy7#");
-  assert.equal(s.band, "weak", "eight characters is weak whatever is in it");
+  // Seven characters with four classes used to be the eight-character case,
+  // back when the floor was 12. The floor is 8 now and the boundary moved
+  // with it; what has not moved is that being under it caps the band.
+  const s = strength("Ab3!Xy7");
+  assert.equal(s.band, "weak", "under the minimum is weak whatever is in it");
   assert.ok(s.refusal, "and it is refused");
+}
+
+{
+  // The new boundary, both sides of it. Eight characters is allowed, and
+  // allowed is not the same as "anything that is eight characters long":
+  // the band still has to be cleared, so eight of one kind does not pass.
+  const varied = strength("Ab3!Xy7#");
+  assert.equal(varied.refusal, null, "eight characters clears the length rule");
+  assert.equal(passwordAllowed("Ab3!Xy7#", "").ok, true, "and is allowed");
+
+  const flat = strength("bluehats");
+  assert.equal(flat.refusal, null, "eight lowercase clears the length rule");
+  assert.equal(passwordAllowed("bluehats", "").ok, false,
+    "but not the band, so it is still refused");
 }
 
 {
@@ -100,7 +117,7 @@ import {
   // Too short: the legacy message, because that is what the server will say.
   const short = passwordAllowed("abc", "a@b.com");
   assert.equal(short.ok, false);
-  assert.equal(short.message, "Password must be at least 12 characters long.");
+  assert.equal(short.message, `Password must be at least ${PASSWORD_MIN} characters long.`);
 
   // Long enough but weak: blocked, with the one useful thing to change.
   const weak = passwordAllowed("gulnabidev2026xx", "gulnabidev@gmail.com");

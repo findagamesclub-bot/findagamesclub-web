@@ -2,14 +2,17 @@
  * How strong a password is, and whether it is allowed at all.
  *
  * Legacy's rule is a length check and nothing else: 12 to 128 characters, not
- * made only of spaces (`_validate_password`, holiday_store.py:1010). That rule
- * is kept exactly, including its wording, because it is what the client's
- * accounts are already held to.
+ * made only of spaces (`_validate_password`, holiday_store.py:1010).
+ *
+ * **The floor is 8 here, not legacy's 12, at the client's instruction.** It is
+ * the one place this file departs from legacy and it is a deliberate one. 8 is
+ * also NIST 800-63B's own minimum, and the band below still has to be cleared,
+ * so eight characters of one kind does not get through on length alone.
  *
  * The score on top of it is the client's ask. It exists to tell somebody their
  * password is weak while they can still do something about it, not to add a
- * second rule they have to satisfy: a 12-character password that scores Weak is
- * still refused only if it fails legacy's check. The form blocks below Fair,
+ * second rule they have to satisfy: a short password that scores Weak is
+ * still refused only if it fails the length check. The form blocks below Fair,
  * which is a deliberate decision recorded in the plan rather than a legacy
  * behaviour.
  *
@@ -18,12 +21,32 @@
  * people actually choose here.
  */
 
-export const PASSWORD_MIN = 12;
+export const PASSWORD_MIN = 8;
 export const PASSWORD_MAX = 128;
 
-/** Legacy's own hint, so the field says what the server will enforce. */
+/**
+ * What is left of a password once a common word is taken out of it, below
+ * which the word was most of the password.
+ *
+ * Its own number rather than `PASSWORD_MIN`, which is what it used to be. The
+ * floor moved to 8 and that would have quietly stopped catching
+ * `mypasswordislong`: take "password" out and eight characters remain, which
+ * is no longer "too short to be a password". The length rule and the
+ * is-this-just-a-common-word rule are different questions and only read the
+ * same number by accident.
+ */
+const COMMON_REMAINDER = 12;
+
+/**
+ * What the field says while it is empty.
+ *
+ * The ceiling is deliberately not in here. Nobody types 128 characters by
+ * accident, so saying "8 to 128" spends the one line somebody reads on a
+ * number that will never apply to them. It still refuses above the ceiling,
+ * in its own words, at the moment it becomes true.
+ */
 export const PASSWORD_HINT =
-  `Use ${PASSWORD_MIN} to ${PASSWORD_MAX} characters. Passphrases and spaces are allowed.`;
+  `Use at least ${PASSWORD_MIN} characters. Passphrases and spaces are allowed.`;
 
 export type Band = "weak" | "fair" | "good" | "strong";
 
@@ -126,7 +149,7 @@ export function strength(password: string, email = ""): Strength {
   // passphrase that happens to contain "dragon" is, and matching the word as a
   // bare substring refused it.
   const isCommon = COMMON.some((word) =>
-    folded.includes(word) && folded.replace(word, "").length < PASSWORD_MIN);
+    folded.includes(word) && folded.replace(word, "").length < COMMON_REMAINDER);
   const repetitive = isRepetitive(value);
 
   let score = 0;
