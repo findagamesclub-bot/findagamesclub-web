@@ -12,7 +12,7 @@ import NotesIcon from "@mui/icons-material/StickyNote2Outlined";
 import { mono, tokens } from "@/lib/tokens";
 import { messageTime } from "@/utils/dates";
 import {
-  SIDE_LABELS, moneyEventLine, moneyEventNote, moneyEventTone,
+  SIDE_LABELS, audienceTag, moneyEventLine, moneyEventNote, moneyEventTone,
   type MoneyEvent,
 } from "@/utils/money-events";
 
@@ -51,7 +51,7 @@ const FOLD_AT = 6;
 
 export default function MoneyHistory({
   events, emptyText = "Nothing recorded yet.", showSide = false, dense = false,
-  shownNote = "",
+  shownNote = "", showAudience = false,
 }: {
   events: MoneyEvent[];
   emptyText?: string;
@@ -68,6 +68,14 @@ export default function MoneyHistory({
    * shows, because then it is not the same words.
    */
   shownNote?: string;
+  /**
+   * Say who reads each typed note (0238).
+   *
+   * Only on the club's own screens. On the member's it would answer a
+   * question they are not asking: everything they can see is something they
+   * can see.
+   */
+  showAudience?: boolean;
 }) {
   const [all, setAll] = useState(false);
 
@@ -128,6 +136,7 @@ export default function MoneyHistory({
                     messageTime(event.at),
                     showSide && event.side ? SIDE_LABELS[event.side] : "",
                     event.author,
+                    showAudience ? audienceTag(event) : "",
                   ].filter(Boolean).join(" · ").toUpperCase()}
                 </Typography>
               </Box>

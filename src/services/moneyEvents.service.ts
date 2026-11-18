@@ -1,7 +1,9 @@
 import "server-only";
 
 import * as repo from "@/repositories/moneyEvents.repository";
-import type { MoneyEvent, MoneyEventKind, MoneyScope } from "@/utils/money-events";
+import type {
+  MoneyAudience, MoneyEvent, MoneyEventKind, MoneyScope,
+} from "@/utils/money-events";
 
 /**
  * One history, for however many rows a page is showing.
@@ -30,6 +32,9 @@ export async function getMoneyHistory(
       at: row.happened_at,
       automatic: Boolean(row.automatic),
       author: row.author_name ?? "",
+      // Anything we do not recognise is the club's own, which is the answer
+      // that cannot leak a note somebody wrote expecting privacy.
+      audience: row.audience === "member" ? "member" : "club",
     };
     const held = out.get(event.entityId);
     if (held) held.push(event);
@@ -48,7 +53,9 @@ export async function getMoneyHistoryFor(
 
 export async function addMoneyNote(params: {
   scope: MoneyScope; entity: number; side?: string; note: string;
+  audience?: MoneyAudience;
 }): Promise<void> {
   await repo.writeMoneyNote(
-    params.scope, params.entity, params.side ?? "", params.note);
+    params.scope, params.entity, params.side ?? "", params.note,
+    params.audience ?? "club");
 }

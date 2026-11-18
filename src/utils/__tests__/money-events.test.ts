@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {
-  moneyEventLine, moneyEventNote, moneyEventTone, tidyMethod,
+  audienceTag, moneyEventLine, moneyEventNote, moneyEventTone, tidyMethod,
   type MoneyEvent,
 } from "../money-events";
 
@@ -15,7 +15,7 @@ import {
 const event = (over: Partial<MoneyEvent> = {}): MoneyEvent => ({
   id: 1, entityId: 9, side: "", kind: "payment", state: "paid",
   method: "", note: "", at: "2026-11-16T10:00:00Z", automatic: true,
-  author: "Owner Eight", ...over,
+  author: "Owner Eight", audience: "club", ...over,
 });
 
 let failed = 0;
@@ -70,6 +70,24 @@ check("a refund reads as money leaving and a payment does not", () => {
   assert.equal(moneyEventTone(event({ state: "paid_on_the_door" })), "kept");
   // Unmarking a payment is not good news in green.
   assert.equal(moneyEventTone(event({ state: "unpaid" })), null);
+});
+
+check("a note says who reads it, both ways round", () => {
+  // Both, never only the shared one. The client's item 18 is a club that
+  // believed the box it typed into went somewhere it did not, so the absence
+  // of a tag must not be the thing carrying "nobody else reads this".
+  assert.equal(audienceTag(event({ kind: "note", audience: "club" })),
+    "Your team only");
+  assert.equal(audienceTag(event({ kind: "note", audience: "member" })),
+    "The member sees this");
+});
+
+check("an automatic line has no audience to report", () => {
+  // A payment or a refund is the member's own money and always theirs to
+  // read, so tagging one would answer a question nobody asked.
+  assert.equal(audienceTag(event({ kind: "refund", state: "refunded" })), "");
+  assert.equal(audienceTag(event({ kind: "payment", state: "paid" })), "");
+  assert.equal(audienceTag(event({ kind: "status", state: "cancelled" })), "");
 });
 
 if (failed) { console.error(`\n${failed} failed`); process.exit(1); }

@@ -2,6 +2,7 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import { callRpc } from "@/lib/supabase/table";
+import type { MoneyAudience } from "@/utils/money-events";
 
 /**
  * Rivalries, merchandise and coaching.
@@ -182,9 +183,12 @@ export async function setOrderStatus(orderId: number, status: string) {
 }
 
 /** One more line on an order's log. Notes are added, never replaced. */
-export async function addOrderNote(orderId: number, body: string) {
+export async function addOrderNote(
+  orderId: number, body: string, audience: MoneyAudience = "club",
+) {
   await callRpc<number>("add_money_note", {
     p_scope: "order", p_entity: orderId, p_side: "", p_note: body,
+    p_audience: audience,
   });
 }
 

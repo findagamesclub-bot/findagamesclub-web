@@ -23,6 +23,23 @@ export type MoneyScope = (typeof MONEY_SCOPES)[number];
 
 export type MoneyEventKind = "payment" | "refund" | "status" | "note";
 
+/**
+ * Who a typed note is for (0238).
+ *
+ * The automatic lines ignore it: a payment or a refund is the member's own
+ * money and always theirs to read. It is the club's typed notes that have a
+ * choice, because the order log has been the club's own working record since
+ * 0020 and clubs keep things in it that are not the member's business.
+ */
+export type MoneyAudience = "club" | "member";
+
+export const MONEY_AUDIENCES: { value: MoneyAudience; label: string; says: string }[] = [
+  { value: "club", label: "Only your club team",
+    says: "Nobody outside your team reads this." },
+  { value: "member", label: "The member too",
+    says: "The member reads this on their own order, so write it for them." },
+];
+
 export type MoneyEvent = {
   id: number;
   entityId: number;
@@ -37,6 +54,8 @@ export type MoneyEvent = {
   /** False when a person typed it, which the screen draws differently. */
   automatic: boolean;
   author: string;
+  /** Only meaningful on a note; every other kind is the member's to read. */
+  audience: MoneyAudience;
 };
 
 const WORDS: Record<string, string> = {
@@ -125,6 +144,19 @@ export function moneyEventTone(event: MoneyEvent): StatusTone | null {
 export const PAYMENT_WAYS = [
   "Cash", "Card", "Bank transfer", "PayPal", "Other",
 ] as const;
+
+/**
+ * What a note's audience reads as on the club's own log.
+ *
+ * Both are marked, never just the shared one: the whole of the client's item
+ * 18 is a club that believed the box it was typing into went somewhere it did
+ * not, and silence on the private ones would leave them reading the absence
+ * of a tag as the answer.
+ */
+export function audienceTag(event: MoneyEvent): string {
+  if (event.kind !== "note") return "";
+  return event.audience === "member" ? "The member sees this" : "Your team only";
+}
 
 /** Which side of a table booking a line is about, for a list that shows both. */
 export const SIDE_LABELS: Record<string, string> = {

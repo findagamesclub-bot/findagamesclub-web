@@ -91,8 +91,13 @@ export async function shopAction(_prev: ShopState, data: FormData): Promise<Shop
     return done(
       await extras.noteOnOrder(
         Number(data.get("orderId")), String(data.get("body") ?? ""),
+        String(data.get("audience") ?? "club"),
       ),
-      "Note added.",
+      // The toast says where it went, because that is the thing the club
+      // was wrong about: "Note added" is true of both and tells them nothing.
+      String(data.get("audience") ?? "club") === "member"
+        ? "Note added. The member can read it."
+        : "Note added for your team.",
     );
   }
 

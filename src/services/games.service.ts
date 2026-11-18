@@ -18,6 +18,8 @@ import { intensityOf, type Intensity } from "@/utils/rivalry-intensity";
 import { canonicalGame } from "@/utils/game-label";
 import { playsFortyK } from "@/utils/event-meta";
 import type { TablePaymentStatus } from "@/utils/table-bookings";
+import type { Priced } from "@/utils/price-lines";
+import type { BookingPaymentRow } from "@/repositories/games.repository";
 
 /**
  * What a game says when nobody is on the other side of it yet.
@@ -86,6 +88,15 @@ export type MyGame = {
    * club's Table payments screen uses rather than a second reading of them.
    */
   payment: { status: TablePaymentStatus; total: number; currency: string };
+  /**
+   * What was charged and what came off it (0239, the client's item 22).
+   *
+   * The same shape `PriceBreakdown` draws on an order card, a ticket stub and
+   * the member's own table bookings. This card showed the total alone, so a
+   * member who paid £4.05 for a £5.00 table could not see that 10% came off
+   * for their tier and 45 points paid the rest.
+   */
+  priced: Priced;
   /**
    * What has happened to the money on this table, from this member's side.
    *
@@ -160,7 +171,9 @@ export async function getMyGames(
       }),
     getMoneyHistory("booking", rows.map(({ club_bookings: row }) => row.id)),
   ]);
-  const payments = new Map(paid.map((row) => [row.booking_id, row.payment_status]));
+  // The whole row now, not just the status: since 0239 this read answers for
+  // the reader's own seat on the table, so the money beside it is theirs.
+  const payments = new Map(paid.map((row) => [row.booking_id, row]));
 
   return rows.map(({ club_bookings: row }) => {
     const iBooked = row.booked_by === profileId;
@@ -213,13 +226,69 @@ export async function getMyGames(
         // Unpaid is what the column defaults to, so a booking the read could
         // not reach reads as owing rather than as settled. Saying somebody
         // has paid when nobody knows is the worse of the two wrong answers.
-        status: paymentOf(payments.get(row.id)),
-        total: Number(row.total_price ?? 0),
+        status: paymentOf(payments.get(row.id)?.payment_status),
+        total: myTotal(payments.get(row.id), row.total_price),
         currency: row.price_currency || "GBP",
       },
+      priced: pricedOf(payments.get(row.id), row),
       money: money.get(row.id) ?? [],
     };
   });
+}
+
+/** PostgREST hands `numeric` back as a string, and adding two concatenates. */
+const num = (value: unknown) => {
+  const n = Number(value ?? 0);
+  return Number.isFinite(n) ? n : 0;
+};
+
+/**
+ * The total this reader owes for their own seat.
+ *
+ * Falls back to the booking's own column when the read did not answer, which
+ * is the same call the status above makes: a card that cannot say why is
+ * better than a card that cannot say how much.
+ *
+ * `total_price == null` is the other case and it is a real one: migrations
+ * are applied by hand here, so there is a window where this build is live
+ * against 0213's three-column function. Reading a column it does not return
+ * would put £0 on every game until the migration lands.
+ */
+const myTotal = (mine: BookingPaymentRow | undefined, fallback: unknown) =>
+  mine && mine.total_price != null ? num(mine.total_price) : num(fallback);
+
+/**
+ * What came off this reader's own share.
+ *
+ * Empty when the read did not answer, because `hasBreakdown` is false on all
+ * zeros and `PriceBreakdown` then draws nothing. A breakdown invented from
+ * the booker's columns would be somebody else's money on this member's card.
+ */
+function pricedOf(
+  mine: BookingPaymentRow | undefined,
+  row: { total_price: number | string | null; price_currency: string | null },
+): Priced {
+  const currency = row.price_currency || "GBP";
+  // Same window as `myTotal`: against the older function there is no
+  // breakdown to draw, and zeros make `hasBreakdown` false, so the card falls
+  // back to exactly what it showed before rather than to a wrong answer.
+  if (!mine || mine.base_price == null) {
+    const total = num(row.total_price);
+    return {
+      subtotal: total, tierLabel: null, tierPercent: 0, tierAmount: 0,
+      points: 0, pointsAmount: 0, total, currency,
+    };
+  }
+  return {
+    subtotal: num(mine.base_price),
+    tierLabel: mine.tier_label || null,
+    tierPercent: num(mine.tier_percent),
+    tierAmount: num(mine.tier_amount),
+    points: num(mine.points_spent),
+    pointsAmount: num(mine.points_amount),
+    total: num(mine.total_price),
+    currency,
+  };
 }
 
 const paymentOf = (value: string | undefined): TablePaymentStatus =>

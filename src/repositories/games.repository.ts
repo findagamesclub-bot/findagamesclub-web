@@ -85,8 +85,24 @@ export async function findMyGames(profileId: string, from: number, to: number) {
 
 export type BookingPaymentRow = {
   booking_id: number;
+  /** Which seat of the table this reader is on (0239). */
+  side: string;
   payment_status: string;
   paid_at: string | null;
+  /**
+   * What was charged and what came off it, frozen at the booking (0014).
+   *
+   * `numeric` arrives as a string over PostgREST and adding two of those
+   * concatenates, so every figure is read through `Number()` by the service.
+   */
+  base_price: number | string | null;
+  tier_label: string | null;
+  tier_percent: number | string | null;
+  tier_amount: number | string | null;
+  points_spent: number | string | null;
+  points_amount: number | string | null;
+  total_price: number | string | null;
+  currency: string | null;
 };
 
 /**

@@ -7,6 +7,7 @@ import ClubLogo from "@/components/clubs/ClubLogo";
 import LockIcon from "@mui/icons-material/Lock";
 import ResultDialog from "./ResultDialog";
 import MoneyHistory from "@/components/money/MoneyHistory";
+import PriceBreakdown, { hasBreakdown } from "@/components/ui/PriceBreakdown";
 import type { MemberList } from "@/services/resultArmies.service";
 import StatusChip from "@/components/ui/StatusChip";
 import { confirmationLabel, deploymentLabel } from "@/utils/result-meta";
@@ -43,7 +44,12 @@ export default function GameCard({ game, myLists = [] }: {
   // never anything to pay, because "Nothing to pay" on every card at a club
   // that charges nothing is a chip saying nothing.
   const owed = game.payment.total > 0 || game.payment.status !== "unpaid";
-  const money = owed
+  // A table a membership paid for is not a club that charges nothing. Both
+  // end at £0 and only one of them has something to say: "Nothing to pay"
+  // plus "£5.00 off as Life Member" is the whole of the client's item 22 for
+  // a waived fee, and the `owed` test alone drew neither.
+  const saved = hasBreakdown(game.priced);
+  const money = owed || saved
     ? tableBookingTag({
         status: "booked",
         total: game.payment.total,
@@ -87,16 +93,25 @@ export default function GameCard({ game, myLists = [] }: {
           wrap mid-phrase. The figure rides with the tag only while it is
           still owed, which is the one case somebody is scrolling to find. */}
       {money ? (
-        <Stack direction="row" spacing={1}
-          sx={{ px: 2.25, pt: 1.5, alignItems: "center", flexWrap: "wrap" }} useFlexGap>
-          <StatusChip label={money.label} tone={money.tone} />
-          {money.tone === "waiting" ? (
-            <Typography sx={{ fontFamily: mono, fontSize: "0.78rem", fontWeight: 700,
-                              color: tokens.brass }}>
-              {formatMoney(game.payment.total, game.payment.currency)}
-            </Typography>
-          ) : null}
-        </Stack>
+        <Box sx={{ px: 2.25, pt: 1.5 }}>
+          <Stack direction="row" spacing={1}
+            sx={{ alignItems: "center", flexWrap: "wrap" }} useFlexGap>
+            <StatusChip label={money.label} tone={money.tone} />
+            {money.tone === "waiting" ? (
+              <Typography sx={{ fontFamily: mono, fontSize: "0.78rem", fontWeight: 700,
+                                color: tokens.brass }}>
+                {formatMoney(game.payment.total, game.payment.currency)}
+              </Typography>
+            ) : null}
+          </Stack>
+
+          {/* Why it is that much, the client's item 22. The compact form,
+              because a card at three columns is about 290px and four rows of
+              a checkout breakdown is a panel, not a card. It draws nothing at
+              all on a table nobody got anything off, which is a full price
+              explaining itself. */}
+          <PriceBreakdown priced={game.priced} compact />
+        </Box>
       ) : null}
 
       {/* What has happened to the money since: the day it arrived, the day

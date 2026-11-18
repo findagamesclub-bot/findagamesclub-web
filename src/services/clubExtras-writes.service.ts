@@ -4,6 +4,7 @@ import { after } from "next/server";
 
 import * as repo from "@/repositories/clubExtras.repository";
 import * as notify from "./order-notify.service";
+import type { MoneyAudience } from "@/utils/money-events";
 
 /** Writes for rivalries, the shop and coaching. */
 
@@ -142,13 +143,18 @@ export async function updateOrder(orderId: number, status: string): Promise<Resu
 export async function noteOnOrder(
   orderId: number,
   body: string,
+  audience: string = "club",
 ): Promise<Result> {
   const clean = body.trim();
   if (!clean) return { ok: false, error: "Write a note before adding it." };
   if (clean.length > 2000) return { ok: false, error: "That note is too long." };
 
+  // Anything unrecognised is the club's own (0238). A form field is a claim
+  // and not a fact, and the claim that opens a note up is the one to doubt.
+  const who: MoneyAudience = audience === "member" ? "member" : "club";
+
   try {
-    await repo.addOrderNote(orderId, clean);
+    await repo.addOrderNote(orderId, clean, who);
     return { ok: true };
   } catch {
     return { ok: false, error: "Only the club can add notes to an order." };

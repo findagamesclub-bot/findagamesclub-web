@@ -1,5 +1,5 @@
 import { callRpc } from "@/lib/supabase/table";
-import type { MoneyScope } from "@/utils/money-events";
+import type { MoneyAudience, MoneyScope } from "@/utils/money-events";
 
 /**
  * The money log, read through its function.
@@ -23,6 +23,7 @@ export type MoneyEventRow = {
   happened_at: string;
   automatic: boolean;
   author_name: string;
+  audience: string;
 };
 
 /** Many ids at once: a bookings list is twenty rows and one round trip. */
@@ -33,6 +34,8 @@ export const findMoneyHistory = (scope: MoneyScope, entities: number[]) =>
 
 export const writeMoneyNote = (
   scope: MoneyScope, entity: number, side: string, note: string,
+  audience: MoneyAudience = "club",
 ) => callRpc<number>("add_money_note", {
   p_scope: scope, p_entity: entity, p_side: side, p_note: note,
+  p_audience: audience,
 });
